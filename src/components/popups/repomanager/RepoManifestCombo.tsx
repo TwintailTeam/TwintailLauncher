@@ -19,7 +19,7 @@ export default function RepoManifestCombo({name, items, roundTop, roundBottom}: 
                 style={{
                     // height: isFolded ? "0px" : (((24 + 16) * items.length) - 16) + "px"
                     // height: isFolded ? "0%" : "10%",
-                    maxHeight: isFolded ? "0px" : (items.length * 64) + "px", // Absurdly big value
+                    maxHeight: isFolded ? "0px" : (items.length * 64) + "px", // Big value
                 }}
             >
                 {items.map((name) => (

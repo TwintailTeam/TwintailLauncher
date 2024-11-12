@@ -11,6 +11,7 @@
         "tauri": "tauri"
     },
     "dependencies": {
+        "@floating-ui/react": "^0.26.27",
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-shell": "^2",
         "lucide-react": "^0.456.0",

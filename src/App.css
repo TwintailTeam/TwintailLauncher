@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.fixed-backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+}
+
+.fixed-backdrop-blur {
+    backdrop-filter: blur(8px);
+}
+
+.fixed-backdrop-blur-md {
+    backdrop-filter: blur(12px);
+}
+
+.fixed-backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+}
+
+.fixed-backdrop-blur-xl {
+    backdrop-filter: blur(24px);
+}
+
+.fixed-backdrop-blur-2xl {
+    backdrop-filter: blur(40px);
+}
+
+.fixed-backdrop-blur-3xl {
+    backdrop-filter: blur(64px);
+}

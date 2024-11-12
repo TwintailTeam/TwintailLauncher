@@ -23,7 +23,7 @@ const repos = {
 
 export default function RepoManager({setOpenPopup}: {setOpenPopup: (popup: POPUPS) => void}) {
     return (
-        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 bg-neutral-700 gap-8 overflow-scroll">
+        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Repositories and Manifests</h1>
                 <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
