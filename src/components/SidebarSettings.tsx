@@ -11,17 +11,9 @@ import {
     useInteractions
 } from "@floating-ui/react";
 import {POPUPS} from "./popups/POPUPS.ts";
+import {Settings} from "lucide-react";
 
-type SidebarIconProps = {
-    icon: string,
-    name: string,
-    id: string,
-    setCurrentGame: (a: string) => void,
-    setOpenPopup: (a: POPUPS) => void,
-    popup: POPUPS,
-}
-
-export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup}: SidebarIconProps) {
+export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -43,10 +35,9 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
 
     return (
         <React.Fragment>
-            <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" src={icon} onClick={() => {
-                setOpenPopup(POPUPS.NONE)
-                setCurrentGame(id)
-            }}/>
+            <Settings ref={refs.setReference} {...getReferenceProps()} className="text-white w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
+                setOpenPopup(popup == POPUPS.NONE ? POPUPS.REPOMANAGER : POPUPS.NONE);
+            }} />
 
             {(isOpen && popup == POPUPS.NONE) && (
                 <div
@@ -56,7 +47,7 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
                     className="bg-black/75 rounded-md p-2 w-full min-w-max z-50"
                 >
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">{name}</span>
+                    <span className="text-white z-50">Settings</span>
                 </div>
             )}
         </React.Fragment>
