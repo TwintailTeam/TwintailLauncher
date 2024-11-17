@@ -53,6 +53,15 @@ function App() {
         invoke("get-games").then(r => {
             setGames(JSON.parse(r as string))
         })
+
+        // example how to argument lol even how to validate null as good example
+        /*invoke("get_manifest_by_filename", {filename: "hkrpg_global.jsonhhhhh"}).then(r => {
+            if (r === null) {
+                console.log("its null")
+            } else {
+                console.log(r as string)
+            }
+        })*/
     }, [])
 
     return (

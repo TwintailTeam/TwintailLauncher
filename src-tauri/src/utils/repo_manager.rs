@@ -31,16 +31,18 @@ pub async fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
             //fs::remove_dir_all(&repo_path.join(".idea")).unwrap();
             //fs::remove_dir_all(&repo_path.join(".vscode")).unwrap();
 
+            let repo_id = generate_cuid();
+
+            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).await.unwrap();
+
             let mut mids = Vec::new();
             for m in rma.manifests {
                 async {
                     let cuid = generate_cuid();
-                    create_manifest(app, cuid.clone(), m.as_str(), true).await.unwrap(); // enable all default manifests?? make behavior for no enabled manifests
+                    create_manifest(app, cuid.clone(), repo_id.clone(), m.as_str(), true).await.unwrap(); // enable all default manifests?? make behavior for no enabled manifests
                     mids.push(cuid);
                 }.await
             }
-
-            create_repository(app, generate_cuid().as_str(), format!("{user}/{repo_name}").as_str(), mids).await.unwrap();
 
             ()
 
@@ -58,4 +60,18 @@ struct RepositoryManifest {
     description: String,
     maintainers: Vec<String>,
     manifests: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LauncherRepository {
+    pub id: String,
+    pub github_id: String
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LauncherManifest {
+    pub id: String,
+    pub repository_id: String,
+    pub filename: String,
+    pub enabled: bool
 }

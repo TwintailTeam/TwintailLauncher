@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 use std::fs;
-use std::ops::Deref;
 use std::path::Path;
 use std::sync::Mutex;
 use futures_core::future::BoxFuture;
-use sqlx::{Error, Pool, query, Sqlite, Executor};
+use sqlx::{Error, Pool, query, Sqlite, Executor, Row};
 use sqlx::error::BoxDynError;
 use sqlx::migrate::{MigrateDatabase, MigrationType, Migrator, Migration as SqlxMigration, MigrationSource};
 use sqlx::sqlite::SqliteConnectOptions;
 use tauri::{AppHandle, Manager};
-use crate::utils::repo_manager::setup_official_repository;
+use crate::utils::repo_manager::{setup_official_repository, LauncherManifest, LauncherRepository};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -35,20 +34,20 @@ pub async fn init_db(app: &AppHandle) {
     let migrationsl = vec![
         Migration {
             version: 1,
-            description: "init_manifest_table",
-            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY,"filename" string,"enabled" bool);"#,
+            description: "init_repository_table",
+            sql: r#"CREATE TABLE "repository" ("id" string PRIMARY KEY,"github_id" string);"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 2,
-            description: "init_install_table",
-            sql: r#"CREATE TABLE "install" ("id" string PRIMARY KEY,"manifest_id" string,"version" string,"name" string,"directory" string,"runner" string,"dxvk" string, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
+            description: "init_manifest_table",
+            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY,"repository_id" string,"filename" string,"enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 3,
-            description: "init_repository_table",
-            sql: r#"CREATE TABLE "repository" ("id" string PRIMARY KEY,"github_id" string,"manifest_id" string[], CONSTRAINT fk_repo_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
+            description: "init_install_table",
+            sql: r#"CREATE TABLE "install" ("id" string PRIMARY KEY,"manifest_id" string,"version" string,"name" string,"directory" string,"runner" string,"dxvk" string, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
             kind: MigrationKind::Up,
         }
     ];
@@ -100,10 +99,10 @@ pub async fn save_db_settings(app: &AppHandle) -> Result<bool, Error> {
 
 // === REPOSITORIES ===
 
-pub async fn create_repository(app: &AppHandle, id: &str, github_id: &str, mut manifest_ids: Vec<String>) -> Result<bool, Error> {
+pub async fn create_repository(app: &AppHandle, id: String, github_id: &str) -> Result<bool, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
-    let query = query("INSERT INTO repository(id, github_id, manifest_id) VALUES ($1, $2, $3)").bind(id).bind(github_id).bind(manifest_ids);
+    let query = query("INSERT INTO repository(id, github_id) VALUES ($1, $2)").bind(id).bind(github_id);
     let rslt = query.execute(&db).await?;
 
     if rslt.rows_affected() >= 1 {
@@ -113,17 +112,135 @@ pub async fn create_repository(app: &AppHandle, id: &str, github_id: &str, mut m
     }
 }
 
-// === MANIFESTS ===
-
-pub async fn create_manifest(app: &AppHandle, id: String, filename: &str, enabled: bool) -> Result<bool, Error> {
+pub async fn delete_repository(app: &AppHandle, id: String) -> Result<bool, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
-    let rslt = db.execute(format!("INSERT INTO manifest(id, filename, enabled) VALUES ('{id}', '{filename}', {enabled})").as_str()).await?;
+    let query = query("DELETE FROM repository WHERE id = $1").bind(id);
+    let rslt = query.execute(&db).await?;
 
     if rslt.rows_affected() >= 1 {
         Ok(true)
     } else {
         Ok(false)
+    }
+}
+
+pub async fn get_repository_by_id(app: &AppHandle, id: String) -> Option<LauncherRepository> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM repository WHERE id = $1").bind(id);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherRepository {
+            id: rslt.get(0).unwrap().get("id"),
+            github_id: rslt.get(0).unwrap().get("github_id"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub async fn get_repositories(app: &AppHandle) -> Option<Vec<LauncherRepository>> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM repository");
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let mut rsltt = Vec::<LauncherRepository>::new();
+        for r in rslt {
+            rsltt.push(LauncherRepository {
+                id: r.get("id"),
+                github_id: r.get("github_id"),
+            })
+        }
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+// === MANIFESTS ===
+
+pub async fn create_manifest(app: &AppHandle, id: String, repository_id: String, filename: &str, enabled: bool) -> Result<bool, Error> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, filename, enabled) VALUES ('{id}', '{repository_id}', '{filename}', {enabled})").as_str()).await?;
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub async fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) -> Result<bool, Error> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("DELETE FROM manifest WHERE repository_id = $1").bind(repository_id);
+    let rslt = query.execute(&db).await?;
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub async fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("DELETE FROM manifest WHERE _id = $1").bind(id);
+    let rslt = query.execute(&db).await?;
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub async fn get_manifest_info_by_id(app: &AppHandle, id: String) -> Option<LauncherManifest> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM manifest WHERE id = $1").bind(id);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherManifest {
+            id: rslt.get(0).unwrap().get("id"),
+            repository_id: rslt.get(0).unwrap().get("repository_id"),
+            filename: rslt.get(0).unwrap().get("filename"),
+            enabled: rslt.get(0).unwrap().get("enabled"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub async fn get_manifest_info_by_filename(app: &AppHandle, filename: String) -> Option<LauncherManifest> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM manifest WHERE filename = $1").bind(filename);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherManifest {
+            id: rslt.get(0).unwrap().get("id"),
+            repository_id: rslt.get(0).unwrap().get("repository_id"),
+            filename: rslt.get(0).unwrap().get("filename"),
+            enabled: rslt.get(0).unwrap().get("enabled"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
     }
 }
 
