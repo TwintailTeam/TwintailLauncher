@@ -55,11 +55,11 @@ function App() {
         })
 
         // example how to argument lol even how to validate null as good example
-        /*invoke("get_manifest_by_filename", {filename: "hkrpg_global.jsonhhhhh"}).then(r => {
+        /*invoke("get_manifests_by_repository_id", {repositoryId: ""}).then(r => {
             if (r === null) {
                 console.log("its null")
             } else {
-                console.log(r as string)
+                console.log(JSON.parse(r as string))
             }
         })*/
     }, [])

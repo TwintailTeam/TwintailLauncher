@@ -41,7 +41,7 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 2,
             description: "init_manifest_table",
-            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY,"repository_id" string,"filename" string,"enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
+            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY,"repository_id" string,"display_name" string,"filename" string,"enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
@@ -87,7 +87,7 @@ pub async fn init_db(app: &AppHandle) {
 
 // === SETTINGS ===
 
-pub async fn get_settings(app: &AppHandle) -> Result<Vec<String>, Error> {
+/*pub async fn get_settings(app: &AppHandle) -> Result<Vec<String>, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
     Ok(vec![])
@@ -95,7 +95,7 @@ pub async fn get_settings(app: &AppHandle) -> Result<Vec<String>, Error> {
 
 pub async fn save_db_settings(app: &AppHandle) -> Result<bool, Error> {
     Ok(true)
-}
+}*/
 
 // === REPOSITORIES ===
 
@@ -166,10 +166,10 @@ pub async fn get_repositories(app: &AppHandle) -> Option<Vec<LauncherRepository>
 
 // === MANIFESTS ===
 
-pub async fn create_manifest(app: &AppHandle, id: String, repository_id: String, filename: &str, enabled: bool) -> Result<bool, Error> {
+pub async fn create_manifest(app: &AppHandle, id: String, repository_id: String, display_name: &str, filename: &str, enabled: bool) -> Result<bool, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
-    let rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, filename, enabled) VALUES ('{id}', '{repository_id}', '{filename}', {enabled})").as_str()).await?;
+    let rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ('{id}', '{repository_id}', '{display_name}', '{filename}', {enabled})").as_str()).await?;
 
     if rslt.rows_affected() >= 1 {
         Ok(true)
@@ -194,7 +194,7 @@ pub async fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: St
 pub async fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
-    let query = query("DELETE FROM manifest WHERE _id = $1").bind(id);
+    let query = query("DELETE FROM manifest WHERE id = $1").bind(id);
     let rslt = query.execute(&db).await?;
 
     if rslt.rows_affected() >= 1 {
@@ -214,8 +214,9 @@ pub async fn get_manifest_info_by_id(app: &AppHandle, id: String) -> Option<Laun
         let rsltt = LauncherManifest {
             id: rslt.get(0).unwrap().get("id"),
             repository_id: rslt.get(0).unwrap().get("repository_id"),
+            display_name: rslt.get(0).unwrap().get("display_name"),
             filename: rslt.get(0).unwrap().get("filename"),
-            enabled: rslt.get(0).unwrap().get("enabled"),
+            enabled: rslt.get(0).unwrap().get("enabled")
         };
 
         Some(rsltt)
@@ -234,9 +235,34 @@ pub async fn get_manifest_info_by_filename(app: &AppHandle, filename: String) ->
         let rsltt = LauncherManifest {
             id: rslt.get(0).unwrap().get("id"),
             repository_id: rslt.get(0).unwrap().get("repository_id"),
+            display_name: rslt.get(0).unwrap().get("display_name"),
             filename: rslt.get(0).unwrap().get("filename"),
-            enabled: rslt.get(0).unwrap().get("enabled"),
+            enabled: rslt.get(0).unwrap().get("enabled")
         };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub async fn get_manifests_by_repository_id(app: &AppHandle, repository_id: String) -> Option<Vec<LauncherManifest>> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM manifest WHERE repository_id = $1").bind(repository_id);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let mut rsltt = Vec::<LauncherManifest>::new();
+        for r in rslt {
+            rsltt.push(LauncherManifest {
+                id: r.get("id"),
+                repository_id: r.get("repository_id"),
+                display_name: r.get("display_name"),
+                filename: r.get("filename"),
+                enabled: r.get("enabled")
+            })
+        }
 
         Some(rsltt)
     } else {
