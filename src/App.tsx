@@ -45,13 +45,23 @@ const ENABLE_COMMANDS = false
 
 function App() {
     const [openPopup, setOpenPopup] = useState<POPUPS>(POPUPS.NONE);
-    const [currentGame, setCurrentGame] = useState<string>("hk4e")
+    const [currentGame, setCurrentGame] = useState<string>("")
 
-    const [games, setGames] = useState([])
+    const [repos, setRepos] = useState([])
+    const [games, setGames] = useState<any[]>([])
 
     useEffect(() => {
-        invoke("get-games").then(r => {
-            setGames(JSON.parse(r as string))
+        invoke("list_repositories").then(r => {
+            console.log(r || "nope")
+            if (r === null) {
+                setRepos([])
+            } else {
+                setRepos(JSON.parse(r as string))
+            }
+        }).catch(() => {
+            console.error("AAA")
+        }).then(() => {
+            console.log("Hi?")
         })
 
         // example how to argument lol even how to validate null as good example
@@ -64,12 +74,32 @@ function App() {
         })*/
     }, [])
 
+    useEffect(() => {
+        setGames([])
+        repos.forEach(r => {
+            invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
+                if (m === null) {
+                    console.log("its null")
+                } else {
+                    setGames([...games, ...JSON.parse(m as string)])
+                }
+
+            })
+        })
+    }, [repos])
+
+    useEffect(() => {
+        if (games.length > 0 && currentGame == "") {
+            setCurrentGame(games[0].id)
+        }
+    }, [games])
+
     return (
         <main className="w-full h-screen flex flex-row bg-transparent">
-            <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" src={GAMES.filter(v => v.id == currentGame)[0].banner} />
+            <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" src={(GAMES.filter(v => v.id == currentGame)[0] || {banner: ""}).banner} />
             <div className="h-full w-16 p-2 bg-black/50 flex flex-col gap-4 items-center fixed-backdrop-blur-md justify-between">
                 <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                    {(ENABLE_COMMANDS ? games : GAMES).map((game) => {
+                    {currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).map((game) => {
                         return (
                             <SidebarIcon key={game.id} popup={openPopup} icon={game.icon} name={game.name} id={game.id} setCurrentGame={setCurrentGame} setOpenPopup={setOpenPopup} />
                         )
@@ -78,9 +108,9 @@ function App() {
                 <SidebarSettings popup={openPopup} setOpenPopup={setOpenPopup} />
             </div>
             {/*<h1 className="self-start text-4xl text-bla font-black z-10">KeqingLauncher (InDev)</h1>*/}
-            {(ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo ?
-                <img className="h-24 ml-8 mt-8 pointer-events-none" src={(ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo}/> /*<React.Fragment></React.Fragment>*/ :
-                <h1 className="text-3xl font-black text-white ml-8 mt-8">{(ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].name}</h1>
+            {currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo ?
+                <img className="h-24 ml-8 mt-8 pointer-events-none" src={currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo}/> /*<React.Fragment></React.Fragment>*/ :
+                <h1 className="text-3xl font-black text-white ml-8 mt-8">{currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].name}</h1>
             }
 
             <div className="flex flex-row absolute bottom-8 right-16 gap-4">
