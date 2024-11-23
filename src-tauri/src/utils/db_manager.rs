@@ -73,7 +73,6 @@ pub async fn init_db(app: &AppHandle) {
 
     // Init this fuck AFTER you add shitty DB instances to state
     if !Path::new(&manifests_dir).exists() {
-        // TODO: fallback to backup path if $XDG_DATA_HOME is not set / any path resolution fails...
         fs::create_dir_all(&manifests_dir).unwrap();
         #[cfg(debug_assertions)]
         {
@@ -125,7 +124,7 @@ pub async fn delete_repository(app: &AppHandle, id: String) -> Result<bool, Erro
     }
 }
 
-pub async fn get_repository_by_id(app: &AppHandle, id: String) -> Option<LauncherRepository> {
+pub async fn get_repository_info_by_id(app: &AppHandle, id: String) -> Option<LauncherRepository> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
     let query = query("SELECT * FROM repository WHERE id = $1").bind(id);

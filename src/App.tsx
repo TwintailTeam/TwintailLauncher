@@ -50,19 +50,20 @@ function App() {
     const [repos, setRepos] = useState([])
     const [games, setGames] = useState<any[]>([])
 
+
     useEffect(() => {
-        invoke("list_repositories").then(r => {
-            console.log(r || "nope")
-            if (r === null) {
-                setRepos([])
-            } else {
-                setRepos(JSON.parse(r as string))
-            }
-        }).catch(() => {
-            console.error("AAA")
-        }).then(() => {
-            console.log("Hi?")
-        })
+            invoke("list_repositories").then(r => {
+                console.log(r || "nope")
+                if (r === null) {
+                    setRepos([])
+                } else {
+                    setRepos(JSON.parse(r as string))
+                }
+            }).catch(() => {
+                console.error("AAA")
+            }).then(() => {
+                console.log("Hi?")
+            })
 
         // example how to argument lol even how to validate null as good example
         /*invoke("get_manifests_by_repository_id", {repositoryId: ""}).then(r => {
@@ -76,16 +77,16 @@ function App() {
 
     useEffect(() => {
         setGames([])
-        repos.forEach(r => {
-            invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
-                if (m === null) {
-                    console.log("its null")
-                } else {
-                    setGames([...games, ...JSON.parse(m as string)])
-                }
+            repos.forEach(r => {
+                invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
+                    if (m === null) {
+                        console.log("its null")
+                    } else {
+                        setGames([...games, ...JSON.parse(m as string)])
+                    }
 
+                })
             })
-        })
     }, [repos])
 
     useEffect(() => {
