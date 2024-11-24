@@ -8,7 +8,7 @@ use sqlx::error::BoxDynError;
 use sqlx::migrate::{MigrateDatabase, MigrationType, Migrator, Migration as SqlxMigration, MigrationSource};
 use sqlx::sqlite::SqliteConnectOptions;
 use tauri::{AppHandle, Manager};
-use crate::utils::repo_manager::{setup_official_repository, LauncherManifest, LauncherRepository};
+use crate::utils::repo_manager::{setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -24,9 +24,7 @@ pub async fn init_db(app: &AppHandle) {
         if !Sqlite::database_exists(&conn_url.to_str().unwrap()).await.unwrap() {
             Sqlite::create_database(&conn_url.to_str().unwrap()).await.unwrap();
             #[cfg(debug_assertions)]
-            {
-                println!("Database does not exist... Creating new one for you!");
-            }
+            { println!("Database does not exist... Creating new one for you!"); }
         }
 
     }
@@ -75,9 +73,7 @@ pub async fn init_db(app: &AppHandle) {
     if !Path::new(&manifests_dir).exists() {
         fs::create_dir_all(&manifests_dir).unwrap();
         #[cfg(debug_assertions)]
-        {
-            println!("Manifests directory does not exist... Creating new one for you!");
-        }
+        { println!("Manifests directory does not exist... Creating new one for you!"); }
         setup_official_repository(&app, &manifests_dir).await;
     } else {
         setup_official_repository(&app, &manifests_dir).await;
@@ -111,7 +107,7 @@ pub async fn create_repository(app: &AppHandle, id: String, github_id: &str) -> 
     }
 }
 
-pub async fn delete_repository(app: &AppHandle, id: String) -> Result<bool, Error> {
+pub async fn delete_repository_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
     let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
 
     let query = query("DELETE FROM repository WHERE id = $1").bind(id);
@@ -260,6 +256,109 @@ pub async fn get_manifests_by_repository_id(app: &AppHandle, repository_id: Stri
                 display_name: r.get("display_name"),
                 filename: r.get("filename"),
                 enabled: r.get("enabled")
+            })
+        }
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+// === INSTALLS ===
+
+pub async fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, name: String, directory: String, runner: String, dxvk: String) -> Result<bool, Error> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner, dxvk) VALUES ($1, $2, $3, $4, $5, $6, $7)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner).bind(dxvk);
+    let rslt = query.execute(&db).await?;
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub async fn delete_installation_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("DELETE FROM install WHERE id = $1").bind(id);
+    let rslt = query.execute(&db).await?;
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub async fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherInstall> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM install WHERE id = $1").bind(id);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherInstall {
+            id: rslt.get(0).unwrap().get("id"),
+            manifest_id: rslt.get(0).unwrap().get("manifest_id"),
+            version: rslt.get(0).unwrap().get("version"),
+            name: rslt.get(0).unwrap().get("name"),
+            directory: rslt.get(0).unwrap().get("directory"),
+            runner: rslt.get(0).unwrap().get("runner"),
+            dxvk: rslt.get(0).unwrap().get("dxvk"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub async fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Option<Vec<LauncherInstall>> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM install WHERE manifest_id = $1").bind(manifest_id);
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let mut rsltt = Vec::<LauncherInstall>::new();
+        for r in rslt {
+            rsltt.push(LauncherInstall {
+                id: r.get("id"),
+                manifest_id: r.get("manifest_id"),
+                version: r.get("version"),
+                name: r.get("name"),
+                directory: r.get("directory"),
+                runner: r.get("runner"),
+                dxvk: r.get("dxvk"),
+            })
+        }
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub async fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
+    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+
+    let query = query("SELECT * FROM install");
+    let rslt = query.fetch_all(&db).await.unwrap();
+
+    if rslt.len() >= 1 {
+        let mut rsltt = Vec::<LauncherInstall>::new();
+        for r in rslt {
+            rsltt.push(LauncherInstall {
+                id: r.get("id"),
+                manifest_id: r.get("manifest_id"),
+                version: r.get("version"),
+                name: r.get("name"),
+                directory: r.get("directory"),
+                runner: r.get("runner"),
+                dxvk: r.get("dxvk"),
             })
         }
 

@@ -1,5 +1,5 @@
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{delete_repository, get_repositories, get_repository_info_by_id};
+use crate::utils::db_manager::{delete_repository_by_id, get_repositories, get_repository_info_by_id};
 use crate::utils::repo_manager::clone_new_repository;
 
 #[tauri::command]
@@ -50,7 +50,8 @@ pub async fn remove_repository(app: AppHandle, id: String) -> Option<bool> {
         None
     } else {
         // TODO: Properly delete repository bullshit and disallow if installation with ANY manifest of a repo exists
-        let rtn = delete_repository(&app, id).await;
+        // PS: can be done once installs work sort of so we can validate if manifest has install
+        let rtn = delete_repository_by_id(&app, id).await;
         if rtn.is_ok() {
             Some(rtn.unwrap())
         } else {

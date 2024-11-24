@@ -53,11 +53,11 @@ pub async fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
 
         }
     } else {
-        println!("Official repository is already cloned!");
+        #[cfg(debug_assertions)]
+        { println!("Official repository is already cloned!"); }
     }
 }
 
-// TODO: Add anti-schizo regex url pattern
 pub async fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, Error> {
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
@@ -81,6 +81,8 @@ pub async fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) 
 
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).await.unwrap();
 
+            //let mut curmanifets = app.state::<ManifestLoader>().0.lock().unwrap();
+
             for m in rma.manifests {
                 async {
                     let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
@@ -88,18 +90,26 @@ pub async fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) 
                     let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
                     let cuid = generate_cuid();
-                    create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), false).await.unwrap();
+                    create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), false).await.unwrap();
+
+                    /*if !curmanifets.contains_key(&m) {
+                        curmanifets.insert(m.clone(), mi.clone());
+                    }*/
                 }.await
             }
 
             Ok(true)
 
         } else {
-            println!("Cannot clone repository! Not a valid repository?");
+            #[cfg(debug_assertions)]
+            { println!("Cannot clone repository! Not a valid repository?"); }
+
             Ok(false)
         }
     } else {
-        println!("Target repository already exists!");
+        #[cfg(debug_assertions)]
+        { println!("Target repository already exists!"); }
+
         Ok(false)
     }
 }
@@ -119,7 +129,8 @@ pub fn load_manifests(app: &AppHandle) {
                 if p.is_dir() {
                     for pp in fs::read_dir(p).unwrap() {
                         let p = pp.unwrap().path();
-                        println!("Loading manifests from: {}", p.display());
+                        #[cfg(debug_assertions)]
+                        { println!("Loading manifests from: {}", p.display()); }
                         let repo_manifest = p.join("repository.json");
 
                         if repo_manifest.exists() {
@@ -141,10 +152,12 @@ pub fn load_manifests(app: &AppHandle) {
 
                                 app.manage(ml);
 
-                                println!("Loaded manifest {}", mi.clone().display_name.as_str());
+                                #[cfg(debug_assertions)]
+                                { println!("Loaded manifest {}", mi.clone().display_name.as_str()); }
                             }
                         } else {
-                            println!("Failed to load manifests from {}! Not a valid KeqingLauncher repository?", p.display());
+                            #[cfg(debug_assertions)]
+                            { println!("Failed to load manifests from {}! Not a valid KeqingLauncher repository?", p.display()); }
                         }
                     }
                 }
@@ -192,6 +205,17 @@ pub struct LauncherManifest {
     pub display_name: String,
     pub filename: String,
     pub enabled: bool
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LauncherInstall {
+    pub id: String,
+    pub manifest_id: String,
+    pub version: String,
+    pub name: String,
+    pub directory: String,
+    pub runner: String,
+    pub dxvk: String
 }
 
 // === MANIFESTS ===
