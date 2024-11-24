@@ -1,3 +1,3 @@
 # KeqingLauncher
-A cross-platform launcher for your anime games, featuring linux and windows support.
+A cross-platform launcher for your anime games, featuring Linux and Windows support.
 
