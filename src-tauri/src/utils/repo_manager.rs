@@ -169,11 +169,12 @@ pub fn get_manifests(app: &AppHandle) -> HashMap<String, GameManifest> {
     app.state::<ManifestLoader>().0.lock().unwrap().clone()
 }
 
-pub fn get_manifest(app: &AppHandle, filename: String) -> Option<GameManifest> {
+pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> {
     let loader = app.state::<ManifestLoader>().0.lock().unwrap().clone();
 
-    if loader.contains_key(&filename) {
-        Some(loader.get(&filename).unwrap().clone())
+    if loader.contains_key(filename) {
+        let content = loader.get(filename).unwrap();
+        Some(content.clone())
     } else {
         None
     }

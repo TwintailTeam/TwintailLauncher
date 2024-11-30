@@ -55,7 +55,7 @@ pub async fn list_game_manifests(app: AppHandle) -> Option<String> {
 
 #[tauri::command]
 pub async fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
-    let manifest  = get_manifest(&app, filename.clone());
+    let manifest = get_manifest(&app, &filename);
     let db_manifest = get_manifest_info_by_filename(&app, filename.clone()).await;
 
     if manifest.is_some() && db_manifest.is_some() {

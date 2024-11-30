@@ -8,86 +8,61 @@ import {invoke} from "@tauri-apps/api/core";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import {Rocket, Settings} from "lucide-react";
 
-// TODO: Replace with what Tukan sent
-const GAMES = [
-    {
-        id: "hk4e",
-        name: "Genshin Impact",
-        icon: "https://fastcdn.hoyoverse.com/static-resource-v2/2024/05/30/2e81b12276a2260c10133124e6ead00e_127960437642481968.png",
-        // TODO: Logo is white
-        logo: "https://i.imgur.com/OyHaAAn.png",
-        banner: "https://fastcdn.hoyoverse.com/static-resource-v2/2024/09/27/1791451c6bd8d9e8d42baca4464ccbb2_189747566222151851.webp"
-    },
-    {
-        id: "nap",
-        name: "Zenless Zone Zero",
-        icon: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/04/16/db01dfe29c36a283b774d295b2322b54_44421242156638826.png",
-        logo: "https://i.imgur.com/wBuiHDO.png",
-        banner: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/06/17/107ec31f7c257bc451f37012d3abbff8_5998717199893026638.webp"
-    },
-    {
-        id: "hkrpg",
-        name: "Honkai: Star Rail",
-        icon: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/04/15/39992ccaeef09cedf09009d8901a81d2_7633332456941254056.png",
-        logo: "https://i.imgur.com/irBhTMR.png",
-        banner: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/10/15/687c88f0ab6bdae5d566134acbc2dbbd_1744689659015529003.webp"
-    },
-    {
-        id: "bh3",
-        name: "Honkai Impact 3rd",
-        icon: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/04/16/3526a039dddb4c8ca9d1083555f5781b_6607259190236081778.png",
-        logo: "https://i.imgur.com/6HOcClJ.png",
-        banner: "https://launcher-webstatic.hoyoverse.com/launcher-public/2024/09/13/1aa568b2f1d93bf5e9ed30fefb4b7de7_2138801250860115276.webp"
-    },
-]
-
-const ENABLE_COMMANDS = false
-
 function App() {
     const [openPopup, setOpenPopup] = useState<POPUPS>(POPUPS.NONE);
     const [currentGame, setCurrentGame] = useState<string>("")
 
     const [repos, setRepos] = useState([])
     const [games, setGames] = useState<any[]>([])
-
+    //const [gamesinfo, setGamesInfo] = useState<any[]>([])
 
     useEffect(() => {
+            // TODO: why is this crap looping twenty billion million septillion times into fuckland????
             invoke("list_repositories").then(r => {
-                console.log(r || "nope")
                 if (r === null) {
                     setRepos([])
                 } else {
                     setRepos(JSON.parse(r as string))
                 }
-            }).catch(() => {
-                console.error("AAA")
-            }).then(() => {
-                console.log("Hi?")
+            }).catch(e => {
+                console.error("Error while listing database repositories information: " + e)
             })
-
-        // example how to argument lol even how to validate null as good example
-        /*invoke("get_manifests_by_repository_id", {repositoryId: ""}).then(r => {
-            if (r === null) {
-                console.log("its null")
-            } else {
-                console.log(JSON.parse(r as string))
-            }
-        })*/
-    }, [])
+    }, [repos])
 
     useEffect(() => {
         setGames([])
             repos.forEach(r => {
                 invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
                     if (m === null) {
-                        console.log("its null")
+                        console.error("Manifest database table contains nothing, some serious fuck up happened!")
                     } else {
-                        setGames([...games, ...JSON.parse(m as string)])
+                        setGames([...JSON.parse(m as string)])
                     }
-
+                }).catch(e => {
+                    console.error("Error while listing database manifest information: " + e)
                 })
             })
     }, [repos])
+
+    // TODO: Fix this shit to actually work and can be used to render images in UI...
+    /*useEffect(() => {
+        setGamesInfo([])
+        // Shitty ManifestLoader backend SOMETIMES retrieval returns fuckshit null somehow??? how???
+        games.forEach(r => {
+            invoke("get_game_manifest_by_filename", { filename: r.filename }).then(m => {
+                if (m === null) {
+                    console.error("GameManifest repository fetch issue, some serious fuck up happened!")
+                } else {
+                    let data = [];
+                    data.push(JSON.parse(m as string));
+
+                    setGamesInfo(data)
+                }
+            }).catch(e => {
+                console.error("Error while listing game manifest information: " + e)
+            })
+        })
+    }, [games])*/
 
     useEffect(() => {
         if (games.length > 0 && currentGame == "") {
@@ -97,21 +72,21 @@ function App() {
 
     return (
         <main className="w-full h-screen flex flex-row bg-transparent">
-            <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" src={(GAMES.filter(v => v.id == currentGame)[0] || {banner: ""}).banner} />
+            <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={(games.filter(v => v.id == currentGame)[0] || {banner: ""}).banner}/>
             <div className="h-full w-16 p-2 bg-black/50 flex flex-col gap-4 items-center fixed-backdrop-blur-md justify-between">
                 <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                    {currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).map((game) => {
+                    {currentGame != "" && games.map((game) => {
                         return (
-                            <SidebarIcon key={game.id} popup={openPopup} icon={game.icon} name={game.name} id={game.id} setCurrentGame={setCurrentGame} setOpenPopup={setOpenPopup} />
+                            <SidebarIcon key={game.id} popup={openPopup} icon={game.icon} name={game.display_name} id={game.id} setCurrentGame={setCurrentGame} setOpenPopup={setOpenPopup} />
                         )
                     })}
                 </div>
                 <SidebarSettings popup={openPopup} setOpenPopup={setOpenPopup} />
             </div>
             {/*<h1 className="self-start text-4xl text-bla font-black z-10">KeqingLauncher (InDev)</h1>*/}
-            {currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo ?
-                <img className="h-24 ml-8 mt-8 pointer-events-none" src={currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].logo}/> /*<React.Fragment></React.Fragment>*/ :
-                <h1 className="text-3xl font-black text-white ml-8 mt-8">{currentGame != "" && (ENABLE_COMMANDS ? games : GAMES).filter(v => v.id == currentGame)[0].name}</h1>
+            {currentGame != "" && games.filter(v => v.id == currentGame)[0].icon ?
+                <img className="h-24 ml-8 mt-8 pointer-events-none" src={currentGame != "" && games.filter(v => v.id == currentGame)[0].icon} alt={"?"}/> /*<React.Fragment></React.Fragment>*/ :
+                <h1 className="text-3xl font-black text-white ml-8 mt-8">{currentGame != "" && games.filter(v => v.id == currentGame)[0].display_name}</h1>
             }
 
             <div className="flex flex-row absolute bottom-8 right-16 gap-4">
