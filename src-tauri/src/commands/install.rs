@@ -3,7 +3,7 @@ use crate::utils::db_manager::{get_install_info_by_id, get_installs, get_install
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
-    let installs = get_installs(&app).await;
+    let installs = get_installs(&app);
 
     if installs.is_some() {
         let install = installs.unwrap();
@@ -15,8 +15,8 @@ pub async fn list_installs(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<String> {
-    let installs = get_installs_by_manifest_id(&app, manifest_id).await;
+pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<String> {
+    let installs = get_installs_by_manifest_id(&app, manifest_id);
 
     if installs.is_some() {
         let install = installs.unwrap();
@@ -28,8 +28,8 @@ pub async fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -
 }
 
 #[tauri::command]
-pub async fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
-    let inst = get_install_info_by_id(&app, id).await;
+pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
+    let inst = get_install_info_by_id(&app, id);
 
     if inst.is_some() {
         let install = inst.unwrap();

@@ -3,8 +3,8 @@ use crate::utils::db_manager::{delete_repository_by_id, get_repositories, get_re
 use crate::utils::repo_manager::clone_new_repository;
 
 #[tauri::command]
-pub async fn list_repositories(app: AppHandle) -> Option<String> {
-    let repos = get_repositories(&app).await;
+pub fn list_repositories(app: AppHandle) -> Option<String> {
+    let repos = get_repositories(&app);
 
     if repos.is_some() {
         let repository = repos.unwrap();
@@ -16,8 +16,8 @@ pub async fn list_repositories(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn get_repository(app: AppHandle, repository_id: String) -> Option<String> {
-    let repo = get_repository_info_by_id(&app, repository_id).await;
+pub fn get_repository(app: AppHandle, repository_id: String) -> Option<String> {
+    let repo = get_repository_info_by_id(&app, repository_id);
 
     if repo.is_some() {
         let repository = repo.unwrap();
@@ -29,12 +29,12 @@ pub async fn get_repository(app: AppHandle, repository_id: String) -> Option<Str
 }
 
 #[tauri::command]
-pub async fn add_repository(app: AppHandle, url: String) -> Option<bool> {
+pub fn add_repository(app: AppHandle, url: String) -> Option<bool> {
     if url.is_empty() {
         None
     } else {
         let path = app.path().app_data_dir().unwrap().join("manifests");
-        let rtn = clone_new_repository(&app, &path, url).await;
+        let rtn = clone_new_repository(&app, &path, url);
 
         if rtn.is_ok() {
             Some(rtn.unwrap())
@@ -45,13 +45,13 @@ pub async fn add_repository(app: AppHandle, url: String) -> Option<bool> {
 }
 
 #[tauri::command]
-pub async fn remove_repository(app: AppHandle, id: String) -> Option<bool> {
+pub fn remove_repository(app: AppHandle, id: String) -> Option<bool> {
     if id.is_empty() {
         None
     } else {
         // TODO: Properly delete repository bullshit and disallow if installation with ANY manifest of a repo exists
         // PS: can be done once installs work sort of so we can validate if manifest has install
-        let rtn = delete_repository_by_id(&app, id).await;
+        let rtn = delete_repository_by_id(&app, id);
         if rtn.is_ok() {
             Some(rtn.unwrap())
         } else {

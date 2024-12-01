@@ -2,14 +2,14 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::{PathBuf};
-use std::sync::Mutex;
+use std::sync::{RwLock};
 use git2::{Error, Repository};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_manifest, create_repository};
-use crate::utils::generate_cuid;
+use crate::utils::{generate_cuid};
 
-pub async fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
+pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let url = "https://github.com/TeamKeqing/launcher-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
@@ -35,18 +35,15 @@ pub async fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
             //fs::remove_dir_all(&repo_path.join(".vscode")).unwrap();
 
             let repo_id = generate_cuid();
-
-            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).await.unwrap();
+            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
-                async {
-                    let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
-                    let reader = BufReader::new(mf);
-                    let mi: GameManifest = serde_json::from_reader(reader).unwrap();
+                let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
+                let reader = BufReader::new(mf);
+                let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                    let cuid = generate_cuid();
-                    create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).await.unwrap(); // enable all default manifests?? make behavior for no enabled manifests
-                }.await
+                let cuid = generate_cuid();
+                create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap(); // enable all default manifests?? make behavior for no enabled manifests
             }
 
             ()
@@ -58,7 +55,7 @@ pub async fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     }
 }
 
-pub async fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, Error> {
+pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, Error> {
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
@@ -79,23 +76,21 @@ pub async fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) 
 
             let repo_id = generate_cuid();
 
-            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).await.unwrap();
+            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             //let mut curmanifets = app.state::<ManifestLoader>().0.lock().unwrap();
 
             for m in rma.manifests {
-                async {
-                    let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
-                    let reader = BufReader::new(mf);
-                    let mi: GameManifest = serde_json::from_reader(reader).unwrap();
+                let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
+                let reader = BufReader::new(mf);
+                let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                    let cuid = generate_cuid();
-                    create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), false).await.unwrap();
+                let cuid = generate_cuid();
+                create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), false).unwrap();
 
-                    /*if !curmanifets.contains_key(&m) {
-                        curmanifets.insert(m.clone(), mi.clone());
-                    }*/
-                }.await
+                /*if !curmanifets.contains_key(&m) {
+                       curmanifets.insert(m.clone(), mi.clone());
+                }*/
             }
 
             Ok(true)
@@ -138,23 +133,23 @@ pub fn load_manifests(app: &AppHandle) {
                             let reader = BufReader::new(rm);
                             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
+                            let ml = ManifestLoader::default();
+                            let mut tmp = ml.0.write().unwrap();
+
                             for m in rma.manifests {
                                 let mf = fs::File::open(&p.join(&m.as_str())).unwrap();
                                 let reader = BufReader::new(mf);
                                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                                let ml = ManifestLoader::default();
-                                let mut tmp = ml.0.lock().unwrap();
-
                                 tmp.insert(m, mi.clone());
-
-                                drop(tmp);
-
-                                app.manage(ml);
 
                                 #[cfg(debug_assertions)]
                                 { println!("Loaded manifest {}", mi.clone().display_name.as_str()); }
                             }
+
+                            drop(tmp);
+                            app.manage(ml);
+
                         } else {
                             #[cfg(debug_assertions)]
                             { println!("Failed to load manifests from {}! Not a valid KeqingLauncher repository?", p.display()); }
@@ -166,11 +161,11 @@ pub fn load_manifests(app: &AppHandle) {
     }
 
 pub fn get_manifests(app: &AppHandle) -> HashMap<String, GameManifest> {
-    app.state::<ManifestLoader>().0.lock().unwrap().clone()
+    app.state::<ManifestLoader>().0.read().unwrap().clone()
 }
 
 pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> {
-    let loader = app.state::<ManifestLoader>().0.lock().unwrap().clone();
+    let loader = app.state::<ManifestLoader>().0.read().unwrap().clone();
 
     if loader.contains_key(filename) {
         let content = loader.get(filename).unwrap();
@@ -182,8 +177,8 @@ pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> 
 
 // === STRUCTS ===
 
-#[derive(Debug, Default)]
-pub struct ManifestLoader(pub Mutex<HashMap<String, GameManifest>>);
+#[derive(Default)]
+pub struct ManifestLoader(pub RwLock<HashMap<String, GameManifest>>);
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RepositoryManifest {

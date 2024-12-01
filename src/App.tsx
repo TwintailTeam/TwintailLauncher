@@ -11,13 +11,13 @@ import {Rocket, Settings} from "lucide-react";
 function App() {
     const [openPopup, setOpenPopup] = useState<POPUPS>(POPUPS.NONE);
     const [currentGame, setCurrentGame] = useState<string>("")
+    const [displayName, setDisplayName] = useState<string>("")
 
     const [repos, setRepos] = useState([])
     const [games, setGames] = useState<any[]>([])
-    //const [gamesinfo, setGamesInfo] = useState<any[]>([])
+    const [gamesinfo, setGamesInfo] = useState<any[]>([])
 
     useEffect(() => {
-            // TODO: why is this crap looping twenty billion million septillion times into fuckland????
             invoke("list_repositories").then(r => {
                 if (r === null) {
                     setRepos([])
@@ -27,7 +27,7 @@ function App() {
             }).catch(e => {
                 console.error("Error while listing database repositories information: " + e)
             })
-    }, [repos])
+    }, [])
 
     useEffect(() => {
         setGames([])
@@ -36,7 +36,7 @@ function App() {
                     if (m === null) {
                         console.error("Manifest database table contains nothing, some serious fuck up happened!")
                     } else {
-                        setGames([...JSON.parse(m as string)])
+                        setGames(JSON.parse(m as string))
                     }
                 }).catch(e => {
                     console.error("Error while listing database manifest information: " + e)
@@ -44,29 +44,32 @@ function App() {
             })
     }, [repos])
 
-    // TODO: Fix this shit to actually work and can be used to render images in UI...
-    /*useEffect(() => {
+    let data = [];
+
+    useEffect(() => {
         setGamesInfo([])
-        // Shitty ManifestLoader backend SOMETIMES retrieval returns fuckshit null somehow??? how???
         games.forEach(r => {
             invoke("get_game_manifest_by_filename", { filename: r.filename }).then(m => {
                 if (m === null) {
                     console.error("GameManifest repository fetch issue, some serious fuck up happened!")
                 } else {
-                    let data = [];
+                    // data is fetched properly but for some reason gamesinfo is still empty even if "data" array is not???
                     data.push(JSON.parse(m as string));
-
                     setGamesInfo(data)
+
+                    console.log("data:", data)
+                    console.log("ginfo:", gamesinfo)
                 }
             }).catch(e => {
                 console.error("Error while listing game manifest information: " + e)
             })
         })
-    }, [games])*/
+    }, [games])
 
     useEffect(() => {
         if (games.length > 0 && currentGame == "") {
             setCurrentGame(games[0].id)
+            setDisplayName(games[0].display_name)
         }
     }, [games])
 
@@ -77,7 +80,7 @@ function App() {
                 <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
                     {currentGame != "" && games.map((game) => {
                         return (
-                            <SidebarIcon key={game.id} popup={openPopup} icon={game.icon} name={game.display_name} id={game.id} setCurrentGame={setCurrentGame} setOpenPopup={setOpenPopup} />
+                            <SidebarIcon key={game.id} popup={openPopup} icon={game.icon} name={game.display_name} id={game.id} setCurrentGame={setCurrentGame} setOpenPopup={setOpenPopup} setDisplayName={setDisplayName} />
                         )
                     })}
                 </div>
@@ -85,7 +88,7 @@ function App() {
             </div>
             {/*<h1 className="self-start text-4xl text-bla font-black z-10">KeqingLauncher (InDev)</h1>*/}
             {currentGame != "" && games.filter(v => v.id == currentGame)[0].icon ?
-                <img className="h-24 ml-8 mt-8 pointer-events-none" src={currentGame != "" && games.filter(v => v.id == currentGame)[0].icon} alt={"?"}/> /*<React.Fragment></React.Fragment>*/ :
+                <img className="h-24 ml-8 mt-8 pointer-events-none" src={currentGame != "" && gamesinfo.filter(v => v.display_name == displayName)[0].assets.game_icon} alt={"?"}/> /*<React.Fragment></React.Fragment>*/ :
                 <h1 className="text-3xl font-black text-white ml-8 mt-8">{currentGame != "" && games.filter(v => v.id == currentGame)[0].display_name}</h1>
             }
 

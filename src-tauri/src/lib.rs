@@ -1,7 +1,5 @@
 #![feature(async_closure)]
 
-use tauri::async_runtime::block_on;
-use tauri::ipc::IpcResponse;
 use crate::commands::install::{add_install, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install};
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id};
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
@@ -17,8 +15,7 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle();
 
-            block_on(init_db(handle)).body().unwrap();
-
+            init_db(&handle);
             load_manifests(&handle);
 
             Ok(())

@@ -19,9 +19,10 @@ type SidebarIconProps = {
     setCurrentGame: (a: string) => void,
     setOpenPopup: (a: POPUPS) => void,
     popup: POPUPS,
+    setDisplayName: (name: string) => void,
 }
 
-export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup}: SidebarIconProps) {
+export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -46,7 +47,8 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
             <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" src={icon} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
-            }}/>
+                setDisplayName(name)
+            }} alt={"?"}/>
 
             {(isOpen && popup == POPUPS.NONE) && (
                 <div

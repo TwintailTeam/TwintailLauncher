@@ -3,8 +3,8 @@ use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_
 use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
 
 #[tauri::command]
-pub async fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {
-    let manifest = get_manifest_info_by_id(&app, id).await;
+pub fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {
+    let manifest = get_manifest_info_by_id(&app, id);
 
     if manifest.is_some() {
         let m = manifest.unwrap();
@@ -16,8 +16,8 @@ pub async fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn get_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
-    let manifest = get_manifest_info_by_filename(&app, filename).await;
+pub fn get_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
+    let manifest = get_manifest_info_by_filename(&app, filename);
 
     if manifest.is_some() {
         let m = manifest.unwrap();
@@ -29,8 +29,8 @@ pub async fn get_manifest_by_filename(app: AppHandle, filename: String) -> Optio
 }
 
 #[tauri::command]
-pub async fn list_manifests_by_repository_id(app: AppHandle, repository_id: String) -> Option<String> {
-    let manifests = get_manifests_by_repository_id(&app, repository_id).await;
+pub fn list_manifests_by_repository_id(app: AppHandle, repository_id: String) -> Option<String> {
+    let manifests = get_manifests_by_repository_id(&app, repository_id);
 
     if manifests.is_some() {
         let manifest = manifests.unwrap();
@@ -42,7 +42,7 @@ pub async fn list_manifests_by_repository_id(app: AppHandle, repository_id: Stri
 }
 
 #[tauri::command]
-pub async fn list_game_manifests(app: AppHandle) -> Option<String> {
+pub fn list_game_manifests(app: AppHandle) -> Option<String> {
     let manifests: Vec<GameManifest> = get_manifests(&app).into_values().collect();
 
     if manifests.is_empty() {
@@ -54,9 +54,9 @@ pub async fn list_game_manifests(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
+pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
     let manifest = get_manifest(&app, &filename);
-    let db_manifest = get_manifest_info_by_filename(&app, filename.clone()).await;
+    let db_manifest = get_manifest_info_by_filename(&app, filename.clone());
 
     if manifest.is_some() && db_manifest.is_some() {
         let dbm = db_manifest.unwrap();
