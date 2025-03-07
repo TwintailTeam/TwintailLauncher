@@ -19,7 +19,6 @@ pub fn init_db(app: &AppHandle) {
     let manifests_dir = data_path.join("manifests");
 
     if !Path::new(&conn_url).exists() {
-        
         fs::create_dir_all(&conn_path).unwrap();
 
         run_async_command(async {

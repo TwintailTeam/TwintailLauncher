@@ -1,3 +1,4 @@
+use linked_hash_map::LinkedHashMap;
 use tauri::{AppHandle};
 use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id};
 use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
@@ -43,8 +44,13 @@ pub fn list_manifests_by_repository_id(app: AppHandle, repository_id: String) ->
 
 #[tauri::command]
 pub fn list_game_manifests(app: AppHandle) -> Option<String> {
-    let manifests: Vec<GameManifest> = get_manifests(&app).into_values().collect();
+    let manifestss: LinkedHashMap<String, GameManifest> = get_manifests(&app);
+    let mut manifests: Vec<GameManifest> = Vec::new();
 
+    for value in manifestss.into_iter().map(|(_, value)| value) {
+        manifests.push(value);
+    }
+    
     if manifests.is_empty() {
         None
     } else {

@@ -1,16 +1,16 @@
-use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::{PathBuf};
 use std::sync::{RwLock};
 use git2::{Error, Repository};
+use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_manifest, create_repository};
 use crate::utils::{generate_cuid};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
-    let url = "https://github.com/TeamKeqing/launcher-manifests.git";
+    let url = "https://github.com/AndigenaTeam/game-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
@@ -31,8 +31,6 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
 
             // remove this shit from actual manifest clone as normal people do not need it
             fs::remove_dir_all(&repo_path.join("scripts")).unwrap();
-            //fs::remove_dir_all(&repo_path.join(".idea")).unwrap();
-            //fs::remove_dir_all(&repo_path.join(".vscode")).unwrap();
 
             let repo_id = generate_cuid();
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
@@ -43,7 +41,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
                 let cuid = generate_cuid();
-                create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap(); // enable all default manifests?? make behavior for no enabled manifests
+                create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
             }
 
             ()
@@ -78,8 +76,6 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
 
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
-            //let mut curmanifets = app.state::<ManifestLoader>().0.lock().unwrap();
-
             for m in rma.manifests {
                 let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
                 let reader = BufReader::new(mf);
@@ -87,10 +83,6 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
 
                 let cuid = generate_cuid();
                 create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), false).unwrap();
-
-                /*if !curmanifets.contains_key(&m) {
-                       curmanifets.insert(m.clone(), mi.clone());
-                }*/
             }
 
             Ok(true)
@@ -160,7 +152,7 @@ pub fn load_manifests(app: &AppHandle) {
         }
     }
 
-pub fn get_manifests(app: &AppHandle) -> HashMap<String, GameManifest> {
+pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
     app.state::<ManifestLoader>().0.read().unwrap().clone()
 }
 
@@ -178,7 +170,7 @@ pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> 
 // === STRUCTS ===
 
 #[derive(Default)]
-pub struct ManifestLoader(pub RwLock<HashMap<String, GameManifest>>);
+pub struct ManifestLoader(pub RwLock<LinkedHashMap<String, GameManifest>>);
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RepositoryManifest {
@@ -220,6 +212,7 @@ pub struct LauncherInstall {
 pub struct GameManifest {
     pub version: i32,
     pub display_name: String,
+    pub biz: String,
     pub game_versions: Vec<GameVersion>,
     pub telemetry_hosts: Vec<String>,
     pub paths: GamePaths,
@@ -252,7 +245,6 @@ pub struct VersionMetadata {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VersionAssets {
-    pub game_logo: String,
     pub game_icon: String,
     pub game_background: String
 }

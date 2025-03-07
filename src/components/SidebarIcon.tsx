@@ -16,13 +16,15 @@ type SidebarIconProps = {
     icon: string,
     name: string,
     id: string,
+    background: string,
     setCurrentGame: (a: string) => void,
     setOpenPopup: (a: POPUPS) => void,
     popup: POPUPS,
     setDisplayName: (name: string) => void,
+    setBackground: (file: string) => void,
 }
 
-export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName}: SidebarIconProps) {
+export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName, setBackground, background}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -37,10 +39,7 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
     });
 
     const hover = useHover(context, {move: false});
-
-    const {getReferenceProps, getFloatingProps} = useInteractions([
-        hover
-    ]);
+    const {getReferenceProps, getFloatingProps} = useInteractions([hover]);
 
     return (
         <React.Fragment>
@@ -48,6 +47,7 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
                 setDisplayName(name)
+                setBackground(background)
             }} alt={"?"}/>
 
             {(isOpen && popup == POPUPS.NONE) && (
