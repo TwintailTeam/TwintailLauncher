@@ -5,8 +5,10 @@ import {POPUPS} from "./components/popups/POPUPS.ts";
 import AddRepo from "./components/popups/addrepo/AddRepo.tsx";
 import SidebarIcon from "./components/SidebarIcon.tsx";
 import {invoke} from "@tauri-apps/api/core";
-import SidebarSettings from "./components/SidebarSettings.tsx";
+import SidebarRepos from "./components/SidebarRepos.tsx";
 import {Rocket, Settings} from "lucide-react";
+import SidebarSettings from "./components/SidebarSettings.tsx";
+import SettingsManager from "./components/popups/settings/SettingsManager.tsx";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -46,7 +48,10 @@ export default class App extends React.Component<any, any> {
                             )
                         })}
                     </div>
-                    <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                    <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
+                        <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                        <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                    </div>
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     <button>
@@ -54,8 +59,7 @@ export default class App extends React.Component<any, any> {
                     </button>
                     <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         this.setState({openPopup: POPUPS.ADDREPO});
-                    }}>
-                        <Rocket/>
+                    }}><Rocket/>
                         <span className="font-semibold translate-y-px">Launch!</span>
                     </button>
                 </div>
@@ -63,6 +67,8 @@ export default class App extends React.Component<any, any> {
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} />}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
+                    {this.state.openPopup == POPUPS.SETTINGS && <SettingsManager setOpenPopup={this.setOpenPopup} />}
+
                 </div>
             </main>
         )

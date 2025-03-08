@@ -13,6 +13,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.26.27",
         "@tauri-apps/api": "^2.3.0",
+        "@tauri-apps/plugin-dialog": "^2.2.0",
         "lucide-react": "^0.456.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0"

@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use futures_core::future::BoxFuture;
-use sqlx::{Error, Pool, query, Sqlite, Executor, Row};
+use sqlx::migrate::{Migration as SqlxMigration, MigrateDatabase, MigrationSource, MigrationType, Migrator};
+use sqlx::{query, Error, Executor, Pool, Row, Sqlite};
 use sqlx::error::BoxDynError;
-use sqlx::migrate::{MigrateDatabase, MigrationType, Migrator, Migration as SqlxMigration, MigrationSource};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteQueryResult};
 use tauri::{AppHandle, Manager};
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex};
 use crate::utils::repo_manager::{setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
 use crate::utils::run_async_command;
 
-pub fn init_db(app: &AppHandle) {
+pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
     let conn_path = app.path().app_config_dir().unwrap();
     let conn_url = conn_path.join("storage.db");
@@ -21,13 +21,11 @@ pub fn init_db(app: &AppHandle) {
     if !Path::new(&conn_url).exists() {
         fs::create_dir_all(&conn_path).unwrap();
 
-        run_async_command(async {
-            if !Sqlite::database_exists(conn_url.to_str().unwrap()).await.unwrap() {
-                Sqlite::create_database(conn_url.to_str().unwrap()).await.unwrap();
-                #[cfg(debug_assertions)]
-                { println!("Database does not exist... Creating new one for you!"); }
-            }
-        });
+        if !Sqlite::database_exists(conn_url.to_str().unwrap()).await.unwrap() {
+            Sqlite::create_database(conn_url.to_str().unwrap()).await.unwrap();
+            #[cfg(debug_assertions)]
+            { println!("Database does not exist... Creating new one for you!"); }
+        }
     }
 
     let migrationsl = vec![
@@ -51,24 +49,22 @@ pub fn init_db(app: &AppHandle) {
         }
     ];
 
-    run_async_command(async {
-        let instances = DbInstances::default();
-        let mut lock = instances.0.write().await;
+    let mut migrations = add_migrations("db", migrationsl);
 
-        let mut migrations = add_migrations("db", migrationsl);
+    let instances = DbInstances::default();
+    let mut tmp = instances.0.lock().await;
+    let pool: Pool<Sqlite> = Pool::connect(&conn_url.to_str().unwrap()).await.unwrap();
+    //pool.set_connect_options(SqliteConnectOptions::new().foreign_keys(true));
 
-        let pool: Pool<Sqlite> = Pool::connect(conn_url.to_str().unwrap()).await.unwrap();
-        pool.set_connect_options(SqliteConnectOptions::new().foreign_keys(true));
+    tmp.insert(String::from("db"), pool.clone());
 
-        if let Some(migrations) = migrations.as_mut().unwrap().remove("db") {
-            let migrator = Migrator::new(migrations).await.unwrap();
-            migrator.run(&pool).await.unwrap();
-        }
+    if let Some(migrations) = migrations.as_mut().unwrap().remove("db") {
+        let migrator = Migrator::new(migrations).await.unwrap();
+        migrator.run(&pool).await.unwrap();
+    }
 
-        lock.insert(String::from("db"), pool);
-        drop(lock);
-        app.manage(instances);
-    });
+    drop(tmp);
+    app.manage(instances);
 
     // Init this fuck AFTER you add shitty DB instances to state
     if !Path::new(&manifests_dir).exists() {
@@ -85,7 +81,7 @@ pub fn init_db(app: &AppHandle) {
 // === SETTINGS ===
 
 /*pub async fn get_settings(app: &AppHandle) -> Result<Vec<String>, Error> {
-    let db = app.state::<DbInstances>().0.lock().unwrap().get("db").unwrap().clone();
+    let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
     Ok(vec![])
 }
@@ -100,7 +96,7 @@ pub fn create_repository(app: &AppHandle, id: String, github_id: &str) -> Result
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("INSERT INTO repository(id, github_id) VALUES ($1, $2)").bind(id).bind(github_id);
         rslt = query.execute(&db).await.unwrap();
@@ -117,7 +113,7 @@ pub fn delete_repository_by_id(app: &AppHandle, id: String) -> Result<bool, Erro
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("DELETE FROM repository WHERE id = $1").bind(id);
         rslt = query.execute(&db).await.unwrap();
@@ -134,7 +130,7 @@ pub fn get_repository_info_by_id(app: &AppHandle, id: String) -> Option<Launcher
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM repository WHERE id = $1").bind(id);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -156,7 +152,7 @@ pub fn get_repositories(app: &AppHandle) -> Option<Vec<LauncherRepository>> {
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM repository");
         rslt = query.fetch_all(&db).await.unwrap();
@@ -183,7 +179,7 @@ pub fn create_manifest(app: &AppHandle, id: String, repository_id: String, displ
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ('{id}', '{repository_id}', '{display_name}', '{filename}', {enabled})").as_str()).await.unwrap();
     });
@@ -199,7 +195,7 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("DELETE FROM manifest WHERE repository_id = $1").bind(repository_id);
         rslt = query.execute(&db).await.unwrap();
@@ -216,7 +212,7 @@ pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error>
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("DELETE FROM manifest WHERE id = $1").bind(id);
         rslt = query.execute(&db).await.unwrap();
@@ -233,7 +229,7 @@ pub fn get_manifest_info_by_id(app: &AppHandle, id: String) -> Option<LauncherMa
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM manifest WHERE id = $1").bind(id);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -258,7 +254,7 @@ pub fn get_manifest_info_by_filename(app: &AppHandle, filename: String) -> Optio
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM manifest WHERE filename = $1").bind(filename);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -283,7 +279,7 @@ pub fn get_manifests_by_repository_id(app: &AppHandle, repository_id: String) ->
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM manifest WHERE repository_id = $1").bind(repository_id);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -307,15 +303,13 @@ pub fn get_manifests_by_repository_id(app: &AppHandle, repository_id: String) ->
     }
 }
 
-pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool) -> Result<bool, Error> {
+pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool) {
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE manifest SET 'enabled' = $1 WHERE id = $2").bind(enabled).bind(id);
         query.execute(&db).await.unwrap();
-
-        Ok(true)
-    })
+    });
 }
 
 // === INSTALLS ===
@@ -324,7 +318,7 @@ pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, ver
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner, dxvk) VALUES ($1, $2, $3, $4, $5, $6, $7)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner).bind(dxvk);
         rslt = query.execute(&db).await.unwrap();
@@ -341,7 +335,7 @@ pub fn delete_installation_by_id(app: &AppHandle, id: String) -> Result<bool, Er
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("DELETE FROM install WHERE id = $1").bind(id);
         rslt = query.execute(&db).await.unwrap();
@@ -358,7 +352,7 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM install WHERE id = $1").bind(id);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -385,7 +379,7 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM install WHERE manifest_id = $1").bind(manifest_id);
         rslt = query.fetch_all(&db).await.unwrap();
@@ -415,7 +409,7 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
     let mut rslt = vec![];
 
     run_async_command(async {
-        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("SELECT * FROM install");
         rslt = query.fetch_all(&db).await.unwrap();
@@ -450,8 +444,8 @@ fn add_migrations(db_url: &str, migrations: Vec<Migration>) -> Option<HashMap<St
     migrs
 }
 
-#[derive(Default)]
-pub struct DbInstances(pub RwLock<HashMap<String, Pool<Sqlite>>>);
+#[derive(Default, Debug)]
+pub struct DbInstances(Mutex<HashMap<String, Pool<Sqlite>>>);
 
 #[derive(Debug)]
 pub enum MigrationKind {
@@ -480,15 +474,18 @@ pub struct Migration {
 #[derive(Debug)]
 struct MigrationList(Vec<Migration>);
 
-//struct Migrations(Mutex<HashMap<String, MigrationList>>);
-
 impl MigrationSource<'static> for MigrationList {
     fn resolve(self) -> BoxFuture<'static, Result<Vec<SqlxMigration>, BoxDynError>> {
         Box::pin(async move {
             let mut migrations = Vec::new();
             for migration in self.0 {
                 if matches!(migration.kind, MigrationKind::Up) {
-                    migrations.push(SqlxMigration::new(migration.version, migration.description.into(), migration.kind.into(), migration.sql.into()));
+                    migrations.push(SqlxMigration::new(
+                        migration.version,
+                        migration.description.into(),
+                        migration.kind.into(),
+                        migration.sql.into(),
+                    ));
                 }
             }
             Ok(migrations)

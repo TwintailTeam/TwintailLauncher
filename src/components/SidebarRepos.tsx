@@ -11,9 +11,9 @@ import {
     useInteractions
 } from "@floating-ui/react";
 import {POPUPS} from "./popups/POPUPS.ts";
-import {Settings} from "lucide-react";
+import {Boxes} from "lucide-react";
 
-export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
+export default function SidebarRepos({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -35,14 +35,14 @@ export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a
 
     return (
         <React.Fragment>
-            <Settings ref={refs.setReference} {...getReferenceProps()} className="text-white w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
-                setOpenPopup(popup == POPUPS.NONE ? POPUPS.SETTINGS : POPUPS.NONE);
+            <Boxes ref={refs.setReference} {...getReferenceProps()} className="text-white w-8 h-10 mb-0 cursor-pointer flex-initial" onClick={() => {
+                setOpenPopup(popup == POPUPS.NONE ? POPUPS.REPOMANAGER : POPUPS.NONE);
             }} />
 
             {(isOpen && popup == POPUPS.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 w-full min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">Settings</span>
+                    <span className="text-white z-50">Repositories</span>
                 </div>
             )}
         </React.Fragment>
