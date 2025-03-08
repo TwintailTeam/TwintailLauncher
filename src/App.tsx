@@ -8,7 +8,6 @@ import {invoke} from "@tauri-apps/api/core";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import {Rocket, Settings} from "lucide-react";
 
-
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
         super(props);
@@ -16,6 +15,8 @@ export default class App extends React.Component<any, any> {
         this.setCurrentGame = this.setCurrentGame.bind(this);
         this.setDisplayName = this.setDisplayName.bind(this);
         this.setBackground = this.setBackground.bind(this);
+        this.setReposList = this.setReposList.bind(this);
+
         this.setOpenPopup = this.setOpenPopup.bind(this);
 
         this.pushGames = this.pushGames.bind(this);
@@ -28,7 +29,8 @@ export default class App extends React.Component<any, any> {
             gameBackground: "",
             games: [],
             gamesinfo: [],
-            repos: []
+            repos: [],
+            reposList: {},
         }
     }
 
@@ -38,9 +40,9 @@ export default class App extends React.Component<any, any> {
                 <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} />
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col gap-4 items-center fixed-backdrop-blur-md justify-between">
                     <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                        {this.state.currentGame != "" && this.state.gamesinfo.map((game: { assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
+                        {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
                             return (
-                                <SidebarIcon key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} />
+                                <SidebarIcon key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} />
                             )
                         })}
                     </div>
@@ -59,7 +61,7 @@ export default class App extends React.Component<any, any> {
                 </div>
 
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
-                    {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager setOpenPopup={this.setOpenPopup}/>}
+                    {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} />}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                 </div>
             </main>
@@ -80,14 +82,20 @@ export default class App extends React.Component<any, any> {
         });
     }
 
-    pushGames(repos: { id: any; }[]) {
-        repos.forEach((r: { id: any; }) => {
+    pushGames(repos: { id: string; github_id: any; }[]) {
+        repos.forEach((r: { id: string; github_id: any; }) => {
             invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
                 if (m === null) {
                     console.error("Manifest database table contains nothing, some serious fuck up happened!")
                 } else {
-                    this.setState(() => ({games: JSON.parse(m as string)}), () => {
+                    let g = JSON.parse(m as string);
+                    this.setState(() => ({games: g}), () => {
                         this.pushGamesInfo(this.state.games);
+                        let entries: any[] = [];
+                        this.state.games.forEach((e: any) => entries.push(e));
+                        // @ts-ignore
+                        r["manifests"] = entries;
+                        this.setReposList(repos);
                     });
                 }
             }).catch(e => {
@@ -96,16 +104,28 @@ export default class App extends React.Component<any, any> {
         });
     }
 
-    pushGamesInfo(games: { filename: any; display_name: string; id: string; }[]) {
+    pushGamesInfo(games: { filename: any; display_name: string; id: string; enabled: boolean; }[]) {
         invoke("list_game_manifests").then(m => {
             if (m === null) {
                 console.error("GameManifest repository fetch issue, some serious fuck up happened!")
             } else {
-                this.setState(() => ({gamesinfo: JSON.parse(m as string)}), () => {
+                let gi = JSON.parse(m as string);
+                // Hacky way to pass some values from DB manifest data onto the list of games we use to render SideBarIcon components
+                gi.forEach((e: any) => {
+                  let g = games.find(g => g.filename.replace(".json", "") === e.biz);
+                  // @ts-ignore
+                    e["manifest_id"] = g.id;
+                  // @ts-ignore
+                    e["manifest_enabled"] = g.enabled;
+                  // @ts-ignore
+                    e["manifest_file"] = g.filename;
+                });
+
+                this.setState(() => ({gamesinfo: gi}), () => {
                     if (games.length > 0 && this.state.currentGame == "") {
                         this.setCurrentGame(games[0].id);
                         this.setDisplayName(games[0].display_name)
-                        this.setBackground(JSON.parse(m as string)[0].assets.game_background);
+                        this.setBackground(gi[0].assets.game_background);
                     }
                 });
             }
@@ -128,5 +148,9 @@ export default class App extends React.Component<any, any> {
 
     setBackground(file: string) {
         this.setState({gameBackground: file});
+    }
+
+    setReposList(reposList: any) {
+        this.setState({reposList: reposList});
     }
 }

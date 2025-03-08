@@ -1,6 +1,6 @@
 use linked_hash_map::LinkedHashMap;
 use tauri::{AppHandle};
-use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id};
+use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id, update_manifest_enabled_by_id};
 use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
 
 #[tauri::command]
@@ -75,6 +75,20 @@ pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option
         } else {
             None
         }
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_manifest_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_manifest_enabled_by_id(&app, m.id, enabled).unwrap();
+
+        Some(true)
     } else {
         None
     }

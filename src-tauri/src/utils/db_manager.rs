@@ -28,7 +28,6 @@ pub fn init_db(app: &AppHandle) {
                 { println!("Database does not exist... Creating new one for you!"); }
             }
         });
-
     }
 
     let migrationsl = vec![
@@ -306,6 +305,17 @@ pub fn get_manifests_by_repository_id(app: &AppHandle, repository_id: String) ->
     } else {
         None
     }
+}
+
+pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool) -> Result<bool, Error> {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.read().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE manifest SET 'enabled' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+
+        Ok(true)
+    })
 }
 
 // === INSTALLS ===

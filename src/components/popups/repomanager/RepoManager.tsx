@@ -2,26 +2,7 @@ import {Plus, X} from "lucide-react";
 import RepoManifestCombo from "./RepoManifestCombo.tsx";
 import {POPUPS} from "../POPUPS.ts";
 
-const repos = {
-    "TeamKeqing/launcher-manifests": [
-        "Genshin Impact (Global)",
-        "Genshin Impact (China)",
-        "Honkai: Star Rail (Global)",
-        "Honkai: Star Rail (China)",
-        "Honkai Impact 3rd (Global)",
-        "Honkai Impact 3rd (China)",
-        "Zenless Zone Zero (Global)",
-        "Zenless Zone Zero (China)",
-    ],
-    "FOREVEREALIZE/tof-manifests": [
-        "Tower of Fantasy"
-    ],
-    "FOREVEREALIZE/wuwa-manifests": [
-        "Wuthering Waves"
-    ]
-}
-
-export default function RepoManager({setOpenPopup}: {setOpenPopup: (popup: POPUPS) => void}) {
+export default function RepoManager({repos, setOpenPopup}: {repos: any, setOpenPopup: (popup: POPUPS) => void}) {
     return (
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
@@ -35,10 +16,12 @@ export default function RepoManager({setOpenPopup}: {setOpenPopup: (popup: POPUP
                 </button>
             </div>
             <div className="rounded-lg w-full">
-                {Object.entries(repos).map((repo, idx, arr) => (
-                    <RepoManifestCombo key={repo[0]} name={repo[0]} items={repo[1]} roundTop={idx == 0}
-                                       roundBottom={idx == arr.length - 1}/>
-                ))}
+                {repos.map((repo:any, idx: number) => {
+                    return (
+                        <RepoManifestCombo key={repo.id} name={repo.github_id} items={repo.manifests} roundTop={idx == 0} roundBottom={idx == repos.length - 1}/>
+                    )
+                })
+                }
             </div>
         </div>
     )

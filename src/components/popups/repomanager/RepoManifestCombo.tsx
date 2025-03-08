@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import {ChevronDown} from "lucide-react";
 import RepoManifestItem from "./RepoManifestItem.tsx";
 
-export default function RepoManifestCombo({name, items, roundTop, roundBottom}: { name: string, items: string[], roundTop: boolean, roundBottom: boolean }) {
+export default function RepoManifestCombo({name, items, roundTop, roundBottom}: { name: string, items: string[], roundTop: boolean, roundBottom: boolean}) {
     const [isFolded, setIsFolded] = useState<boolean>(true);
 
     return (
@@ -20,11 +20,11 @@ export default function RepoManifestCombo({name, items, roundTop, roundBottom}: 
                     // height: isFolded ? "0px" : (((24 + 16) * items.length) - 16) + "px"
                     // height: isFolded ? "0%" : "10%",
                     maxHeight: isFolded ? "0px" : (items.length * 64) + "px", // Big value
-                }}
-            >
-                {items.map((name) => (
-                    <RepoManifestItem name={name} key={name}/>
-                ))}
+                }}>
+                {items.map((name: any) => {
+                    return (
+                    <RepoManifestItem name={name.display_name} key={name.id} id={name.id} enabled={name.enabled} />
+                )})}
 
             </div>
         </React.Fragment>

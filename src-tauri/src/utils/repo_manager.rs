@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_manifest, create_repository};
 use crate::utils::{generate_cuid};
+use crate::utils::git_helpers::{do_fetch, do_merge};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let url = "https://github.com/AndigenaTeam/game-manifests.git";
@@ -50,6 +51,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     } else {
         #[cfg(debug_assertions)]
         { println!("Official repository is already cloned!"); }
+        update_repositories(&repo_path).unwrap();
     }
 }
 
@@ -96,7 +98,27 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
     } else {
         #[cfg(debug_assertions)]
         { println!("Target repository already exists!"); }
+        update_repositories(&repo_path)?;
 
+        Ok(false)
+    }
+}
+
+pub fn update_repositories(path: &PathBuf) -> Result<bool, Error> {
+    let repo = Repository::open(&path);
+
+    if repo.is_ok() && path.exists() {
+        let r = repo?;
+        let mut remote = r.find_remote("origin")?;
+        let fetch_commit = do_fetch(&r, &["main"], &mut remote)?;
+        do_merge(&r, "main", fetch_commit)?;
+
+        #[cfg(debug_assertions)]
+        { println!("Successfully updated repositories!"); }
+        Ok(true)
+    } else {
+        #[cfg(debug_assertions)]
+        { println!("Failed to fetch repository updates!"); }
         Ok(false)
     }
 }
@@ -213,6 +235,7 @@ pub struct GameManifest {
     pub version: i32,
     pub display_name: String,
     pub biz: String,
+    pub latest_version: String,
     pub game_versions: Vec<GameVersion>,
     pub telemetry_hosts: Vec<String>,
     pub paths: GamePaths,

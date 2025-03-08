@@ -17,6 +17,7 @@ type SidebarIconProps = {
     name: string,
     id: string,
     background: string,
+    enabled: boolean,
     setCurrentGame: (a: string) => void,
     setOpenPopup: (a: POPUPS) => void,
     popup: POPUPS,
@@ -24,7 +25,7 @@ type SidebarIconProps = {
     setBackground: (file: string) => void,
 }
 
-export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName, setBackground, background}: SidebarIconProps) {
+export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -43,24 +44,19 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
 
     return (
         <React.Fragment>
-            <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" src={icon} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" src={icon} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
                 setDisplayName(name)
                 setBackground(background)
-            }} alt={"?"}/>
-
-            {(isOpen && popup == POPUPS.NONE) && (
-                <div
-                    ref={refs.setFloating}
-                    style={floatingStyles}
-                    {...getFloatingProps()}
-                    className="bg-black/75 rounded-md p-2 w-full min-w-max z-50"
-                >
-                    <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">{name}</span>
-                </div>
-            )}
+            }} alt={"?"}/> : null}
+            {(enabled) ?
+                (isOpen && popup == POPUPS.NONE) && (
+                    <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 w-full min-w-max z-50">
+                        <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
+                        <span className="text-white z-50">{name}</span>
+                    </div>
+                ) : null}
         </React.Fragment>
     )
 }
