@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 use futures_core::future::BoxFuture;
-use sqlx::migrate::{Migration as SqlxMigration, MigrateDatabase, MigrationSource, MigrationType, Migrator};
-use sqlx::{query, Error, Executor, Pool, Row, Sqlite};
-use sqlx::error::BoxDynError;
-use sqlx::sqlite::{SqliteConnectOptions, SqliteQueryResult};
+use sqlx::{query, Error, Executor, Pool, Row, Sqlite, error::BoxDynError, sqlite::SqliteQueryResult, migrate::{Migration as SqlxMigration, MigrateDatabase, MigrationSource, MigrationType, Migrator}};
 use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
+use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
-use crate::utils::run_async_command;
+use crate::utils::{run_async_command};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -18,7 +15,7 @@ pub async fn init_db(app: &AppHandle) {
 
     let manifests_dir = data_path.join("manifests");
 
-    if !Path::new(&conn_url).exists() {
+    if !conn_url.exists() {
         fs::create_dir_all(&conn_path).unwrap();
 
         if !Sqlite::database_exists(conn_url.to_str().unwrap()).await.unwrap() {
@@ -46,6 +43,18 @@ pub async fn init_db(app: &AppHandle) {
             description: "init_install_table",
             sql: r#"CREATE TABLE "install" ("id" string PRIMARY KEY,"manifest_id" string,"version" string,"name" string,"directory" string,"runner" string,"dxvk" string, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "init_settings_table",
+            sql: r#"CREATE TABLE settings ("default_game_path" string default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" string default null,fps_unlock_path string default null,jadeite_path string default null, id integer not null CONSTRAINT settings_pk primary key autoincrement);"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 5,
+            description: "populate_settings_table",
+            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, id) values (null,false, null, null, null, 1);"#,
+            kind: MigrationKind::Up,
         }
     ];
 
@@ -54,7 +63,6 @@ pub async fn init_db(app: &AppHandle) {
     let instances = DbInstances::default();
     let mut tmp = instances.0.lock().await;
     let pool: Pool<Sqlite> = Pool::connect(&conn_url.to_str().unwrap()).await.unwrap();
-    //pool.set_connect_options(SqliteConnectOptions::new().foreign_keys(true));
 
     tmp.insert(String::from("db"), pool.clone());
 
@@ -66,8 +74,34 @@ pub async fn init_db(app: &AppHandle) {
     drop(tmp);
     app.manage(instances);
 
+    // Init and setup default paths...
+    let defgpath = data_path.join("games");
+    let xxmipath = data_path.join("extras").join("xxmi");
+    let fpsunlockpath = data_path.join("extras").join("fps_unlock");
+    let jadeitepath = data_path.join("extras").join("jadeite");
+
+    if !defgpath.exists() {
+        fs::create_dir_all(&defgpath).unwrap();
+        query("UPDATE settings SET 'default_game_path' = $1 WHERE id = 1;").bind(defgpath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
+    }
+
+    if !xxmipath.exists() {
+        fs::create_dir_all(&xxmipath).unwrap();
+        query("UPDATE settings SET 'xxmi_path' = $1 WHERE id = 1;").bind(xxmipath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
+    }
+
+    if !fpsunlockpath.exists() {
+        fs::create_dir_all(&fpsunlockpath).unwrap();
+        query("UPDATE settings SET 'fps_unlock_path' = $1 WHERE id = 1;").bind(fpsunlockpath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
+    }
+
+    if !jadeitepath.exists() {
+        fs::create_dir_all(&jadeitepath).unwrap();
+        query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1;").bind(jadeitepath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
+    }
+
     // Init this fuck AFTER you add shitty DB instances to state
-    if !Path::new(&manifests_dir).exists() {
+    if !manifests_dir.exists() {
         fs::create_dir_all(&manifests_dir).unwrap();
         #[cfg(debug_assertions)]
         { println!("Manifests directory does not exist... Creating new one for you!"); }
@@ -80,15 +114,75 @@ pub async fn init_db(app: &AppHandle) {
 
 // === SETTINGS ===
 
-/*pub async fn get_settings(app: &AppHandle) -> Result<Vec<String>, Error> {
-    let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
+    let mut rslt = vec![];
 
-    Ok(vec![])
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("SELECT * FROM settings WHERE id = 1");
+        rslt = query.fetch_all(&db).await.unwrap();
+    });
+
+    if rslt.len() >= 1 {
+        let rsltt = GlobalSettings {
+            default_game_path: rslt.get(0).unwrap().get("default_game_path"),
+            xxmi_path: rslt.get(0).unwrap().get("xxmi_path"),
+            fps_unlock_path: rslt.get(0).unwrap().get("fps_unlock_path"),
+            jadeite_path: rslt.get(0).unwrap().get("jadeite_path"),
+            third_party_repo_updates: rslt.get(0).unwrap().get("third_party_repo_updates"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
 }
 
-pub async fn save_db_settings(app: &AppHandle) -> Result<bool, Error> {
-    Ok(true)
-}*/
+pub fn update_settings_third_party_repo_update(app: &AppHandle, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'third_party_repo_updates' = $1 WHERE id = 1").bind(enabled);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_game_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'default_game_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_xxmi_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'xxmi_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_fps_unlock_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'fps_unlock_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_jadeite_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
 
 // === REPOSITORIES ===
 

@@ -2,6 +2,7 @@ import React from 'react'
 import {open} from "@tauri-apps/plugin-dialog"
 import './FolderInput.css'
 import TextInputPart from "./TextInputPart.tsx";
+import {invoke} from "@tauri-apps/api/core";
 
 // Thanks Cultivation FUCK NO im not making this myself
 // Yes I can not be assed to make inputs, I stole Cultivation's and modified them to fit the theme
@@ -18,6 +19,7 @@ interface IProps {
     openFolder?: string,
     name?: string,
     id?: string,
+    fetchSettings: () => void
 }
 
 interface IState {
@@ -60,7 +62,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
     }
 
     async handleIconClick() {
-        let path
+        let path;
 
         if (this.state.folder) {
             path = await open({directory: true})
@@ -71,11 +73,34 @@ export default class FolderInput extends React.Component<IProps, IState> {
         if (Array.isArray(path)) path = path[0]
         if (!path) return
 
-        this.setState({
-            value: path,
-        })
-
+        this.setState({value: path})
+        this.updateSetting(path);
         if (this.props.onChange) this.props.onChange(path)
+    }
+
+    updateSetting(path: string) {
+        switch (this.props.id) {
+            case 'default_game_path': {
+                invoke("update_settings_default_game_path", {path: path}).then(() => {});
+                this.props.fetchSettings();
+            }
+            break;
+            case 'default_xxmi_path': {
+                invoke("update_settings_default_xxmi_path", {path: path}).then(() => {});
+                this.props.fetchSettings();
+            }
+            break;
+            case 'default_fps_unlock_path': {
+                invoke("update_settings_default_fps_unlock_path", {path: path}).then(() => {});
+                this.props.fetchSettings();
+            }
+            break;
+            case 'default_jadeite_path': {
+                invoke("update_settings_default_jadeite_path", {path: path}).then(() => {});
+                this.props.fetchSettings();
+            }
+            break;
+        }
     }
 
     render() {
@@ -92,7 +117,8 @@ export default class FolderInput extends React.Component<IProps, IState> {
                                    onChange={(text: string) => {
                                    this.setState({ value: text })
                                    if (this.props.onChange) this.props.onChange(text)
-                                   this.forceUpdate()
+                                   this.forceUpdate();
+                                   this.updateSetting(text);
                                }} customClearBehaviour={this.props.customClearBehaviour}/>
                 </div>
             </div>
