@@ -12,7 +12,7 @@ export default function SettingsManager({setOpenPopup, settings, fetchSettings}:
             </div>
             <div className="flex flex-row-reverse">
             </div>
-                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-900 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`}
+                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`}
                      style={{maxHeight: (20 * 64) + "px"}}>
                     <CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Auto update 3rd party repositories"} fetchSettings={fetchSettings}/>
                     <FolderInput name={"Default game install location"} clearable={true} value={`${settings.default_game_path}`} folder={true} id={"default_game_path"} fetchSettings={fetchSettings}/>

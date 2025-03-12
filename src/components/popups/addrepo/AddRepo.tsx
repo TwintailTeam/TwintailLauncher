@@ -4,7 +4,6 @@ import React, {useState} from "react";
 
 export default function AddRepo({setOpenPopup}: {setOpenPopup: (popup: POPUPS) => void}) {
     const [advanncedOptionsOpen, setAdvanncedOptionsOpen] = useState<boolean>(false);
-    setOpenPopup
 
     return (
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 bg-neutral-700 gap-4 overflow-scroll">

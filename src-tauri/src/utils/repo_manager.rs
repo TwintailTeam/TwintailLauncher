@@ -225,7 +225,16 @@ pub struct LauncherInstall {
     pub name: String,
     pub directory: String,
     pub runner: String,
-    pub dxvk: String
+    pub dxvk: String,
+    pub game_icon: String,
+    pub game_background: String,
+    pub ignore_updates: bool,
+    pub skip_hash_check: bool,
+    pub use_jadeite: bool,
+    pub use_xxmi: bool,
+    pub use_fps_unlock: bool,
+    pub env_vars: String,
+    pub pre_launch_command: String
 }
 
 // === MANIFESTS ===

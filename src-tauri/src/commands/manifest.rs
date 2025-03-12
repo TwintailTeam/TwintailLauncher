@@ -81,6 +81,27 @@ pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option
 }
 
 #[tauri::command]
+pub fn get_game_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<String> {
+    let db_manifest = get_manifest_info_by_id(&app, id.clone());
+
+    if db_manifest.is_some() {
+        let dbm = db_manifest.unwrap();
+        let manifest = get_manifest(&app, &dbm.filename);
+
+        if dbm.enabled {
+            let m = manifest.unwrap();
+            let stringified = serde_json::to_string(&m).unwrap();
+
+            Some(stringified)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
 pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_manifest_info_by_id(&app, id);
 

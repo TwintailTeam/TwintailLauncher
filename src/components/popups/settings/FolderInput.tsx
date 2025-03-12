@@ -1,6 +1,5 @@
 import React from 'react'
 import {open} from "@tauri-apps/plugin-dialog"
-import './FolderInput.css'
 import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
 
@@ -57,7 +56,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
     async componentDidMount() {
         if (!this.props.placeholder) {
-            this.setState({placeholder: "Select folder..."})
+            this.setState({placeholder: this.props.folder ? "Select folder..." : 'Select file(s)...'})
         }
     }
 
@@ -107,7 +106,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
         return (
             <div className="flex flex-row items-center justify-between w-full h-6">
                 <span className="text-white text-sm">{this.props.name}</span>
-                <div className="DirInput">
+                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center">
                     <TextInputPart value={this.state.value}
                                    isPicker={true}
                                    onClick={this.handleIconClick}

@@ -1,7 +1,5 @@
 import React from 'react'
 
-import './TextInputPart.css'
-
 // Thanks Cultivation
 // Yes I can not be assed to make inputs, I stole Cultivation's and modified them to fit the theme
 
@@ -46,21 +44,20 @@ export default class TextInputPart extends React.Component<IProps, IState> {
 
     render() {
         return (
-            <div className="TextInputWrapper" style={this.props.style || {}}>
+            <div className="w-full" style={this.props.style || {}}>
                 <input id={this.props?.id}
                     readOnly={this.props.readOnly || false}
                     placeholder={this.props.placeholder || ''}
-                    className={`TextInput w-full relative rounded-full transition-all bg-white/10 text-white indent-2.5 ${this.props.isPicker ? "cursor-pointer" : ""}`}
+                    className={`w-full focus:outline-none h-8 rounded-lg bg-white/20 text-white px-2 placeholder-white/50 ${this.props.isPicker ? "cursor-pointer" : ""}`}
                     value={this.state.value}
                     onChange={(e) => {
                         this.setState({ value: e.target.value })
                         if (this.props.onChange) this.props.onChange(e.target.value)
                     }} onClick={() => {
                         if (this.props.onClick) this.props.onClick();
-                }}
-                />
+                }}/>
                 {this.props.clearable ? (
-                    <div className="TextClear"
+                    <div className="hidden"
                         onClick={() => {
                             // Run custom behaviour first
                             if (this.props.customClearBehaviour) return this.props.customClearBehaviour()

@@ -23,9 +23,10 @@ type SidebarIconProps = {
     popup: POPUPS,
     setDisplayName: (name: string) => void,
     setBackground: (file: string) => void,
+    setCurrentInstall: (a: string) => void,
 }
 
-export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
+export default function SidebarIconManifest({icon, name, id, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -44,9 +45,10 @@ export default function SidebarIcon({icon, name, id, setCurrentGame, setOpenPopu
 
     return (
         <React.Fragment>
-            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" src={icon} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} className="aspect-square w-12 rounded-lg cursor-pointer" srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
+                setCurrentInstall("")
                 setDisplayName(name)
                 setBackground(background)
             }} alt={"?"}/> : null}

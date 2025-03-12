@@ -3,4 +3,5 @@ export enum POPUPS {
     REPOMANAGER = 'popups/repomanager',
     ADDREPO = 'popups/addrepo',
     SETTINGS = 'popups/settings',
+    DOWNLOADGAME = 'popups/downloadgame',
 }

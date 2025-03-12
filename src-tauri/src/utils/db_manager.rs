@@ -35,13 +35,13 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 2,
             description: "init_manifest_table",
-            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY,"repository_id" string,"display_name" string,"filename" string,"enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
+            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY, "repository_id" string, "display_name" string, "filename" string, "enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
-            version: 3,
+            version: 6,
             description: "init_install_table",
-            sql: r#"CREATE TABLE "install" ("id" string PRIMARY KEY,"manifest_id" string,"version" string,"name" string,"directory" string,"runner" string,"dxvk" string, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
+            sql: r#"CREATE TABLE install ("id" TEXT PRIMARY KEY, "manifest_id" TEXT, "version" TEXT, "name" TEXT, "directory" TEXT, "runner" TEXT, "dxvk" TEXT, "game_icon" TEXT, "game_background" TEXT, "ignore_updates" bool, "skip_hash_check" bool, "use_jadeite" bool, "use_xxmi" bool, "use_fps_unlock" bool, "env_vars" TEXT, "pre_launch_command" TEXT, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
@@ -408,13 +408,13 @@ pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool)
 
 // === INSTALLS ===
 
-pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, name: String, directory: String, runner: String, dxvk: String) -> Result<bool, Error> {
+pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, name: String, directory: String, runner: String, dxvk: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner, dxvk) VALUES ($1, $2, $3, $4, $5, $6, $7)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner).bind(dxvk);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner, dxvk, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner).bind(dxvk).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command);
         rslt = query.execute(&db).await.unwrap();
     });
 
@@ -461,6 +461,15 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             directory: rslt.get(0).unwrap().get("directory"),
             runner: rslt.get(0).unwrap().get("runner"),
             dxvk: rslt.get(0).unwrap().get("dxvk"),
+            game_icon: rslt.get(0).unwrap().get("game_icon"),
+            game_background: rslt.get(0).unwrap().get("game_background"),
+            ignore_updates: rslt.get(0).unwrap().get("ignore_updates"),
+            skip_hash_check: rslt.get(0).unwrap().get("skip_hash_check"),
+            use_jadeite: rslt.get(0).unwrap().get("use_jadeite"),
+            use_xxmi: rslt.get(0).unwrap().get("use_xxmi"),
+            use_fps_unlock: rslt.get(0).unwrap().get("use_fps_unlock"),
+            env_vars: rslt.get(0).unwrap().get("env_vars"),
+            pre_launch_command: rslt.get(0).unwrap().get("pre_launch_command"),
         };
 
         Some(rsltt)
@@ -490,6 +499,15 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 directory: r.get("directory"),
                 runner: r.get("runner"),
                 dxvk: r.get("dxvk"),
+                game_icon: r.get("game_icon"),
+                game_background: r.get("game_background"),
+                ignore_updates: r.get("ignore_updates"),
+                skip_hash_check: r.get("skip_hash_check"),
+                use_jadeite: r.get("use_jadeite"),
+                use_xxmi: r.get("use_xxmi"),
+                use_fps_unlock: r.get("use_fps_unlock"),
+                env_vars: r.get("env_vars"),
+                pre_launch_command: r.get("pre_launch_command"),
             })
         }
 
@@ -520,6 +538,15 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 directory: r.get("directory"),
                 runner: r.get("runner"),
                 dxvk: r.get("dxvk"),
+                game_icon: r.get("game_icon"),
+                game_background: r.get("game_background"),
+                ignore_updates: r.get("ignore_updates"),
+                skip_hash_check: r.get("skip_hash_check"),
+                use_jadeite: r.get("use_jadeite"),
+                use_xxmi: r.get("use_xxmi"),
+                use_fps_unlock: r.get("use_fps_unlock"),
+                env_vars: r.get("env_vars"),
+                pre_launch_command: r.get("pre_launch_command"),
             })
         }
 
@@ -539,7 +566,7 @@ fn add_migrations(db_url: &str, migrations: Vec<Migration>) -> Option<HashMap<St
 }
 
 #[derive(Default, Debug)]
-pub struct DbInstances(Mutex<HashMap<String, Pool<Sqlite>>>);
+pub struct DbInstances(pub Mutex<HashMap<String, Pool<Sqlite>>>);
 
 #[derive(Debug)]
 pub enum MigrationKind {
