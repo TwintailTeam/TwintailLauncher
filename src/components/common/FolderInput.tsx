@@ -18,7 +18,7 @@ interface IProps {
     openFolder?: string,
     name?: string,
     id?: string,
-    fetchSettings: () => void
+    fetchSettings?: () => void
 }
 
 interface IState {
@@ -74,6 +74,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
         this.setState({value: path})
         this.updateSetting(path);
+
         if (this.props.onChange) this.props.onChange(path)
     }
 
@@ -81,22 +82,33 @@ export default class FolderInput extends React.Component<IProps, IState> {
         switch (this.props.id) {
             case 'default_game_path': {
                 invoke("update_settings_default_game_path", {path: path}).then(() => {});
-                this.props.fetchSettings();
+                if (this.props.fetchSettings !== undefined) {
+                    this.props.fetchSettings();
+                }
             }
             break;
             case 'default_xxmi_path': {
                 invoke("update_settings_default_xxmi_path", {path: path}).then(() => {});
-                this.props.fetchSettings();
+                if (this.props.fetchSettings !== undefined) {
+                    this.props.fetchSettings();
+                }
             }
             break;
             case 'default_fps_unlock_path': {
                 invoke("update_settings_default_fps_unlock_path", {path: path}).then(() => {});
-                this.props.fetchSettings();
+                if (this.props.fetchSettings !== undefined) {
+                    this.props.fetchSettings();
+                }
             }
             break;
             case 'default_jadeite_path': {
                 invoke("update_settings_default_jadeite_path", {path: path}).then(() => {});
-                this.props.fetchSettings();
+                if (this.props.fetchSettings !== undefined) {
+                    this.props.fetchSettings();
+                }
+            }
+            break;
+            case "install_game_path": {
             }
             break;
         }
@@ -108,6 +120,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
                 <span className="text-white text-sm">{this.props.name}</span>
                 <div className="overflow-ellipsis inline-flex flex-row items-center justify-center">
                     <TextInputPart value={this.state.value}
+                                   id={this.props.id}
                                    isPicker={true}
                                    onClick={this.handleIconClick}
                                    placeholder={this.state.placeholder}

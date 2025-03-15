@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
 
-export default function RepoManifestItem({name, id, enabled}: { id: string, name: string, enabled: boolean}) {
+export default function RepoManifestItem({name, id, enabled, fetchRepositories}: { id: string, name: string, enabled: boolean, fetchRepositories: () => void}) {
     const [isEnabled, setIsEnabled] = useState<boolean>(enabled);
 
     return (
@@ -11,8 +11,7 @@ export default function RepoManifestItem({name, id, enabled}: { id: string, name
                 onClick={() => {
                     invoke("update_manifest_enabled", { id: id, enabled: !isEnabled }).then(() => {
                         setIsEnabled(!isEnabled);
-                        // temp reload strategy
-                        window.location.reload();
+                        fetchRepositories();
                     });
                 }}>
                 <div className={`h-full aspect-square rounded-full bg-white transition-all absolute ${isEnabled ? "translate-x-full" : "translate-x-0"}`}/>

@@ -2,14 +2,16 @@ import "./App.css";
 import React from "react";
 import RepoManager from "./components/popups/repomanager/RepoManager.tsx";
 import {POPUPS} from "./components/popups/POPUPS.ts";
-import AddRepo from "./components/popups/addrepo/AddRepo.tsx";
+import AddRepo from "./components/popups/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
 import {DownloadIcon, HardDriveDownloadIcon, Rocket, Settings} from "lucide-react";
 import SidebarSettings from "./components/SidebarSettings.tsx";
-import SettingsManager from "./components/popups/settings/SettingsManager.tsx";
+import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
+import DownloadGame from "./components/popups/DownloadGame.tsx";
+import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -25,6 +27,7 @@ export default class App extends React.Component<any, any> {
         this.pushGames = this.pushGames.bind(this);
         this.pushGamesInfo = this.pushGamesInfo.bind(this);
         this.fetchSettings = this.fetchSettings.bind(this);
+        this.fetchRepositories = this.fetchRepositories.bind(this);
 
         this.state = {
             openPopup: POPUPS.NONE,
@@ -36,7 +39,8 @@ export default class App extends React.Component<any, any> {
             reposList: [],
             installs: [],
             globalSettings: {},
-            preloadAvailable: false
+            preloadAvailable: false,
+            gameVersions: []
         }
     }
 
@@ -70,24 +74,27 @@ export default class App extends React.Component<any, any> {
                     }}>
                         <DownloadIcon className="text-green-500 w-8 h-8" />
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button>
+                    {(this.state.currentInstall !== "") ? <button onClick={() => {
+                        this.setState({openPopup: POPUPS.INSTALLSETTINGS});
+                    }}>
                         <Settings className="text-white w-8 h-8" />
                     </button> : null}
                     {(this.state.currentInstall !== "") ? <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         console.log("launching game...")
                     }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
                     </button> : <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                        this.fetchGameVersions(this.state.currentGame);
                         this.setState({openPopup: POPUPS.DOWNLOADGAME});
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
                     </button>}
                 </div>
 
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
-                    {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} />}
+                    {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
-                    {this.state.openPopup == POPUPS.SETTINGS && <SettingsManager fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
-                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <AddRepo setOpenPopup={this.setOpenPopup}/>}
-
+                    {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
+                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup}/>}
+                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall displayName={this.state.displayName} install={this.state.currentInstall} setOpenPopup={this.setOpenPopup}/>}
                 </div>
             </main>
         )
@@ -95,6 +102,10 @@ export default class App extends React.Component<any, any> {
 
     componentDidMount() {
         this.fetchSettings();
+        this.fetchRepositories();
+    }
+
+    fetchRepositories() {
         invoke("list_repositories").then(r => {
             if (r === null) {
                 console.error("Repository database table contains nothing, some serious fuck up happened!")
@@ -147,7 +158,7 @@ export default class App extends React.Component<any, any> {
 
                 this.setState(() => ({gamesinfo: gi}), () => {
                     if (games.length > 0 && this.state.currentGame == "") {
-                        this.setCurrentGame(games[0].id);
+                        this.setCurrentGame(games[0].filename.replace(".json", ""));
                         this.setDisplayName(games[0].display_name)
                         this.setBackground(gi[0].assets.game_background);
                     }
@@ -171,6 +182,24 @@ export default class App extends React.Component<any, any> {
         })
     }
 
+    fetchSettings() {
+        invoke("list_settings").then(data => {
+            if (data === null) {
+                console.error("Settings database table contains nothing, some serious fuck up happened!")
+            } else {
+                this.setState(() => ({globalSettings: JSON.parse(data as string)}));
+            }
+        });
+    }
+
+    fetchGameVersions(biz: string) {
+        let game = this.state.gamesinfo.filter((g: any) => g.biz == biz)[0];
+        let tmp: { value: any; name: any; }[] = [];
+        game.game_versions.forEach((g: any) => {
+            tmp.push({value: g.metadata.version, name: (game.latest_version === g.metadata.version) ? `Latest (${g.metadata.version})` : g.metadata.version});
+        });
+        this.setState({gameVersions: tmp});
+    }
 
     setOpenPopup(state: POPUPS) {
         this.setState({openPopup: state});
@@ -209,15 +238,5 @@ export default class App extends React.Component<any, any> {
         }).catch(e => {
             console.error("Error while querying preload information: " + e)
         })
-    }
-
-    fetchSettings() {
-        invoke("list_settings").then(data => {
-            if (data === null) {
-                console.error("Settings database table contains nothing, some serious fuck up happened!")
-            } else {
-                this.setState(() => ({globalSettings: JSON.parse(data as string)}));
-            }
-        });
     }
 }

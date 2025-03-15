@@ -1,4 +1,4 @@
-import {POPUPS} from "../POPUPS.ts";
+import {POPUPS} from "./POPUPS.ts";
 import {ArrowLeft, ChevronDown, X} from "lucide-react";
 import React, {useState} from "react";
 
