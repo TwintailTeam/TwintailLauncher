@@ -20,14 +20,17 @@ export default class App extends React.Component<any, any> {
         this.setCurrentGame = this.setCurrentGame.bind(this);
         this.setDisplayName = this.setDisplayName.bind(this);
         this.setBackground = this.setBackground.bind(this);
+        this.setGameIcon = this.setGameIcon.bind(this);
         this.setReposList = this.setReposList.bind(this);
         this.setOpenPopup = this.setOpenPopup.bind(this);
         this.setCurrentInstall = this.setCurrentInstall.bind(this);
 
         this.pushGames = this.pushGames.bind(this);
         this.pushGamesInfo = this.pushGamesInfo.bind(this);
+        this.pushInstalls = this.pushInstalls.bind(this);
         this.fetchSettings = this.fetchSettings.bind(this);
         this.fetchRepositories = this.fetchRepositories.bind(this);
+        this.fetchInstallSettings = this.fetchInstallSettings.bind(this);
 
         this.state = {
             openPopup: POPUPS.NONE,
@@ -35,12 +38,14 @@ export default class App extends React.Component<any, any> {
             currentInstall: "",
             displayName: "",
             gameBackground: "",
+            gameIcon: "",
             gamesinfo: [],
             reposList: [],
             installs: [],
             globalSettings: {},
             preloadAvailable: false,
-            gameVersions: []
+            gameVersions: [],
+            installSettings: {}
         }
     }
 
@@ -52,13 +57,13 @@ export default class App extends React.Component<any, any> {
                     <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
                         {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
                             return (
-                                <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} />
+                                <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
                             )
                         })}
                         <hr className="text-white/20 bg-white/20" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
                         {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
                             return (
-                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} manifest_id={install.manifest_id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setPreloadAvailable={this.setPreloadAvailable} />
+                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} manifest_id={install.manifest_id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setPreloadAvailable={this.setPreloadAvailable} setGameIcon={this.setGameIcon} />
                             )
                         })}
                     </div>
@@ -72,10 +77,14 @@ export default class App extends React.Component<any, any> {
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? <button onClick={() => {
                         console.log("preload...")
                     }}>
-                        <DownloadIcon className="text-green-500 w-8 h-8" />
+                        <DownloadIcon className="text-blue-500 w-8 h-8" />
                     </button> : null}
                     {(this.state.currentInstall !== "") ? <button onClick={() => {
-                        this.setState({openPopup: POPUPS.INSTALLSETTINGS});
+                        this.fetchInstallSettings(this.state.currentInstall);
+                        // Delay for very unnoticeable time to prevent popup opening before state is synced
+                        setTimeout(() => {
+                            this.setState({openPopup: POPUPS.INSTALLSETTINGS});
+                        }, 20);
                     }}>
                         <Settings className="text-white w-8 h-8" />
                     </button> : null}
@@ -93,8 +102,8 @@ export default class App extends React.Component<any, any> {
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
-                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup}/>}
-                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall displayName={this.state.displayName} install={this.state.currentInstall} setOpenPopup={this.setOpenPopup}/>}
+                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
+                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup}/>}
                 </div>
             </main>
         )
@@ -161,6 +170,7 @@ export default class App extends React.Component<any, any> {
                         this.setCurrentGame(games[0].filename.replace(".json", ""));
                         this.setDisplayName(games[0].display_name)
                         this.setBackground(gi[0].assets.game_background);
+                        this.setGameIcon(gi[0].assets.game_icon);
                     }
                 });
             }
@@ -192,6 +202,16 @@ export default class App extends React.Component<any, any> {
         });
     }
 
+    fetchInstallSettings(install: any) {
+        invoke("get_install_by_id", {id: install}).then(data => {
+            if (data === null) {
+                console.error("Install database table contains nothing, some serious fuck up happened!")
+            } else {
+                this.setState(() => ({installSettings: JSON.parse(data as string)}));
+            }
+        });
+    }
+
     fetchGameVersions(biz: string) {
         let game = this.state.gamesinfo.filter((g: any) => g.biz == biz)[0];
         let tmp: { value: any; name: any; }[] = [];
@@ -215,6 +235,10 @@ export default class App extends React.Component<any, any> {
 
     setBackground(file: string) {
         this.setState({gameBackground: file});
+    }
+
+    setGameIcon(file: string) {
+        this.setState({gameIcon: file});
     }
 
     setReposList(reposList: any) {

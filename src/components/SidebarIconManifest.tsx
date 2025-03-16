@@ -24,9 +24,10 @@ type SidebarIconProps = {
     setDisplayName: (name: string) => void,
     setBackground: (file: string) => void,
     setCurrentInstall: (a: string) => void,
+    setGameIcon: (a: string) => void,
 }
 
-export default function SidebarIconManifest({icon, name, id, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
+export default function SidebarIconManifest({icon, name, id, setGameIcon, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -51,6 +52,7 @@ export default function SidebarIconManifest({icon, name, id, setCurrentGame, set
                 setCurrentInstall("")
                 setDisplayName(name)
                 setBackground(background)
+                setGameIcon(icon)
             }} alt={"?"}/> : null}
             {(enabled) ?
                 (isOpen && popup == POPUPS.NONE) && (

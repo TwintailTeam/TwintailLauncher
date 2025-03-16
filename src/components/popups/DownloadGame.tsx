@@ -4,8 +4,9 @@ import FolderInput from "../common/FolderInput.tsx";
 import CheckBox from "../common/CheckBox.tsx";
 import TextDisplay from "../common/TextDisplay.tsx";
 import SelectMenu from "../common/SelectMenu.tsx";
+import {invoke} from "@tauri-apps/api/core";
 
-export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions}: {versions: any, settings: any, biz: any, displayName: string, setOpenPopup: (popup: POPUPS) => void}) {
+export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls}: {icon: string, background: string, versions: any, settings: any, biz: any, displayName: string, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
 
     return (
         <div className="rounded-lg h-3/4 w-2/4 flex flex-col p-4 gap-8 overflow-scroll">
@@ -17,15 +18,40 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                 <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
                     setOpenPopup(POPUPS.NONE)
                     // @ts-ignore
-                    console.log("skip hash:", Boolean(document.getElementById("skip_hash_validation").checked));
+                    let hash_skip = document.getElementById("skip_hash_validation").checked;
                     // @ts-ignore
-                    console.log("skip version:", Boolean(document.getElementById("skip_version_updates").checked));
+                    let skip_version = document.getElementById("skip_version_updates").checked;
                     // @ts-ignore
-                    console.log("install path:", document.getElementById("install_game_path").value);
+                    let install_path = document.getElementById("install_game_path").value;
                     // @ts-ignore
                     let gv = document.getElementById("game_version");
                     // @ts-ignore
-                    console.log("install version:", gv.options[gv.selectedIndex].value);
+                    let gvv = gv.options[gv.selectedIndex].value;
+
+                    invoke("add_install", {
+                        manifestId: biz,
+                        version: gvv,
+                        name: displayName,
+                        directory: install_path + "/" + gvv,
+                        runner: "none",
+                        dxvk: "none",
+                        gameIcon: icon,
+                        gameBackground: background,
+                        ignoreUpdates: skip_version,
+                        skipHashCheck: hash_skip,
+                        useJadeite: false,
+                        useXxmi: false,
+                        useFpsUnlock: false,
+                        envVars: "",
+                        preLaunchCommand: "",
+                        launchCommand: "none",
+                    }).then(r => {
+                        if (r) {
+                            pushInstalls();
+                        } else {
+                            console.log("error");
+                        }
+                    });
                 }}>
                     <DownloadCloudIcon className=""/>
                     <span className="font-semibold translate-y-px">Start download</span>

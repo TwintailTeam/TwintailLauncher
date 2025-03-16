@@ -6,7 +6,7 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository};
+use crate::utils::db_manager::{create_manifest, create_repository, get_manifest_info_by_filename, get_repository_info_by_github_id};
 use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -46,7 +46,6 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
             }
 
             ()
-
         }
     } else {
         #[cfg(debug_assertions)]
@@ -56,7 +55,6 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
 }
 
 pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, Error> {
-
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
     let repo_name = tmp.split(".").collect::<Vec<&str>>()[0];
@@ -75,7 +73,6 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
             let repo_id = generate_cuid();
-
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
@@ -155,7 +152,8 @@ pub fn load_manifests(app: &AppHandle) {
                                 let reader = BufReader::new(mf);
                                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                                tmp.insert(m, mi.clone());
+                                tmp.insert(m.clone(), mi.clone());
+                                update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
 
                                 #[cfg(debug_assertions)]
                                 { println!("Loaded manifest {}", mi.clone().display_name.as_str()); }
@@ -173,6 +171,21 @@ pub fn load_manifests(app: &AppHandle) {
             }
         }
     }
+
+fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, path: PathBuf) {
+    let dbm = get_manifest_info_by_filename(&app, filename.clone());
+    if dbm.is_none() {
+        let user = path.parent().unwrap().components().last().unwrap().as_os_str().to_str().unwrap();
+        let repo_name = path.components().last().unwrap().as_os_str().to_str().unwrap();
+
+        let dbr = get_repository_info_by_github_id(&app, format!("{user}/{repo_name}"));
+        if dbr.is_some() {
+            let dbrr = dbr.unwrap();
+            let cuid = generate_cuid();
+            create_manifest(&app, cuid, dbrr.id, display_name, filename.as_str(), true).unwrap();
+        }
+    }
+}
 
 pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
     app.state::<ManifestLoader>().0.read().unwrap().clone()
@@ -234,7 +247,8 @@ pub struct LauncherInstall {
     pub use_xxmi: bool,
     pub use_fps_unlock: bool,
     pub env_vars: String,
-    pub pre_launch_command: String
+    pub pre_launch_command: String,
+    pub launch_command: String
 }
 
 // === MANIFESTS ===
@@ -302,7 +316,8 @@ pub struct DiffGameFile {
     pub decompressed_size: String,
     pub file_hash: String,
     pub diff_type: String,
-    pub original_version: String
+    pub original_version: String,
+    pub delete_files: Vec<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

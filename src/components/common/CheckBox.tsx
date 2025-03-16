@@ -27,6 +27,26 @@ export default function CheckBox({ id, name, enabled, fetchSettings}: { id: stri
                             setIsEnabled(!isEnabled);
                         }
                         break;
+                        case "skip_version_updates2": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
+                        case "skip_hash_validation2": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
+                        case "tweak_jadeite": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
+                        case "tweak_xxmi": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
+                        case "tweak_fps_unlock": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
                     }
                 }}/>
                 {/*<div className={`h-full aspect-square rounded-full bg-white transition-all absolute ${isEnabled ? "translate-x-full" : "translate-x-0"}`}/>*/}
