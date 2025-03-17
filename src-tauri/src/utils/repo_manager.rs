@@ -237,8 +237,10 @@ pub struct LauncherInstall {
     pub version: String,
     pub name: String,
     pub directory: String,
-    pub runner: String,
-    pub dxvk: String,
+    pub runner_path: String,
+    pub dxvk_path: String,
+    pub runner_version: String,
+    pub dxvk_version: String,
     pub game_icon: String,
     pub game_background: String,
     pub ignore_updates: bool,
@@ -248,7 +250,8 @@ pub struct LauncherInstall {
     pub use_fps_unlock: bool,
     pub env_vars: String,
     pub pre_launch_command: String,
-    pub launch_command: String
+    pub launch_command: String,
+    pub fps_value: String
 }
 
 // === MANIFESTS ===

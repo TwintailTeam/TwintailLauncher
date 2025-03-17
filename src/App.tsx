@@ -103,7 +103,7 @@ export default class App extends React.Component<any, any> {
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
                     {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
-                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup}/>}
+                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
                 </div>
             </main>
         )

@@ -16,7 +16,7 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
             </div>
             <div className="flex flex-row-reverse">
                 <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
-                    setOpenPopup(POPUPS.NONE)
+                    setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;
                     // @ts-ignore
@@ -33,8 +33,10 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         version: gvv,
                         name: displayName,
                         directory: install_path + "/" + gvv,
-                        runner: "none",
-                        dxvk: "none",
+                        runnerPath: "none",
+                        dxvkPath: "none",
+                        runnerVersion: "none",
+                        dxvkVersion: "none",
                         gameIcon: icon,
                         gameBackground: background,
                         ignoreUpdates: skip_version,
@@ -45,15 +47,16 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         envVars: "",
                         preLaunchCommand: "",
                         launchCommand: "none",
+                        fpsValue: "60"
                     }).then(r => {
                         if (r) {
                             pushInstalls();
                         } else {
-                            console.log("error");
+                            console.error("Download error!");
                         }
                     });
                 }}>
-                    <DownloadCloudIcon className=""/>
+                    <DownloadCloudIcon/>
                     <span className="font-semibold translate-y-px">Start download</span>
                 </button>
             </div>

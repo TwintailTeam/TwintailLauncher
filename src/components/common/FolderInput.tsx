@@ -114,6 +114,12 @@ export default class FolderInput extends React.Component<IProps, IState> {
             case "install_game_path2": {
             }
             break;
+            case "install_runner_path": {
+            }
+            break;
+            case "install_dxvk_path": {
+            }
+            break;
         }
     }
 
