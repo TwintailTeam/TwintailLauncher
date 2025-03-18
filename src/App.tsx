@@ -45,7 +45,9 @@ export default class App extends React.Component<any, any> {
             globalSettings: {},
             preloadAvailable: false,
             gameVersions: [],
-            installSettings: {}
+            installSettings: {},
+            runnerVersions: [],
+            dxvkVersions: []
         }
     }
 
@@ -81,6 +83,7 @@ export default class App extends React.Component<any, any> {
                     </button> : null}
                     {(this.state.currentInstall !== "") ? <button onClick={() => {
                         this.fetchInstallSettings(this.state.currentInstall);
+                        this.fetchCompatibilityVersions();
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {
                             this.setState({openPopup: POPUPS.INSTALLSETTINGS});
@@ -103,7 +106,7 @@ export default class App extends React.Component<any, any> {
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
                     {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
-                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
+                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
                 </div>
             </main>
         )
@@ -219,6 +222,22 @@ export default class App extends React.Component<any, any> {
             tmp.push({value: g.metadata.version, name: (game.latest_version === g.metadata.version) ? `Latest (${g.metadata.version})` : g.metadata.version});
         });
         this.setState({gameVersions: tmp});
+    }
+
+    fetchCompatibilityVersions() {
+        invoke("list_compatibility_manifests").then(data => {
+            if (data === null) {
+                console.error("Failed to get compatibility versions.");
+            } else {
+                let r = JSON.parse(data as string);
+                let tmp: { value: any; name: any; }[] = [];
+                r.versions.forEach((g: any) => {
+                    tmp.push({value: g.version, name: g.version});
+                });
+                console.log(tmp);
+                this.setState({runnerVersions: tmp, dxvkVersions: tmp});
+            }
+        })
     }
 
     setOpenPopup(state: POPUPS) {

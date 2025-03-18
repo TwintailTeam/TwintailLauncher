@@ -30,9 +30,6 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
             let reader = BufReader::new(rm);
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
-            // remove this shit from actual manifest clone as normal people do not need it
-            fs::remove_dir_all(&repo_path.join("scripts")).unwrap();
-
             let repo_id = generate_cuid();
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
@@ -49,7 +46,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
         }
     } else {
         #[cfg(debug_assertions)]
-        { println!("Official repository is already cloned!"); }
+        { println!("Official game repository is already cloned!"); }
         update_repositories(&repo_path).unwrap();
     }
 }
@@ -81,7 +78,7 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
                 let cuid = generate_cuid();
-                create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), false).unwrap();
+                create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), true).unwrap();
             }
 
             Ok(true)
@@ -120,6 +117,51 @@ pub fn update_repositories(path: &PathBuf) -> Result<bool, Error> {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
+    let url = "https://github.com/AndigenaTeam/runner-manifests.git";
+
+    let tmp = url.split("/").collect::<Vec<&str>>()[4];
+    let user = url.split("/").collect::<Vec<&str>>()[3];
+    let repo_name = tmp.split(".").collect::<Vec<&str>>()[0];
+
+    let repo_path = path.join(format!("{}/{}", user, repo_name).as_str());
+    let repo_manifest = repo_path.join("repository.json");
+
+    if !path.exists() {
+        return;
+    } else if !repo_path.exists() {
+        Repository::clone(url, &repo_path).unwrap();
+
+        if repo_manifest.exists() {
+            let rm = fs::File::open(&repo_manifest).unwrap();
+            let reader = BufReader::new(rm);
+            let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
+
+            let repo_id = generate_cuid();
+            create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
+
+            for m in rma.manifests {
+                let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
+                let reader = BufReader::new(mf);
+                let mi: RunnerManifest = serde_json::from_reader(reader).unwrap();
+
+                let cuid = generate_cuid();
+                create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
+            }
+
+            ()
+        }
+    } else {
+        #[cfg(debug_assertions)]
+        { println!("Official compatibility repository is already cloned!"); }
+        update_repositories(&repo_path).unwrap();
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {}
+
 // === MANIFESTS ===
 
 pub fn load_manifests(app: &AppHandle) {
@@ -147,21 +189,37 @@ pub fn load_manifests(app: &AppHandle) {
                             let ml = ManifestLoader::default();
                             let mut tmp = ml.0.write().unwrap();
 
+                            let cl = CompatibilityLoader::default();
+                            let mut tmp1 = cl.0.write().unwrap();
+
                             for m in rma.manifests {
-                                let mf = fs::File::open(&p.join(&m.as_str())).unwrap();
-                                let reader = BufReader::new(mf);
-                                let mi: GameManifest = serde_json::from_reader(reader).unwrap();
+                                let file = fs::File::open(&p.join(&m.as_str())).unwrap();
+                                let reader = BufReader::new(file);
+                                let manifest_data = serde_json::from_reader(reader).unwrap();
 
-                                tmp.insert(m.clone(), mi.clone());
-                                update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
-
-                                #[cfg(debug_assertions)]
-                                { println!("Loaded manifest {}", mi.clone().display_name.as_str()); }
+                                match manifest_data {
+                                    ManifestData::Game(mi) => {
+                                        tmp.insert(m.clone(), mi.clone());
+                                        update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
+                                        #[cfg(debug_assertions)]
+                                        { println!("Loaded game manifest {}", m.as_str()); }
+                                    }
+                                    #[cfg(target_os = "linux")]
+                                    ManifestData::Runner(mi) => {
+                                        tmp1.insert(m.clone(), mi.clone());
+                                        update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
+                                        #[cfg(debug_assertions)]
+                                        { println!("Loaded compatibility manifest {}", m.as_str()); }
+                                    }
+                                    #[cfg(target_os = "windows")]
+                                    ManifestData::Runner(_) => {}
+                                }
                             }
 
                             drop(tmp);
+                            drop(tmp1);
                             app.manage(ml);
-
+                            app.manage(cl);
                         } else {
                             #[cfg(debug_assertions)]
                             { println!("Failed to load manifests from {}! Not a valid KeqingLauncher repository?", p.display()); }
@@ -202,7 +260,32 @@ pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> 
     }
 }
 
+pub fn get_compatibilities(app: &AppHandle) -> LinkedHashMap<String, RunnerManifest> {
+    app.state::<CompatibilityLoader>().0.read().unwrap().clone()
+}
+
+pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerManifest> {
+    let loader = app.state::<CompatibilityLoader>().0.read().unwrap().clone();
+
+    if loader.contains_key(filename) {
+        let content = loader.get(filename).unwrap();
+        Some(content.clone())
+    } else {
+        None
+    }
+}
+
 // === STRUCTS ===
+
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+enum ManifestData {
+    Game(GameManifest),
+    Runner(RunnerManifest)
+}
+
+#[derive(Default)]
+pub struct CompatibilityLoader(pub RwLock<LinkedHashMap<String, RunnerManifest>>);
 
 #[derive(Default)]
 pub struct ManifestLoader(pub RwLock<LinkedHashMap<String, GameManifest>>);
@@ -255,6 +338,19 @@ pub struct LauncherInstall {
 }
 
 // === MANIFESTS ===
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunnerManifest {
+    pub version: i32,
+    pub display_name: String,
+    pub versions: Vec<RunnerVersion>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunnerVersion {
+    pub version: String,
+    pub url: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameManifest {

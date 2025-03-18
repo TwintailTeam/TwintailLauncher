@@ -6,7 +6,7 @@ import TextInput from "../../common/TextInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 
-export default function SettingsInstall({setOpenPopup, installSettings, pushInstalls}: {installSettings: any, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
+export default function SettingsInstall({setOpenPopup, installSettings, pushInstalls, runnerVersions, dxvkVersions}: {runnerVersions: any, dxvkVersions: any, installSettings: any, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
     return (
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
@@ -42,13 +42,13 @@ export default function SettingsInstall({setOpenPopup, installSettings, pushInst
                     {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={installSettings.use_jadeite} name={"Inject Jadeite"} id={"tweak_jadeite"}/> : null}
                     <CheckBox enabled={installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"}/>
                     <CheckBox enabled={installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"}/>
-                    <SelectMenu id={"install_fps_value"} name={"FPS value"} options={[]}/>
+                    <SelectMenu id={"install_fps_value"} name={"FPS value"} options={[{value: "60", name: "60"}]}/>
                     <TextInput name={"Environment variables"} value={installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"}/>
                     <TextInput name={"Pre launch command"} value={installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={"%command%"}/>
                     <TextInput name={"Launch command"} value={installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={"%command%"}/>
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} options={[]}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} options={runnerVersions}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner path"} clearable={true} value={`${installSettings.runner_path}`} folder={true} id={"install_runner_path"}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_dxvk_version"} name={"DXVK version"} options={[]}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_dxvk_version"} name={"DXVK version"} options={dxvkVersions}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"DXVK path"} clearable={true} value={`${installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"}/> : null}
                 </div>
             </div>

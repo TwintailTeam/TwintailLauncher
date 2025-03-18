@@ -1,7 +1,7 @@
 use linked_hash_map::LinkedHashMap;
 use tauri::{AppHandle};
 use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id, update_manifest_enabled_by_id};
-use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
+use crate::utils::repo_manager::{get_compatibilities, get_compatibility, get_manifest, get_manifests, GameManifest, RunnerManifest};
 
 #[tauri::command]
 pub fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {
@@ -47,10 +47,8 @@ pub fn list_game_manifests(app: AppHandle) -> Option<String> {
     let manifestss: LinkedHashMap<String, GameManifest> = get_manifests(&app);
     let mut manifests: Vec<GameManifest> = Vec::new();
 
-    for value in manifestss.into_iter().map(|(_, value)| value) {
-        manifests.push(value);
-    }
-    
+    for value in manifestss.clone().into_iter().map(|(_, value)| value) { manifests.push(value); }
+
     if manifests.is_empty() {
         None
     } else {
@@ -70,7 +68,6 @@ pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option
         if dbm.enabled {
             let m = manifest.unwrap();
             let stringified = serde_json::to_string(&m).unwrap();
-
             Some(stringified)
         } else {
             None
@@ -91,7 +88,6 @@ pub fn get_game_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<St
         if dbm.enabled {
             let m = manifest.unwrap();
             let stringified = serde_json::to_string(&m).unwrap();
-
             Some(stringified)
         } else {
             None
@@ -113,3 +109,49 @@ pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Opt
         None
     }
 }
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
+    let manifestss: LinkedHashMap<String, RunnerManifest> = get_compatibilities(&app);
+    let mut manifests: Vec<RunnerManifest> = Vec::new();
+
+    for value in manifestss.clone().into_iter().map(|(_, value)| value) { manifests.push(value); }
+    println!("{:#?}", manifestss.clone());
+
+    if manifests.is_empty() {
+        None
+    } else {
+        let stringified = serde_json::to_string(&manifests).unwrap();
+        Some(stringified)
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> { None }
+
+#[cfg(target_os = "linux")]
+#[tauri::command]
+pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<String> {
+    let db_manifest = get_manifest_info_by_id(&app, id.clone());
+
+    if db_manifest.is_some() {
+        let dbm = db_manifest.unwrap();
+        let manifest = get_compatibility(&app, &dbm.filename);
+
+        if dbm.enabled {
+            let m = manifest.unwrap();
+            let stringified = serde_json::to_string(&m).unwrap();
+            Some(stringified)
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[tauri::command]
+pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<String> { None }

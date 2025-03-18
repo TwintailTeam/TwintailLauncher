@@ -5,7 +5,7 @@ use sqlx::{query, Error, Executor, Pool, Row, Sqlite, error::BoxDynError, sqlite
 use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
 use crate::commands::settings::GlobalSettings;
-use crate::utils::repo_manager::{setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
+use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
 use crate::utils::{run_async_command};
 
 pub async fn init_db(app: &AppHandle) {
@@ -106,8 +106,10 @@ pub async fn init_db(app: &AppHandle) {
         #[cfg(debug_assertions)]
         { println!("Manifests directory does not exist... Creating new one for you!"); }
         setup_official_repository(&app, &manifests_dir);
+        setup_compatibility_repository(&app, &manifests_dir);
     } else {
         setup_official_repository(&app, &manifests_dir);
+        setup_compatibility_repository(&app, &manifests_dir);
     }
 }
 
