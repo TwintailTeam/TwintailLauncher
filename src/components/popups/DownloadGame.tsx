@@ -6,7 +6,7 @@ import TextDisplay from "../common/TextDisplay.tsx";
 import SelectMenu from "../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 
-export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls}: {icon: string, background: string, versions: any, settings: any, biz: any, displayName: string, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
+export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions}: {icon: string, background: string, versions: any, settings: any, biz: any, displayName: string, runnerVersions: any, dxvkVersions: any, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
 
     return (
         <div className="rounded-lg h-3/4 w-2/4 flex flex-col p-4 gap-8 overflow-scroll">
@@ -28,6 +28,20 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                     // @ts-ignore
                     let gvv = gv.options[gv.selectedIndex].value;
 
+                    let rv = document.getElementById("runner_version");
+                    let rvv = "none";
+                    if (rv !== null) {
+                        // @ts-ignore
+                        rvv = rv.options[rv.selectedIndex].value;
+                    }
+
+                    let dv = document.getElementById("dxvk_version");
+                    let dvv = "none";
+                    if (dv !== null) {
+                        // @ts-ignore
+                        dvv = dv.options[dv.selectedIndex].value;
+                    }
+
                     invoke("add_install", {
                         manifestId: biz,
                         version: gvv,
@@ -35,8 +49,8 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         directory: install_path + "/" + gvv,
                         runnerPath: "none",
                         dxvkPath: "none",
-                        runnerVersion: "none",
-                        dxvkVersion: "none",
+                        runnerVersion: rvv,
+                        dxvkVersion: dvv,
                         gameIcon: icon,
                         gameBackground: background,
                         ignoreUpdates: skip_version,
@@ -66,7 +80,9 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"}/>
                     <TextDisplay name={"Available disk space"} value={"33"} style={"text-white px-3"}/>
                     <TextDisplay name={"Required disk space"} value={"10"} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions}/>
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""}/>
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
                 </div>
             </div>
     )

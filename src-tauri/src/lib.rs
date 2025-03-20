@@ -6,7 +6,7 @@ use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, li
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
 use crate::commands::settings::{list_settings, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_xxmi_path, update_settings_third_party_repo_updates};
 use crate::utils::db_manager::{init_db, DbInstances};
-use crate::utils::repo_manager::load_manifests;
+use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders, RunnerLoader};
 use crate::utils::run_async_command;
 
 mod utils;
@@ -16,9 +16,9 @@ mod commands;
 pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
         .setup(|app| {
             let handle = app.handle();
-
             run_async_command(async { init_db(&handle).await; });
             load_manifests(&handle);
 

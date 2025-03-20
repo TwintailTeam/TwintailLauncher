@@ -96,7 +96,10 @@ export default class App extends React.Component<any, any> {
                     }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
                     </button> : <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         this.fetchGameVersions(this.state.currentGame);
-                        this.setState({openPopup: POPUPS.DOWNLOADGAME});
+                        this.fetchCompatibilityVersions();
+                        setTimeout(() => {
+                            this.setState({openPopup: POPUPS.DOWNLOADGAME});
+                        }, 20);
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
                     </button>}
                 </div>
@@ -105,8 +108,8 @@ export default class App extends React.Component<any, any> {
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
-                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
-                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
+                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls}/>}
+                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall games={this.state.gamesinfo} runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setCurrentInstall={this.setCurrentInstall} setCurrentGame={this.setCurrentGame} setBackground={this.setBackground}/>}
                 </div>
             </main>
         )
@@ -230,12 +233,16 @@ export default class App extends React.Component<any, any> {
                 console.error("Failed to get compatibility versions.");
             } else {
                 let r = JSON.parse(data as string);
-                let tmp: { value: any; name: any; }[] = [];
-                r.versions.forEach((g: any) => {
-                    tmp.push({value: g.version, name: g.version});
+                let dxvks: any[] = [];
+                let wines: any[] = [];
+                // Bad but will work for now... DO NOT EVER FILTER LIKE THIS...
+                r.filter((e: any) => e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
+                    e.versions.forEach((v: any) => dxvks.push({value: v.version, name: v.version}));
                 });
-                console.log(tmp);
-                this.setState({runnerVersions: tmp, dxvkVersions: tmp});
+                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
+                    e.versions.forEach((v: any) => wines.push({value: v.version, name: v.version}));
+                });
+                this.setState({runnerVersions: wines, dxvkVersions: dxvks});
             }
         })
     }

@@ -117,7 +117,6 @@ pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
     let mut manifests: Vec<RunnerManifest> = Vec::new();
 
     for value in manifestss.clone().into_iter().map(|(_, value)| value) { manifests.push(value); }
-    println!("{:#?}", manifestss.clone());
 
     if manifests.is_empty() {
         None

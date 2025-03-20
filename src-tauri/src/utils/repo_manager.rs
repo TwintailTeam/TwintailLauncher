@@ -186,11 +186,10 @@ pub fn load_manifests(app: &AppHandle) {
                             let reader = BufReader::new(rm);
                             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
-                            let ml = ManifestLoader::default();
-                            let mut tmp = ml.0.write().unwrap();
+                            let ml = app.state::<ManifestLoaders>().clone();
 
-                            let cl = CompatibilityLoader::default();
-                            let mut tmp1 = cl.0.write().unwrap();
+                            let mut tmp = ml.game.0.write().unwrap();
+                            let mut tmp1 = ml.runner.0.write().unwrap();
 
                             for m in rma.manifests {
                                 let file = fs::File::open(&p.join(&m.as_str())).unwrap();
@@ -205,9 +204,9 @@ pub fn load_manifests(app: &AppHandle) {
                                         { println!("Loaded game manifest {}", m.as_str()); }
                                     }
                                     #[cfg(target_os = "linux")]
-                                    ManifestData::Runner(mi) => {
-                                        tmp1.insert(m.clone(), mi.clone());
-                                        update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
+                                    ManifestData::Runner(ri) => {
+                                        tmp1.insert(m.clone(), ri.clone());
+                                        update_manifest_table(&app, m.clone(), ri.display_name.clone().as_str(), p.clone());
                                         #[cfg(debug_assertions)]
                                         { println!("Loaded compatibility manifest {}", m.as_str()); }
                                     }
@@ -218,8 +217,6 @@ pub fn load_manifests(app: &AppHandle) {
 
                             drop(tmp);
                             drop(tmp1);
-                            app.manage(ml);
-                            app.manage(cl);
                         } else {
                             #[cfg(debug_assertions)]
                             { println!("Failed to load manifests from {}! Not a valid KeqingLauncher repository?", p.display()); }
@@ -246,11 +243,11 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
 }
 
 pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
-    app.state::<ManifestLoader>().0.read().unwrap().clone()
+    app.state::<ManifestLoaders>().game.0.read().unwrap().clone()
 }
 
 pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> {
-    let loader = app.state::<ManifestLoader>().0.read().unwrap().clone();
+    let loader = app.state::<ManifestLoaders>().game.0.read().unwrap().clone();
 
     if loader.contains_key(filename) {
         let content = loader.get(filename).unwrap();
@@ -261,11 +258,11 @@ pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> 
 }
 
 pub fn get_compatibilities(app: &AppHandle) -> LinkedHashMap<String, RunnerManifest> {
-    app.state::<CompatibilityLoader>().0.read().unwrap().clone()
+    app.state::<ManifestLoaders>().runner.0.read().unwrap().clone()
 }
 
 pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerManifest> {
-    let loader = app.state::<CompatibilityLoader>().0.read().unwrap().clone();
+    let loader = app.state::<ManifestLoaders>().runner.0.read().unwrap().clone();
 
     if loader.contains_key(filename) {
         let content = loader.get(filename).unwrap();
@@ -277,18 +274,23 @@ pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerMan
 
 // === STRUCTS ===
 
-#[derive(Deserialize, Serialize)]
+#[derive(Default)]
+pub struct RunnerLoader(pub RwLock<LinkedHashMap<String, RunnerManifest>>);
+
+#[derive(Default)]
+pub struct ManifestLoader(pub RwLock<LinkedHashMap<String, GameManifest>>);
+
+pub struct ManifestLoaders {
+    pub game: ManifestLoader,
+    pub runner: RunnerLoader,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(untagged)]
 enum ManifestData {
     Game(GameManifest),
     Runner(RunnerManifest)
 }
-
-#[derive(Default)]
-pub struct CompatibilityLoader(pub RwLock<LinkedHashMap<String, RunnerManifest>>);
-
-#[derive(Default)]
-pub struct ManifestLoader(pub RwLock<LinkedHashMap<String, GameManifest>>);
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RepositoryManifest {

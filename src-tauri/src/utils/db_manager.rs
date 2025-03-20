@@ -100,6 +100,18 @@ pub async fn init_db(app: &AppHandle) {
         query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1;").bind(jadeitepath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
     }
 
+    #[cfg(target_os = "linux")]
+    {
+        let comppath = data_path.join("compatibility");
+        let wine = comppath.join("runners");
+        let dxvk = comppath.join("dxvk");
+
+        if !comppath.exists() {
+            fs::create_dir_all(&wine).unwrap();
+            fs::create_dir_all(&dxvk).unwrap();
+        }
+    }
+
     // Init this fuck AFTER you add shitty DB instances to state
     if !manifests_dir.exists() {
         fs::create_dir_all(&manifests_dir).unwrap();
