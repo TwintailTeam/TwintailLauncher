@@ -1,6 +1,6 @@
 use std::fs;
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::generate_cuid;
 use crate::utils::repo_manager::get_manifest;
 
@@ -82,5 +82,161 @@ pub async fn remove_install(app: AppHandle, id: String) -> Option<bool> {
         // TODO: Write more bullshit to uninstall the installation and wipe its files
         delete_installation_by_id(&app, id).unwrap();
         Some(true)
+    }
+}
+
+#[tauri::command]
+pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_game_location_by_id(&app, m.id, path);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_runner_location_by_id(&app, m.id, path);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_dxvk_location_by_id(&app, m.id, path);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_skip_version_updates(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_ignore_updates_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_skip_hash_check_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_use_jadeite_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_use_xxmi_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_use_fps_unlock_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_fps_value_by_id(&app, m.id, fps);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_env_vars(app: AppHandle, id: String, env_vars: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_env_vars_by_id(&app, m.id, env_vars);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_pre_launch_cmd(app: AppHandle, id: String, cmd: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_pre_launch_cmd_by_id(&app, m.id, cmd);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_launch_cmd(app: AppHandle, id: String, cmd: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_launch_cmd_by_id(&app, m.id, cmd);
+        Some(true)
+    } else {
+        None
     }
 }

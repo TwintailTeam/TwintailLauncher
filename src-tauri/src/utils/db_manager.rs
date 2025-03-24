@@ -604,6 +604,114 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
     }
 }
 
+pub fn update_install_game_location_by_id(app: &AppHandle, id: String, location: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'directory' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_runner_location_by_id(app: &AppHandle, id: String, location: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'runner_path' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_dxvk_location_by_id(app: &AppHandle, id: String, location: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'dxvk_path' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_ignore_updates_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'ignore_updates' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_skip_hash_check_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'skip_hash_check' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_jadeite_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_jadeite' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_xxmi_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_xxmi' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_fps_unlock_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_fps_unlock' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_fps_value_by_id(app: &AppHandle, id: String, fps: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'fps_value' = $1 WHERE id = $2").bind(fps).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_env_vars_by_id(app: &AppHandle, id: String, env_vars: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'env_vars' = $1 WHERE id = $2").bind(env_vars).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_pre_launch_cmd_by_id(app: &AppHandle, id: String, cmd: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'pre_launch_command' = $1 WHERE id = $2").bind(cmd).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_launch_cmd_by_id(app: &AppHandle, id: String, cmd: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'launch_command' = $1 WHERE id = $2").bind(cmd).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
 // === DB RELATED ===
 
 fn add_migrations(db_url: &str, migrations: Vec<Migration>) -> Option<HashMap<String, MigrationList>> {

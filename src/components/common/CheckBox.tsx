@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
 
-export default function CheckBox({ id, name, enabled, fetchSettings}: { id: string, name: string, enabled: boolean, fetchSettings?: () => void}) {
+export default function CheckBox({ id, name, enabled, install, fetchSettings, fetchInstallSettings}: { id: string, name: string, enabled: boolean, install?: string, fetchSettings?: () => void, fetchInstallSettings?: (id: string) => void }) {
     const [isEnabled, setIsEnabled] = useState<boolean>(enabled);
 
     return (
@@ -28,23 +28,48 @@ export default function CheckBox({ id, name, enabled, fetchSettings}: { id: stri
                         }
                         break;
                         case "skip_version_updates2": {
-                            setIsEnabled(!isEnabled);
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_skip_version_updates", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
                         }
                         break;
                         case "skip_hash_validation2": {
-                            setIsEnabled(!isEnabled);
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_skip_hash_valid", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
                         }
                         break;
                         case "tweak_jadeite": {
-                            setIsEnabled(!isEnabled);
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_use_jadeite", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
                         }
                         break;
                         case "tweak_xxmi": {
-                            setIsEnabled(!isEnabled);
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_use_xxmi", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
                         }
                         break;
                         case "tweak_fps_unlock": {
-                            setIsEnabled(!isEnabled);
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_use_fps_unlock", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
                         }
                         break;
                     }

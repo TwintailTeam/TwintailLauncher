@@ -407,7 +407,8 @@ pub struct FullGameFile {
     pub file_url: String,
     pub compressed_size: String,
     pub decompressed_size: String,
-    pub file_hash: String
+    pub file_hash: String,
+    pub file_path: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
