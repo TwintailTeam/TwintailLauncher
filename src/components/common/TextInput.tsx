@@ -11,8 +11,7 @@ export default function TextInput({ id, name, value, placeholder, readOnly, patt
                     switch (id) {
                         case "install_env_vars": {
                             if (fetchInstallSettings !== undefined) {
-                                // god please have mercy this should do the sort of okayish job for anything user types for a format of env vars...
-                                const regex = /^[a-zA-Z0-9_-]+=(?:\S(?:[a-zA-Z0-9\s]*\S)?|"(?:[^"\s\\]|\\.)+"|'(?:[^'\s\\]|\\.)+')(?:;[a-zA-Z0-9_-]+=(?:\S(?:[a-zA-Z0-9\s]*\S)?|"(?:[^"\s\\]|\\.)+"|'(?:[^'\s\\]|\\.)+'))*;?$/gi;
+                                const regex = /^([\w-]+=([\w-]+|"[\s\w-\\/]*");)*$/gi;
                                 if (regex.test(e) || e === "") {
                                     invoke("update_install_env_vars", {envVars: `${e}`, id: install}).then(() => {
                                         fetchInstallSettings(install as string)
