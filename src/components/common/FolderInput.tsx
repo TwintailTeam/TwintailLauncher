@@ -110,6 +110,13 @@ export default class FolderInput extends React.Component<IProps, IState> {
                 }
             }
             break;
+            case 'default_prefix_path': {
+                if (this.props.fetchSettings !== undefined) {
+                    invoke("update_settings_default_prefix_path", {path: path}).then(() => {});
+                    this.props.fetchSettings();
+                }
+            }
+            break;
             case "install_game_path": {
             }
             break;
@@ -130,6 +137,16 @@ export default class FolderInput extends React.Component<IProps, IState> {
             case "install_dxvk_path": {
                 if (this.props.fetchInstallSettings !== undefined) {
                     invoke("update_install_dxvk_path", {path: path, id: this.props.install}).then(() => {});
+                    this.props.fetchInstallSettings(this.props.install as string)
+                }
+            }
+            break;
+            case "install_prefix_path": {
+            }
+            break;
+            case "install_prefix_path2": {
+                if (this.props.fetchInstallSettings !== undefined) {
+                    invoke("update_install_prefix_path", {path: path, id: this.props.install}).then(() => {});
                     this.props.fetchInstallSettings(this.props.install as string)
                 }
             }

@@ -42,6 +42,13 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         dvv = dv.options[dv.selectedIndex].value;
                     }
 
+                    let rp = document.getElementById("install_prefix_path");
+                    let rpp = "none";
+                    if (rp !== null) {
+                        // @ts-ignore
+                        rpp = rp.value + "/" + gvv;
+                    }
+
                     invoke("add_install", {
                         manifestId: biz,
                         version: gvv,
@@ -61,7 +68,8 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         envVars: "",
                         preLaunchCommand: "",
                         launchCommand: "none",
-                        fpsValue: "60"
+                        fpsValue: "60",
+                        runnerPrefix: rpp
                     }).then(r => {
                         if (r) {
                             pushInstalls();
@@ -83,6 +91,7 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                     <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""}/>
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"}/>: null}
                 </div>
             </div>
     )
