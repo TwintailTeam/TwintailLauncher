@@ -92,7 +92,15 @@ export default class App extends React.Component<any, any> {
                         <Settings className="text-white w-8 h-8" />
                     </button> : null}
                     {(this.state.currentInstall !== "") ? <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
-                        console.log("launching game...")
+                        setTimeout(() => {
+                            invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
+                                if (r) {
+                                    //TODO: what to do with launcher window???, disable launch button if launcher is not "close on launch"
+                                } else {
+                                    console.error("Launch error!");
+                                }
+                            })
+                        }, 20);
                     }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
                     </button> : <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         this.fetchGameVersions(this.state.currentGame);

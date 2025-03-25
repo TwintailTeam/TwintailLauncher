@@ -1,8 +1,9 @@
 use std::fs;
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::game_launch_manager::launch;
 use crate::utils::generate_cuid;
-use crate::utils::repo_manager::get_manifest;
+use crate::utils::repo_manager::{get_manifest};
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -52,10 +53,10 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
         let cuid = generate_cuid();
         let m = manifest_id + ".json";
         let dbm = get_manifest_info_by_filename(&app, m.clone()).unwrap();
-        let gm = get_manifest(&app, &m.clone()).unwrap();
+        let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let data_path = app.path().data_dir().unwrap();
+        let data_path = app.path().app_data_dir().unwrap();
         let comppath = data_path.join("compatibility");
         let wine = comppath.join("runners");
         let dxvk = comppath.join("dxvk");
@@ -251,6 +252,26 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
         let m = install.unwrap();
         update_install_prefix_location_by_id(&app, m.id, path);
         Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        let gmm = get_manifest_info_by_id(&app, m.clone().manifest_id).unwrap();
+        let gm = get_manifest(&app, gmm.filename).unwrap();
+
+        let rslt = launch(m.clone(), gm);
+        if rslt.is_ok() {
+            Some(true)
+        } else {
+            None
+        }
     } else {
         None
     }

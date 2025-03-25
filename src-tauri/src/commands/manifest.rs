@@ -59,7 +59,7 @@ pub fn list_game_manifests(app: AppHandle) -> Option<String> {
 
 #[tauri::command]
 pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option<String> {
-    let manifest = get_manifest(&app, &filename);
+    let manifest = get_manifest(&app, filename.clone());
     let db_manifest = get_manifest_info_by_filename(&app, filename.clone());
 
     if manifest.is_some() && db_manifest.is_some() {
@@ -83,7 +83,7 @@ pub fn get_game_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<St
 
     if db_manifest.is_some() {
         let dbm = db_manifest.unwrap();
-        let manifest = get_manifest(&app, &dbm.filename);
+        let manifest = get_manifest(&app, dbm.filename);
 
         if dbm.enabled {
             let m = manifest.unwrap();

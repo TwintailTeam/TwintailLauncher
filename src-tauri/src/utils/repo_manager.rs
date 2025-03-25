@@ -246,11 +246,11 @@ pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
     app.state::<ManifestLoaders>().game.0.read().unwrap().clone()
 }
 
-pub fn get_manifest(app: &AppHandle, filename: &String) -> Option<GameManifest> {
+pub fn get_manifest(app: &AppHandle, filename: String) -> Option<GameManifest> {
     let loader = app.state::<ManifestLoaders>().game.0.read().unwrap().clone();
 
-    if loader.contains_key(filename) {
-        let content = loader.get(filename).unwrap();
+    if loader.contains_key(&filename) {
+        let content = loader.get(&filename).unwrap();
         Some(content.clone())
     } else {
         None
@@ -315,7 +315,7 @@ pub struct LauncherManifest {
     pub enabled: bool
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LauncherInstall {
     pub id: String,
     pub manifest_id: String,
