@@ -69,3 +69,13 @@ export default function SettingsInstall({setOpenPopup, installSettings, pushInst
             </div>
     )
 }
+
+/*function grabGameInfo(manifestId: string) {
+    invoke("get_game_manifest_by_manifest_id", {id: manifestId}).then(r => {
+        if (r == null) {
+            console.error("Failed to fetch game info!");
+        } else {
+            return JSON.parse(r as string);
+        }
+    });
+}*/

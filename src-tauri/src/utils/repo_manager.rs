@@ -346,13 +346,22 @@ pub struct LauncherInstall {
 pub struct RunnerManifest {
     pub version: i32,
     pub display_name: String,
-    pub versions: Vec<RunnerVersion>
+    pub versions: Vec<RunnerVersion>,
+    pub paths: RunnerPaths
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RunnerVersion {
     pub version: String,
     pub url: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunnerPaths {
+    pub wine32: String,
+    pub wine64: String,
+    pub wine_server: String,
+    pub wine_boot: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

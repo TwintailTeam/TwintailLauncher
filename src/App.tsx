@@ -182,7 +182,7 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({gamesinfo: gi}), () => {
                     if (games.length > 0 && this.state.currentGame == "") {
                         this.setCurrentGame(games[0].filename.replace(".json", ""));
-                        this.setDisplayName(games[0].display_name)
+                        this.setDisplayName(games[0].display_name);
                         this.setBackground(gi[0].assets.game_background);
                         this.setGameIcon(gi[0].assets.game_icon);
                     }
