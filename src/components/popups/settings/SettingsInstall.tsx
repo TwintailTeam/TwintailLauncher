@@ -5,6 +5,7 @@ import CheckBox from "../../common/CheckBox.tsx";
 import TextInput from "../../common/TextInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
+import React from "react";
 
 interface IProps {
     games: any,
@@ -19,63 +20,77 @@ interface IProps {
     fetchInstallSettings: (id: string) => void
 }
 
-export default function SettingsInstall({setOpenPopup, installSettings, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setCurrentGame, games, setBackground, fetchInstallSettings}: IProps) {
-    return (
-        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
-            <div className="flex flex-row items-center justify-between">
-                <h1 className="text-white font-bold text-2xl">{installSettings.name}</h1>
-                <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
-            </div>
-            <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
-                    setOpenPopup(POPUPS.NONE);
-                    invoke("remove_install", {id: installSettings.id}).then(r => {
-                        if (r) {
-                            pushInstalls();
-                            setCurrentInstall("");
-                            setCurrentGame(games[0].biz);
-                            setBackground(games[0].assets.game_background);
-                        } else {
-                            console.error("Uninstall error!");
-                        }
-                    });
-                }}><Trash2Icon/>
-                    <span className="font-semibold translate-y-px">Uninstall</span>
-                </button>
-                <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
-                    setOpenPopup(POPUPS.NONE);
-                    console.log("repair game!");
-                }}><WrenchIcon/>
-                    <span className="font-semibold translate-y-px">Repair install</span>
-                </button>
-            </div>
-                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
-                    <FolderInput name={"Install location"} clearable={true} value={`${installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <CheckBox enabled={installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <CheckBox enabled={installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={installSettings.use_jadeite} name={"Inject Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/> : null}
-                    <CheckBox enabled={installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <CheckBox enabled={installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <SelectMenu id={"install_fps_value"} name={"FPS value"} options={[{value: "30", name: "30"}, {value: "60", name: "60"}]} selected={`${installSettings.fps_value}`} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <TextInput name={"Environment variables"} value={installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <TextInput name={"Pre launch command"} value={installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    <TextInput name={"Launch command"} value={installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/>
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} options={runnerVersions} selected={(installSettings.runner_version === "none" || installSettings.runner_version === "") ? runnerVersions[0].value : installSettings.runner_version}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner path"} clearable={true} value={`${installSettings.runner_path}`} folder={true} id={"install_runner_path"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix path"} clearable={true} value={`${installSettings.runner_prefix}`} folder={true} id={"install_prefix_path2"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={(installSettings.dxvk_version === "none" || installSettings.dxvk_version === "") ? dxvkVersions[0].value : installSettings.dxvk_version}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"DXVK path"} clearable={true} value={`${installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"} fetchInstallSettings={fetchInstallSettings} install={installSettings.id}/> : null}
-                </div>
-            </div>
-    )
+interface IState {
+    gameSwitches: any
 }
 
-/*function grabGameInfo(manifestId: string) {
-    invoke("get_game_manifest_by_manifest_id", {id: manifestId}).then(r => {
+export default class SettingsInstall extends React.Component<IProps, IState> {
+    constructor(props: IProps) {
+        super(props);
+        this.state = {
+            gameSwitches: {}
+        }
+    }
+    
+    render() {
+        return (
+            <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
+                <div className="flex flex-row items-center justify-between">
+                    <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
+                    <X className="text-white cursor-pointer" onClick={() => this.props.setOpenPopup(POPUPS.NONE)}/>
+                </div>
+                <div className="flex flex-row-reverse">
+                    <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        invoke("remove_install", {id: this.props.installSettings.id}).then(r => {
+                            if (r) {
+                                this.props.pushInstalls();
+                                this.props.setCurrentInstall("");
+                                this.props.setCurrentGame(this.props.games[0].biz);
+                                this.props.setBackground(this.props.games[0].assets.game_background);
+                            } else {
+                                console.error("Uninstall error!");
+                            }
+                        });
+                    }}><Trash2Icon/>
+                        <span className="font-semibold translate-y-px">Uninstall</span>
+                    </button>
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        console.log("repair game!");
+                    }}><WrenchIcon/>
+                        <span className="font-semibold translate-y-px">Repair install</span>
+                    </button>
+                </div>
+                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
+                    <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    {(window.navigator.platform.includes("Linux") && this.state.gameSwitches.jadeite) ? <CheckBox enabled={this.props.installSettings.use_jadeite} name={"Inject Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(this.state.gameSwitches.xxmi) ? <CheckBox enabled={this.props.installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(this.state.gameSwitches.fps_unlocker) ? <CheckBox enabled={this.props.installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(this.state.gameSwitches.fps_unlocker) ? <SelectMenu id={"install_fps_value"} name={"FPS value"} options={[{value: "30", name: "30"}, {value: "60", name: "60"}]} selected={`${this.props.installSettings.fps_value}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    <TextInput name={"Environment variables"} value={this.props.installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    <TextInput name={"Pre launch command"} value={this.props.installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    <TextInput name={"Launch command"} value={this.props.installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} options={this.props.runnerVersions} selected={(this.props.installSettings.runner_version === "none" || this.props.installSettings.runner_version === "") ? this.props.runnerVersions[0].value : this.props.installSettings.runner_version}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner path"} clearable={true} value={`${this.props.installSettings.runner_path}`} folder={true} id={"install_runner_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix path"} clearable={true} value={`${this.props.installSettings.runner_prefix}`} folder={true} id={"install_prefix_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_dxvk_version"} name={"DXVK version"} options={this.props.dxvkVersions} selected={(this.props.installSettings.dxvk_version === "none" || this.props.installSettings.dxvk_version === "") ? this.props.dxvkVersions[0].value : this.props.installSettings.dxvk_version}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"DXVK path"} clearable={true} value={`${this.props.installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                </div>
+            </div>
+        )
+    }
+
+    async componentDidMount() {
+        let r = await invoke("get_game_manifest_by_manifest_id", {id: this.props.installSettings.manifest_id});
         if (r == null) {
             console.error("Failed to fetch game info!");
+            this.setState({gameSwitches: {xxmi: false, fps_unlocker: false, jadeite: false}});
         } else {
-            return JSON.parse(r as string);
+            let rr = JSON.parse(r as string);
+            this.setState({gameSwitches: rr.extra.switches});
         }
-    });
-}*/
+    }
+}

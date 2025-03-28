@@ -466,6 +466,14 @@ pub struct GamePreload {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GameTweakSwitches {
+    pub fps_unlocker: bool,
+    pub jadeite: bool,
+    pub xxmi: bool
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameExtras {
     pub preload: Option<GamePreload>,
+    pub switches: GameTweakSwitches
 }

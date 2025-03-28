@@ -1,6 +1,6 @@
 use std::fs;
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{generate_cuid};
 use crate::utils::repo_manager::{get_manifest};
@@ -260,13 +260,14 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
 #[tauri::command]
 pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
+    let global_settings = get_settings(&app).unwrap();
 
     if install.is_some() {
         let m = install.unwrap();
         let gmm = get_manifest_info_by_id(&app, m.clone().manifest_id).unwrap();
         let gm = get_manifest(&app, gmm.filename).unwrap();
 
-        let rslt = launch(&app, m.clone(), gm);
+        let rslt = launch(&app, m.clone(), gm, global_settings);
         if rslt.is_ok() {
             Some(true)
         } else {
