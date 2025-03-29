@@ -41,7 +41,7 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 6,
             description: "init_install_table",
-            sql: r#"CREATE TABLE install ("id" TEXT PRIMARY KEY, "manifest_id" TEXT, "version" TEXT, "name" TEXT, "directory" TEXT, "runner_path" TEXT, "dxvk_path" TEXT, "runner_version" TEXT, "dxvk_version" TEXT, "game_icon" TEXT, "game_background" TEXT, "ignore_updates" bool, "skip_hash_check" bool, "use_jadeite" bool, "use_xxmi" bool, "use_fps_unlock" bool, "env_vars" TEXT, "pre_launch_command" TEXT, "launch_command" TEXT, "fps_value" TEXT, "runner_prefix_path" TEXT, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
+            sql: r#"CREATE TABLE install ("id" TEXT PRIMARY KEY, "manifest_id" TEXT, "version" TEXT, "name" TEXT, "directory" TEXT, "runner_path" TEXT, "dxvk_path" TEXT, "runner_version" TEXT, "dxvk_version" TEXT, "game_icon" TEXT, "game_background" TEXT, "ignore_updates" bool, "skip_hash_check" bool, "use_jadeite" bool, "use_xxmi" bool, "use_fps_unlock" bool, "env_vars" TEXT, "pre_launch_command" TEXT, "launch_command" TEXT, "fps_value" TEXT, "runner_prefix_path" TEXT, "launch_args" TEXT, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
@@ -457,13 +457,13 @@ pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool)
 
 // === INSTALLS ===
 
-pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String) -> Result<bool, Error> {
+pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String, launch_args: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args);
         rslt = query.execute(&db).await.unwrap();
     });
 
@@ -523,7 +523,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             pre_launch_command: rslt.get(0).unwrap().get("pre_launch_command"),
             launch_command: rslt.get(0).unwrap().get("launch_command"),
             fps_value: rslt.get(0).unwrap().get("fps_value"),
-            runner_prefix: rslt.get(0).unwrap().get("runner_prefix_path")
+            runner_prefix: rslt.get(0).unwrap().get("runner_prefix_path"),
+            launch_args: rslt.get(0).unwrap().get("launch_args")
         };
 
         Some(rsltt)
@@ -566,7 +567,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 pre_launch_command: r.get("pre_launch_command"),
                 launch_command: r.get("launch_command"),
                 fps_value: r.get("fps_value"),
-                runner_prefix: r.get("runner_prefix_path")
+                runner_prefix: r.get("runner_prefix_path"),
+                launch_args: r.get("launch_args")
             })
         }
 
@@ -610,7 +612,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 pre_launch_command: r.get("pre_launch_command"),
                 launch_command: r.get("launch_command"),
                 fps_value: r.get("fps_value"),
-                runner_prefix: r.get("runner_prefix_path")
+                runner_prefix: r.get("runner_prefix_path"),
+                launch_args: r.get("launch_args")
             })
         }
 
@@ -733,6 +736,15 @@ pub fn update_install_prefix_location_by_id(app: &AppHandle, id: String, locatio
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'runner_prefix_path' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_launch_args_by_id(app: &AppHandle, id: String, args: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'launch_args' = $1 WHERE id = $2").bind(args).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

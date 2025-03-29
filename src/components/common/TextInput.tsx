@@ -36,6 +36,14 @@ export default function TextInput({ id, name, value, placeholder, readOnly, patt
                             }
                         }
                         break;
+                        case "install_launch_args": {
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_launch_args", {args: `${e}`, id: install}).then(() => {
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
+                        }
+                        break;
                     }
                 }} />
             </div>

@@ -67,9 +67,10 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         useFpsUnlock: false,
                         envVars: "",
                         preLaunchCommand: "",
-                        launchCommand: "none",
+                        launchCommand: "",
                         fpsValue: "60",
-                        runnerPrefix: rpp
+                        runnerPrefix: rpp,
+                        launchArgs: ""
                     }).then(r => {
                         if (r) {
                             pushInstalls();
