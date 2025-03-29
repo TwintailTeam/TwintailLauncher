@@ -80,8 +80,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, dir.clone(), runner.clone(), wine64.clone(), exe.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, dir, runner, wine64);
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
             true
         } else {
             false
@@ -125,8 +125,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, dir.clone(), runner.clone(), wine64.clone(), exe.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, dir, runner, wine64);
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
             true
         } else {
             false
@@ -137,7 +137,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, dir: String, runner: String, wine64: String, game: String) {
+fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
     if install.use_xxmi {
         std::thread::sleep(std::time::Duration::from_secs(3));
         println!("injecting xxmi loader...");
@@ -153,14 +153,14 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, dir: S
 
         //cmd.stdout(Stdio::piped());
         //cmd.stderr(Stdio::piped());
-        cmd.current_dir(dir.clone());
+        cmd.current_dir(xxmi_path.clone());
         cmd.process_group(0);
         cmd.spawn().unwrap();
     }
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, dir: String, runner: String, wine64: String) {
+fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String) {
     // Delay for a second so game process is loaded, Test how delay behaves on other PCs
     std::thread::sleep(std::time::Duration::from_secs(1));
     if install.use_fps_unlock {
@@ -177,7 +177,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
-        cmd.current_dir(dir.clone());
+        cmd.current_dir(fpsunlock_path.clone());
         cmd.process_group(0);
         cmd.spawn().unwrap();
     }
@@ -189,11 +189,11 @@ pub fn launch() {
 }
 
 #[cfg(target_os = "windows")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, dir: String, runner: String, wine64: String, game: String) {
+fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
 
 }
 
 #[cfg(target_os = "windows")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, dir: String, runner: String, wine64: String) {
+fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String) {
 
 }
