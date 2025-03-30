@@ -749,6 +749,24 @@ pub fn update_install_launch_args_by_id(app: &AppHandle, id: String, args: Strin
     });
 }
 
+pub fn update_install_runner_version_by_id(app: &AppHandle, id: String, version: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'runner_version' = $1 WHERE id = $2").bind(version).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_dxvk_version_by_id(app: &AppHandle, id: String, version: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'dxvk_version' = $1 WHERE id = $2").bind(version).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
 // === DB RELATED ===
 
 fn add_migrations(db_url: &str, migrations: Vec<Migration>) -> Option<HashMap<String, MigrationList>> {

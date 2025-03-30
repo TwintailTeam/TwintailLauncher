@@ -81,17 +81,16 @@ export default class App extends React.Component<any, any> {
                     }}>
                         <DownloadIcon className="text-blue-500 w-8 h-8" />
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={"install_settings_btn"} onClick={() => {
                         this.fetchInstallSettings(this.state.currentInstall);
                         this.fetchCompatibilityVersions();
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {
                             this.setState({openPopup: POPUPS.INSTALLSETTINGS});
                         }, 20);
-                    }}>
-                        <Settings className="text-white w-8 h-8" />
+                    }}><Settings className="text-white w-8 h-8" />
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={"launch_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {
@@ -102,7 +101,7 @@ export default class App extends React.Component<any, any> {
                             })
                         }, 20);
                     }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
-                    </button> : <button className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    </button> : <button id={"game_download_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         this.fetchGameVersions(this.state.currentGame);
                         this.fetchCompatibilityVersions();
                         setTimeout(() => {

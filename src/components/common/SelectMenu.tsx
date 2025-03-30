@@ -17,6 +17,22 @@ export default function SelectMenu({ id, name, options, selected, install, fetch
                             }
                         }
                         break;
+                        case "install_runner_version": {
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_runner_version", {version: `${e.target.value}`, id: install}).then(() => {
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
+                        }
+                        break;
+                        case "install_dxvk_version": {
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_dxvk_version", {version: `${e.target.value}`, id: install}).then(() => {
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
+                        }
+                        break;
                     }
                 }}>
                     {options.map((option: any) => (

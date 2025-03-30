@@ -1,3 +1,6 @@
+use std::{fs, io};
+use std::path::Path;
+use tauri::{AppHandle, Emitter};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -15,6 +18,24 @@ pub fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
     } else {
         tauri::async_runtime::block_on(cmd)
     }
+}
+
+pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        app.emit("move_progress", &entry.file_name().to_str()).unwrap();
+
+        if ty.is_dir() {
+            copy_dir_all(&app, entry.path(), dst.as_ref().join(entry.file_name()))?;
+            fs::remove_dir_all(entry.path())?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            fs::remove_file(entry.path())?;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(target_os = "linux")]

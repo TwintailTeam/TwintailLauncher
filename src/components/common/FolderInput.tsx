@@ -2,6 +2,8 @@ import React from 'react'
 import {open} from "@tauri-apps/plugin-dialog"
 import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
+import {POPUPS} from "../popups/POPUPS.ts";
+import moveTracker from "../../utils.ts";
 
 // Thanks Cultivation FUCK NO im not making this myself
 // Yes I can not be assed to make inputs, I stole Cultivation's and modified them to fit the theme
@@ -20,7 +22,8 @@ interface IProps {
     id?: string,
     install?: string,
     fetchSettings?: () => void,
-    fetchInstallSettings?: (id: string) => void
+    fetchInstallSettings?: (id: string) => void,
+    setOpenPopup?: (popup: POPUPS) => void,
 }
 
 interface IState {
@@ -123,21 +126,36 @@ export default class FolderInput extends React.Component<IProps, IState> {
             case "install_game_path2": {
                 if (this.props.fetchInstallSettings !== undefined) {
                     invoke("update_install_game_path", {path: path, id: this.props.install}).then(() => {});
-                    this.props.fetchInstallSettings(this.props.install as string)
+                    this.props.fetchInstallSettings(this.props.install as string);
+
+                    if (this.props.setOpenPopup !== undefined) {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        moveTracker();
+                    }
                 }
             }
             break;
             case "install_runner_path": {
                 if (this.props.fetchInstallSettings !== undefined) {
                     invoke("update_install_runner_path", {path: path, id: this.props.install}).then(() => {});
-                    this.props.fetchInstallSettings(this.props.install as string)
+                    this.props.fetchInstallSettings(this.props.install as string);
+
+                    if (this.props.setOpenPopup !== undefined) {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        moveTracker();
+                    }
                 }
             }
             break;
             case "install_dxvk_path": {
                 if (this.props.fetchInstallSettings !== undefined) {
                     invoke("update_install_dxvk_path", {path: path, id: this.props.install}).then(() => {});
-                    this.props.fetchInstallSettings(this.props.install as string)
+                    this.props.fetchInstallSettings(this.props.install as string);
+
+                    if (this.props.setOpenPopup !== undefined) {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        moveTracker();
+                    }
                 }
             }
             break;
@@ -147,7 +165,12 @@ export default class FolderInput extends React.Component<IProps, IState> {
             case "install_prefix_path2": {
                 if (this.props.fetchInstallSettings !== undefined) {
                     invoke("update_install_prefix_path", {path: path, id: this.props.install}).then(() => {});
-                    this.props.fetchInstallSettings(this.props.install as string)
+                    this.props.fetchInstallSettings(this.props.install as string);
+
+                    if (this.props.setOpenPopup !== undefined) {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        moveTracker();
+                    }
                 }
             }
             break;

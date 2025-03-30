@@ -16,7 +16,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
-    let wine64 = rm.paths.wine64.clone();
+    let wine64 = if rm.paths.wine64.is_empty() {
+        rm.paths.wine32
+    } else {
+        rm.paths.wine64
+    };
 
     if !pre_launch.is_empty() {
         let command = format!("{runner}/{wine64} {pre_launch}");
