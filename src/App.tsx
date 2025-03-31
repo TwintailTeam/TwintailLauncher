@@ -12,6 +12,7 @@ import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
 import DownloadGame from "./components/popups/DownloadGame.tsx";
 import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
+import ProgressBar from "./components/common/ProgressBar.tsx";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -78,10 +79,9 @@ export default class App extends React.Component<any, any> {
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? <button onClick={() => {
                         console.log("preload...")
-                    }}>
-                        <DownloadIcon className="text-blue-500 w-8 h-8" />
+                    }}><DownloadIcon className="text-blue-500 w-8 h-8" />
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button id={"install_settings_btn"} onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
                         this.fetchInstallSettings(this.state.currentInstall);
                         this.fetchCompatibilityVersions();
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
@@ -90,7 +90,7 @@ export default class App extends React.Component<any, any> {
                         }, 20);
                     }}><Settings className="text-white w-8 h-8" />
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button id={"launch_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {
@@ -110,7 +110,10 @@ export default class App extends React.Component<any, any> {
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
                     </button>}
                 </div>
-
+                <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 hidden" id={"progress_bar"} style={{top: "82%"}}>
+                        <h4 className={"pl-4 pb-1 text-white text-stroke"} id={"progress_name"}>?</h4>
+                        <ProgressBar id={"progress_value"} progress={1} className={""}/>
+                </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}

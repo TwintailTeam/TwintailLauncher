@@ -130,7 +130,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker();
+                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -142,7 +142,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker();
+                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -154,7 +154,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker();
+                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -169,7 +169,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker();
+                        moveTracker(this.props.install as string);
                     }
                 }
             }

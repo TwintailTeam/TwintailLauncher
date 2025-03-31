@@ -1,4 +1,5 @@
 use std::{fs, io};
+use std::collections::HashMap;
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 
@@ -11,7 +12,6 @@ pub fn generate_cuid() -> String {
     cuid2::create_id()
 }
 
-/// Allows blocking on async code without creating a nested runtime.
 pub fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() {
         tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(cmd))
@@ -20,15 +20,22 @@ pub fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
     }
 }
 
-pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)? {
+    let mut payload = HashMap::new();
+
+    for entry in fs::read_dir(src.as_ref())? {
         let entry = entry?;
         let ty = entry.file_type()?;
-        app.emit("move_progress", &entry.file_name().to_str()).unwrap();
+        let f = entry.file_name();
+
+        payload.insert("file", f.to_str().unwrap().to_string());
+        payload.insert("install_id", install.clone());
+
+        app.emit("move_progress", &payload).unwrap();
 
         if ty.is_dir() {
-            copy_dir_all(&app, entry.path(), dst.as_ref().join(entry.file_name()))?;
+            copy_dir_all(&app, entry.path(), dst.as_ref().join(entry.file_name()), install.clone())?;
             fs::remove_dir_all(entry.path())?;
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
@@ -86,4 +93,9 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         }
         Some(rslt)
     }
+}
+
+#[cfg(target_os = "windows")]
+pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
+    None
 }

@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_dxvk_version_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_runner_version_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
@@ -109,15 +110,22 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
         let m = install.unwrap();
         let np = path.clone();
         let app1 = app.clone();
+        let oldpath = Arc::new(m.directory);
+        let installation_id = m.id.clone();
+
         if !Path::exists(path.as_ref()) {
             fs::create_dir_all(path.clone()).unwrap();
         }
 
-        std::thread::spawn(move || {
-            let oldpath = Path::new(m.directory.as_str());
-            copy_dir_all(&app1, oldpath.to_owned(), &path.to_owned().clone()).unwrap();
-            app1.emit("move_complete", &path).unwrap();
-        });
+        // Initialize move only IF old path has files AND new path is empty directory
+        if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
+            let op = oldpath.clone();
+            std::thread::spawn(move || {
+                let ap = Path::new(op.as_ref());
+                copy_dir_all(&app1, ap, &path.clone(), installation_id).unwrap();
+                app1.emit("move_complete", &path).unwrap();
+            });
+        }
         update_install_game_location_by_id(&app, m.id, np);
         Some(true)
     } else {
@@ -133,15 +141,21 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
         let m = install.unwrap();
         let np = path.clone();
         let app1 = app.clone();
+        let oldpath = Arc::new(m.runner_path);
+        let installation_id = m.id.clone();
+
         if !Path::exists(path.as_ref()) {
             fs::create_dir_all(path.clone()).unwrap();
         }
 
-        std::thread::spawn(move || {
-            let oldpath = Path::new(m.runner_path.as_str());
-            copy_dir_all(&app1, oldpath.to_owned(), &path.to_owned().clone()).unwrap();
-            app1.emit("move_complete", &path).unwrap();
-        });
+        if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
+            let op = oldpath.clone();
+            std::thread::spawn(move || {
+                let ap = Path::new(op.as_ref());
+                copy_dir_all(&app1, ap, &path.clone(), installation_id).unwrap();
+                app1.emit("move_complete", &path).unwrap();
+            });
+        }
         update_install_runner_location_by_id(&app, m.id, np);
         Some(true)
     } else {
@@ -157,15 +171,21 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
         let m = install.unwrap();
         let np = path.clone();
         let app1 = app.clone();
+        let oldpath = Arc::new(m.dxvk_path);
+        let installation_id = m.id.clone();
+
         if !Path::exists(path.as_ref()) {
             fs::create_dir_all(path.clone()).unwrap();
         }
 
-        std::thread::spawn(move || {
-            let oldpath = Path::new(m.dxvk_path.as_str());
-            copy_dir_all(&app1, oldpath.to_owned(), &path.to_owned().clone()).unwrap();
-            app1.emit("move_complete", &path).unwrap();
-        });
+        if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
+            let op = oldpath.clone();
+            std::thread::spawn(move || {
+                let ap = Path::new(op.as_ref());
+                copy_dir_all(&app1, ap, &path.clone(), installation_id).unwrap();
+                app1.emit("move_complete", &path).unwrap();
+            });
+        }
         update_install_dxvk_location_by_id(&app, m.id, np);
         Some(true)
     } else {
@@ -298,15 +318,21 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
         let m = install.unwrap();
         let np = path.clone();
         let app1 = app.clone();
+        let oldpath = Arc::new(m.runner_prefix.clone());
+        let installation_id = m.id.clone();
+
         if !Path::exists(path.as_ref()) {
             fs::create_dir_all(path.clone()).unwrap();
         }
 
-        std::thread::spawn(move || {
-            let oldpath = Path::new(m.runner_prefix.as_str());
-            copy_dir_all(&app1, oldpath.to_owned(), &path.to_owned().clone()).unwrap();
-            app1.emit("move_complete", &path).unwrap();
-        });
+        if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
+            let op = oldpath.clone();
+            std::thread::spawn(move || {
+                let ap = Path::new(op.as_ref());
+                copy_dir_all(&app1, ap, &path.clone(), installation_id).unwrap();
+                app1.emit("move_complete", &path).unwrap();
+            });
+        }
         update_install_prefix_location_by_id(&app, m.id, np);
         Some(true)
     } else {
