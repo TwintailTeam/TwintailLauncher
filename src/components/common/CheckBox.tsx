@@ -72,6 +72,10 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                             }
                         }
                         break;
+                        case "uninstall_prefix_delete": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
                     }
                 }}/>
                 {/*<div className={`h-full aspect-square rounded-full bg-white transition-all absolute ${isEnabled ? "translate-x-full" : "translate-x-0"}`}/>*/}

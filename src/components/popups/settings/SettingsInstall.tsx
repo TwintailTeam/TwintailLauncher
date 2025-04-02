@@ -41,19 +41,8 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                 </div>
                 <div className="flex flex-row-reverse">
                     <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
-                        this.props.setOpenPopup(POPUPS.NONE);
-                        invoke("remove_install", {id: this.props.installSettings.id}).then(r => {
-                            if (r) {
-                                this.props.pushInstalls();
-                                this.props.setCurrentInstall("");
-                                this.props.setCurrentGame(this.props.games[0].biz);
-                                this.props.setBackground(this.props.games[0].assets.game_background);
-                            } else {
-                                console.error("Uninstall error!");
-                            }
-                        });
-                    }}><Trash2Icon/>
-                        <span className="font-semibold translate-y-px">Uninstall</span>
+                        this.props.setOpenPopup(POPUPS.INSTALLDELETECONFIRMATION);
+                    }}><Trash2Icon/><span className="font-semibold translate-y-px">Uninstall</span>
                     </button>
                     <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);

@@ -51,7 +51,7 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
-        // TODO: Write bullshit to download, unpack, setup the entire installation
+        // TODO: Write bullshit to download and unpack game files
         let cuid = generate_cuid();
         let m = manifest_id + ".json";
         let dbm = get_manifest_info_by_filename(&app, m.clone()).unwrap();
@@ -92,13 +92,27 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
 }
 
 #[tauri::command]
-pub async fn remove_install(app: AppHandle, id: String) -> Option<bool> {
+pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool) -> Option<bool> {
     if id.is_empty() {
         None
     } else {
-        // TODO: Write more bullshit to uninstall the installation and wipe its files
-        delete_installation_by_id(&app, id).unwrap();
-        Some(true)
+        let install = get_install_info_by_id(&app, id.clone());
+
+        if install.is_some() {
+            let i = install.unwrap();
+            let installdir = i.directory;
+            let prefixdir = i.runner_prefix;
+
+            if wipe_prefix {
+                if fs::exists(prefixdir.clone()).unwrap() { fs::remove_dir_all(prefixdir.clone()).unwrap(); }
+            }
+
+            if fs::exists(installdir.clone()).unwrap() { fs::remove_dir_all(installdir.clone()).unwrap(); }
+            delete_installation_by_id(&app, id.clone()).unwrap();
+            Some(true)
+        } else {
+            None
+        }
     }
 }
 
