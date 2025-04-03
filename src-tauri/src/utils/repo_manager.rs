@@ -476,5 +476,6 @@ pub struct GameTweakSwitches {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameExtras {
     pub preload: Option<GamePreload>,
-    pub switches: GameTweakSwitches
+    pub switches: GameTweakSwitches,
+    pub fps_unlock_options: Vec<String>,
 }

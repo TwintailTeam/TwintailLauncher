@@ -21,14 +21,16 @@ interface IProps {
 }
 
 interface IState {
-    gameSwitches: any
+    gameSwitches: any,
+    gameFps: any
 }
 
 export default class SettingsInstall extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
         this.state = {
-            gameSwitches: {}
+            gameSwitches: {},
+            gameFps: []
         }
     }
     
@@ -58,7 +60,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     {(window.navigator.platform.includes("Linux") && this.state.gameSwitches.jadeite) ? <CheckBox enabled={this.props.installSettings.use_jadeite} name={"Inject Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
                     {(this.state.gameSwitches.xxmi) ? <CheckBox enabled={this.props.installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
                     {(this.state.gameSwitches.fps_unlocker) ? <CheckBox enabled={this.props.installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
-                    {(this.state.gameSwitches.fps_unlocker) ? <SelectMenu id={"install_fps_value"} name={"FPS value"} options={[{value: "30", name: "30"}, {value: "60", name: "60"}]} selected={`${this.props.installSettings.fps_value}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
+                    {(this.state.gameSwitches.fps_unlocker) ? <SelectMenu id={"install_fps_value"} name={"FPS value"} options={this.state.gameFps} selected={`${this.props.installSettings.fps_value}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/> : null}
                     <TextInput name={"Environment variables"} value={this.props.installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
                     <TextInput name={"Pre launch command"} value={this.props.installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
                     <TextInput name={"Launch command"} value={this.props.installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id}/>
@@ -76,11 +78,14 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
     async componentDidMount() {
         let r = await invoke("get_game_manifest_by_manifest_id", {id: this.props.installSettings.manifest_id});
         if (r == null) {
-            console.error("Failed to fetch game info!");
-            this.setState({gameSwitches: {xxmi: false, fps_unlocker: false, jadeite: false}});
+            console.error("Failed to fetch game info for installation settings!");
+            this.setState({gameSwitches: {xxmi: false, fps_unlocker: false, jadeite: false}, gameFps: [{value: "60", name: "60"}]});
         } else {
             let rr = JSON.parse(r as string);
-            this.setState({gameSwitches: rr.extra.switches});
+
+            let fpslist: any = [];
+            rr.extra.fps_unlock_options.forEach((e: any) => fpslist.push({value: `${e}`, name: `${e}`}));
+            this.setState({gameSwitches: rr.extra.switches, gameFps: fpslist});
         }
     }
 }
