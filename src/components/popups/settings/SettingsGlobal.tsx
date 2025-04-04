@@ -2,6 +2,7 @@ import {X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import CheckBox from "../../common/CheckBox.tsx";
 import FolderInput from "../../common/FolderInput.tsx";
+import SelectMenu from "../../common/SelectMenu.tsx";
 
 export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: {settings: any, fetchSettings: () => void, setOpenPopup: (popup: POPUPS) => void}) {
     return (
@@ -17,6 +18,7 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                     <FolderInput name={"FPS Unlocker location"} clearable={true} folder={true} value={`${settings.fps_unlock_path}`} id={"default_fps_unlock_path"} fetchSettings={fetchSettings}/>
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Jadeite location"} clearable={true} folder={true} value={`${settings.jadeite_path}`} id={"default_jadeite_path"} fetchSettings={fetchSettings}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default runner prefix location"} clearable={true} folder={true} value={`${settings.default_runner_prefix_path}`} id={"default_prefix_path"} fetchSettings={fetchSettings}/> : null}
+                    <SelectMenu id={"launcher_action"} name={"After game launch"} options={[{value: "exit", name: "Close launcher"}, {value: "minimize", name: "Minimize launcher to tray"}]} selected={`${settings.launcher_action}`} fetchSettings={fetchSettings}/>
                 </div>
             </div>
     )

@@ -29,31 +29,31 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 1,
             description: "init_repository_table",
-            sql: r#"CREATE TABLE "repository" ("id" string PRIMARY KEY,"github_id" string);"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS "repository" ("id" string PRIMARY KEY,"github_id" string);"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 2,
             description: "init_manifest_table",
-            sql: r#"CREATE TABLE manifest ("id" string PRIMARY KEY, "repository_id" string, "display_name" string, "filename" string, "enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS manifest ("id" string PRIMARY KEY, "repository_id" string, "display_name" string, "filename" string, "enabled" bool, CONSTRAINT fk_manifest_repo FOREIGN KEY(repository_id) REFERENCES repository(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 6,
             description: "init_install_table",
-            sql: r#"CREATE TABLE install ("id" TEXT PRIMARY KEY, "manifest_id" TEXT, "version" TEXT, "name" TEXT, "directory" TEXT, "runner_path" TEXT, "dxvk_path" TEXT, "runner_version" TEXT, "dxvk_version" TEXT, "game_icon" TEXT, "game_background" TEXT, "ignore_updates" bool, "skip_hash_check" bool, "use_jadeite" bool, "use_xxmi" bool, "use_fps_unlock" bool, "env_vars" TEXT, "pre_launch_command" TEXT, "launch_command" TEXT, "fps_value" TEXT, "runner_prefix_path" TEXT, "launch_args" TEXT, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS install ("id" TEXT PRIMARY KEY, "manifest_id" TEXT, "version" TEXT, "name" TEXT, "directory" TEXT, "runner_path" TEXT, "dxvk_path" TEXT, "runner_version" TEXT, "dxvk_version" TEXT, "game_icon" TEXT, "game_background" TEXT, "ignore_updates" bool, "skip_hash_check" bool, "use_jadeite" bool, "use_xxmi" bool, "use_fps_unlock" bool, "env_vars" TEXT, "pre_launch_command" TEXT, "launch_command" TEXT, "fps_value" TEXT, "runner_prefix_path" TEXT, "launch_args" TEXT, CONSTRAINT fk_install_manifest FOREIGN KEY(manifest_id) REFERENCES manifest(id));"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 7,
             description: "init_settings_table",
-            sql: r#"CREATE TABLE settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, id integer not null CONSTRAINT settings_pk primary key autoincrement);"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, "launcher_action" TEXT default null, id integer not null CONSTRAINT settings_pk primary key autoincrement);"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 5,
             description: "populate_settings_table",
-            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, id, default_runner_prefix_path) values (null, false, null, null, null, null, 1);"#,
+            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id) values (null, false, null, null, null, null, "exit", 1);"#,
             kind: MigrationKind::Up,
         }
     ];
@@ -149,6 +149,7 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
             jadeite_path: rslt.get(0).unwrap().get("jadeite_path"),
             third_party_repo_updates: rslt.get(0).unwrap().get("third_party_repo_updates"),
             default_runner_prefix_path: rslt.get(0).unwrap().get("default_runner_prefix_path"),
+            launcher_action: rslt.get(0).unwrap().get("launcher_action"),
         };
 
         Some(rsltt)
@@ -207,6 +208,15 @@ pub fn update_settings_default_prefix_location(app: &AppHandle, path: String) {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE settings SET 'default_runner_prefix_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_launch_action(app: &AppHandle, action: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'launcher_action' = $1 WHERE id = 1").bind(action);
         query.execute(&db).await.unwrap();
     });
 }

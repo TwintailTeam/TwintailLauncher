@@ -1,7 +1,7 @@
 use std::{fs, io};
 use std::collections::HashMap;
 use std::path::Path;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Listener, Manager};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -12,7 +12,7 @@ pub fn generate_cuid() -> String {
     cuid2::create_id()
 }
 
-pub fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
+pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() {
         tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(cmd))
     } else {
@@ -20,7 +20,7 @@ pub fn run_async_command<F: std::future::Future>(cmd: F) -> F::Output {
     }
 }
 
-pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String) -> io::Result<()> {
+pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String, install_name: String, install_type: String) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
     let mut payload = HashMap::new();
 
@@ -31,11 +31,13 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
 
         payload.insert("file", f.to_str().unwrap().to_string());
         payload.insert("install_id", install.clone());
+        payload.insert("install_name", install_name.clone());
+        payload.insert("install_type", install_type.clone());
 
         app.emit("move_progress", &payload).unwrap();
 
         if ty.is_dir() {
-            copy_dir_all(&app, entry.path(), dst.as_ref().join(entry.file_name()), install.clone())?;
+            copy_dir_all(&app, entry.path(), dst.as_ref().join(entry.file_name()), install.clone(), install_name.clone(), install_type.clone())?;
             fs::remove_dir_all(entry.path())?;
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
@@ -43,6 +45,19 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
         }
     }
     Ok(())
+}
+
+pub fn register_listeners(app: &AppHandle) {
+    let h1 = app.clone();
+    app.listen("launcher_action_exit", move |_event| {
+        h1.cleanup_before_exit();
+        h1.exit(0);
+    });
+
+    let h2 = app.clone();
+    app.listen("launcher_action_minimize", move |_event| {
+        h2.get_window("main").unwrap().minimize().unwrap();
+    });
 }
 
 #[cfg(target_os = "linux")]

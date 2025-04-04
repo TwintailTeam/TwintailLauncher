@@ -14,6 +14,7 @@ import DownloadGame from "./components/popups/DownloadGame.tsx";
 import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
+import {emit} from "@tauri-apps/api/event";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -95,7 +96,20 @@ export default class App extends React.Component<any, any> {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {
-                                    //TODO: what to do with launcher window???, disable launch button if launcher is not "close on launch"
+                                    switch (this.state.globalSettings.launcher_action) {
+                                        case "exit": {
+                                            setTimeout(() => {
+                                                emit("launcher_action_exit", null).then(() => {});
+                                            }, 500);
+                                        }
+                                        break;
+                                        case "minimize": {
+                                            setTimeout(() => {
+                                                emit("launcher_action_minimize", null).then(() => {});
+                                            }, 500);
+                                        }
+                                        break;
+                                    }
                                 } else {
                                     console.error("Launch error!");
                                 }

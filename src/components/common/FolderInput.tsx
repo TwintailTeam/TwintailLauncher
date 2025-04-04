@@ -3,7 +3,7 @@ import {open} from "@tauri-apps/plugin-dialog"
 import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import {POPUPS} from "../popups/POPUPS.ts";
-import moveTracker from "../../utils.ts";
+import {moveTracker} from "../../utils.ts";
 
 // Thanks Cultivation FUCK NO im not making this myself
 // Yes I can not be assed to make inputs, I stole Cultivation's and modified them to fit the theme

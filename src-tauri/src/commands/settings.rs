@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle};
-use crate::utils::db_manager::{get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_third_party_repo_update};
+use crate::utils::db_manager::{get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_launch_action, update_settings_third_party_repo_update};
 
 #[tauri::command]
 pub async fn list_settings(app: AppHandle) -> Option<String> {
@@ -88,6 +88,12 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
     Some(true)
 }
 
+#[tauri::command]
+pub fn update_settings_launcher_action(app: AppHandle, action: String) -> Option<bool> {
+    update_settings_launch_action(&app, action);
+    Some(true)
+}
+
 // === STRUCTS ===
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -97,5 +103,6 @@ pub struct GlobalSettings {
     pub fps_unlock_path: String,
     pub jadeite_path: String,
     pub third_party_repo_updates: i32,
-    pub default_runner_prefix_path: String
+    pub default_runner_prefix_path: String,
+    pub launcher_action: String
 }
