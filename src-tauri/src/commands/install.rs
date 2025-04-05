@@ -48,7 +48,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn add_install(app: AppHandle, manifest_id: String, version: String, name: String, directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String) -> Option<bool> {
+pub async fn add_install(app: AppHandle, manifest_id: String, version: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String) -> Option<bool> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -64,6 +64,12 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
         let wine = comppath.join("runners");
         let dxvk = comppath.join("dxvk");
         let prefixes = comppath.join("prefixes");
+
+        let install_location = Path::new(directory.as_str()).to_path_buf();
+        if !install_location.exists() {
+            fs::create_dir_all(&install_location).unwrap();
+        }
+        directory = install_location.to_str().unwrap().to_string();
 
         #[cfg(target_os = "linux")]
         {

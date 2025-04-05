@@ -1,12 +1,14 @@
 use std::{fs, io};
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 
 pub mod db_manager;
 pub mod repo_manager;
 mod git_helpers;
 pub mod game_launch_manager;
+pub mod system_tray;
 
 pub fn generate_cuid() -> String {
     cuid2::create_id()
@@ -50,13 +52,35 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
 pub fn register_listeners(app: &AppHandle) {
     let h1 = app.clone();
     app.listen("launcher_action_exit", move |_event| {
-        h1.cleanup_before_exit();
-        h1.exit(0);
+        let blocks = h1.state::<Mutex<ActionBlocks>>();
+        let state = blocks.lock().unwrap();
+
+        if state.action_exit {
+            h1.get_window("main").unwrap().hide().unwrap();
+        } else {
+            h1.cleanup_before_exit();
+            h1.exit(0);
+            std::process::exit(0);
+        }
     });
 
     let h2 = app.clone();
     app.listen("launcher_action_minimize", move |_event| {
-        h2.get_window("main").unwrap().minimize().unwrap();
+        h2.get_window("main").unwrap().hide().unwrap();
+    });
+
+    let h3 = app.clone();
+    app.listen("prevent_exit", move |event| {
+        let blocks = h3.state::<Mutex<ActionBlocks>>();
+        let mut state = blocks.lock().unwrap();
+
+        if event.payload().parse::<bool>().unwrap() == true {
+            state.action_exit = true;
+            drop(state);
+        } else {
+            state.action_exit = false;
+            drop(state);
+        }
     });
 }
 
@@ -113,4 +137,8 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
 #[cfg(target_os = "windows")]
 pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
     None
+}
+
+pub struct ActionBlocks {
+    pub action_exit: bool,
 }

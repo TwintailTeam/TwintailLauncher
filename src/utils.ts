@@ -1,4 +1,4 @@
-import {listen} from "@tauri-apps/api/event";
+import {emit, listen} from "@tauri-apps/api/event";
 import {isPermissionGranted, requestPermission, sendNotification} from "@tauri-apps/plugin-notification";
 
 var installName = "?";
@@ -22,6 +22,7 @@ export function moveTracker(install: string) {
            }, 500);
        }
        sendNotify("KeqingLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete. You can now again launch all installed games.`, "dialog-information").then(() => {});
+       emit("prevent_exit", false).then(() => {});
    }).then(() => {});
 
     listen<any>('move_progress', async (event) => {
@@ -47,9 +48,12 @@ export function moveTracker(install: string) {
                 installName = event.payload.install_name;
                 installType = event.payload.install_type;
                 shouldNotify = true;
+
+                emit("prevent_exit", true).then(() => {});
             }
         }
-    }).then(() => {
+    }).then(async () => {
+        // Why are you not showing...
         if (shouldNotify) {
             sendNotify("KeqingLauncher", `Moving of ${installName}'s ${installType} files started. You can not launch any game until move is completed.`, "dialog-information").then(() => {});
             shouldNotify = false;
