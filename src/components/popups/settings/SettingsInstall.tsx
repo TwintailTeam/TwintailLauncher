@@ -79,7 +79,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
         let r = await invoke("get_game_manifest_by_manifest_id", {id: this.props.installSettings.manifest_id});
         if (r == null) {
             console.error("Failed to fetch game info for installation settings!");
-            this.setState({gameSwitches: {xxmi: false, fps_unlocker: false, jadeite: false}, gameFps: [{value: "60", name: "60"}]});
+            this.setState({gameSwitches: {xxmi: true, fps_unlocker: true, jadeite: true}, gameFps: [{value: "60", name: "60"}]});
         } else {
             let rr = JSON.parse(r as string);
 

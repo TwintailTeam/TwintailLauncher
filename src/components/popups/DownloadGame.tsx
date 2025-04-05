@@ -6,7 +6,22 @@ import TextDisplay from "../common/TextDisplay.tsx";
 import SelectMenu from "../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 
-export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions}: {icon: string, background: string, versions: any, settings: any, biz: any, displayName: string, runnerVersions: any, dxvkVersions: any, setOpenPopup: (popup: POPUPS) => void, pushInstalls: () => void}) {
+interface IProps {
+    icon: string,
+    background: string,
+    versions: any,
+    settings: any,
+    biz: any,
+    displayName: string,
+    runnerVersions: any,
+    dxvkVersions: any,
+    setOpenPopup: (popup: POPUPS) => void,
+    pushInstalls: () => void,
+    setCurrentInstall: (id: string) => void,
+    setBackground: (id: string) => void,
+}
+
+export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground}: IProps) {
 
     return (
         <div className="rounded-lg h-3/4 w-2/4 flex flex-col p-4 gap-8 overflow-scroll">
@@ -71,9 +86,11 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                         fpsValue: "60",
                         runnerPrefix: rpp,
                         launchArgs: ""
-                    }).then(r => {
-                        if (r) {
+                    }).then((r: any) => {
+                        if (r.success) {
                             pushInstalls();
+                            setCurrentInstall(r.install_id as string);
+                            setBackground(r.background as string);
                         } else {
                             console.error("Download error!");
                         }

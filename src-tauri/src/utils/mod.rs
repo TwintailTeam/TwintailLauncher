@@ -2,6 +2,7 @@ use std::{fs, io};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 
 pub mod db_manager;
@@ -141,4 +142,11 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
 
 pub struct ActionBlocks {
     pub action_exit: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AddInstallRsp {
+    pub success: bool,
+    pub install_id: String,
+    pub background: String,
 }

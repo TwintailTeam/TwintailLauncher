@@ -4,7 +4,6 @@ use tauri::tray::{TrayIconEvent};
 
 pub fn init_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri::Error> {
     let toggle_i = MenuItemBuilder::with_id("toggle", "Hide").build(app)?;
-
     let menu1 = Menu::with_items(app, &[&toggle_i])?;
 
     let _ = TrayIconBuilder::with_id("tray_1").tooltip(&app.config().product_name.clone().unwrap()).show_menu_on_left_click(true).menu(&menu1)
