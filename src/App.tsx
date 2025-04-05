@@ -66,9 +66,9 @@ export default class App extends React.Component<any, any> {
                             )
                         })}
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }, index: number) => {
+                        {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
                             return (
-                                <SidebarIconInstall index={index} key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} manifest_id={install.manifest_id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setPreloadAvailable={this.setPreloadAvailable} setGameIcon={this.setGameIcon} />
+                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} manifest_id={install.manifest_id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setPreloadAvailable={this.setPreloadAvailable} setGameIcon={this.setGameIcon} />
                             )
                         })}
                     </div>
@@ -203,6 +203,10 @@ export default class App extends React.Component<any, any> {
                         this.setDisplayName(games[0].display_name);
                         this.setBackground(gi[0].assets.game_background);
                         this.setGameIcon(gi[0].assets.game_icon);
+                        setTimeout(() => {
+                            // @ts-ignore
+                            document.getElementById(gi[0].biz).focus();
+                        }, 20);
                     }
                 });
             }

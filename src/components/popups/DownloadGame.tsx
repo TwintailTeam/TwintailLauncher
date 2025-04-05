@@ -91,6 +91,10 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                             pushInstalls();
                             setCurrentInstall(r.install_id as string);
                             setBackground(r.background as string);
+                            setTimeout(() => {
+                                // @ts-ignore
+                                document.getElementById(r.install_id).focus();
+                            }, 20);
                         } else {
                             console.error("Download error!");
                         }

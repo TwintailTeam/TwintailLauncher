@@ -41,6 +41,8 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                                 setCurrentInstall("");
                                 setCurrentGame(games[0].biz);
                                 setBackground(games[0].assets.game_background);
+                                // @ts-ignore
+                                document.getElementById(games[0].biz).focus();
                             } else {
                                 console.error("Uninstall error!");
                             }

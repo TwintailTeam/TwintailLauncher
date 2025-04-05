@@ -13,7 +13,6 @@ import {
 import {POPUPS} from "./popups/POPUPS.ts";
 
 type SidebarIconProps = {
-    index: number;
     icon: string,
     name: string,
     id: string,
@@ -29,7 +28,7 @@ type SidebarIconProps = {
     setGameIcon: (a: string) => void,
 }
 
-export default function SidebarIconInstall({index, icon, name, id, manifest_id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, setPreloadAvailable}: SidebarIconProps) {
+export default function SidebarIconInstall({icon, name, id, manifest_id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, setPreloadAvailable}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -48,13 +47,15 @@ export default function SidebarIconInstall({index, icon, name, id, manifest_id, 
 
     return (
         <React.Fragment>
-            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} key={index} id={`${id}`} className={`aspect-square w-12 rounded-lg cursor-pointer hover:border-blue-600 hover:border-2`} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={`${id}`} className={`aspect-square w-12 rounded-lg cursor-pointer hover:border-blue-600 hover:border-2 focus:border-2 focus:border-blue-600 outline-0`} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentInstall(id)
                 setDisplayName(name)
                 setBackground(background)
                 setPreloadAvailable(manifest_id)
                 setGameIcon(icon)
+                // @ts-ignore
+                document.getElementById(id).focus();
             }} alt={"?"}/> : null}
             {(enabled) ?
                 (isOpen && popup == POPUPS.NONE) && (
