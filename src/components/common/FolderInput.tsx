@@ -181,7 +181,7 @@ export default class FolderInput extends React.Component<IProps, IState> {
         return (
             <div className="flex flex-row items-center justify-between w-full h-6">
                 <span className="text-white text-sm">{this.props.name}</span>
-                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center">
+                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center group gap-2">
                     <TextInputPart value={this.state.value}
                                    id={this.props.id}
                                    isPicker={true}
@@ -195,6 +195,10 @@ export default class FolderInput extends React.Component<IProps, IState> {
                                    this.forceUpdate();
                                    this.updateSetting(text);
                                }} customClearBehaviour={this.props.customClearBehaviour}/>
+                    <span className="bg-white/20 text-white text-xs rounded-lg pl-2 pr-2 opacity-0 hidden group-hover:block group-hover:opacity-100 transition duration-100 group-hover:cursor-pointer" onClick={() => {
+                        window.navigator.clipboard.writeText(this.state.value).then(() => {});}}>
+                        {this.state.value}
+                    </span>
                 </div>
             </div>
         )
