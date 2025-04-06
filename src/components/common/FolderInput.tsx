@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { createRef } from 'react'
+import ReactDOM from 'react-dom'
 import {open} from "@tauri-apps/plugin-dialog"
 import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
@@ -30,9 +31,13 @@ interface IState {
     value: string
     placeholder: string
     folder: boolean
+    showTooltip: boolean
+    tooltipPosition: { top: number, left: number }
 }
 
 export default class FolderInput extends React.Component<IProps, IState> {
+    private containerRef = createRef<HTMLDivElement>();
+
     constructor(props: IProps) {
         super(props)
 
@@ -40,13 +45,17 @@ export default class FolderInput extends React.Component<IProps, IState> {
             value: props.value || '',
             placeholder: this.props.placeholder || 'Select file or folder...',
             folder: this.props.folder || false,
+            showTooltip: false,
+            tooltipPosition: { top: 0, left: 0 }
         }
 
         this.handleIconClick = this.handleIconClick.bind(this)
+        this.handleMouseEnter = this.handleMouseEnter.bind(this)
+        this.handleMouseLeave = this.handleMouseLeave.bind(this)
     }
 
     static getDerivedStateFromProps(props: IProps, state: IState) {
-        const newState = state
+        const newState = {...state}
 
         if (props.value && state.value === '') {
             newState.value = props.value || ''
@@ -177,12 +186,48 @@ export default class FolderInput extends React.Component<IProps, IState> {
         }
     }
 
+    handleMouseEnter() {
+        if (!this.state.value) return;
+
+        if (this.containerRef.current) {
+            const rect = this.containerRef.current.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+
+            const contentLength = this.state.value.length;
+            const estimatedCharWidth = 7;
+            const minTooltipWidth = 120;
+            const calculatedWidth = Math.max(minTooltipWidth, Math.min(320, contentLength * estimatedCharWidth));
+            const isRightSideOverflow = rect.right + calculatedWidth + 8 > windowWidth;
+
+            this.setState({
+                showTooltip: true,
+                tooltipPosition: {
+                    top: rect.top,
+                    left: isRightSideOverflow ? Math.max(8, rect.left - calculatedWidth - 8) : rect.right + 8
+                }
+            });
+        }
+    }
+
+    handleMouseLeave() {
+        this.setState({ showTooltip: false });
+    }
+
+    renderTooltip() {
+        if (!this.state.showTooltip || !this.state.value) return null;
+
+        return ReactDOM.createPortal(
+            <div className="whitespace-pre-wrap break-words bg-black/75 text-white text-xs rounded-lg p-2 max-w-md overflow-auto fixed z-30" style={{top: `${this.state.tooltipPosition.top}px`, left: `${this.state.tooltipPosition.left}px`, maxWidth: '319px'}}>
+                {this.state.value}
+            </div>, document.body);
+    }
+
     render() {
         return (
             <div className="flex flex-row items-center justify-between w-full h-6">
                 <span className="text-white text-sm">{this.props.name}</span>
-                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center group gap-2">
-                    <TextInputPart value={this.state.value}
+                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center relative" ref={this.containerRef} onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
+                        <TextInputPart value={this.state.value}
                                    id={this.props.id}
                                    isPicker={true}
                                    onClick={this.handleIconClick}
@@ -190,15 +235,12 @@ export default class FolderInput extends React.Component<IProps, IState> {
                                    clearable={this.props.clearable !== undefined ? this.props.clearable : true}
                                    readOnly={this.props.readonly !== undefined ? this.props.readonly : true}
                                    onChange={(text: string) => {
-                                   this.setState({ value: text })
-                                   if (this.props.onChange) this.props.onChange(text)
-                                   this.forceUpdate();
-                                   this.updateSetting(text);
-                               }} customClearBehaviour={this.props.customClearBehaviour}/>
-                    <span className="bg-white/20 text-white text-xs rounded-lg pl-2 pr-2 opacity-0 hidden group-hover:block group-hover:opacity-100 transition duration-100 group-hover:cursor-pointer" onClick={() => {
-                        window.navigator.clipboard.writeText(this.state.value).then(() => {});}}>
-                        {this.state.value}
-                    </span>
+                                       this.setState({ value: text })
+                                       if (this.props.onChange) this.props.onChange(text)
+                                       this.forceUpdate();
+                                       this.updateSetting(text);
+                                   }} customClearBehaviour={this.props.customClearBehaviour}/>
+                    {this.renderTooltip()}
                 </div>
             </div>
         )
