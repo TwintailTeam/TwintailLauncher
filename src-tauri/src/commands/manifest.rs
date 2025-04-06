@@ -1,7 +1,10 @@
 use linked_hash_map::LinkedHashMap;
 use tauri::{AppHandle};
 use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id, update_manifest_enabled_by_id};
-use crate::utils::repo_manager::{get_compatibilities, get_compatibility, get_manifest, get_manifests, GameManifest, RunnerManifest};
+use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
+
+#[cfg(target_os = "linux")]
+use crate::utils::repo_manager::{get_compatibilities, get_compatibility, RunnerManifest};
 
 #[tauri::command]
 pub fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {
@@ -128,7 +131,7 @@ pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> { None }
+pub fn list_compatibility_manifests(_app: AppHandle) -> Option<String> { None }
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
@@ -153,4 +156,4 @@ pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> 
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<String> { None }
+pub fn get_compatibility_manifest_by_manifest_id(_app: AppHandle, _id: String) -> Option<String> { None }

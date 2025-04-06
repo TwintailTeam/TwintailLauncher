@@ -160,7 +160,7 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
 }
 
 #[cfg(target_os = "windows")]
-pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {}
+pub fn setup_compatibility_repository(_app: &AppHandle, _path: &PathBuf) {}
 
 // === MANIFESTS ===
 
@@ -189,6 +189,7 @@ pub fn load_manifests(app: &AppHandle) {
                             let ml = app.state::<ManifestLoaders>().clone();
 
                             let mut tmp = ml.game.0.write().unwrap();
+                            #[cfg(target_os = "linux")]
                             let mut tmp1 = ml.runner.0.write().unwrap();
 
                             for m in rma.manifests {
@@ -216,6 +217,7 @@ pub fn load_manifests(app: &AppHandle) {
                             }
 
                             drop(tmp);
+                            #[cfg(target_os = "linux")]
                             drop(tmp1);
                         } else {
                             #[cfg(debug_assertions)]
@@ -257,10 +259,12 @@ pub fn get_manifest(app: &AppHandle, filename: String) -> Option<GameManifest> {
     }
 }
 
+#[cfg(target_os = "linux")]
 pub fn get_compatibilities(app: &AppHandle) -> LinkedHashMap<String, RunnerManifest> {
     app.state::<ManifestLoaders>().runner.0.read().unwrap().clone()
 }
 
+#[cfg(target_os = "linux")]
 pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerManifest> {
     let loader = app.state::<ManifestLoaders>().runner.0.read().unwrap().clone();
 

@@ -1,9 +1,14 @@
-use std::os::unix::process::CommandExt;
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
-use crate::utils::repo_manager::{get_compatibility, GameManifest, LauncherInstall};
+use crate::utils::repo_manager::{GameManifest, LauncherInstall};
+
+#[cfg(target_os = "linux")]
+use std::os::unix::process::CommandExt;
+#[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
+#[cfg(target_os = "linux")]
+use crate::utils::repo_manager::{get_compatibility};
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -188,16 +193,16 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
 }
 
 #[cfg(target_os = "windows")]
-pub fn launch() {
+pub fn launch(_app: &AppHandle, _install: LauncherInstall, _gm: GameManifest, _gs: GlobalSettings) -> Result<bool, Error> {
+    Ok(false)
+}
+
+#[cfg(target_os = "windows")]
+fn load_xxmi(_install: LauncherInstall, _prefix: String, _xxmi_path: String, _runner: String, _wine64: String, _game: String) {
 
 }
 
 #[cfg(target_os = "windows")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
-
-}
-
-#[cfg(target_os = "windows")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String) {
+fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: String, _runner: String, _wine64: String) {
 
 }

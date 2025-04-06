@@ -135,11 +135,6 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
     }
 }
 
-#[cfg(target_os = "windows")]
-pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
-    None
-}
-
 pub struct ActionBlocks {
     pub action_exit: bool,
 }

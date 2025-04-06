@@ -2,11 +2,14 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_dxvk_version_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_runner_version_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, generate_cuid, AddInstallRsp};
 use crate::utils::repo_manager::{get_manifest};
+
+#[cfg(target_os = "linux")]
+use tauri::{Manager};
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -59,20 +62,26 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let data_path = app.path().app_data_dir().unwrap();
-        let comppath = data_path.join("compatibility");
-        let wine = comppath.join("runners");
-        let dxvk = comppath.join("dxvk");
-        let prefixes = comppath.join("prefixes");
-
         let install_location = Path::new(directory.as_str()).to_path_buf();
         if !install_location.exists() {
             fs::create_dir_all(&install_location).unwrap();
         }
         directory = install_location.to_str().unwrap().to_string();
 
+        #[cfg(target_os = "windows")]
+        {
+            dxvk_path = "".to_string();
+            runner_path = "".to_string();
+        }
+
         #[cfg(target_os = "linux")]
         {
+            let data_path = app.path().app_data_dir().unwrap();
+            let comppath = data_path.join("compatibility");
+            let wine = comppath.join("runners");
+            let dxvk = comppath.join("dxvk");
+            let prefixes = comppath.join("prefixes");
+
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
                 fs::create_dir_all(&dxvk).unwrap();
