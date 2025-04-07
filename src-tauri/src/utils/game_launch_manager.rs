@@ -157,7 +157,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
     if install.use_xxmi {
         std::thread::sleep(std::time::Duration::from_secs(3));
-        println!("injecting xxmi loader...");
+        #[cfg(debug_assertions)]
+        {
+            println!("injecting xxmi loader...");
+        }
         let xxmi_path = xxmi_path.clone();
         let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/injector.exe' -n {game} 'z:\\{xxmi_path}/3dmloader.dll'");
 
@@ -325,6 +328,6 @@ fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: 
 }
 
 #[cfg(target_os = "windows")]
-fn write_game_log(_log_dir: PathBuf, _child: Child) {
+fn write_game_log(_log_dir: PathBuf, _child: Child, _file: String) {
 
 }
