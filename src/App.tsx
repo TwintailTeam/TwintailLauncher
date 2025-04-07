@@ -110,6 +110,9 @@ export default class App extends React.Component<any, any> {
                                             }, 500);
                                         }
                                         break;
+                                        case 'keep': {
+                                        }
+                                        break;
                                     }
                                 } else {
                                     console.error("Launch error!");
