@@ -217,6 +217,7 @@ fn write_game_log(log_dir: PathBuf, child: Child, file: String) {
     std::thread::spawn(move || {
         let log_dir = ld1.lock().unwrap().clone();
         let mut child = c1.lock().unwrap();
+        let log_file_size = 8 * 1024 * 1024; // 8 MiB
 
         // Credit to certain anime team for this too lol pointless to write from scratch...
         let game_output = Arc::new(Mutex::new(fs::File::create(log_dir.join(file)).unwrap()));
@@ -249,7 +250,7 @@ fn write_game_log(log_dir: PathBuf, child: Child, file: String) {
                         written.fetch_add(line.len() + 14, Ordering::Relaxed);
                     }
 
-                    if written.load(Ordering::Relaxed) > 10000 {
+                    if written.load(Ordering::Relaxed) > log_file_size {
                         break;
                     }
                 }
@@ -282,7 +283,7 @@ fn write_game_log(log_dir: PathBuf, child: Child, file: String) {
                         written.fetch_add(line.len() + 14, Ordering::Relaxed);
                     }
 
-                    if written.load(Ordering::Relaxed) > 10000 {
+                    if written.load(Ordering::Relaxed) > log_file_size {
                         break;
                     }
                 }
