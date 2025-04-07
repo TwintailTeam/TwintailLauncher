@@ -39,7 +39,11 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
             <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
-                    <X className="text-white cursor-pointer" onClick={() => this.props.setOpenPopup(POPUPS.NONE)}/>
+                    <X className="text-white cursor-pointer" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                    }}/>
                 </div>
                 <div className="flex flex-row-reverse">
                     <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
