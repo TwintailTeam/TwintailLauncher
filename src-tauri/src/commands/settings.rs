@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle};
+use tauri::{AppHandle, Emitter, Manager};
+use crate::utils::block_telemetry;
 use crate::utils::db_manager::{get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_launch_action, update_settings_third_party_repo_update};
 
 #[tauri::command]
@@ -92,6 +93,19 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
 pub fn update_settings_launcher_action(app: AppHandle, action: String) -> Option<bool> {
     update_settings_launch_action(&app, action);
     Some(true)
+}
+
+#[tauri::command]
+pub fn block_telemetry_cmd(app: AppHandle) -> Option<bool> {
+    let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
+    if !path.exists() {
+        fs::write(&path, ".").unwrap();
+        block_telemetry(&app);
+        Some(true)
+    } else {
+        app.emit("telemetry_block", 2).unwrap();
+        None
+    }
 }
 
 // === STRUCTS ===

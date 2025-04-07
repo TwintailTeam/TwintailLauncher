@@ -26,7 +26,6 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                 <div className="flex flex-row-reverse left-3">
                     <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
                         setOpenPopup(POPUPS.NONE);
-
                         let wpd = false;
 
                         let prefixtoggle = document.getElementById("uninstall_prefix_delete");

@@ -1,9 +1,11 @@
 use std::{fs, io};
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Mutex;
+use std::process::Command;
+use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
+use crate::utils::repo_manager::get_manifests;
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -48,6 +50,50 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
         }
     }
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn block_telemetry(app: &AppHandle) {
+    let app1 = Arc::new(Mutex::new(app.clone()));
+        std::thread::spawn(move || {
+            let app = app1.lock().unwrap().clone();
+            let manifests = get_manifests(&app);
+            let mut allhosts = String::new();
+
+            manifests.values().for_each(|manifest| {
+                // Thanks to certain anime team for some of this lol
+                let hosts = manifest.telemetry_hosts.iter().map(|server| format!("echo '0.0.0.0 {server}' >> /etc/hosts")).collect::<Vec<String>>().join(" ; ");
+                allhosts.push_str(&hosts);
+                allhosts.push_str(" ; ");
+            });
+
+            if !allhosts.is_empty() {
+                allhosts = allhosts.trim_end_matches(" ; ").to_string();
+            }
+
+            let output = Command::new("pkexec")
+                .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# KeqingLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# KeqingLauncher telemetry block end' >> /etc/hosts")).spawn();
+
+            match output.and_then(|child| child.wait_with_output()) {
+                Ok(output) => if !output.status.success() {
+                    app.emit("telemetry_block", 0).unwrap();
+                } else {
+                    let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
+                    if !path.exists() {
+                        app.emit("telemetry_block", 1).unwrap();
+                        fs::write(&path, ".").unwrap();
+                    } else {
+                        app.emit("telemetry_block", 2).unwrap();
+                    }
+                }
+                Err(_err) => { app.emit("telemetry_block", 0).unwrap(); }
+            }
+        });
+}
+
+#[cfg(target_os = "windows")]
+pub fn block_telemetry(_app: &AppHandle) {
+
 }
 
 pub fn register_listeners(app: &AppHandle) {

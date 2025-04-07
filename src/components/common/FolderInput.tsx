@@ -199,27 +199,12 @@ export default class FolderInput extends React.Component<IProps, IState> {
             const calculatedWidth = Math.max(minTooltipWidth, Math.min(320, contentLength * estimatedCharWidth));
             const isRightSideOverflow = rect.right + calculatedWidth + 8 > windowWidth;
 
-            this.setState({
-                showTooltip: true,
-                tooltipPosition: {
-                    top: rect.top,
-                    left: isRightSideOverflow ? Math.max(8, rect.left - calculatedWidth - 8) : rect.right + 8
-                }
-            });
+            this.setState({ showTooltip: true, tooltipPosition: {top: rect.top, left: isRightSideOverflow ? Math.max(8, rect.left - calculatedWidth - 8) : rect.right + 8} });
         }
     }
 
     handleMouseLeave() {
         this.setState({ showTooltip: false });
-    }
-
-    renderTooltip() {
-        if (!this.state.showTooltip || !this.state.value) return null;
-
-        return ReactDOM.createPortal(
-            <div className="whitespace-pre-wrap break-words bg-black/75 text-white text-xs rounded-lg p-2 max-w-md overflow-auto fixed z-30" style={{top: `${this.state.tooltipPosition.top}px`, left: `${this.state.tooltipPosition.left}px`, maxWidth: '319px'}}>
-                {this.state.value}
-            </div>, document.body);
     }
 
     render() {
@@ -240,7 +225,10 @@ export default class FolderInput extends React.Component<IProps, IState> {
                                        this.forceUpdate();
                                        this.updateSetting(text);
                                    }} customClearBehaviour={this.props.customClearBehaviour}/>
-                    {this.renderTooltip()}
+                    {this.state.showTooltip ? ReactDOM.createPortal(
+                        <div className="whitespace-pre-wrap break-words bg-black/75 text-white text-xs rounded-lg p-2 max-w-md overflow-auto fixed z-30" style={{top: `${this.state.tooltipPosition.top}px`, left: `${this.state.tooltipPosition.left}px`, maxWidth: '320px'}}>
+                            {this.state.value}
+                        </div>, document.body) : null}
                 </div>
             </div>
         )

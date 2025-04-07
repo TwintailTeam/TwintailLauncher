@@ -15,6 +15,7 @@ import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
 import {emit} from "@tauri-apps/api/event";
+import {generalEventsHandler} from "./utils.ts";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -208,6 +209,7 @@ export default class App extends React.Component<any, any> {
                             document.getElementById(gi[0].biz).focus();
                         }, 20);
                     }
+                    setTimeout(() => {generalEventsHandler();}, 20);
                 });
             }
         }).catch(e => {

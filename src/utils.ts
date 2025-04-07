@@ -61,6 +61,25 @@ export function moveTracker(install: string) {
     });
 }
 
+export function generalEventsHandler() {
+    listen<any>("telemetry_block", (event) => {
+        switch (event.payload) {
+            case 1: {
+                sendNotify("KeqingLauncher", "Successfully blocked telemetry servers.", "dialog-information").then(() => {});
+            }
+            break;
+            case 2: {
+                sendNotify("KeqingLauncher", 'Telemetry servers already blocked.', "dialog-information").then(() => {});
+            }
+            break;
+            case 0: {
+                sendNotify("KeqingLauncher", 'Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!', "dialog-error").then(() => {});
+            }
+            break;
+        }
+    }).then(() => {});
+}
+
 async function checkPermission() {
     if (!(await isPermissionGranted())) {
         return (await requestPermission()) === 'granted'
