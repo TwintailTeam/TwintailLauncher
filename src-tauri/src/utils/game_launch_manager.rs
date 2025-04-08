@@ -23,7 +23,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let prefix = install.runner_prefix.clone();
     let runner = install.runner_path.clone();
     let game = gm.paths.exe_filename.clone();
-    let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+    //let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() {
@@ -95,7 +95,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone());
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
             write_game_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
@@ -141,7 +141,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone());
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
             write_game_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
@@ -154,15 +154,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
+fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String) {
     if install.use_xxmi {
-        std::thread::sleep(std::time::Duration::from_secs(3));
-        #[cfg(debug_assertions)]
-        {
-            println!("injecting xxmi loader...");
-        }
+        std::thread::sleep(std::time::Duration::from_secs(5));
+
         let xxmi_path = xxmi_path.clone();
-        let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/injector.exe' -n {game} 'z:\\{xxmi_path}/3dmloader.dll'");
+        let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'");
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
