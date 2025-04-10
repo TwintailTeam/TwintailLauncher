@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use crate::utils::repo_manager::get_manifests;
+use crate::utils::repo_manager::{get_manifests};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -89,6 +90,21 @@ pub fn block_telemetry(app: &AppHandle) {
                 Err(_err) => { app.emit("telemetry_block", 0).unwrap(); }
             }
         });
+}
+
+#[cfg(target_os = "linux")]
+fn wait_for_process(process_name: &str, callback: impl FnOnce()) {
+    let sys = sysinfo::System::new_all();
+    let func = callback();
+
+    let processes = sys.processes();
+    for (_pid, process) in processes {
+        if process.name() == process_name {
+            func;
+            break;
+        }
+    }
+    std::thread::sleep(Duration::from_millis(100));
 }
 
 #[cfg(target_os = "windows")]

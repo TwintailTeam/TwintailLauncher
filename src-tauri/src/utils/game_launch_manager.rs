@@ -10,6 +10,7 @@ use crate::utils::repo_manager::{GameManifest, LauncherInstall};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
+use crate::utils::{wait_for_process};
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
 #[cfg(target_os = "linux")]
@@ -23,7 +24,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let prefix = install.runner_prefix.clone();
     let runner = install.runner_path.clone();
     let game = gm.paths.exe_filename.clone();
-    //let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+    let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() {
@@ -50,7 +51,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            write_game_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
         }
     }
 
@@ -95,9 +96,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
-            write_game_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -141,9 +142,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64);
-            write_game_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -154,64 +155,64 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String) {
+fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
     if install.use_xxmi {
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        wait_for_process(game.as_str(), || {
+            let xxmi_path = xxmi_path.clone();
+            let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'");
 
-        let xxmi_path = xxmi_path.clone();
-        let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'");
+            let mut cmd = Command::new("bash");
+            cmd.arg("-c");
+            cmd.arg(&command);
 
-        let mut cmd = Command::new("bash");
-        cmd.arg("-c");
-        cmd.arg(&command);
+            cmd.env("WINEARCH","win64");
+            cmd.env("WINEPREFIX", prefix.clone());
 
-        cmd.env("WINEARCH","win64");
-        cmd.env("WINEPREFIX", prefix.clone());
+            cmd.stdout(Stdio::piped());
+            cmd.stderr(Stdio::piped());
+            cmd.current_dir(xxmi_path.clone());
+            cmd.process_group(0);
 
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        cmd.current_dir(xxmi_path.clone());
-        cmd.process_group(0);
-
-        let spawn = cmd.spawn();
-        if spawn.is_ok() {
-            let process = spawn.unwrap();
-            write_game_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
-        }
+            let spawn = cmd.spawn();
+            if spawn.is_ok() {
+                let process = spawn.unwrap();
+                write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+            }
+        });
     }
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String) {
-    // Delay for a second so game process is loaded, Test how delay behaves on other PCs
-    std::thread::sleep(std::time::Duration::from_secs(1));
+fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String) {
     if install.use_fps_unlock {
-        let fpsunlock_path = fpsunlock_path.clone();
-        let fpsv = install.fps_value;
-        let command = format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000");
+        wait_for_process(game.as_str(), || {
+            let fpsunlock_path = fpsunlock_path.clone();
+            let fpsv = install.fps_value;
+            let command = format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000");
 
-        let mut cmd = Command::new("bash");
-        cmd.arg("-c");
-        cmd.arg(&command);
+            let mut cmd = Command::new("bash");
+            cmd.arg("-c");
+            cmd.arg(&command);
 
-        cmd.env("WINEARCH","win64");
-        cmd.env("WINEPREFIX", prefix.clone());
+            cmd.env("WINEARCH","win64");
+            cmd.env("WINEPREFIX", prefix.clone());
 
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        cmd.current_dir(fpsunlock_path.clone());
-        cmd.process_group(0);
+            cmd.stdout(Stdio::piped());
+            cmd.stderr(Stdio::piped());
+            cmd.current_dir(fpsunlock_path.clone());
+            cmd.process_group(0);
 
-        let spawn = cmd.spawn();
-        if spawn.is_ok() {
-            let process = spawn.unwrap();
-            write_game_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
-        }
+            let spawn = cmd.spawn();
+            if spawn.is_ok() {
+                let process = spawn.unwrap();
+                write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+            }
+        });
     }
 }
 
 #[cfg(target_os = "linux")]
-fn write_game_log(log_dir: PathBuf, child: Child, file: String) {
+fn write_log(log_dir: PathBuf, child: Child, file: String) {
     let ld1 = Arc::new(Mutex::new(log_dir.clone()));
     let c1 = Arc::new(Mutex::new(child));
     std::thread::spawn(move || {

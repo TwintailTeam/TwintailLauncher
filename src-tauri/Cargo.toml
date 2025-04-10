@@ -27,6 +27,7 @@ git2 = "0.20.1"
 cuid2 = "0.1.4"
 linked-hash-map = "0.5.6"
 futures-core = "0.3"
+sysinfo = "0.34.2"
 
 # tauri plugins
 tauri-plugin-dialog = "2"

@@ -1,3 +1,5 @@
+#![feature(linux_pidfd)]
+
 use std::sync::Mutex;
 use tauri::{Manager, RunEvent, WindowEvent};
 use crate::commands::install::{add_install, game_launch, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install, update_install_dxvk_path, update_install_dxvk_version, update_install_env_vars, update_install_fps_value, update_install_game_path, update_install_launch_args, update_install_launch_cmd, update_install_pre_launch_cmd, update_install_prefix_path, update_install_runner_path, update_install_runner_version, update_install_skip_hash_valid, update_install_skip_version_updates, update_install_use_fps_unlock, update_install_use_jadeite, update_install_use_xxmi};
