@@ -178,6 +178,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
                 let process = spawn.unwrap();
                 write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
             }
+            true
         });
     }
 }
@@ -187,7 +188,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
     if install.use_fps_unlock {
         wait_for_process(game.as_str(), || {
             let fpsunlock_path = fpsunlock_path.clone();
-            let fpsv = install.fps_value;
+            let fpsv = install.fps_value.clone();
             let command = format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000");
 
             let mut cmd = Command::new("bash");
@@ -207,6 +208,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 let process = spawn.unwrap();
                 write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
             }
+            true
         });
     }
 }
@@ -326,6 +328,6 @@ fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: 
 }
 
 #[cfg(target_os = "windows")]
-fn write_game_log(_log_dir: PathBuf, _child: Child, _file: String) {
+fn write_log(_log_dir: PathBuf, _child: Child, _file: String) {
 
 }

@@ -93,18 +93,17 @@ pub fn block_telemetry(app: &AppHandle) {
 }
 
 #[cfg(target_os = "linux")]
-fn wait_for_process(process_name: &str, callback: impl FnOnce()) {
+pub fn wait_for_process(process_name: &str, callback: impl FnOnce() -> bool) -> bool {
     let sys = sysinfo::System::new_all();
     let func = callback();
 
-    let processes = sys.processes();
-    for (_pid, process) in processes {
+    for (_pid, process) in sys.processes() {
         if process.name() == process_name {
-            func;
-            break;
+            return func;
         }
     }
     std::thread::sleep(Duration::from_millis(100));
+    false
 }
 
 #[cfg(target_os = "windows")]
