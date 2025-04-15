@@ -97,6 +97,8 @@ export default class App extends React.Component<any, any> {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {
+                                    // @ts-ignore
+                                    document.getElementById(`${this.state.currentInstall}`).focus();
                                     switch (this.state.globalSettings.launcher_action) {
                                         case "exit": {
                                             setTimeout(() => {
