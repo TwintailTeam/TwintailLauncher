@@ -196,7 +196,7 @@ pub fn load_manifests(app: &AppHandle) {
                                 let file = fs::File::open(&p.join(&m.as_str())).unwrap();
                                 let reader = BufReader::new(file);
                                 let manifest_data = serde_json::from_reader(reader).unwrap();
-
+                                
                                 match manifest_data {
                                     ManifestData::Game(mi) => {
                                         tmp.insert(m.clone(), mi.clone());
@@ -386,6 +386,8 @@ pub struct GameManifest {
 pub struct GameVersion {
     pub metadata: VersionMetadata,
     pub assets: VersionAssets,
+    pub index_file: String,
+    pub res_list_url: String,
     pub game: VersionGameFiles,
     pub audio: VersionAudioFiles
 }
@@ -466,6 +468,8 @@ pub struct DiffAudioFile {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GamePreload {
     pub metadata: Option<VersionMetadata>,
+    pub index_file: Option<String>,
+    pub res_list_url: Option<String>,
     pub game: Option<VersionGameFiles>,
     pub audio: Option<VersionAudioFiles>
 }
