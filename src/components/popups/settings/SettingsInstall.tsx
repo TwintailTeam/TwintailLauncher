@@ -6,6 +6,7 @@ import TextInput from "../../common/TextInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import React from "react";
+import {emit} from "@tauri-apps/api/event";
 
 interface IProps {
     games: any,
@@ -52,7 +53,9 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     </button>
                     <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        console.log("repair game!");
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                        emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id}).then(() => {});
                     }}><WrenchIcon/>
                         <span className="font-semibold translate-y-px">Repair install</span>
                     </button>

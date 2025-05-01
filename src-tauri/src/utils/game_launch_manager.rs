@@ -10,7 +10,7 @@ use crate::utils::repo_manager::{GameManifest, LauncherInstall};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
-use crate::utils::{wait_for_process};
+use fischl::utils::wait_for_process;
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
 #[cfg(target_os = "linux")]

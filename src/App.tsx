@@ -91,9 +91,9 @@ export default class App extends React.Component<any, any> {
                         setTimeout(() => {
                             this.setState({openPopup: POPUPS.INSTALLSETTINGS});
                         }, 20);
-                    }}><Settings className="text-white w-8 h-8" />
+                    }}><Settings className="text-white w-8 h-8"/>
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg disabled:bg-gray-500" onClick={() => {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {

@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use fischl::download::game::{Game, Hoyo, Kuro};
+use fischl::utils::KuroFile;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use crate::utils::repo_manager::{get_manifests};
+use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
+use crate::utils::repo_manager::{get_manifest, get_manifests, GameVersion};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -92,20 +94,6 @@ pub fn block_telemetry(app: &AppHandle) {
         });
 }
 
-#[cfg(target_os = "linux")]
-pub fn wait_for_process(process_name: &str, callback: impl FnOnce() -> bool) -> bool {
-    let sys = sysinfo::System::new_all();
-    let func = callback();
-
-    for (_pid, process) in sys.processes() {
-        if process.name() == process_name {
-            return func;
-        }
-    }
-    std::thread::sleep(Duration::from_millis(100));
-    false
-}
-
 #[cfg(target_os = "windows")]
 pub fn block_telemetry(_app: &AppHandle) {
 
@@ -143,6 +131,102 @@ pub fn register_listeners(app: &AppHandle) {
             state.action_exit = false;
             drop(state);
         }
+    });
+
+    // Start game download
+    let h4 = app.clone();
+    app.listen("start_game_download", move |event| {
+        let h4 = h4.clone();
+        std::thread::spawn(move || {
+            let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
+            let install = get_install_info_by_id(&h4, payload.install).unwrap(); // Should exist by now, if not we FUCKED UP
+            let gid = payload.biz.clone() + ".json";
+
+            let mm = get_manifest(&h4, gid);
+            if let Some(gm) = mm {
+                let version = gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>();
+                let tmp = Arc::new(h4.clone());
+
+                let instn = Arc::new(install.name.clone());
+                let tracker = Arc::new(Mutex::new(0));
+                let tc = Arc::clone(&tracker);
+
+                h4.emit("download_progress", install.name.clone()).unwrap();
+
+                // TODO: Refactor to recognize game better as it can be a custom manifest game
+                if payload.biz.contains("wuwa") {
+                    let urls = version.get(0).unwrap().game.full.iter().map(|v| KuroFile { url: v.file_url.clone(), path: v.file_path.clone(), hash: v.file_hash.clone(), size: v.decompressed_size.clone() }).collect::<Vec<KuroFile>>();
+
+                    <Game as Kuro>::download(urls.clone(), install.directory, move |_, _| {
+                        let mut tracker = tc.lock().unwrap();
+                        *tracker += 1;
+                        tmp.emit("download_progress", instn.as_ref()).unwrap();
+                    });
+
+                    if *tracker.lock().unwrap() == urls.clone().len() {
+                        h4.emit("download_complete", install.name.clone()).unwrap();
+                    }
+                } else {
+                    let urls = version.get(0).unwrap().game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                    
+                    <Game as Hoyo>::download(urls.clone(), install.directory, move |_, _| {
+                        let mut tracker = tc.lock().unwrap();
+                        *tracker += 1;
+                        tmp.emit("download_progress", instn.as_ref()).unwrap();
+                    });
+                    
+                    if *tracker.lock().unwrap() == urls.clone().len() {
+                        h4.emit("download_complete", install.name.clone()).unwrap();
+                    }
+                }
+            } else {
+                println!("Failed to download game!");
+            }
+        });
+    });
+
+    // Start game repair
+    let h5 = app.clone();
+    app.listen("start_game_repair", move |event| {
+        let h5 = h5.clone();
+        std::thread::spawn(move || {
+            let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
+            let install = get_install_info_by_id(&h5, payload.install); // Should exist by now, if not we FUCKED UP
+            let lm = get_manifest_info_by_id(&h5, payload.biz).unwrap();
+            let gm = get_manifest(&h5, lm.filename).unwrap();
+
+            if install.is_some() { 
+                let i = install.unwrap();
+                let version = gm.game_versions.iter().filter(|e| e.metadata.version == i.version).collect::<Vec<&GameVersion>>();
+                let index = version.get(0).unwrap().index_file.clone();
+                let res = version.get(0).unwrap().res_list_url.clone();
+
+                let tmp = Arc::new(h5.clone());
+                let instn = Arc::new(i.name.clone());
+
+                h5.emit("repair_progress", instn.as_ref()).unwrap();
+
+                // TODO: Refactor to recognize game better as it can be a custom manifest game
+                if gm.biz.contains("wuwa") {
+                    let rslt = <Game as Kuro>::repair_game(index, res, i.directory, i.skip_hash_check,move |_, _| {
+                        tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                    });
+                    if rslt {
+                        h5.emit("repair_complete", i.name.clone()).unwrap();
+                    }
+                } else {
+                    let rslt = <Game as Hoyo>::repair_game(res, i.directory, i.skip_hash_check,move |_, _| {
+                        tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                    });
+                    if rslt {
+                        h5.emit("repair_complete", i.name.clone()).unwrap();
+                    }
+                }  
+            } else {
+                println!("Failed to find installation for repair!");
+            }
+            
+        });
     });
 }
 
@@ -192,6 +276,9 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         if runner_version.contains("proton-cachyos") {
             rslt = "proton_cachyos.json".to_string();
         }
+        if runner_version.contains("proton-umu") {
+            rslt = "proton_umu.json".to_string();
+        }
         Some(rslt)
     }
 }
@@ -205,4 +292,10 @@ pub struct AddInstallRsp {
     pub success: bool,
     pub install_id: String,
     pub background: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DownloadGamePayload {
+    pub install: String,
+    pub biz: String
 }

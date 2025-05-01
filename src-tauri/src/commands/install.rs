@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
+use fischl::download::Extras;
+use fischl::utils::extract_archive;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_dxvk_version_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_runner_version_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
@@ -55,7 +57,6 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
-        // TODO: Write bullshit to download and unpack game files
         let cuid = generate_cuid();
         let m = manifest_id + ".json";
         let dbm = get_manifest_info_by_filename(&app, m.clone()).unwrap();
@@ -280,7 +281,18 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let p = app.path().app_data_dir().unwrap().join("extras").join("jadeite");
+
         update_install_use_jadeite_by_id(&app, m.id, enabled);
+        
+        if fs::read_dir(&p).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_jadeite("mkrsym1/jadeite".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
+                if dl {
+                    extract_archive(p.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
+                }
+            });
+        }
         Some(true)
     } else {
         None
@@ -293,7 +305,37 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let p = app.path().app_data_dir().unwrap().join("extras").join("xxmi");
+
         update_install_use_xxmi_by_id(&app, m.id, enabled);
+
+        if fs::read_dir(&p).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
+                if dl {
+                    extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
+
+                    /*let gimi = String::from("KeqingLauncher-extras/GIMI-Package");
+                    let srmi = String::from("KeqingLauncher-extras/SRMI-Package");
+                    let zzmi = String::from("KeqingLauncher-extras/ZZMI-Package");
+                    let wwmi = String::from("KeqingLauncher-extras/WWMI-Package");*/
+                    
+                    let gimi = String::from("SilentNightSound/GIMI-Package");
+                    let srmi = String::from("SpectrumQT/SRMI-Package");
+                    let zzmi = String::from("leotorrez/ZZMI-Package");
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");
+                    
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), false);
+                    if dl1 {
+                        extract_archive(p.join("gimi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("gimi").as_path().to_str().unwrap().parse().unwrap(), false);
+                        extract_archive(p.join("srmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("srmi").as_path().to_str().unwrap().parse().unwrap(), false);
+                        extract_archive(p.join("zzmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("zzmi").as_path().to_str().unwrap().parse().unwrap(), false);
+                        extract_archive(p.join("wwmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("wwmi").as_path().to_str().unwrap().parse().unwrap(), false);
+                    }
+                }
+            });
+        }
+        
         Some(true)
     } else {
         None
@@ -306,7 +348,15 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let p = app.path().app_data_dir().unwrap().join("extras").join("fps_unlock");
+
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
+
+        if fs::read_dir(&p).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
+            });
+        }
         Some(true)
     } else {
         None
@@ -319,7 +369,15 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
 
     if install.is_some() {
         let m = install.unwrap();
+        let p = app.path().app_data_dir().unwrap().join("extras").join("fps_unlock");
+
         update_install_fps_value_by_id(&app, m.id, fps);
+
+        if fs::read_dir(&p).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
+            });
+        }
         Some(true)
     } else {
         None

@@ -5,7 +5,6 @@ description = "Launcher for anime games with Linux and Windows support"
 authors = ["TukanDev"]
 edition = "2024"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
@@ -27,7 +26,8 @@ git2 = "0.20.1"
 cuid2 = "0.1.4"
 linked-hash-map = "0.5.6"
 futures-core = "0.3"
-sysinfo = "0.34.2"
+# Main library to handle downloads and comaptibility
+fischl = { git = "https://github.com/AndigenaTeam/fischl-rs.git", branch = "master", features = ["compat"] }
 
 # tauri plugins
 tauri-plugin-dialog = "2"

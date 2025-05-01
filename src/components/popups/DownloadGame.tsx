@@ -5,6 +5,7 @@ import CheckBox from "../common/CheckBox.tsx";
 import TextDisplay from "../common/TextDisplay.tsx";
 import SelectMenu from "../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
+import {emit} from "@tauri-apps/api/event";
 
 interface IProps {
     icon: string,
@@ -94,6 +95,7 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                             setTimeout(() => {
                                 // @ts-ignore
                                 document.getElementById(r.install_id).focus();
+                                emit("start_game_download", {install: r.install_id, biz: biz}).then(() => {});
                             }, 20);
                         } else {
                             console.error("Download error!");
