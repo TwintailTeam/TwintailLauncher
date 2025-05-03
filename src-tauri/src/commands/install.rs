@@ -3,12 +3,13 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use fischl::download::Extras;
-use fischl::utils::extract_archive;
+use fischl::utils::{extract_archive, prettify_bytes};
+use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_dxvk_version_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_runner_version_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{copy_dir_all, generate_cuid, AddInstallRsp};
-use crate::utils::repo_manager::{get_manifest};
+use crate::utils::{copy_dir_all, generate_cuid, AddInstallRsp, DownloadSizesRsp};
+use crate::utils::repo_manager::{get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
 use tauri::{Manager};
@@ -531,6 +532,29 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
         } else {
             None
         }
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn get_download_sizes(app: AppHandle, biz: String, version: String, path: String) -> Option<String> {
+    let manifest = get_manifest(&app, biz + ".json");
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        let entry = m.game_versions.into_iter().filter(|e| e.metadata.version == version).collect::<Vec<GameVersion>>();
+        let g = entry.get(0).unwrap();
+        let gs = g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
+        
+        let stringified = serde_json::to_string(&DownloadSizesRsp {
+            game_decompressed_size: prettify_bytes(gs),
+            free_disk_space: prettify_bytes(available(Path::new(&path)).unwrap()),
+            game_decompressed_size_raw: gs,
+            free_disk_space_raw: available(Path::new(&path)).unwrap(),
+        }).unwrap();
+        
+        Some(stringified)
     } else {
         None
     }

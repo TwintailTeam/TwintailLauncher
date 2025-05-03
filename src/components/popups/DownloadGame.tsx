@@ -20,9 +20,11 @@ interface IProps {
     pushInstalls: () => void,
     setCurrentInstall: (id: string) => void,
     setBackground: (id: string) => void,
+    fetchDownloadSizes: (biz: any, version: any, dir: any) => void,
+    disk: any
 }
 
-export default function DownloadGame({setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground}: IProps) {
+export default function DownloadGame({disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground, fetchDownloadSizes}: IProps) {
 
     return (
         <div className="rounded-lg h-3/4 w-2/4 flex flex-col p-4 gap-8 overflow-scroll">
@@ -31,7 +33,7 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                 <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg disabled:bg-gray-500" id={"game_download_btn"} onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;
@@ -107,16 +109,34 @@ export default function DownloadGame({setOpenPopup, displayName, settings, biz, 
                 </button>
             </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
-                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"}/>
+                    {/* @ts-ignore */}
+                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} disk={disk}/>
                     <CheckBox enabled={false} name={"Skip version update check"} id={"skip_version_updates"}/>
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"}/>
-                    <TextDisplay name={"Available disk space"} value={"33"} style={"text-white px-3"}/>
-                    <TextDisplay name={"Required disk space"} value={"10"} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""}/>
+                    <TextDisplay name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
+                    <TextDisplay name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} disk={disk}/>
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"}/>: null}
                 </div>
             </div>
     )
+}
+
+function formatDir() {
+    // @ts-ignore
+    let install_path = document.getElementById("install_game_path").value;
+    // @ts-ignore
+    let gv = document.getElementById("game_version");
+    // @ts-ignore
+    let gvv = gv.options[gv.selectedIndex].value;
+    return install_path + "/" + gvv;
+}
+
+function getVersion() {
+    // @ts-ignore
+    let gv = document.getElementById("game_version");
+    // @ts-ignore
+    return gv.options[gv.selectedIndex].value;
 }

@@ -35,6 +35,7 @@ export default class App extends React.Component<any, any> {
         this.fetchSettings = this.fetchSettings.bind(this);
         this.fetchRepositories = this.fetchRepositories.bind(this);
         this.fetchInstallSettings = this.fetchInstallSettings.bind(this);
+        this.fetchDownloadSizes = this.fetchDownloadSizes.bind(this);
 
         this.state = {
             openPopup: POPUPS.NONE,
@@ -51,7 +52,10 @@ export default class App extends React.Component<any, any> {
             gameVersions: [],
             installSettings: {},
             runnerVersions: [],
-            dxvkVersions: []
+            dxvkVersions: [],
+            downloadSizes: {},
+            downloadDir: "",
+            downloadVersion: ""
         }
     }
 
@@ -126,6 +130,7 @@ export default class App extends React.Component<any, any> {
                         this.fetchGameVersions(this.state.currentGame);
                         this.fetchCompatibilityVersions();
                         setTimeout(() => {
+                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`);
                             this.setState({openPopup: POPUPS.DOWNLOADGAME});
                         }, 20);
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
@@ -139,7 +144,7 @@ export default class App extends React.Component<any, any> {
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
-                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall}/>}
+                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame fetchDownloadSizes={this.fetchDownloadSizes} disk={this.state.downloadSizes} runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall}/>}
                     {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall games={this.state.gamesinfo} runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setCurrentInstall={this.setCurrentInstall} setCurrentGame={this.setCurrentGame} setBackground={this.setBackground} fetchInstallSettings={this.fetchInstallSettings}/>}
                     {this.state.openPopup == POPUPS.INSTALLDELETECONFIRMATION && <InstallDeleteConfirm games={this.state.gamesinfo} install={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setCurrentInstall={this.setCurrentInstall} setCurrentGame={this.setCurrentGame} setBackground={this.setBackground}/>}
                 </div>
@@ -282,6 +287,16 @@ export default class App extends React.Component<any, any> {
                 this.setState({runnerVersions: wines, dxvkVersions: dxvks});
             }
         })
+    }
+
+    fetchDownloadSizes(biz: any, version: any, path: any) {
+        invoke("get_download_sizes", {biz: biz, version: version, path: path}).then(data => {
+            if (data === null) {
+                console.error("Could not get download sizes!");
+            } else {
+                this.setState(() => ({downloadSizes: JSON.parse(data as string)}));
+            }
+        });
     }
 
     setOpenPopup(state: POPUPS) {

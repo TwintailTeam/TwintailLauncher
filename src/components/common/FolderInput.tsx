@@ -25,6 +25,10 @@ interface IProps {
     fetchSettings?: () => void,
     fetchInstallSettings?: (id: string) => void,
     setOpenPopup?: (popup: POPUPS) => void,
+    biz?: string,
+    version?: () => string,
+    disk?: any,
+    fetchDownloadSizes?: (biz: any, version: any, path: any) => void,
 }
 
 interface IState {
@@ -130,6 +134,21 @@ export default class FolderInput extends React.Component<IProps, IState> {
             }
             break;
             case "install_game_path": {
+                if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined) {
+                    this.props.fetchDownloadSizes(this.props.biz, this.props.version(), path);
+
+                    // @ts-ignore
+                    let btn = document.getElementById("game_download_btn");
+                    if (this.props.disk.game_decompressed_size_raw > this.props.disk.free_disk_space_raw) {
+                        // @ts-ignore
+                        btn.setAttribute("disabled", "");
+                        console.log("btn disabled");
+                    } else {
+                        // @ts-ignore
+                        btn.removeAttribute("disabled");
+                        console.log("btn not disabled");
+                    }
+                }
             }
             break;
             case "install_game_path2": {
