@@ -142,11 +142,9 @@ export default class FolderInput extends React.Component<IProps, IState> {
                     if (this.props.disk.game_decompressed_size_raw > this.props.disk.free_disk_space_raw) {
                         // @ts-ignore
                         btn.setAttribute("disabled", "");
-                        console.log("btn disabled");
                     } else {
                         // @ts-ignore
                         btn.removeAttribute("disabled");
-                        console.log("btn not disabled");
                     }
                 }
             }

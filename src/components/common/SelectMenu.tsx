@@ -15,7 +15,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
 
                                 // @ts-ignore
                                 let btn = document.getElementById("game_download_btn");
-                                if (disk.free_disk_space_raw < disk.game_decompressed_size_raw) {
+                                if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
                                     // @ts-ignore
                                     btn.setAttribute("disabled", "");
                                 } else {

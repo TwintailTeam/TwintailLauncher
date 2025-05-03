@@ -543,16 +543,29 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, path: St
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        
         let entry = m.game_versions.into_iter().filter(|e| e.metadata.version == version).collect::<Vec<GameVersion>>();
         let g = entry.get(0).unwrap();
         let gs = g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
         
-        let stringified = serde_json::to_string(&DownloadSizesRsp {
-            game_decompressed_size: prettify_bytes(gs),
-            free_disk_space: prettify_bytes(available(Path::new(&path)).unwrap()),
-            game_decompressed_size_raw: gs,
-            free_disk_space_raw: available(Path::new(&path)).unwrap(),
-        }).unwrap();
+        let a = available(Path::new(&path));
+        let stringified;
+        
+        if a.is_some() {
+            stringified = serde_json::to_string(&DownloadSizesRsp {
+                game_decompressed_size: prettify_bytes(gs),
+                free_disk_space: prettify_bytes(a.unwrap()),
+                game_decompressed_size_raw: gs,
+                free_disk_space_raw: a.unwrap(),
+            }).unwrap();
+        } else {
+            stringified = serde_json::to_string(&DownloadSizesRsp {
+                game_decompressed_size: prettify_bytes(gs),
+                free_disk_space: prettify_bytes(0),
+                game_decompressed_size_raw: gs,
+                free_disk_space_raw: 0,
+            }).unwrap();
+        };
         
         Some(stringified)
     } else {
