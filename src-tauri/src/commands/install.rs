@@ -279,10 +279,11 @@ pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool)
 #[tauri::command]
 pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
+    let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = app.path().app_data_dir().unwrap().join("extras").join("jadeite");
+        let p = Path::new(&settings.jadeite_path).to_path_buf();
 
         update_install_use_jadeite_by_id(&app, m.id, enabled);
         
@@ -303,10 +304,11 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
 #[tauri::command]
 pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
+    let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = app.path().app_data_dir().unwrap().join("extras").join("xxmi");
+        let p = Path::new(&settings.xxmi_path).to_path_buf();
 
         update_install_use_xxmi_by_id(&app, m.id, enabled);
 
@@ -346,10 +348,11 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 #[tauri::command]
 pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
+    let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = app.path().app_data_dir().unwrap().join("extras").join("fps_unlock");
+        let p = Path::new(&settings.fps_unlock_path).to_path_buf();
 
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
 
@@ -367,10 +370,11 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
 #[tauri::command]
 pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
+    let settings = get_settings(&app).unwrap();
 
     if install.is_some() {
         let m = install.unwrap();
-        let p = app.path().app_data_dir().unwrap().join("extras").join("fps_unlock");
+        let p = Path::new(&settings.fps_unlock_path).to_path_buf();
 
         update_install_fps_value_by_id(&app, m.id, fps);
 
