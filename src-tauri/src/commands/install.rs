@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
+use std::ops::Add;
 use std::path::Path;
 use std::sync::Arc;
 use fischl::download::Extras;
@@ -54,7 +55,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn add_install(app: AppHandle, manifest_id: String, version: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String) -> Option<AddInstallRsp> {
+pub async fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -104,7 +105,7 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, n
                 fs::create_dir_all(runner_prefix.clone()).unwrap();
             }
         }
-        create_installation(&app, cuid.clone(), dbm.id, version, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args).unwrap();
         Some(AddInstallRsp {
             success: true,
             install_id: cuid.clone(),
@@ -315,9 +316,10 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
         if fs::read_dir(&p).unwrap().next().is_none() {
             std::thread::spawn(move || {
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
+                app.emit("download_progress", String::from("XXMI Modding tool")).unwrap();
                 if dl {
                     extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
-
+                    
                     /*let gimi = String::from("KeqingLauncher-extras/GIMI-Package");
                     let srmi = String::from("KeqingLauncher-extras/SRMI-Package");
                     let zzmi = String::from("KeqingLauncher-extras/ZZMI-Package");
@@ -334,6 +336,8 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                         extract_archive(p.join("srmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("srmi").as_path().to_str().unwrap().parse().unwrap(), false);
                         extract_archive(p.join("zzmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("zzmi").as_path().to_str().unwrap().parse().unwrap(), false);
                         extract_archive(p.join("wwmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("wwmi").as_path().to_str().unwrap().parse().unwrap(), false);
+                        
+                        app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
                     }
                 }
             });
@@ -542,7 +546,7 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
 }
 
 #[tauri::command]
-pub fn get_download_sizes(app: AppHandle, biz: String, version: String, path: String) -> Option<String> {
+pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String) -> Option<String> {
     let manifest = get_manifest(&app, biz + ".json");
 
     if manifest.is_some() {
@@ -551,22 +555,25 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, path: St
         let entry = m.game_versions.into_iter().filter(|e| e.metadata.version == version).collect::<Vec<GameVersion>>();
         let g = entry.get(0).unwrap();
         let gs = g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
+        let audios: Vec<_> = g.audio.full.iter().filter(|x| x.language == lang).collect();
+        let audio = audios.get(0).unwrap().decompressed_size.parse::<u64>().unwrap();
+        let fss = gs.add(audio);
         
         let a = available(Path::new(&path));
         let stringified;
         
         if a.is_some() {
             stringified = serde_json::to_string(&DownloadSizesRsp {
-                game_decompressed_size: prettify_bytes(gs),
+                game_decompressed_size: prettify_bytes(fss),
                 free_disk_space: prettify_bytes(a.unwrap()),
-                game_decompressed_size_raw: gs,
+                game_decompressed_size_raw: fss,
                 free_disk_space_raw: a.unwrap(),
             }).unwrap();
         } else {
             stringified = serde_json::to_string(&DownloadSizesRsp {
-                game_decompressed_size: prettify_bytes(gs),
+                game_decompressed_size: prettify_bytes(fss),
                 free_disk_space: prettify_bytes(0),
-                game_decompressed_size_raw: gs,
+                game_decompressed_size_raw: fss,
                 free_disk_space_raw: 0,
             }).unwrap();
         };

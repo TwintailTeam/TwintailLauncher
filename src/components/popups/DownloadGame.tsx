@@ -20,7 +20,7 @@ interface IProps {
     pushInstalls: () => void,
     setCurrentInstall: (id: string) => void,
     setBackground: (id: string) => void,
-    fetchDownloadSizes: (biz: any, version: any, dir: any, callback: (data: any) => void) => void,
+    fetchDownloadSizes: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void,
     disk: any
 }
 
@@ -46,6 +46,11 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     // @ts-ignore
                     let gvv = gv.options[gv.selectedIndex].value;
 
+                    // @ts-ignore
+                    let vp = document.getElementById("game_audio_langs");
+                    // @ts-ignore
+                    let vpp = vp.options[vp.selectedIndex].value;
+
                     let rv = document.getElementById("runner_version");
                     let rvv = "none";
                     if (rv !== null) {
@@ -70,6 +75,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     invoke("add_install", {
                         manifestId: biz,
                         version: gvv,
+                        audioLang: vpp,
                         name: displayName,
                         directory: install_path + "/" + gvv,
                         runnerPath: "none",
@@ -97,7 +103,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             setTimeout(() => {
                                 // @ts-ignore
                                 document.getElementById(r.install_id).focus();
-                                emit("start_game_download", {install: r.install_id, biz: biz}).then(() => {});
+                                emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp}).then(() => {});
                             }, 20);
                         } else {
                             console.error("Download error!");
@@ -110,14 +116,15 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
             </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
                     {/* @ts-ignore */}
-                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion}/>
+                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio}/>
                     <CheckBox enabled={false} name={"Skip version update check"} id={"skip_version_updates"}/>
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"}/>
                     <TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
                     <TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes}/>
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={getAudio}/>
+                    <SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={""} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={getVersion}/>
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} multiple={false} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"}/>: null}
                 </div>
             </div>
@@ -137,6 +144,13 @@ function formatDir() {
 function getVersion() {
     // @ts-ignore
     let gv = document.getElementById("game_version");
+    // @ts-ignore
+    return gv.options[gv.selectedIndex].value;
+}
+
+function getAudio() {
+    // @ts-ignore
+    let gv = document.getElementById("game_audio_langs");
     // @ts-ignore
     return gv.options[gv.selectedIndex].value;
 }

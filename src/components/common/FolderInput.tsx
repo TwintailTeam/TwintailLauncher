@@ -27,7 +27,8 @@ interface IProps {
     setOpenPopup?: (popup: POPUPS) => void,
     biz?: string,
     version?: () => string,
-    fetchDownloadSizes?: (biz: any, version: any, path: any, callback: (data: any) => void) => void,
+    lang?: () => string,
+    fetchDownloadSizes?: (biz: any, version: any, lang: any, path: any, callback: (data: any) => void) => void,
 }
 
 interface IState {
@@ -133,8 +134,8 @@ export default class FolderInput extends React.Component<IProps, IState> {
             }
             break;
             case "install_game_path": {
-                if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined) {
-                    this.props.fetchDownloadSizes(this.props.biz, this.props.version(), path, (disk) => {
+                if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined && this.props.lang !== undefined) {
+                    this.props.fetchDownloadSizes(this.props.biz, this.props.version(), this.props.lang(), path, (disk) => {
                         // @ts-ignore
                         let btn = document.getElementById("game_dl_btn");
                         // @ts-ignore

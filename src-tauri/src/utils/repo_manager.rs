@@ -324,6 +324,7 @@ pub struct LauncherInstall {
     pub id: String,
     pub manifest_id: String,
     pub version: String,
+    pub audio_langs: String,
     pub name: String,
     pub directory: String,
     pub runner_path: String,
@@ -394,6 +395,7 @@ pub struct GameVersion {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GamePaths {
+    pub audio_pkg_res_dir: String,
     pub exe_filename: String,
     pub installation_dir: String,
     pub screenshot_dir: String,

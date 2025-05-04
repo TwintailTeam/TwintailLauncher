@@ -1,17 +1,17 @@
 import {invoke} from "@tauri-apps/api/core";
 
 
-export default function SelectMenu({ id, name, options, selected, install, biz, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes}: { id: string, name: string, options: any, selected: any, install?: string, biz?: string, dir?: () => string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, dir: any, callback: (data: any) => void) => void }) {
+export default function SelectMenu({ id, name, options, selected, multiple, install, biz, lang, version, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes}: { id: string, name: string, options: any, selected: any, multiple: boolean, install?: string, biz?: string, lang?: () => string, version?: () => any, dir?: () => string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void }) {
 
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
             <span className="text-white text-sm">{name}</span>
             <div className="inline-flex flex-row items-center justify-center">
-                <select defaultValue={(selected === "") ? "" : selected} id={id} className={"w-full focus:outline-none h-8 rounded-lg bg-white/20 text-white px-2 pr-32 placeholder-white/50 appearance-none cursor-pointer"} onChange={(e) => {
+                <select defaultValue={(selected === "") ? "" : selected} id={id} multiple={multiple} className={"w-full focus:outline-none h-8 rounded-lg bg-white/20 text-white px-2 pr-32 placeholder-white/50 appearance-none cursor-pointer"} onChange={(e) => {
                     switch (id) {
                         case "game_version": {
-                            if (fetchDownloadSizes !== undefined && dir !== undefined) {
-                                fetchDownloadSizes(biz, `${e.target.value}`, dir(), (disk) => {
+                            if (fetchDownloadSizes !== undefined && dir !== undefined && lang !== undefined) {
+                                fetchDownloadSizes(biz, `${e.target.value}`, lang(), dir(), (disk) => {
                                     // @ts-ignore
                                     let btn = document.getElementById("game_dl_btn");
                                     // @ts-ignore
@@ -40,6 +40,37 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             }
                         }
                         break;
+                        case "game_audio_langs": {
+                            if (fetchDownloadSizes !== undefined && dir !== undefined && version !== undefined) {
+                                fetchDownloadSizes(biz, version(), `${e.target.value}`, dir(), (disk) => {
+                                    // @ts-ignore
+                                    let btn = document.getElementById("game_dl_btn");
+                                    // @ts-ignore
+                                    let freedisk = document.getElementById("game_disk_free");
+
+                                    if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                                        // @ts-ignore
+                                        btn.setAttribute("disabled", "");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.add("font-bold");
+                                    } else {
+                                        // @ts-ignore
+                                        btn.removeAttribute("disabled");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("font-bold");
+                                    }
+                                });
+                            }
+                        }
+                            break;
                         case "launcher_action": {
                             if (fetchSettings !== undefined) {
                                 invoke("update_settings_launcher_action", {action: `${e.target.value}`}).then(() => {

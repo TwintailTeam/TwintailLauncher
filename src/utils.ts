@@ -5,12 +5,14 @@ export function moveTracker(install: string) {
    listen<string>('move_complete', async (event: any) => {
        let launchbtn = document.getElementById("launch_game_btn");
        let isb = document.getElementById("install_settings_btn");
+       let dlbtn = document.getElementById("download_game_btn");
        let pb = document.getElementById("progress_bar");
        let pbn = document.getElementById("progress_name");
        let pbv = document.getElementById("progress_value");
 
-       if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+       if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
            launchbtn.removeAttribute("disabled");
+           dlbtn.removeAttribute("disabled");
            isb.removeAttribute("disabled");
            pbn.innerText = "Installation move complete!";
            setTimeout(() => {
@@ -23,14 +25,16 @@ export function moveTracker(install: string) {
 
     listen<any>('move_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
+        let dlbtn = document.getElementById("download_game_btn");
         let isb = document.getElementById(`install_settings_btn`);
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
             if (event.payload.install_id === install) {
                 launchbtn.setAttribute("disabled", "");
+                dlbtn.setAttribute("disabled", "");
                 isb.setAttribute("disabled", "");
                 pb.classList.remove("hidden");
                 pbn.innerText = `Moving "${event.payload.file}"`;
@@ -69,13 +73,15 @@ export function generalEventsHandler() {
     listen<string>('download_complete', async (event: any) => {
         let launchbtn = document.getElementById("launch_game_btn");
         let isb = document.getElementById("install_settings_btn");
+        let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
             launchbtn.removeAttribute("disabled");
             isb.removeAttribute("disabled");
+            dlbtn.removeAttribute("disabled");
             pbn.innerText = "Download complete!";
             setTimeout(() => {
                 pb.classList.add("hidden");
@@ -88,13 +94,15 @@ export function generalEventsHandler() {
     listen<any>('download_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
         let isb = document.getElementById(`install_settings_btn`);
+        let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
             launchbtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
+            dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
             pbn.innerText = `Downloading "${event.payload}"`;
             setTimeout(() => {
@@ -112,13 +120,15 @@ export function generalEventsHandler() {
     listen<string>('repair_complete', async (event: any) => {
         let launchbtn = document.getElementById("launch_game_btn");
         let isb = document.getElementById("install_settings_btn");
+        let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
             launchbtn.removeAttribute("disabled");
             isb.removeAttribute("disabled");
+            dlbtn.removeAttribute("disabled");
             pbn.innerText = "Repair complete!";
             setTimeout(() => {
                 pb.classList.add("hidden");
@@ -131,13 +141,15 @@ export function generalEventsHandler() {
     listen<any>('repair_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
         let isb = document.getElementById(`install_settings_btn`);
+        let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
             launchbtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
+            dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
             pbn.innerText = `Repairing "${event.payload}"`;
             setTimeout(() => {

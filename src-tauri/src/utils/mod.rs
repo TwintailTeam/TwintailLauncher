@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Hoyo, Kuro};
+use fischl::utils::game::VoiceLocale;
 use fischl::utils::KuroFile;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
@@ -167,8 +168,12 @@ pub fn register_listeners(app: &AppHandle) {
                         h4.emit("download_complete", install.name.clone()).unwrap();
                     }
                 } else {
-                    let urls = version.get(0).unwrap().game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                    
+                    let mut urls = version.get(0).unwrap().game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                    if !version.get(0).unwrap().audio.full.is_empty() {
+                        let faudio: Vec<_> = version.get(0).unwrap().audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
+                        urls.push(faudio.get(0).unwrap().file_url.clone());
+                    }
+
                     <Game as Hoyo>::download(urls.clone(), install.directory, move |_, _| {
                         let mut tracker = tc.lock().unwrap();
                         *tracker += 1;
@@ -215,11 +220,41 @@ pub fn register_listeners(app: &AppHandle) {
                         h5.emit("repair_complete", i.name.clone()).unwrap();
                     }
                 } else {
-                    let rslt = <Game as Hoyo>::repair_game(res, i.directory, i.skip_hash_check,move |_, _| {
+                    let rslt = <Game as Hoyo>::repair_game(res.clone(), i.directory.clone(), i.skip_hash_check,move |_, _| {
                         tmp.emit("repair_progress", instn.as_ref()).unwrap();
                     });
                     if rslt {
-                        h5.emit("repair_complete", i.name.clone()).unwrap();
+                        if !gm.paths.audio_pkg_res_dir.clone().is_empty() {
+                            let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
+
+                            let locales = vec![
+                                (VoiceLocale::English, if gm.biz.contains("hk4e") { dir.join(&VoiceLocale::English.to_folder()) } else { dir.join(&VoiceLocale::English.to_name()) }),
+                                (VoiceLocale::Korean, dir.join(&VoiceLocale::Korean.to_name())),
+                                (VoiceLocale::Japanese, dir.join(&VoiceLocale::Japanese.to_name())),
+                                (VoiceLocale::Chinese, dir.join(&VoiceLocale::Chinese.to_name())),
+                            ];
+
+                            let instn1 = Arc::new(i.name.clone());
+                            let tmp1 = Arc::new(h5.clone());
+                            // Loop over all available locales and check if their Audio pkg folder exists, if it does start repair for the language
+                            for (locale, path) in locales {
+                                if path.exists() {
+                                    let instn1c = instn1.clone();
+                                    let tmp1c = tmp1.clone();
+
+                                    let l = if gm.biz.contains("hk4e") { locale.to_folder() } else { locale.to_name() };
+
+                                    let rslt1 = <Game as Hoyo>::repair_audio(res.clone(), l.to_string(), i.directory.clone(), i.skip_hash_check,move |_, _| {
+                                        tmp1c.emit("repair_progress", instn1c.as_ref()).unwrap();
+                                    });
+                                    if rslt1 {
+                                        h5.emit("repair_complete", i.name.clone()).unwrap();
+                                    }
+                                }
+                            }
+                        } else {
+                            h5.emit("repair_complete", i.name.clone()).unwrap();
+                        };
                     }
                 }  
             } else {
@@ -297,7 +332,8 @@ pub struct AddInstallRsp {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DownloadGamePayload {
     pub install: String,
-    pub biz: String
+    pub biz: String,
+    pub lang: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]

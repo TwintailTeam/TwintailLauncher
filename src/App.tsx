@@ -126,11 +126,11 @@ export default class App extends React.Component<any, any> {
                             })
                         }, 20);
                     }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
-                    </button> : <button id={"game_download_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    </button> : <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
                         this.fetchGameVersions(this.state.currentGame);
                         this.fetchCompatibilityVersions();
                         setTimeout(() => {
-                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
+                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
                             this.setState({openPopup: POPUPS.DOWNLOADGAME});
                         }, 20);
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
@@ -289,8 +289,8 @@ export default class App extends React.Component<any, any> {
         })
     }
 
-    fetchDownloadSizes(biz: any, version: any, path: any, callback: (data: any) => void) {
-        invoke("get_download_sizes", {biz: biz, version: version, path: path}).then(data => {
+    fetchDownloadSizes(biz: any, version: any, lang: any, path: any, callback: (data: any) => void) {
+        invoke("get_download_sizes", {biz: biz, version: version, path: path, lang: lang}).then(data => {
             if (data === null) {
                 console.error("Could not get download sizes!");
             } else {
