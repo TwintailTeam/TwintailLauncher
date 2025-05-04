@@ -27,8 +27,7 @@ interface IProps {
     setOpenPopup?: (popup: POPUPS) => void,
     biz?: string,
     version?: () => string,
-    disk?: any,
-    fetchDownloadSizes?: (biz: any, version: any, path: any) => void,
+    fetchDownloadSizes?: (biz: any, version: any, path: any, callback: (data: any) => void) => void,
 }
 
 interface IState {
@@ -135,17 +134,32 @@ export default class FolderInput extends React.Component<IProps, IState> {
             break;
             case "install_game_path": {
                 if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined) {
-                    this.props.fetchDownloadSizes(this.props.biz, this.props.version(), path);
+                    this.props.fetchDownloadSizes(this.props.biz, this.props.version(), path, (disk) => {
+                        // @ts-ignore
+                        let btn = document.getElementById("game_dl_btn");
+                        // @ts-ignore
+                        let freedisk = document.getElementById("game_disk_free");
 
-                    // @ts-ignore
-                    let btn = document.getElementById("game_download_btn");
-                    if (this.props.disk.game_decompressed_size_raw > this.props.disk.free_disk_space_raw) {
-                        // @ts-ignore
-                        btn.setAttribute("disabled", "");
-                    } else {
-                        // @ts-ignore
-                        btn.removeAttribute("disabled");
-                    }
+                        if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                            // @ts-ignore
+                            btn.setAttribute("disabled", "");
+                            // @ts-ignore
+                            freedisk.classList.add("text-red-600");
+                            // @ts-ignore
+                            freedisk.classList.remove("text-white");
+                            // @ts-ignore
+                            freedisk.classList.add("font-bold");
+                        } else {
+                            // @ts-ignore
+                            btn.removeAttribute("disabled");
+                            // @ts-ignore
+                            freedisk.classList.remove("text-red-600");
+                            // @ts-ignore
+                            freedisk.classList.add("text-white");
+                            // @ts-ignore
+                            freedisk.classList.remove("font-bold");
+                        }
+                    });
                 }
             }
             break;

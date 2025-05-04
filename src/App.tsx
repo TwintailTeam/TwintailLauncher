@@ -130,7 +130,7 @@ export default class App extends React.Component<any, any> {
                         this.fetchGameVersions(this.state.currentGame);
                         this.fetchCompatibilityVersions();
                         setTimeout(() => {
-                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`);
+                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
                             this.setState({openPopup: POPUPS.DOWNLOADGAME});
                         }, 20);
                     }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
@@ -289,12 +289,13 @@ export default class App extends React.Component<any, any> {
         })
     }
 
-    fetchDownloadSizes(biz: any, version: any, path: any) {
+    fetchDownloadSizes(biz: any, version: any, path: any, callback: (data: any) => void) {
         invoke("get_download_sizes", {biz: biz, version: version, path: path}).then(data => {
             if (data === null) {
                 console.error("Could not get download sizes!");
             } else {
-                this.setState(() => ({downloadSizes: JSON.parse(data as string)}));
+                callback(JSON.parse(data as string));
+                this.setState({downloadSizes: JSON.parse(data as string)});
             }
         });
     }

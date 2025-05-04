@@ -1,7 +1,7 @@
 import {invoke} from "@tauri-apps/api/core";
 
 
-export default function SelectMenu({ id, name, options, selected, install, biz, dir, disk, fetchInstallSettings, fetchSettings, fetchDownloadSizes}: { id: string, name: string, options: any, selected: any, install?: string, biz?: string, dir?: () => string, disk?: any, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, dir: any) => void }) {
+export default function SelectMenu({ id, name, options, selected, install, biz, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes}: { id: string, name: string, options: any, selected: any, install?: string, biz?: string, dir?: () => string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, dir: any, callback: (data: any) => void) => void }) {
 
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
@@ -11,17 +11,32 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                     switch (id) {
                         case "game_version": {
                             if (fetchDownloadSizes !== undefined && dir !== undefined) {
-                                fetchDownloadSizes(biz, `${e.target.value}`, dir());
+                                fetchDownloadSizes(biz, `${e.target.value}`, dir(), (disk) => {
+                                    // @ts-ignore
+                                    let btn = document.getElementById("game_dl_btn");
+                                    // @ts-ignore
+                                    let freedisk = document.getElementById("game_disk_free");
 
-                                // @ts-ignore
-                                let btn = document.getElementById("game_download_btn");
-                                if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                                    // @ts-ignore
-                                    btn.setAttribute("disabled", "");
-                                } else {
-                                    // @ts-ignore
-                                    btn.removeAttribute("disabled");
-                                }
+                                    if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                                        // @ts-ignore
+                                        btn.setAttribute("disabled", "");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.add("font-bold");
+                                    } else {
+                                        // @ts-ignore
+                                        btn.removeAttribute("disabled");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("font-bold");
+                                    }
+                                });
                             }
                         }
                         break;

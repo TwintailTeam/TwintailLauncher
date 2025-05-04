@@ -20,7 +20,7 @@ interface IProps {
     pushInstalls: () => void,
     setCurrentInstall: (id: string) => void,
     setBackground: (id: string) => void,
-    fetchDownloadSizes: (biz: any, version: any, dir: any) => void,
+    fetchDownloadSizes: (biz: any, version: any, dir: any, callback: (data: any) => void) => void,
     disk: any
 }
 
@@ -33,7 +33,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                 <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg disabled:bg-gray-500" id={"game_download_btn"} onClick={() => {
+                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;
@@ -110,12 +110,12 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
             </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
                     {/* @ts-ignore */}
-                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} disk={disk}/>
+                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion}/>
                     <CheckBox enabled={false} name={"Skip version update check"} id={"skip_version_updates"}/>
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"}/>
-                    <TextDisplay name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
-                    <TextDisplay name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} disk={disk}/>
+                    <TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
+                    <TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes}/>
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} options={runnerVersions} selected={runnerVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} options={dxvkVersions} selected={dxvkVersions[0].value}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"}/>: null}
