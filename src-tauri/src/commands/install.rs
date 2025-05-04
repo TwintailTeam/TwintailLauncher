@@ -555,9 +555,12 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
         let entry = m.game_versions.into_iter().filter(|e| e.metadata.version == version).collect::<Vec<GameVersion>>();
         let g = entry.get(0).unwrap();
         let gs = g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
-        let audios: Vec<_> = g.audio.full.iter().filter(|x| x.language == lang).collect();
-        let audio = audios.get(0).unwrap().decompressed_size.parse::<u64>().unwrap();
-        let fss = gs.add(audio);
+        let mut fss = gs;
+        if !g.audio.full.is_empty() {
+            let audios: Vec<_> = g.audio.full.iter().filter(|x| x.language == lang).collect();
+            let audio = audios.get(0).unwrap().decompressed_size.parse::<u64>().unwrap();
+            fss = gs.add(audio);
+        }
         
         let a = available(Path::new(&path));
         let stringified;
