@@ -406,6 +406,7 @@ pub struct GamePaths {
 pub struct VersionMetadata {
     pub versioned_name: String,
     pub version: String,
+    pub download_mode: String,
     pub game_hash: String
 }
 
