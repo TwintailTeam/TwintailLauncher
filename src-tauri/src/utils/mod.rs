@@ -203,8 +203,8 @@ pub fn register_listeners(app: &AppHandle) {
             if install.is_some() { 
                 let i = install.unwrap();
                 let version = gm.game_versions.iter().filter(|e| e.metadata.version == i.version).collect::<Vec<&GameVersion>>();
-                let index = version.get(0).unwrap().index_file.clone();
-                let res = version.get(0).unwrap().res_list_url.clone();
+                let index = version.get(0).unwrap().metadata.index_file.clone();
+                let res = version.get(0).unwrap().metadata.res_list_url.clone();
 
                 let tmp = Arc::new(h5.clone());
                 let instn = Arc::new(i.name.clone());

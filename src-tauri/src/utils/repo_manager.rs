@@ -387,8 +387,6 @@ pub struct GameManifest {
 pub struct GameVersion {
     pub metadata: VersionMetadata,
     pub assets: VersionAssets,
-    pub index_file: String,
-    pub res_list_url: String,
     pub game: VersionGameFiles,
     pub audio: VersionAudioFiles
 }
@@ -407,7 +405,19 @@ pub struct VersionMetadata {
     pub versioned_name: String,
     pub version: String,
     pub download_mode: String,
-    pub game_hash: String
+    pub game_hash: String,
+    pub index_file: String,
+    pub res_list_url: String,
+    pub diff_list_url: DiffUrls
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DiffUrls {
+    pub game: String,
+    pub en_us: String,
+    pub zh_cn: String,
+    pub ja_jp: String,
+    pub ko_kr: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
