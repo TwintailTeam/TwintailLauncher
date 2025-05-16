@@ -72,6 +72,9 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                         rpp = rp.value + "/" + gvv;
                     }
 
+                    // @ts-ignore
+                    let skipdl = document.getElementById("skip_game_dl").checked;
+
                     invoke("add_install", {
                         manifestId: biz,
                         version: gvv,
@@ -94,7 +97,8 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                         launchCommand: "",
                         fpsValue: "60",
                         runnerPrefix: rpp,
-                        launchArgs: ""
+                        launchArgs: "",
+                        skipGameDl: skipdl
                     }).then((r: any) => {
                         if (r.success) {
                             pushInstalls();
@@ -103,20 +107,20 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             setTimeout(() => {
                                 // @ts-ignore
                                 document.getElementById(r.install_id).focus();
-                                emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp}).then(() => {});
+                                if (!skipdl) {
+                                    emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp}).then(() => {});
+                                }
                             }, 20);
                         } else {
                             console.error("Download error!");
                         }
                     });
-                }}>
-                    <DownloadCloudIcon/>
-                    <span className="font-semibold translate-y-px">Start download</span>
-                </button>
+                }}><DownloadCloudIcon/><span className="font-semibold translate-y-px">Start download</span></button>
             </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
                     {/* @ts-ignore */}
                     <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio}/>
+                    <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"}/>
                     <CheckBox enabled={false} name={"Skip version update check"} id={"skip_version_updates"}/>
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"}/>
                     <TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>

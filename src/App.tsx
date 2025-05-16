@@ -105,19 +105,14 @@ export default class App extends React.Component<any, any> {
                                     document.getElementById(`${this.state.currentInstall}`).focus();
                                     switch (this.state.globalSettings.launcher_action) {
                                         case "exit": {
-                                            setTimeout(() => {
-                                                emit("launcher_action_exit", null).then(() => {});
-                                            }, 500);
+                                            setTimeout(() => { emit("launcher_action_exit", null).then(() => {}); }, 500);
                                         }
                                         break;
                                         case "minimize": {
-                                            setTimeout(() => {
-                                                emit("launcher_action_minimize", null).then(() => {});
-                                            }, 500);
+                                            setTimeout(() => { emit("launcher_action_minimize", null).then(() => {}); }, 500);
                                         }
                                         break;
-                                        case 'keep': {
-                                        }
+                                        case 'keep': {}
                                         break;
                                     }
                                 } else {

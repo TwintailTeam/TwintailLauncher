@@ -3,14 +3,15 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 use std::sync::Arc;
-use fischl::download::Extras;
+use fischl::compat::Compat;
+use fischl::download::{Compatibility, Extras};
 use fischl::utils::{extract_archive, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_dxvk_version_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_runner_version_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{copy_dir_all, generate_cuid, AddInstallRsp, DownloadSizesRsp};
-use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::utils::{copy_dir_all, generate_cuid, runner_from_runner_version, AddInstallRsp, DownloadSizesRsp};
+use crate::utils::repo_manager::{get_compatibility, get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
 use tauri::{Manager};
@@ -55,7 +56,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub async fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String) -> Option<AddInstallRsp> {
+pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -70,7 +71,7 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, a
             fs::create_dir_all(&install_location).unwrap();
         }
         directory = install_location.to_str().unwrap().to_string();
-
+        
         #[cfg(target_os = "windows")]
         {
             dxvk_path = "".to_string();
@@ -83,27 +84,62 @@ pub async fn add_install(app: AppHandle, manifest_id: String, version: String, a
             let comppath = data_path.join("compatibility");
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
-            let prefixes = comppath.join("prefixes");
-
-            if !comppath.exists() {
-                fs::create_dir_all(&wine).unwrap();
-                fs::create_dir_all(&dxvk).unwrap();
-                fs::create_dir_all(&prefixes).unwrap();
-            }
+            
             runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
             dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
 
-            if !Path::exists(runner_path.as_ref()) {
-                fs::create_dir_all(runner_path.clone()).unwrap();
-            }
+            if !Path::exists(runner_path.as_ref()) { fs::create_dir_all(runner_path.clone()).unwrap(); }
+            if !Path::exists(dxvk_path.as_ref()) { fs::create_dir_all(dxvk_path.clone()).unwrap(); }
+            if !Path::exists(runner_prefix.as_ref()) { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
+            
+            let archandle = Arc::new(app.clone());
+            let runv = Arc::new(runner_version.clone());
+            let dxvkpp = Arc::new(dxvk_path.clone());
+            let runpp = Arc::new(runner_path.clone());
+            let dxvkv = Arc::new(dxvk_version.clone());
+            let rpp = Arc::new(runner_prefix.clone());
 
-            if !Path::exists(dxvk_path.as_ref()) {
-                fs::create_dir_all(dxvk_path.clone()).unwrap();
-            }
+            std::thread::spawn(move || {
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
+                let runnerp = rv.get(0).unwrap().to_owned();
+                let rp = Path::new(runpp.as_str()).to_path_buf();
+                let dxp = Path::new(dxvkpp.as_str()).to_path_buf();
 
-            if !Path::exists(runner_prefix.as_ref()) {
-                fs::create_dir_all(runner_prefix.clone()).unwrap();
-            }
+                if skip_game_dl { archandle.emit("download_progress", runv.as_str().to_string()).unwrap(); }
+
+                // Download selected DXVK
+                let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
+                let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
+                let dxvkp = dv.get(0).unwrap().to_owned();
+                if fs::read_dir(dxvkpp.as_str().to_string()).unwrap().next().is_none() { 
+                    let r = Compatibility::download_dxvk(dxvkp.url, dxvkpp.as_str().to_string());
+                    if r { extract_archive(dxp.join("dxvk.zip").to_str().unwrap().to_string(), dxp.to_str().unwrap().to_string(), true); }
+                }
+
+                if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
+                    let r0 = Compatibility::download_runner(runnerp.url, runpp.as_str().to_string());
+                    if r0 {
+                        let er = extract_archive(rp.join("runner.zip").to_str().unwrap().to_string(), rp.to_str().unwrap().to_string(), true);
+                        let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                        let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                        let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
+                        
+                        if r1.is_ok() && er {
+                            let r = r1.unwrap();
+                            let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
+                            if r2.is_ok() {
+                                // NOTE: Adding DXVK causes "wine client error:0: version mismatch 863/864" for a minute or two, theoretically won't affect users as they are still downloading game files 
+                                let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string());
+                                if da.is_ok() { 
+                                    Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
+                                    if skip_game_dl { archandle.emit("download_complete", runv.as_str().to_string()).unwrap(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args).unwrap();
         Some(AddInstallRsp {
@@ -488,11 +524,35 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
     if install.is_some() {
         let m = install.unwrap();
-        // TODO: Download runner version
         let rp = m.runner_path.clone();
         let rpn = rp.replace(m.runner_version.as_str(), version.as_str());
-        if !Path::exists(rpn.as_ref()) {
-            fs::create_dir_all(rpn.clone()).unwrap();
+        if !Path::exists(rpn.as_ref()) { fs::create_dir_all(rpn.clone()).unwrap(); }
+        
+        let archandle = Arc::new(app.clone());
+        let runv = Arc::new(version.clone());
+        let runpp = Arc::new(rpn.clone());
+        let rpp = Arc::new(m.runner_prefix.clone());
+        
+        if fs::read_dir(rpn.as_str()).unwrap().next().is_none() { 
+            std::thread::spawn(move || {
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
+                let runnerp = rv.get(0).unwrap().to_owned();
+                let rp = Path::new(runpp.as_str()).to_path_buf();
+
+                archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+
+                let r0 = Compatibility::download_runner(runnerp.url, runpp.as_str().to_string());
+                if r0 {
+                    let er = extract_archive(rp.join("runner.zip").to_str().unwrap().to_string(), rp.to_str().unwrap().to_string(), true);
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                    let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                    if er { 
+                        Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap();
+                        archandle.emit("download_complete", runv.as_str().to_string()).unwrap();
+                    }
+                }
+            });
         }
 
         update_install_runner_version_by_id(&app, m.id.clone(), version);
@@ -509,11 +569,42 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
     if install.is_some() {
         let m = install.unwrap();
-        // TODO: Download DXVK version
         let p = m.dxvk_path.clone();
         let pn = p.replace(m.dxvk_version.as_str(), version.as_str());
-        if !Path::exists(pn.as_ref()) {
-            fs::create_dir_all(pn.clone()).unwrap();
+        if !Path::exists(pn.as_ref()) { fs::create_dir_all(pn.clone()).unwrap(); }
+
+        let archandle = Arc::new(app.clone());
+        let dxvkv = Arc::new(version.clone());
+        let dxpp = Arc::new(pn.clone());
+        let rpp = Arc::new(m.runner_prefix.clone());
+        let runv = Arc::new(m.runner_version.clone());
+        let runp = Arc::new(m.runner_path.clone());
+        
+        if fs::read_dir(pn.as_str()).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
+                let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
+                let dxp = dv.get(0).unwrap().to_owned();
+                let dxpp = Path::new(dxpp.as_str()).to_path_buf();
+                let rp = Path::new(runp.as_str()).to_path_buf();
+
+                archandle.emit("download_progress", dxvkv.as_str().to_string()).unwrap();
+
+                let r0 = Compatibility::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string());
+                if r0 {
+                    let er = extract_archive(dxpp.join("dxvk.zip").to_str().unwrap().to_string(), dxpp.to_str().unwrap().to_string(), true);
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                    let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                    if er { 
+                        let r1 = Compat::remove_dxvk(winebin.clone(), rpp.as_str().to_string());
+                        if r1.is_ok() { 
+                            Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string()).unwrap();
+                            archandle.emit("download_complete", dxvkv.as_str().to_string()).unwrap();
+                        }
+                    }
+                }
+            });
         }
 
         update_install_dxvk_version_by_id(&app, m.id.clone(), version);

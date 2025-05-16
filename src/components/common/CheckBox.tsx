@@ -19,6 +19,10 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                             }
                         }
                         break;
+                        case "skip_game_dl": {
+                            setIsEnabled(!isEnabled);
+                        }
+                        break;
                         case "skip_version_updates": {
                             setIsEnabled(!isEnabled);
                         }
