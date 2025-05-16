@@ -158,7 +158,7 @@ pub fn register_listeners(app: &AppHandle) {
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
                     "DOWNLOAD_MODE_FILE" => {
-                        /*let mut urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        let mut urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         if !picked.audio.full.is_empty() {
                             let faudio: Vec<_> = picked.audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
                             urls.push(faudio.get(0).unwrap().file_url.clone());
@@ -170,7 +170,7 @@ pub fn register_listeners(app: &AppHandle) {
                         });
                         if *tracker.lock().unwrap() == urls.clone().len() {
                             h4.emit("download_complete", install.name.clone()).unwrap();
-                        }*/
+                        }
                     }
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
