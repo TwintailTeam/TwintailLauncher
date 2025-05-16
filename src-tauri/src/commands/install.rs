@@ -288,7 +288,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
 
         update_install_use_jadeite_by_id(&app, m.id, enabled);
         
-        if fs::read_dir(&p).unwrap().next().is_none() {
+        if fs::read_dir(&p).unwrap().next().is_none() && m.use_jadeite {
             std::thread::spawn(move || {
                 let dl = Extras::download_jadeite("mkrsym1/jadeite".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
                 if dl {
@@ -313,7 +313,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
         update_install_use_xxmi_by_id(&app, m.id, enabled);
 
-        if fs::read_dir(&p).unwrap().next().is_none() {
+        if fs::read_dir(&p).unwrap().next().is_none() && m.use_xxmi {
             std::thread::spawn(move || {
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
                 app.emit("download_progress", String::from("XXMI Modding tool")).unwrap();
@@ -360,7 +360,7 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
 
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
 
-        if fs::read_dir(&p).unwrap().next().is_none() {
+        if fs::read_dir(&p).unwrap().next().is_none() && m.use_fps_unlock {
             std::thread::spawn(move || {
                 Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
             });
@@ -382,7 +382,7 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
 
         update_install_fps_value_by_id(&app, m.id, fps);
 
-        if fs::read_dir(&p).unwrap().next().is_none() {
+        if fs::read_dir(&p).unwrap().next().is_none() && m.use_fps_unlock {
             std::thread::spawn(move || {
                 Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
             });

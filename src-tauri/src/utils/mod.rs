@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use fischl::download::game::{Game, Hoyo, Kuro};
+use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::game::VoiceLocale;
 use fischl::utils::KuroFile;
 use serde::{Deserialize, Serialize};
@@ -138,7 +138,7 @@ pub fn register_listeners(app: &AppHandle) {
     let h4 = app.clone();
     app.listen("start_game_download", move |event| {
         let h4 = h4.clone();
-        std::thread::spawn(move || {
+        std::thread::spawn(async move || {
             let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
             let install = get_install_info_by_id(&h4, payload.install).unwrap(); // Should exist by now, if not we FUCKED UP
             let gid = payload.biz.clone() + ".json";
@@ -146,6 +146,7 @@ pub fn register_listeners(app: &AppHandle) {
             let mm = get_manifest(&h4, gid);
             if let Some(gm) = mm {
                 let version = gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>();
+                let picked = version.get(0).unwrap();
                 let tmp = Arc::new(h4.clone());
 
                 let instn = Arc::new(install.name.clone());
@@ -154,35 +155,51 @@ pub fn register_listeners(app: &AppHandle) {
 
                 h4.emit("download_progress", install.name.clone()).unwrap();
 
-                // TODO: Refactor to recognize game better as it can be a custom manifest game
-                if payload.biz.contains("wuwa") {
-                    let urls = version.get(0).unwrap().game.full.iter().map(|v| KuroFile { url: v.file_url.clone(), path: v.file_path.clone(), hash: v.file_hash.clone(), size: v.decompressed_size.clone() }).collect::<Vec<KuroFile>>();
-
-                    <Game as Kuro>::download(urls.clone(), install.directory, move |_, _| {
-                        let mut tracker = tc.lock().unwrap();
-                        *tracker += 1;
-                        tmp.emit("download_progress", instn.as_ref()).unwrap();
-                    });
-
-                    if *tracker.lock().unwrap() == urls.clone().len() {
-                        h4.emit("download_complete", install.name.clone()).unwrap();
+                match picked.metadata.download_mode.as_str() {
+                    // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
+                    "DOWNLOAD_MODE_FILE" => {
+                        let mut urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        if !picked.audio.full.is_empty() {
+                            let faudio: Vec<_> = picked.audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
+                            urls.push(faudio.get(0).unwrap().file_url.clone());
+                        }
+                        <Game as Hoyo>::download(urls.clone(), install.directory.clone(), move |_, _| {
+                            let mut tracker = tc.lock().unwrap();
+                            *tracker += 1;
+                            tmp.emit("download_progress", instn.as_ref()).unwrap();
+                        });
+                        if *tracker.lock().unwrap() == urls.clone().len() {
+                            h4.emit("download_complete", install.name.clone()).unwrap();
+                        }
                     }
-                } else {
-                    let mut urls = version.get(0).unwrap().game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                    if !version.get(0).unwrap().audio.full.is_empty() {
-                        let faudio: Vec<_> = version.get(0).unwrap().audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
-                        urls.push(faudio.get(0).unwrap().file_url.clone());
+                    // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
+                    "DOWNLOAD_MODE_CHUNK" => {
+                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        let manifest = urls.get(0).unwrap();
+                        <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), move |_, _| {
+                            let mut tracker = tc.lock().unwrap();
+                            *tracker += 1;
+                            tmp.emit("download_progress", instn.as_ref()).unwrap();
+                        }).await;
+                        // Shitty way to validate but will work for the time being
+                        if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
+                            h4.emit("download_complete", install.name.clone()).unwrap();
+                        }
                     }
-
-                    <Game as Hoyo>::download(urls.clone(), install.directory, move |_, _| {
-                        let mut tracker = tc.lock().unwrap();
-                        *tracker += 1;
-                        tmp.emit("download_progress", instn.as_ref()).unwrap();
-                    });
-                    
-                    if *tracker.lock().unwrap() == urls.clone().len() {
-                        h4.emit("download_complete", install.name.clone()).unwrap();
+                    // Raw file mode, PS: Currently only wuwa supported! PGR soon???
+                    "DOWNLOAD_MODE_RAW" => {
+                        let urls = picked.game.full.iter().map(|v| KuroFile { url: v.file_url.clone(), path: v.file_path.clone(), hash: v.file_hash.clone(), size: v.decompressed_size.clone() }).collect::<Vec<KuroFile>>();
+                        <Game as Kuro>::download(urls.clone(), install.directory.clone(), move |_, _| {
+                            let mut tracker = tc.lock().unwrap();
+                            *tracker += 1;
+                            tmp.emit("download_progress", instn.as_ref()).unwrap();
+                        });
+                        if *tracker.lock().unwrap() == urls.clone().len() {
+                            h4.emit("download_complete", install.name.clone()).unwrap();
+                        }
                     }
+                    // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
+                    _ => {}
                 }
             } else {
                 println!("Failed to download game!");
@@ -203,61 +220,63 @@ pub fn register_listeners(app: &AppHandle) {
             if install.is_some() { 
                 let i = install.unwrap();
                 let version = gm.game_versions.iter().filter(|e| e.metadata.version == i.version).collect::<Vec<&GameVersion>>();
-                let index = version.get(0).unwrap().metadata.index_file.clone();
-                let res = version.get(0).unwrap().metadata.res_list_url.clone();
+                let picked = version.get(0).unwrap();
 
                 let tmp = Arc::new(h5.clone());
                 let instn = Arc::new(i.name.clone());
 
                 h5.emit("repair_progress", instn.as_ref()).unwrap();
 
-                // TODO: Refactor to recognize game better as it can be a custom manifest game
-                if gm.biz.contains("wuwa") {
-                    let rslt = <Game as Kuro>::repair_game(index, res, i.directory, i.skip_hash_check,move |_, _| {
-                        tmp.emit("repair_progress", instn.as_ref()).unwrap();
-                    });
-                    if rslt {
-                        h5.emit("repair_complete", i.name.clone()).unwrap();
-                    }
-                } else {
-                    let rslt = <Game as Hoyo>::repair_game(res.clone(), i.directory.clone(), i.skip_hash_check,move |_, _| {
-                        tmp.emit("repair_progress", instn.as_ref()).unwrap();
-                    });
-                    if rslt {
-                        if !gm.paths.audio_pkg_res_dir.clone().is_empty() {
-                            let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
+                match picked.metadata.download_mode.as_str() {
+                    // General game repair, PS: Only hoyo games for backwards compatibility
+                    "DOWNLOAD_MODE_FILE" => {
+                        let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, move |_, _| {
+                            tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                        });
+                        if rslt {
+                            if !gm.paths.audio_pkg_res_dir.clone().is_empty() {
+                                let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
 
-                            let locales = vec![
-                                (VoiceLocale::English, if gm.biz.contains("hk4e") { dir.join(&VoiceLocale::English.to_folder()) } else { dir.join(&VoiceLocale::English.to_name()) }),
-                                (VoiceLocale::Korean, dir.join(&VoiceLocale::Korean.to_name())),
-                                (VoiceLocale::Japanese, dir.join(&VoiceLocale::Japanese.to_name())),
-                                (VoiceLocale::Chinese, dir.join(&VoiceLocale::Chinese.to_name())),
-                            ];
+                                // Make this shit better as some folder names might be pulled as inaccurate
+                                let locales = vec![
+                                    (VoiceLocale::English, if gm.biz.contains("hk4e") { dir.join(&VoiceLocale::English.to_folder()) } else { dir.join(&VoiceLocale::English.to_name()) }),
+                                    (VoiceLocale::Korean, dir.join(&VoiceLocale::Korean.to_name())),
+                                    (VoiceLocale::Japanese, dir.join(&VoiceLocale::Japanese.to_name())),
+                                    (VoiceLocale::Chinese, dir.join(&VoiceLocale::Chinese.to_name())),
+                                ];
 
-                            let instn1 = Arc::new(i.name.clone());
-                            let tmp1 = Arc::new(h5.clone());
-                            // Loop over all available locales and check if their Audio pkg folder exists, if it does start repair for the language
-                            for (locale, path) in locales {
-                                if path.exists() {
-                                    let instn1c = instn1.clone();
-                                    let tmp1c = tmp1.clone();
+                                let instn1 = Arc::new(i.name.clone());
+                                let tmp1 = Arc::new(h5.clone());
+                                // Loop over all available locales and check if their Audio pkg folder exists, if it does start repair for the language
+                                for (locale, path) in locales {
+                                    if path.exists() {
+                                        let instn1c = instn1.clone();
+                                        let tmp1c = tmp1.clone();
 
-                                    let l = if gm.biz.contains("hk4e") { locale.to_folder() } else { locale.to_name() };
+                                        let l = if gm.biz.contains("hk4e") { locale.to_folder() } else { locale.to_name() };
 
-                                    let rslt1 = <Game as Hoyo>::repair_audio(res.clone(), l.to_string(), i.directory.clone(), i.skip_hash_check,move |_, _| {
-                                        tmp1c.emit("repair_progress", instn1c.as_ref()).unwrap();
-                                    });
-                                    if rslt1 {
-                                        h5.emit("repair_complete", i.name.clone()).unwrap();
+                                        let rslt1 = <Game as Hoyo>::repair_audio(picked.metadata.res_list_url.clone(), l.to_string(), i.directory.clone(), i.skip_hash_check, move |_, _| {
+                                            tmp1c.emit("repair_progress", instn1c.as_ref()).unwrap();
+                                        });
+                                        if rslt1 { h5.emit("repair_complete", i.name.clone()).unwrap(); }
                                     }
                                 }
-                            }
-                        } else {
-                            h5.emit("repair_complete", i.name.clone()).unwrap();
-                        };
+                            } else { h5.emit("repair_complete", i.name.clone()).unwrap(); };
+                        }
                     }
-                }  
-            } else {
+                    // Sophon chunk repair, PS: Only hoyo games as it is their literal format
+                    "DOWNLOAD_MODE_CHUNK" => {}
+                    // Raw file repair, PS: Only wuwa currently
+                    "DOWNLOAD_MODE_RAW" => {
+                        let rslt = <Game as Kuro>::repair_game(picked.metadata.index_file.clone(), picked.metadata.res_list_url.clone(), i.directory, i.skip_hash_check, move |_, _| {
+                            tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                        });
+                        if rslt { h5.emit("repair_complete", i.name.clone()).unwrap(); }
+                    }
+                    // Fallback mode
+                    _ => {}
+                }
+            } else { 
                 println!("Failed to find installation for repair!");
             }
             

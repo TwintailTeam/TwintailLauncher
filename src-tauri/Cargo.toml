@@ -27,7 +27,7 @@ cuid2 = "0.1.4"
 linked-hash-map = "0.5.6"
 futures-core = "0.3"
 # Main library to handle downloads and comaptibility
-fischl = { git = "https://github.com/AndigenaTeam/fischl-rs.git", branch = "master", features = ["compat"] }
+fischl = { git = "https://github.com/AndigenaTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 
 # tauri plugins
 tauri-plugin-dialog = "2"

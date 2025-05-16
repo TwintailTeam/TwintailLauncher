@@ -13,25 +13,25 @@
         "build:native": "tauri build"
     },
     "dependencies": {
-        "@floating-ui/react": "^0.27.6",
-        "@tauri-apps/api": "^2.4.1",
+        "@floating-ui/react": "^0.27.8",
+        "@tauri-apps/api": "^2.5.0",
         "@tauri-apps/plugin-dialog": "^2.2.1",
         "@tauri-apps/plugin-notification": "^2.2.2",
         "lucide-react": "^0.487.0",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
     },
     "devDependencies": {
-        "@tauri-apps/cli": "^2.4.1",
-        "@types/react": "^18.2.15",
-        "@types/react-dom": "^18.2.7",
-        "@vitejs/plugin-react": "^4.2.1",
-        "autoprefixer": "^10.4.20",
-        "postcss": "^8.4.47",
+        "@tauri-apps/cli": "^2.5.0",
+        "@types/react": "^18.3.21",
+        "@types/react-dom": "^18.3.7",
+        "@vitejs/plugin-react": "^4.4.1",
+        "autoprefixer": "^10.4.21",
+        "postcss": "^8.5.3",
         "tailwind-scrollbar": "^3.1.0",
-        "tailwindcss": "^3.4.14",
-        "typescript": "^5.2.2",
-        "vite": "^5.3.1"
+        "tailwindcss": "^3.4.17",
+        "typescript": "^5.8.3",
+        "vite": "^5.4.19"
     },
     "pnpm": {
         "ignoredBuiltDependencies": [

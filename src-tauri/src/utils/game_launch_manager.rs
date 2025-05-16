@@ -157,7 +157,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 #[cfg(target_os = "linux")]
 fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
     if install.use_xxmi {
-        wait_for_process(game.as_str(), || {
+        wait_for_process(game.as_str(), 100, || {
             let xxmi_path = xxmi_path.clone();
             let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'");
 
@@ -186,7 +186,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
 #[cfg(target_os = "linux")]
 fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String) {
     if install.use_fps_unlock {
-        wait_for_process(game.as_str(), || {
+        wait_for_process(game.as_str(), 100, || {
             let fpsunlock_path = fpsunlock_path.clone();
             let fpsv = install.fps_value.clone();
             let command = format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000");
@@ -235,29 +235,19 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
 
             stdout_join = Some(std::thread::spawn(move || -> std::io::Result<()> {
                 let mut buf = [0; 1024];
-
                 while let Ok(read) = stdout.read(&mut buf) {
-                    if read == 0 {
-                        break;
-                    }
-
-                    let Ok(mut game_output) = game_output.lock() else {
-                        break;
-                    };
+                    if read == 0 { break; }
+                    let Ok(mut game_output) = game_output.lock() else { break; };
 
                     for line in buf[..read].split(|c| c == &b'\n') {
                         game_output.write_all(b"    [stdout] ")?;
                         game_output.write_all(line)?;
                         game_output.write_all(b"\n")?;
-
                         written.fetch_add(line.len() + 14, Ordering::Relaxed);
                     }
 
-                    if written.load(Ordering::Relaxed) > log_file_size {
-                        break;
-                    }
+                    if written.load(Ordering::Relaxed) > log_file_size { break; }
                 }
-
                 Ok(())
             }));
         }
@@ -268,44 +258,29 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
 
             stderr_join = Some(std::thread::spawn(move || -> std::io::Result<()> {
                 let mut buf = [0; 1024];
-
                 while let Ok(read) = stderr.read(&mut buf) {
-                    if read == 0 {
-                        break;
-                    }
-
-                    let Ok(mut game_output) = game_output.lock() else {
-                        break;
-                    };
-
+                    if read == 0 { break; }
+                    let Ok(mut game_output) = game_output.lock() else { break; };
+                    
                     for line in buf[..read].split(|c| c == &b'\n') {
                         game_output.write_all(b"[!] [stderr] ")?;
                         game_output.write_all(line)?;
                         game_output.write_all(b"\n")?;
-
                         written.fetch_add(line.len() + 14, Ordering::Relaxed);
                     }
-
-                    if written.load(Ordering::Relaxed) > log_file_size {
-                        break;
-                    }
+                    if written.load(Ordering::Relaxed) > log_file_size { break; }
                 }
-
                 Ok(())
             }));
         }
 
         child.wait().unwrap();
-        if let Ok(mut file) = game_output.lock() {
-            file.flush().unwrap();
-        }
-
+        if let Ok(mut file) = game_output.lock() { file.flush().unwrap(); }
         drop(game_output);
 
         if let Some(join) = stdout_join {
             join.join().map_err(|err| format!("Failed to join stdout reader thread: {err:?}")).unwrap().unwrap();
         }
-
         if let Some(join) = stderr_join {
             join.join().map_err(|err| format!("Failed to join stderr reader thread: {err:?}")).unwrap().unwrap();
         }
