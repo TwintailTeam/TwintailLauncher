@@ -13,10 +13,10 @@
         "windows": [
             {
                 "title": "Twintail Launcher (Alpha)",
-                "width": 1200,
-                "height": 800,
-                "minWidth": 1200,
-                "minHeight": 800,
+                "width": 1280,
+                "height": 720,
+                "minWidth": 1280,
+                "minHeight": 720,
                 "maximizable": false,
                 "minimizable": true,
                 "resizable": true,
