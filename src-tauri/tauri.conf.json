@@ -1,8 +1,8 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
-    "productName": "keqinglauncher",
+    "productName": "twintaillauncher",
     "version": "0.1.0",
-    "identifier": "com.keqinglauncher.app",
+    "identifier": "twintaillauncher",
     "build": {
         "beforeDevCommand": "pnpm dev",
         "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
     "app": {
         "windows": [
             {
-                "title": "Keqing Launcher (InDev)",
+                "title": "Twintail Launcher (Alpha)",
                 "width": 1200,
                 "height": 800,
                 "minWidth": 1200,
@@ -34,11 +34,11 @@
         "linux": {
             "deb": {
                 "files": {
-                    "/usr/share/applications/keqinglauncher.desktop": "../keqinglauncher.desktop"
+                    "/usr/share/applications/keqinglauncher.desktop": "../twintaillauncher.desktop"
                 }
             },
             "rpm": {
-                "desktopTemplate": "../keqinglauncher.desktop"
+                "desktopTemplate": "../twintaillauncher.desktop"
             }
         },
         "icon": [

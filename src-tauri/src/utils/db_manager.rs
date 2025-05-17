@@ -10,13 +10,11 @@ use crate::utils::{run_async_command};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
-    let conn_path = app.path().app_config_dir().unwrap();
-    let conn_url = conn_path.join("storage.db");
-
+    let conn_url = data_path.join("storage.db");
     let manifests_dir = data_path.join("manifests");
 
     if !conn_url.exists() {
-        fs::create_dir_all(&conn_path).unwrap();
+        fs::create_dir_all(&data_path).unwrap();
 
         if !Sqlite::database_exists(conn_url.to_str().unwrap()).await.unwrap() {
             Sqlite::create_database(conn_url.to_str().unwrap()).await.unwrap();
