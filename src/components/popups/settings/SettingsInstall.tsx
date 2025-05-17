@@ -55,7 +55,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
-                        emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id}).then(() => {});
+                        emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id, lang: "en-us"}).then(() => {});
                     }}><WrenchIcon/>
                         <span className="font-semibold translate-y-px">Repair install</span>
                     </button>
