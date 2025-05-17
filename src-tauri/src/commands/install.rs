@@ -106,8 +106,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 let rp = Path::new(runpp.as_str()).to_path_buf();
                 let dxp = Path::new(dxvkpp.as_str()).to_path_buf();
 
-                if skip_game_dl { archandle.emit("download_progress", runv.as_str().to_string()).unwrap(); }
-
                 // Download selected DXVK
                 let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                 let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
@@ -118,6 +116,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
 
                 if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
+                    archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+
                     let r0 = Compatibility::download_runner(runnerp.url, runpp.as_str().to_string());
                     if r0 {
                         let er = extract_archive(rp.join("runner.zip").to_str().unwrap().to_string(), rp.to_str().unwrap().to_string(), true);
@@ -589,7 +589,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                 let rp = Path::new(runp.as_str()).to_path_buf();
 
-                archandle.emit("download_progress", dxvkv.as_str().to_string()).unwrap();
+                archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
 
                 let r0 = Compatibility::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string());
                 if r0 {

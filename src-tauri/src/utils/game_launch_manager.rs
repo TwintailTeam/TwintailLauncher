@@ -7,10 +7,10 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
+use fischl::utils::wait_for_process;
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
-use fischl::utils::wait_for_process;
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
 #[cfg(target_os = "linux")]
@@ -27,11 +27,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
-    let wine64 = if rm.paths.wine64.is_empty() {
-        rm.paths.wine32
-    } else {
-        rm.paths.wine64
-    };
+    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
         let command = format!("'{runner}/{wine64}' '{pre_launch}'");

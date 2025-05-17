@@ -138,7 +138,7 @@ pub fn register_listeners(app: &AppHandle) {
     let h4 = app.clone();
     app.listen("start_game_download", move |event| {
         let h4 = h4.clone();
-        std::thread::spawn(async move || {
+        std::thread::spawn(move || {
             let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
             let install = get_install_info_by_id(&h4, payload.install).unwrap(); // Should exist by now, if not we FUCKED UP
             let gid = payload.biz.clone() + ".json";
@@ -159,10 +159,10 @@ pub fn register_listeners(app: &AppHandle) {
                     // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
                     "DOWNLOAD_MODE_FILE" => {
                         let mut urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                        if !picked.audio.full.is_empty() {
+                        /*if !picked.audio.full.is_empty() {
                             let faudio: Vec<_> = picked.audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
                             urls.push(faudio.get(0).unwrap().file_url.clone());
-                        }
+                        }*/
                         <Game as Hoyo>::download(urls.clone(), install.directory.clone(), move |_, _| {
                             let mut tracker = tc.lock().unwrap();
                             *tracker += 1;
@@ -176,11 +176,13 @@ pub fn register_listeners(app: &AppHandle) {
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let manifest = urls.get(0).unwrap();
-                        <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), move |_, _| {
-                            let mut tracker = tc.lock().unwrap();
-                            *tracker += 1;
-                            tmp.emit("download_progress", instn.as_ref()).unwrap();
-                        }).await;
+                        run_async_command(async {
+                            <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), move |_, _| {
+                                let mut tracker = tc.lock().unwrap();
+                                *tracker += 1;
+                                tmp.emit("download_progress", instn.as_ref()).unwrap();
+                            }).await;
+                        });
                         // Shitty way to validate but will work for the time being
                         if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
                             h4.emit("download_complete", install.name.clone()).unwrap();

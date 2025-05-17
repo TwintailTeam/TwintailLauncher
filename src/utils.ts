@@ -5,36 +5,36 @@ export function moveTracker(install: string) {
    listen<string>('move_complete', async (event: any) => {
        let launchbtn = document.getElementById("launch_game_btn");
        let isb = document.getElementById("install_settings_btn");
-       let dlbtn = document.getElementById("download_game_btn");
+       //let dlbtn = document.getElementById("download_game_btn");
        let pb = document.getElementById("progress_bar");
        let pbn = document.getElementById("progress_name");
        let pbv = document.getElementById("progress_value");
 
-       if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+       if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
            launchbtn.removeAttribute("disabled");
-           dlbtn.removeAttribute("disabled");
+           //dlbtn.removeAttribute("disabled");
            isb.removeAttribute("disabled");
            pbn.innerText = "Installation move complete!";
            setTimeout(() => {
                pb.classList.add("hidden");
            }, 500);
        }
-       sendNotify("KeqingLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete. You can now again launch all installed games.`, "dialog-information").then(() => {});
+       await sendNotify("KeqingLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete.`, "dialog-information");
        emit("prevent_exit", false).then(() => {});
    }).then(() => {});
 
     listen<any>('move_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
-        let dlbtn = document.getElementById("download_game_btn");
+        //let dlbtn = document.getElementById("download_game_btn");
         let isb = document.getElementById(`install_settings_btn`);
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
             if (event.payload.install_id === install) {
                 launchbtn.setAttribute("disabled", "");
-                dlbtn.setAttribute("disabled", "");
+                //dlbtn.setAttribute("disabled", "");
                 isb.setAttribute("disabled", "");
                 pb.classList.remove("hidden");
                 pbn.innerText = `Moving "${event.payload.file}"`;
@@ -71,38 +71,38 @@ export function generalEventsHandler() {
 
     // Download events
     listen<string>('download_complete', async (event: any) => {
-        let launchbtn = document.getElementById("launch_game_btn");
-        let isb = document.getElementById("install_settings_btn");
-        let dlbtn = document.getElementById("download_game_btn");
-        let pb = document.getElementById("progress_bar");
-        let pbn = document.getElementById("progress_name");
-        let pbv = document.getElementById("progress_value");
+        let launchbtn = await waitForElement("launch_game_btn");
+        let isb = await waitForElement("install_settings_btn");
+        //let dlbtn = document.getElementById("download_game_btn");
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
             launchbtn.removeAttribute("disabled");
             isb.removeAttribute("disabled");
-            dlbtn.removeAttribute("disabled");
+            // @ts-ignore
+            //dlbtn.removeAttribute("disabled");
             pbn.innerText = "Download complete!";
-            setTimeout(() => {
-                pb.classList.add("hidden");
-            }, 500);
+            setTimeout(() => {pb.classList.add("hidden");}, 500);
         }
-        sendNotify("KeqingLauncher", `Download of ${event.payload} complete. You can now again launch all installed games.`, "dialog-information").then(() => {});
+        await sendNotify("KeqingLauncher", `Download of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
     }).then(() => {});
 
     listen<any>('download_progress', async (event) => {
-        let launchbtn = document.getElementById(`launch_game_btn`);
-        let isb = document.getElementById(`install_settings_btn`);
-        let dlbtn = document.getElementById("download_game_btn");
-        let pb = document.getElementById("progress_bar");
-        let pbn = document.getElementById("progress_name");
-        let pbv = document.getElementById("progress_value");
+        let launchbtn = await waitForElement(`launch_game_btn`);
+        let isb = await waitForElement(`install_settings_btn`);
+        //let dlbtn = document.getElementById("download_game_btn");
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
             launchbtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
-            dlbtn.setAttribute("disabled", "");
+            // @ts-ignore
+            //dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
             pbn.innerText = `Downloading "${event.payload}"`;
             setTimeout(() => {
@@ -120,36 +120,38 @@ export function generalEventsHandler() {
     listen<string>('repair_complete', async (event: any) => {
         let launchbtn = document.getElementById("launch_game_btn");
         let isb = document.getElementById("install_settings_btn");
-        let dlbtn = document.getElementById("download_game_btn");
+        //let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
             launchbtn.removeAttribute("disabled");
             isb.removeAttribute("disabled");
-            dlbtn.removeAttribute("disabled");
+            // @ts-ignore
+            //dlbtn.removeAttribute("disabled");
             pbn.innerText = "Repair complete!";
             setTimeout(() => {
                 pb.classList.add("hidden");
             }, 500);
         }
-        sendNotify("KeqingLauncher", `Repair of ${event.payload} complete. You can now again launch all installed games.`, "dialog-information").then(() => {});
+        await sendNotify("KeqingLauncher", `Repair of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
     }).then(() => {});
 
     listen<any>('repair_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
         let isb = document.getElementById(`install_settings_btn`);
-        let dlbtn = document.getElementById("download_game_btn");
+        //let dlbtn = document.getElementById("download_game_btn");
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null && dlbtn !== null) {
+        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
             launchbtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
-            dlbtn.setAttribute("disabled", "");
+            // @ts-ignore
+            //dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
             pbn.innerText = `Repairing "${event.payload}"`;
             setTimeout(() => {
@@ -176,4 +178,20 @@ export async function sendNotify(title: string, content: string, icon: string) {
         return
     }
     sendNotification({title: title, body: content, autoCancel: true, icon: icon});
+}
+
+function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            const el = document.getElementById(id);
+            if (el) {
+                clearInterval(interval);
+                resolve(el);
+            }
+        }, 50);
+        setTimeout(() => {
+            clearInterval(interval);
+            reject(new Error(`Element with id "${id}" not found within timeout`));
+        }, timeout);
+    });
 }
