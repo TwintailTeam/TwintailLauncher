@@ -84,6 +84,9 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             let comppath = data_path.join("compatibility");
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
+
+            // Remove prefix just in case
+            fs::remove_dir_all(&runner_prefix.clone()).unwrap();
             
             runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
             dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
@@ -129,12 +132,26 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                             let r = r1.unwrap();
                             let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
                             if r2.is_ok() {
-                                // NOTE: Adding DXVK causes "wine client error:0: version mismatch 863/864" for a minute or two, theoretically won't affect users as they are still downloading game files 
-                                let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string());
+                                let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string(), false);
                                 if da.is_ok() { 
                                     Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                                     if skip_game_dl { archandle.emit("download_complete", runv.as_str().to_string()).unwrap(); }
                                 }
+                            }
+                        }
+                    }
+                } else {
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                    let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                    let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
+
+                    if r1.is_ok() {
+                        let r = r1.unwrap();
+                        let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
+                        if r2.is_ok() {
+                            let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string(), false);
+                            if da.is_ok() {
+                                Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                             }
                         }
                     }
@@ -262,9 +279,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) {
-            fs::create_dir_all(path.clone()).unwrap();
-        }
+        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
 
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
@@ -480,9 +495,7 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) {
-            fs::create_dir_all(path.clone()).unwrap();
-        }
+        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
 
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
@@ -553,6 +566,15 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     }
                 }
             });
+        } else {
+            std::thread::spawn(move || {
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let rp = Path::new(runpp.as_str()).to_path_buf();
+
+                let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap();
+            });
         }
 
         update_install_runner_version_by_id(&app, m.id.clone(), version);
@@ -599,11 +621,22 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     if er { 
                         let r1 = Compat::remove_dxvk(winebin.clone(), rpp.as_str().to_string());
                         if r1.is_ok() { 
-                            Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string()).unwrap();
+                            Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap();
                             archandle.emit("download_complete", dxvkv.as_str().to_string()).unwrap();
                         }
                     }
                 }
+            });
+        } else {
+            std::thread::spawn(move || {
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let dxpp = Path::new(dxpp.as_str()).to_path_buf();
+                let rp = Path::new(runp.as_str()).to_path_buf();
+
+                let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                let r1 = Compat::remove_dxvk(winebin.clone(), rpp.as_str().to_string());
+                if r1.is_ok() { Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap(); }
             });
         }
 

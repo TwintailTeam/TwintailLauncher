@@ -1,0 +1,9 @@
+[Desktop Entry]
+Categories=Game;
+Comment=Launcher for anime games with Linux and Windows support
+Exec=keqinglauncher
+Icon=keqinglauncher
+Name=KeqingLauncher
+Terminal=false
+Type=Application
+Keywords=genshin;impact;honkai;star;rail;zenless;zone;zero;wuthering;waves;hsr;zzz;hi3;wuwa;gimi;srmi;zzmi;wwmi;himi;xxmi
