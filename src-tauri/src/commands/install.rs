@@ -86,8 +86,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             let dxvk = comppath.join("dxvk");
 
             // Remove prefix just in case
-            fs::remove_dir_all(&runner_prefix.clone()).unwrap();
-            
+            if Path::exists(runner_prefix.as_ref()) { fs::remove_dir_all(&runner_prefix.clone()).unwrap(); }
+
             runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
             dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
 
