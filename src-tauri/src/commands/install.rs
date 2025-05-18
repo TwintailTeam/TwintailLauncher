@@ -127,7 +127,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         let er = extract_archive(rp.join("runner.zip").to_str().unwrap().to_string(), rp.to_str().unwrap().to_string(), true);
                         let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine (ge");
 
                         if is_proton {  } else {
                             let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
@@ -147,7 +147,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 } else {
                     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                     let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine (ge");
 
                     if is_proton {  } else {
                         let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
@@ -583,7 +583,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                 let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                 let winebin = rp.join(wine64).to_str().unwrap().to_string();
 
-                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine (ge");
                 if is_proton {  } else { Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap(); }
             });
         }
@@ -632,7 +632,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     let prp = Path::new(rpp.as_str()).join("pfx");
                     let prps = prp.to_str().unwrap();
 
-                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine (ge");
                     let prefix = if is_proton { prps } else { rpp.as_str() };
 
                     if er { 
@@ -652,7 +652,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let prp = Path::new(rpp.as_str()).join("pfx");
                 let prps = prp.to_str().unwrap();
 
-                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine (ge");
                 let prefix = if is_proton { prps } else { rpp.as_str() };
 
                 let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
