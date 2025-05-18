@@ -1,12 +1,15 @@
 import {useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
+import HelpTooltip from "./HelpTooltip.tsx";
 
-export default function CheckBox({ id, name, enabled, install, fetchSettings, fetchInstallSettings}: { id: string, name: string, enabled: boolean, install?: string, fetchSettings?: () => void, fetchInstallSettings?: (id: string) => void }) {
+export default function CheckBox({ id, name, enabled, install, fetchSettings, fetchInstallSettings, helpText}: { id: string, name: string, enabled: boolean, install?: string, fetchSettings?: () => void, fetchInstallSettings?: (id: string) => void, helpText: string }) {
     const [isEnabled, setIsEnabled] = useState<boolean>(enabled);
 
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
-            <span className="text-white text-sm">{name}</span>
+            <span className="text-white text-sm flex items-center gap-1">{name}
+                <HelpTooltip text={helpText}/>
+            </span>
             <div className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-blue-600" : "bg-white/10"} cursor-pointer`}>
                 <input type={"checkbox"} className={`focus:outline-none focus:ring-0 focus:ring-offset-0 h-full aspect-square rounded-full bg-white transition-all absolute appearance-none cursor-pointer ${isEnabled ? 'translate-x-full' : 'translate-x-0'}`} id={id} defaultChecked={isEnabled} onChange={() => {
                     switch (id) {

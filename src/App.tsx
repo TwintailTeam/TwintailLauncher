@@ -97,7 +97,7 @@ export default class App extends React.Component<any, any> {
                         }, 20);
                     }}><Settings className="text-white w-8 h-8"/>
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg disabled:bg-gray-500" onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg disabled:bg-gray-500 hover:bg-blue-700" onClick={() => {
                         setTimeout(() => {
                             invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
                                 if (r) {
@@ -112,7 +112,20 @@ export default class App extends React.Component<any, any> {
                                             setTimeout(() => { emit("launcher_action_minimize", null).then(() => {}); }, 500);
                                         }
                                         break;
-                                        case 'keep': {}
+                                        case 'keep': {
+                                            let lb = document.getElementById("launch_game_btn");
+                                            let lt = document.getElementById("launch_game_txt");
+                                            if (lb !== null && lt !== null) {
+                                                lb.setAttribute("disabled", "");
+                                                lt.innerText = `Launching...`;
+                                            }
+                                            setTimeout(() => {
+                                                // @ts-ignore
+                                                lb.removeAttribute("disabled");
+                                                // @ts-ignore
+                                                lt.innerText = `Launch!`;
+                                            }, 10000);
+                                        }
                                         break;
                                     }
                                 } else {
@@ -120,8 +133,8 @@ export default class App extends React.Component<any, any> {
                                 }
                             })
                         }, 20);
-                    }}><Rocket/><span className="font-semibold translate-y-px">Launch!</span>
-                    </button> : <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg" onClick={() => {
+                    }}><Rocket/><span id={"launch_game_txt"} className="font-semibold translate-y-px">Launch!</span>
+                    </button> : <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
                         this.fetchGameVersions(this.state.currentGame);
                         this.fetchCompatibilityVersions();
                         setTimeout(() => {

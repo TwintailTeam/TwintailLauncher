@@ -19,7 +19,7 @@ export function moveTracker(install: string) {
                pb.classList.add("hidden");
            }, 500);
        }
-       await sendNotify("KeqingLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete.`, "dialog-information");
+       await sendNotify("TwintailLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete.`, "dialog-information");
        emit("prevent_exit", false).then(() => {});
    }).then(() => {});
 
@@ -55,15 +55,15 @@ export function generalEventsHandler() {
     listen<any>("telemetry_block", (event) => {
         switch (event.payload) {
             case 1: {
-                sendNotify("KeqingLauncher", "Successfully blocked telemetry servers.", "dialog-information").then(() => {});
+                sendNotify("TwintailLauncher", "Successfully blocked telemetry servers.", "dialog-information").then(() => {});
             }
             break;
             case 2: {
-                sendNotify("KeqingLauncher", 'Telemetry servers already blocked.', "dialog-information").then(() => {});
+                sendNotify("TwintailLauncher", 'Telemetry servers already blocked.', "dialog-information").then(() => {});
             }
             break;
             case 0: {
-                sendNotify("KeqingLauncher", 'Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!', "dialog-error").then(() => {});
+                sendNotify("TwintailLauncher", 'Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!', "dialog-error").then(() => {});
             }
             break;
         }
@@ -86,7 +86,7 @@ export function generalEventsHandler() {
             pbn.innerText = "Download complete!";
             setTimeout(() => {pb.classList.add("hidden");}, 500);
         }
-        await sendNotify("KeqingLauncher", `Download of ${event.payload} complete.`, "dialog-information");
+        await sendNotify("TwintailLauncher", `Download of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
     }).then(() => {});
 
@@ -135,7 +135,7 @@ export function generalEventsHandler() {
                 pb.classList.add("hidden");
             }, 500);
         }
-        await sendNotify("KeqingLauncher", `Repair of ${event.payload} complete.`, "dialog-information");
+        await sendNotify("TwintailLauncher", `Repair of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
     }).then(() => {});
 

@@ -5,6 +5,7 @@ import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import {POPUPS} from "../popups/POPUPS.ts";
 import {moveTracker} from "../../utils.ts";
+import HelpTooltip from "./HelpTooltip.tsx";
 
 // Thanks Cultivation FUCK NO im not making this myself
 // Yes I can not be assed to make inputs, I stole Cultivation's and modified them to fit the theme
@@ -29,6 +30,7 @@ interface IProps {
     version?: () => string,
     lang?: () => string,
     fetchDownloadSizes?: (biz: any, version: any, lang: any, path: any, callback: (data: any) => void) => void,
+    helpText: string
 }
 
 interface IState {
@@ -242,7 +244,9 @@ export default class FolderInput extends React.Component<IProps, IState> {
     render() {
         return (
             <div className="flex flex-row items-center justify-between w-full h-6">
-                <span className="text-white text-sm">{this.props.name}</span>
+                <span className="text-white text-sm flex items-center gap-1">{this.props.name}
+                    <HelpTooltip text={this.props.helpText}/>
+                </span>
                 <div className="overflow-ellipsis inline-flex flex-row items-center justify-center relative" ref={this.containerRef} onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
                         <TextInputPart value={this.state.value}
                                    id={this.props.id}

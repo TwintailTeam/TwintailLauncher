@@ -38,6 +38,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -57,11 +59,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             args = &install.launch_args;
         }
 
-        let mut command = format!("'{runner}/{wine64}' '{dir}/{game}' {args}");
+        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") {
+            format!("'{runner}/{wine64}' run '{dir}/{game}' {args}")
+        } else {
+            format!("'{runner}/{wine64}' '{dir}/{game}' {args}")
+        };
 
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
-            command = format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}");
+            command = if rm.display_name.to_ascii_lowercase().contains("proton") {
+                format!("'{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+            } else {
+                format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+            };
         }
 
         let mut cmd = Command::new("bash");
@@ -70,6 +80,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -81,9 +93,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             let splitted = envs.split(";").collect::<Vec<&str>>();
             splitted.iter().for_each(|env| {
                 if !env.is_empty() {
-                    let tmp = env.split("=").collect::<Vec<&str>>();
+                    let tmp = env.splitn(2,"=").collect::<Vec<&str>>();
                     let k = tmp[0];
-                    let v = tmp[1];
+                    let v = tmp[1].replace("\"", "");
                     cmd.env(k, v);
                 }
             });
@@ -92,8 +104,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone());
+            let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
             write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
@@ -103,11 +117,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = format!("'{runner}/{wine64}' '{c}'");
+        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") {
+            format!("'{runner}/{wine64}' run '{c}'")
+        } else {
+            format!("'{runner}/{wine64}' '{c}'")
+        };
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = format!("'{runner}/{wine64}' '{c}' {args}");
+            command = if rm.display_name.to_ascii_lowercase().contains("proton") {
+                format!("'{runner}/{wine64}' run '{c}' {args}")
+            } else {
+                format!("'{runner}/{wine64}' '{c}' {args}")
+            };
         }
 
         let mut cmd = Command::new("bash");
@@ -116,6 +138,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -127,9 +151,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             let splitted = envs.split(";").collect::<Vec<&str>>();
             splitted.iter().for_each(|env| {
                 if !env.is_empty() {
-                    let tmp = env.split("=").collect::<Vec<&str>>();
+                    let tmp = env.splitn(2, "=").collect::<Vec<&str>>();
                     let k = tmp[0];
-                    let v = tmp[1];
+                    let v = tmp[1].replace("\"", "");
                     cmd.env(k, v);
                 }
             });
@@ -138,8 +162,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone());
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone());
+            let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
+
+            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
+            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
             write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
@@ -151,11 +177,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String) {
+fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
         wait_for_process(game.as_str(), 100, || {
             let xxmi_path = xxmi_path.clone();
-            let command = format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'");
+            let command = if is_proton {
+                format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe'")
+            } else {
+                format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe'")
+            };
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -163,6 +193,8 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
 
             cmd.env("WINEARCH","win64");
             cmd.env("WINEPREFIX", prefix.clone());
+            cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+            cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
             cmd.stdout(Stdio::piped());
             cmd.stderr(Stdio::piped());
@@ -180,12 +212,16 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String) {
+fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
         wait_for_process(game.as_str(), 100, || {
             let fpsunlock_path = fpsunlock_path.clone();
             let fpsv = install.fps_value.clone();
-            let command = format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000");
+            let command = if is_proton {
+                format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
+            } else {
+                format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
+            };
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -193,6 +229,8 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
 
             cmd.env("WINEARCH","win64");
             cmd.env("WINEPREFIX", prefix.clone());
+            cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+            cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
             cmd.stdout(Stdio::piped());
             cmd.stderr(Stdio::piped());
