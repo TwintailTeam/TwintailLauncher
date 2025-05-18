@@ -30,7 +30,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
-        let command = format!("'{runner}/{wine64}' '{pre_launch}'");
+        let command = format!("'{pre_launch}'"); //format!("'{runner}/{wine64}' '{pre_launch}'");
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -47,7 +47,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "pre_launch.log".parse().unwrap());
         }
     }
 
