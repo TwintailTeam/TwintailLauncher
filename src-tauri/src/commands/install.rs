@@ -629,11 +629,12 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     let er = extract_archive(dxpp.join("dxvk.zip").to_str().unwrap().to_string(), dxpp.to_str().unwrap().to_string(), true);
                     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                     let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                    let prp = Path::new(rpp.as_str()).join("pfx");
-                    let prps = prp.to_str().unwrap();
 
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
-                    let prefix = if is_proton { prps } else { rpp.as_str() };
+                    let prefix = if is_proton {
+                        let prp = Path::new(rpp.as_str()).join("pfx");
+                        let prps = prp.to_str().unwrap();
+                        prps } else { rpp.as_str() };
 
                     if er { 
                         let r1 = Compat::remove_dxvk(winebin.clone(), prefix.to_string());
@@ -649,11 +650,12 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                 let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                 let rp = Path::new(runp.as_str()).to_path_buf();
-                let prp = Path::new(rpp.as_str()).join("pfx");
-                let prps = prp.to_str().unwrap();
 
                 let is_proton = rm.display_name.to_ascii_lowercase().contains("proton");
-                let prefix = if is_proton { prps } else { rpp.as_str() };
+                let prefix = if is_proton {
+                    let prp = Path::new(rpp.as_str()).join("pfx");
+                    let prps = prp.to_str().unwrap();
+                    prps } else { rpp.as_str() };
 
                 let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                 let winebin = rp.join(wine64).to_str().unwrap().to_string();
