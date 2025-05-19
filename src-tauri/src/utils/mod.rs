@@ -5,7 +5,7 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::game::VoiceLocale;
-use fischl::utils::KuroFile;
+use fischl::utils::{extract_archive, KuroFile};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
@@ -169,7 +169,13 @@ pub fn register_listeners(app: &AppHandle) {
                             tmp.emit("download_progress", instn.as_ref()).unwrap();
                         });
                         if *tracker.lock().unwrap() == urls.clone().len() {
-                            h4.emit("download_complete", install.name.clone()).unwrap();
+                            // Get first entry in the list, and start extraction
+                            let first = urls.get(0).unwrap();
+                            let tmpf = first.split('/').collect::<Vec<&str>>();
+                            let fnn = tmpf.last().unwrap().to_string();
+                            let ap = Path::new(&install.directory.clone()).join(&fnn).to_str().unwrap().to_string();
+                            let ext = extract_archive(ap, install.directory.clone(), false);
+                            if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
                         }
                     }
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format

@@ -622,24 +622,23 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                 let rp = Path::new(runp.as_str()).to_path_buf();
 
-                archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                let r0 = Compatibility::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string());
-                if r0 {
-                    let er = extract_archive(dxpp.join("dxvk.zip").to_str().unwrap().to_string(), dxpp.to_str().unwrap().to_string(), true);
-                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
-                    let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                    let prp = Path::new(rpp.as_str()).join("pfx");
-                    let prps = prp.to_str().unwrap();
+                if is_proton {  } else {
+                    archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
 
-                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
-                    let prefix = if is_proton { prps } else { rpp.as_str() };
+                    let r0 = Compatibility::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string());
+                    if r0 {
+                        let er = extract_archive(dxpp.join("dxvk.zip").to_str().unwrap().to_string(), dxpp.to_str().unwrap().to_string(), true);
+                        let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                        let winebin = rp.join(wine64).to_str().unwrap().to_string();
 
-                    if er { 
-                        let r1 = Compat::remove_dxvk(winebin.clone(), prefix.to_string());
-                        if r1.is_ok() { 
-                            Compat::add_dxvk(winebin, prefix.to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap();
-                            archandle.emit("download_complete", dxvkv.as_str().to_string()).unwrap();
+                        if er {
+                            let r1 = Compat::remove_dxvk(winebin.clone(), rpp.as_str().to_string());
+                            if r1.is_ok() {
+                                Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap();
+                                archandle.emit("download_complete", dxvkv.as_str().to_string()).unwrap();
+                            }
                         }
                     }
                 }
@@ -649,16 +648,15 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                 let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                 let rp = Path::new(runp.as_str()).to_path_buf();
-                let prp = Path::new(rpp.as_str()).join("pfx");
-                let prps = prp.to_str().unwrap();
 
                 let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
-                let prefix = if is_proton { prps } else { rpp.as_str() };
 
-                let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
-                let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                let r1 = Compat::remove_dxvk(winebin.clone(), prefix.to_string());
-                if r1.is_ok() { Compat::add_dxvk(winebin, prefix.to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap(); }
+                if is_proton {  } else {
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+                    let winebin = rp.join(wine64).to_str().unwrap().to_string();
+                    let r1 = Compat::remove_dxvk(winebin.clone(), rpp.as_str().to_string());
+                    if r1.is_ok() { Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap(); }
+                }
             });
         }
 
