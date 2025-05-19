@@ -5,7 +5,7 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::game::VoiceLocale;
-use fischl::utils::{extract_archive, KuroFile};
+use fischl::utils::{assemble_multipart_archive, extract_archive, KuroFile};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
@@ -173,9 +173,23 @@ pub fn register_listeners(app: &AppHandle) {
                             let first = urls.get(0).unwrap();
                             let tmpf = first.split('/').collect::<Vec<&str>>();
                             let fnn = tmpf.last().unwrap().to_string();
-                            let ap = Path::new(&install.directory.clone()).join(&fnn).to_str().unwrap().to_string();
-                            let ext = extract_archive(ap, install.directory.clone(), false);
-                            if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                            let ap = Path::new(&install.directory);
+                            let aps = ap.to_str().unwrap().to_string();
+                            let parts = urls.into_iter().map(|e| e.split('/').collect::<Vec<&str>>().last().unwrap().to_string()).collect::<Vec<String>>();
+
+                            if fnn.ends_with(".001") {
+                               let r = assemble_multipart_archive(parts, aps);
+                                if r {
+                                    let aar = fnn.strip_suffix(".001").unwrap().to_string();
+                                    let far = ap.join(aar).to_str().unwrap().to_string();
+                                    let ext = extract_archive(far, install.directory.clone(), false);
+                                    if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                                }
+                            } else {
+                                let far = ap.join(fnn.clone()).to_str().unwrap().to_string();
+                                let ext = extract_archive(far, install.directory.clone(), false);
+                                if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                            }
                         }
                     }
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
