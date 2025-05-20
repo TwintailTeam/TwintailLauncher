@@ -6,7 +6,7 @@ import AddRepo from "./components/popups/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
-import {DownloadIcon, HardDriveDownloadIcon, Rocket, Settings} from "lucide-react";
+import {DownloadIcon, Settings} from "lucide-react";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
@@ -14,8 +14,9 @@ import DownloadGame from "./components/popups/DownloadGame.tsx";
 import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
-import {emit} from "@tauri-apps/api/event";
 import {generalEventsHandler} from "./utils.ts";
+import GameButton from "./components/GameButton.tsx";
+import PreloadButton from "./components/common/PreloadButton.tsx";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -36,6 +37,9 @@ export default class App extends React.Component<any, any> {
         this.fetchRepositories = this.fetchRepositories.bind(this);
         this.fetchInstallSettings = this.fetchInstallSettings.bind(this);
         this.fetchDownloadSizes = this.fetchDownloadSizes.bind(this);
+        this.fetchGameVersions = this.fetchGameVersions.bind(this);
+        this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
+        this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
 
         this.state = {
             openPopup: POPUPS.NONE,
@@ -55,11 +59,13 @@ export default class App extends React.Component<any, any> {
             dxvkVersions: [],
             downloadSizes: {},
             downloadDir: "",
-            downloadVersion: ""
+            downloadVersion: "",
+            gameManifest: {}
         }
     }
 
     render() {
+        let buttonType = this.determineButtonType();
         return (
             <main className="w-full h-screen flex flex-row bg-transparent">
                 <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
@@ -73,7 +79,7 @@ export default class App extends React.Component<any, any> {
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
                         {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
                             return (
-                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} manifest_id={install.manifest_id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setPreloadAvailable={this.setPreloadAvailable} setGameIcon={this.setGameIcon} />
+                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
                             )
                         })}
                     </div>
@@ -84,65 +90,16 @@ export default class App extends React.Component<any, any> {
                     </div>
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
-                    {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? <button onClick={() => {
-                        console.log("preload...")
-                    }}><DownloadIcon className="text-blue-500 w-8 h-8" />
-                    </button> : null}
+                    {this.state.currentInstall !== "" && this.state.preloadAvailable && (<button onClick={() => {
+                        console.log("preload...");
+                    }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 w-8 h-8"/>}/>
+                    </button>)}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
-                        this.fetchInstallSettings(this.state.currentInstall);
-                        this.fetchCompatibilityVersions();
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
-                        setTimeout(() => {
-                            this.setState({openPopup: POPUPS.INSTALLSETTINGS});
-                        }, 20);
+                        setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
                     }}><Settings className="text-white w-8 h-8"/>
                     </button> : null}
-                    {(this.state.currentInstall !== "") ? <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg disabled:bg-gray-500 hover:bg-blue-700" onClick={() => {
-                        setTimeout(() => {
-                            invoke("game_launch", {id: this.state.currentInstall}).then((r: any) => {
-                                if (r) {
-                                    // @ts-ignore
-                                    document.getElementById(`${this.state.currentInstall}`).focus();
-                                    switch (this.state.globalSettings.launcher_action) {
-                                        case "exit": {
-                                            setTimeout(() => { emit("launcher_action_exit", null).then(() => {}); }, 500);
-                                        }
-                                        break;
-                                        case "minimize": {
-                                            setTimeout(() => { emit("launcher_action_minimize", null).then(() => {}); }, 500);
-                                        }
-                                        break;
-                                        case 'keep': {
-                                            let lb = document.getElementById("launch_game_btn");
-                                            let lt = document.getElementById("launch_game_txt");
-                                            if (lb !== null && lt !== null) {
-                                                lb.setAttribute("disabled", "");
-                                                lt.innerText = `Launching...`;
-                                            }
-                                            setTimeout(() => {
-                                                // @ts-ignore
-                                                lb.removeAttribute("disabled");
-                                                // @ts-ignore
-                                                lt.innerText = `Launch!`;
-                                            }, 10000);
-                                        }
-                                        break;
-                                    }
-                                } else {
-                                    console.error("Launch error!");
-                                }
-                            })
-                        }, 20);
-                    }}><Rocket/><span id={"launch_game_txt"} className="font-semibold translate-y-px">Launch!</span>
-                    </button> : <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
-                        this.fetchGameVersions(this.state.currentGame);
-                        this.fetchCompatibilityVersions();
-                        setTimeout(() => {
-                            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
-                            this.setState({openPopup: POPUPS.DOWNLOADGAME});
-                        }, 20);
-                    }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
-                    </button>}
+                    <GameButton currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
                 <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 hidden" id={"progress_bar"} style={{top: "82%"}}>
                         <h4 className={"pl-4 pb-1 text-white text-stroke"} id={"progress_name"}>?</h4>
@@ -163,6 +120,13 @@ export default class App extends React.Component<any, any> {
     componentDidMount() {
         this.fetchSettings();
         this.fetchRepositories();
+    }
+
+    componentDidUpdate(_prevProps: any, prevState: any) {
+        if (this.state.currentInstall && this.state.currentInstall !== prevState.currentInstall) {
+            this.fetchInstallSettings(this.state.currentInstall);
+            this.fetchCompatibilityVersions();
+        }
     }
 
     fetchRepositories() {
@@ -259,11 +223,15 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchInstallSettings(install: any) {
-        invoke("get_install_by_id", {id: install}).then(data => {
+        invoke("get_install_by_id", {id: install}).then(async data => {
             if (data === null) {
-                console.error("Install database table contains nothing, some serious fuck up happened!")
+                console.error("Failed to fetch install settings!")
             } else {
-                this.setState(() => ({installSettings: JSON.parse(data as string)}));
+                let parsed = JSON.parse(data as string);
+                let md = await this.fetchManifestById(parsed.manifest_id);
+                // @ts-ignore
+                let isPreload = md.extra.preload['metadata'] !== null;
+                this.setState(() => ({installSettings: parsed, gameManifest: md, preloadAvailable: isPreload}));
             }
         });
     }
@@ -308,6 +276,40 @@ export default class App extends React.Component<any, any> {
         });
     }
 
+    async fetchManifestById(install: any) {
+        let rslt: {extra: {preload: {}}};
+        let data = await invoke("get_game_manifest_by_manifest_id", {id: install});
+        if (data === null) {
+            console.error("Failed to fetch game manifest info!");
+            rslt = {extra: {preload: {}}};
+        } else {
+            rslt = JSON.parse(data as string);
+        }
+        return rslt;
+    }
+
+    refreshDownloadButtonInfo() {
+        this.fetchGameVersions(this.state.currentGame);
+        this.fetchCompatibilityVersions();
+        setTimeout(() => {
+            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
+            this.setState({openPopup: POPUPS.DOWNLOADGAME});
+        }, 20);
+    }
+
+    determineButtonType() {
+        let buttonType: "download" | "update" | "launch";
+
+        if (!this.state.currentInstall || this.state.currentInstall === "") {
+            buttonType = "download";
+        } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
+            buttonType = "update";
+        } else {
+            buttonType = "launch";
+        }
+        return buttonType;
+    }
+
     setOpenPopup(state: POPUPS) {
         this.setState({openPopup: state});
     }
@@ -334,20 +336,5 @@ export default class App extends React.Component<any, any> {
 
     setCurrentInstall(game: string) {
         this.setState({currentInstall: game});
-    }
-
-    setPreloadAvailable(game: string) {
-        invoke("get_game_manifest_by_manifest_id", {id: game}).then(r => {
-            if (r === null) {
-                console.error("Failed to get game manifest by manifest id!");
-            } else {
-                let rr = JSON.parse(r as string);
-                if (rr.extra.preload?.metadata !== null) {
-                    this.setState({preloadAvailable: true});
-                }
-            }
-        }).catch(e => {
-            console.error("Error while querying preload information: " + e)
-        })
     }
 }

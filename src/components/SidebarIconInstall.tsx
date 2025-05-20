@@ -16,7 +16,6 @@ type SidebarIconProps = {
     icon: string,
     name: string,
     id: string,
-    manifest_id: string,
     background: string,
     enabled: boolean,
     setCurrentInstall: (a: string) => void,
@@ -24,11 +23,10 @@ type SidebarIconProps = {
     popup: POPUPS,
     setDisplayName: (name: string) => void,
     setBackground: (file: string) => void,
-    setPreloadAvailable: (a: string) => void,
     setGameIcon: (a: string) => void,
 }
 
-export default function SidebarIconInstall({icon, name, id, manifest_id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, setPreloadAvailable}: SidebarIconProps) {
+export default function SidebarIconInstall({icon, name, id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -52,7 +50,6 @@ export default function SidebarIconInstall({icon, name, id, manifest_id, setCurr
                 setCurrentInstall(id)
                 setDisplayName(name)
                 setBackground(background)
-                setPreloadAvailable(manifest_id)
                 setGameIcon(icon)
                 // @ts-ignore
                 document.getElementById(id).focus();
