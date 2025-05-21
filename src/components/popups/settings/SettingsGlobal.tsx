@@ -1,4 +1,4 @@
-import {FileCodeIcon, X} from "lucide-react";
+import {EyeOffIcon, WrenchIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import CheckBox from "../../common/CheckBox.tsx";
 import FolderInput from "../../common/FolderInput.tsx";
@@ -12,13 +12,19 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                     <h1 className="text-white font-bold text-2xl">Settings</h1>
                     <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
                 </div>
-            { window.navigator.platform.includes("Linux") ? <div className="flex flex-row-reverse">
-                    <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+            <div className="flex flex-row-reverse gap-1">
+                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                    setOpenPopup(POPUPS.NONE);
+                    invoke("update_extras").then(() => {});
+                }}><WrenchIcon/><span className="font-semibold translate-y-px">Update extras</span>
+                </button>
+            {window.navigator.platform.includes("Linux") ? <button className="flex flex-row gap-1 items-center p-2 bg-orange-600 rounded-lg" onClick={() => {
                         setOpenPopup(POPUPS.NONE);
                         invoke("block_telemetry_cmd").then(() => {});
-                    }}><FileCodeIcon/><span className="font-semibold translate-y-px">Block telemetry</span>
+                    }}><EyeOffIcon/><span className="font-semibold translate-y-px">Block telemetry</span>
                     </button>
-                </div>: null}
+                : null}
+            </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
                     <CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Auto update 3rd party repositories"} fetchSettings={fetchSettings} id={"third_party_repo_updates"} helpText={"Allow launcher to automatically update 3rd party repositories and their manifests."}/>
                     <FolderInput name={"Default game install location"} clearable={true} value={`${settings.default_game_path}`} folder={true} id={"default_game_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all games will be installed."}/>

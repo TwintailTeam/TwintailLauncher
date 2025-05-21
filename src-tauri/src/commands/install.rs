@@ -377,7 +377,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                 app.emit("download_progress", String::from("XXMI Modding tool")).unwrap();
                 if dl {
                     extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
-                    
+
                     let gimi = String::from("TTL-extras/GIMI-Package");
                     let srmi = String::from("TTL-extras/SRMI-Package");
                     let zzmi = String::from("TTL-extras/ZZMI-Package");
@@ -400,7 +400,6 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                 }
             });
         }
-        
         Some(true)
     } else {
         None
