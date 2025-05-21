@@ -378,17 +378,17 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                 if dl {
                     extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
                     
-                    /*let gimi = String::from("KeqingLauncher-extras/GIMI-Package");
-                    let srmi = String::from("KeqingLauncher-extras/SRMI-Package");
-                    let zzmi = String::from("KeqingLauncher-extras/ZZMI-Package");
-                    let wwmi = String::from("KeqingLauncher-extras/WWMI-Package");*/
+                    let gimi = String::from("TTL-extras/GIMI-Package");
+                    let srmi = String::from("TTL-extras/SRMI-Package");
+                    let zzmi = String::from("TTL-extras/ZZMI-Package");
+                    let wwmi = String::from("TTL-extras/WWMI-Package");
                     
-                    let gimi = String::from("SilentNightSound/GIMI-Package");
+                    /*let gimi = String::from("SilentNightSound/GIMI-Package");
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
-                    let wwmi = String::from("SpectrumQT/WWMI-Package");
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");*/
                     
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), true);
                     if dl1 {
                         extract_archive(p.join("gimi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("gimi").as_path().to_str().unwrap().parse().unwrap(), false);
                         extract_archive(p.join("srmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("srmi").as_path().to_str().unwrap().parse().unwrap(), false);

@@ -15,6 +15,9 @@ use std::os::unix::process::CommandExt;
 use crate::utils::runner_from_runner_version;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::symlink;
+use crate::utils::get_mi_path_from_game;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -181,6 +184,22 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
     if install.use_xxmi {
         wait_for_process(game.as_str(), 100, || {
             let xxmi_path = xxmi_path.clone();
+            let mipath = get_mi_path_from_game(game.clone()).unwrap();
+
+            let storedcfg = Path::new(&xxmi_path).join(&mipath).join("d3dx.ini");
+            let storedusercfg = Path::new(&xxmi_path).join(&mipath).join("d3dx_user.ini");
+            let targetcfg = Path::new(&xxmi_path).join("d3dx.ini");
+            let targetusercfg = Path::new(&xxmi_path).join("d3dx_user.ini");
+
+            if storedcfg.exists() || storedusercfg.exists() {
+                if targetcfg.exists() || targetusercfg.exists() {
+                    fs::remove_file(&targetcfg).unwrap();
+                    fs::remove_file(&targetusercfg).unwrap();
+                }
+                symlink(&storedcfg, &targetcfg).unwrap();
+                symlink(&storedusercfg, &targetusercfg).unwrap();
+            }
+
             let command = if is_proton {
                 format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe'")
             } else {

@@ -76,7 +76,7 @@ pub fn block_telemetry(app: &AppHandle) {
             }
 
             let output = Command::new("pkexec")
-                .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# KeqingLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# KeqingLauncher telemetry block end' >> /etc/hosts")).spawn();
+                .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
                 Ok(output) => if !output.status.success() {
@@ -355,6 +355,30 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
             rslt = "proton_umu.json".to_string();
         }
         Some(rslt)
+    }
+}
+
+pub fn get_mi_path_from_game(exe_name: String) -> Option<String> {
+    if exe_name.is_empty() { None } else {
+        match exe_name.to_ascii_lowercase().as_str() {
+            "genshinimpact.exe" => {
+                Some("gimi".parse().unwrap())
+            },
+            "starrail.exe" => {
+                Some("srmi".parse().unwrap())
+            },
+            "zenlesszonezero.exe" => {
+                Some("zzmi".parse().unwrap())
+            },
+            "bh3.exe" => {
+                Some("himi".parse().unwrap())
+            },
+            // NOTE: Not ideal as it will conflict with other unreal games...
+            "client-win64-shipping.exe" => {
+                Some("wwmi".parse().unwrap())
+            },
+            _ => {None}
+        }
     }
 }
 
