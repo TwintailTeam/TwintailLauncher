@@ -90,10 +90,10 @@ export default class App extends React.Component<any, any> {
                     </div>
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
-                    {this.state.currentInstall !== "" && this.state.preloadAvailable && (<button onClick={() => {
+                    {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button onClick={() => {
                         console.log("preload...");
                     }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 w-8 h-8"/>}/>
-                    </button>)}
+                    </button>): null}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
