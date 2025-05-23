@@ -144,7 +144,7 @@ pub fn update_extras(app: AppHandle) -> bool {
         // Pull latest jadeite if installed
         if fs::read_dir(&jadeite).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("mkrsym1/jadeite".parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap());
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap());
                 if dl {
                     extract_archive(jadeite.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap(), false);
                 }

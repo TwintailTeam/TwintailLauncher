@@ -12,7 +12,7 @@
     "app": {
         "windows": [
             {
-                "title": "Twintail Launcher (Alpha)",
+                "title": "Twintail Launcher (Beta)",
                 "width": 1280,
                 "height": 720,
                 "minWidth": 1280,
@@ -34,7 +34,7 @@
         "linux": {
             "deb": {
                 "files": {
-                    "/usr/share/applications/keqinglauncher.desktop": "../twintaillauncher.desktop"
+                    "/usr/share/applications/twintaillauncher.desktop": "../twintaillauncher.desktop"
                 }
             },
             "rpm": {

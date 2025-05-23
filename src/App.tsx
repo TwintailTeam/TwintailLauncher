@@ -102,8 +102,8 @@ export default class App extends React.Component<any, any> {
                     <GameButton currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
                 <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 hidden" id={"progress_bar"} style={{top: "82%"}}>
-                        <h4 className={"pl-4 pb-1 text-white text-stroke"} id={"progress_name"}>?</h4>
-                        <ProgressBar id={"progress_value"} progress={1} className={""}/>
+                        <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>?</h4><h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>0%</span>)</h4>
+                        <ProgressBar id={"progress_value"} progress={1} className={"transition-all duration-500 ease-out"}/>
                 </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}

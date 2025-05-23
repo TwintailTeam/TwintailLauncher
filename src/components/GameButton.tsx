@@ -22,11 +22,11 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                                     case "exit": {
                                         setTimeout(() => { emit("launcher_action_exit", null).then(() => {}); }, 500);
                                     }
-                                        break;
+                                    break;
                                     case "minimize": {
                                         setTimeout(() => { emit("launcher_action_minimize", null).then(() => {}); }, 500);
                                     }
-                                        break;
+                                    break;
                                     case 'keep': {
                                         let lb = document.getElementById("launch_game_btn");
                                         let lt = document.getElementById("launch_game_txt");
@@ -41,7 +41,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                                             lt.innerText = `Launch!`;
                                         }, 10000);
                                     }
-                                        break;
+                                    break;
                                 }
                             } else {
                                 console.error("Launch error!");
@@ -52,14 +52,14 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 </button>
             )}
             {buttonType === "download" && (
-            <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
+            <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
                 refreshDownloadButtonInfo();
             }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
             </button>
             )}
             {buttonType === "update" && (
-                <button id={"update_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
-                    console.log("update...");
+                <button id={"update_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-green-600 rounded-lg hover:bg-green-700" onClick={() => {
+                    emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
                 }}><DownloadIcon/><span className="font-semibold translate-y-px">Update</span>
                 </button>
             )}

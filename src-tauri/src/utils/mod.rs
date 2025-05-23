@@ -4,12 +4,11 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
-use fischl::utils::game::VoiceLocale;
 use fischl::utils::{assemble_multipart_archive, extract_archive, KuroFile};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::repo_manager::{get_manifest, get_manifests, GameVersion};
+use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
+use crate::utils::repo_manager::{get_manifest, get_manifests, DiffGameFile, GameVersion};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -229,6 +228,68 @@ pub fn register_listeners(app: &AppHandle) {
         });
     });
 
+    // Start game update
+    let h5 = app.clone();
+    app.listen("start_game_update", move |event| {
+        let h5 = h5.clone();
+        std::thread::spawn(move || {
+            let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
+            let install = get_install_info_by_id(&h5, payload.install).unwrap(); // Should exist by now, if not we FUCKED UP
+            let gid = get_manifest_info_by_id(&h5, install.manifest_id).unwrap();
+
+            let mm = get_manifest(&h5, gid.filename);
+            if let Some(gm) = mm {
+                let version = gm.game_versions.iter().filter(|e| e.metadata.version == gm.latest_version).collect::<Vec<&GameVersion>>();
+                let picked = version.get(0).unwrap();
+                let tmp = Arc::new(h5.clone());
+
+                let instn = Arc::new(install.name.clone());
+                let tracker = Arc::new(Mutex::new(0));
+                let tc = Arc::clone(&tracker);
+
+                h5.emit("update_progress", install.name.clone()).unwrap();
+
+                match picked.metadata.download_mode.as_str() {
+                    // Generic zipped mode, Variety per game can not account for every case yet
+                    "DOWNLOAD_MODE_FILE" => {}
+                    // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
+                    "DOWNLOAD_MODE_CHUNK" => {
+                        let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
+
+                        if urls.is_empty() {  } else {
+                            let manifest = urls.get(0).unwrap().file_url.clone();
+                            run_async_command(async {
+                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), move |_, _| {
+                                    let mut tracker = tc.lock().unwrap();
+                                    *tracker += 1;
+                                    tmp.emit("update_progress", instn.as_ref()).unwrap();
+                                }).await;
+                            });
+                            // Shitty way to validate but will work for the time being
+                            if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
+                                h5.emit("update_complete", install.name.clone()).unwrap();
+
+                                let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
+                                let np = install.runner_prefix.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
+                                fs::rename(install.directory.clone(), nd.clone()).unwrap();
+                                fs::rename(install.runner_prefix.clone(), np.clone()).unwrap();
+                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone(), nd, np);
+                            }
+                        }
+                    }
+                    // Raw file mode
+                    "DOWNLOAD_MODE_RAW" => {
+                        // TODO: Handle wuwa updates once we deal with krdiff files
+                    }
+                    // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
+                    _ => {}
+                }
+            } else {
+                println!("Failed to update game!");
+            }
+        });
+    });
+
     // Start game repair
     let h5 = app.clone();
     app.listen("start_game_repair", move |event| {
@@ -236,7 +297,7 @@ pub fn register_listeners(app: &AppHandle) {
         std::thread::spawn(move || {
             let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
             let install = get_install_info_by_id(&h5, payload.install); // Should exist by now, if not we FUCKED UP
-            let lm = get_manifest_info_by_id(&h5, payload.biz).unwrap();
+            let lm = get_manifest_info_by_id(&h5, install.clone().unwrap().manifest_id.clone()).unwrap();
             let gm = get_manifest(&h5, lm.filename).unwrap();
 
             if install.is_some() { 
@@ -246,6 +307,8 @@ pub fn register_listeners(app: &AppHandle) {
 
                 let tmp = Arc::new(h5.clone());
                 let instn = Arc::new(i.name.clone());
+                let tracker = Arc::new(Mutex::new(0));
+                let tc = Arc::clone(&tracker);
 
                 h5.emit("repair_progress", instn.as_ref()).unwrap();
 
@@ -257,14 +320,14 @@ pub fn register_listeners(app: &AppHandle) {
                         });
                         if rslt {
                             if !gm.paths.audio_pkg_res_dir.clone().is_empty() {
-                                let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
+                                /*let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
 
                                 // Make this shit better as some folder names might be pulled as inaccurate
                                 let locales = vec![
                                     (VoiceLocale::English, if gm.biz.contains("hk4e") { dir.join(&VoiceLocale::English.to_folder()) } else { dir.join(&VoiceLocale::English.to_name()) }),
                                     (VoiceLocale::Korean, dir.join(&VoiceLocale::Korean.to_name())),
                                     (VoiceLocale::Japanese, dir.join(&VoiceLocale::Japanese.to_name())),
-                                    (VoiceLocale::Chinese, dir.join(&VoiceLocale::Chinese.to_name())),
+                                    (VoiceLocale::Chinese, if gm.biz.contains("hkrpg") { dir.join(&VoiceLocale::Chinese.to_folder()) } else { dir.join(&VoiceLocale::Chinese.to_name()) }),
                                 ];
 
                                 let instn1 = Arc::new(i.name.clone());
@@ -281,12 +344,27 @@ pub fn register_listeners(app: &AppHandle) {
                                         });
                                         if rslt1 { h5.emit("repair_complete", i.name.clone()).unwrap(); }
                                     }
-                                }
+                                }*/
+                                h5.emit("repair_complete", i.name.clone()).unwrap();
                             } else { h5.emit("repair_complete", i.name.clone()).unwrap(); };
                         }
                     }
                     // Sophon chunk repair, PS: Only hoyo games as it is their literal format
-                    "DOWNLOAD_MODE_CHUNK" => {}
+                    "DOWNLOAD_MODE_CHUNK" => {
+                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        let manifest = urls.get(0).unwrap();
+                        run_async_command(async {
+                            <Game as Sophon>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), false,move |_, _| {
+                                let mut tracker = tc.lock().unwrap();
+                                *tracker += 1;
+                                tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                            }).await;
+                        });
+                        // Shitty way to validate but will work for the time being
+                        if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
+                            h5.emit("repair_complete", i.name.clone()).unwrap();
+                        }
+                    }
                     // Raw file repair, PS: Only wuwa currently
                     "DOWNLOAD_MODE_RAW" => {
                         let rslt = <Game as Kuro>::repair_game(picked.metadata.index_file.clone(), picked.metadata.res_list_url.clone(), i.directory, i.skip_hash_check, move |_, _| {

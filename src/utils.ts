@@ -5,19 +5,17 @@ export function moveTracker(install: string) {
    listen<string>('move_complete', async (event: any) => {
        let launchbtn = document.getElementById("launch_game_btn");
        let isb = document.getElementById("install_settings_btn");
-       //let dlbtn = document.getElementById("download_game_btn");
+       let updatebtn = await waitForElement(`update_game_btn`);
        let pb = document.getElementById("progress_bar");
        let pbn = document.getElementById("progress_name");
        let pbv = document.getElementById("progress_value");
 
-       if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
-           launchbtn.removeAttribute("disabled");
-           //dlbtn.removeAttribute("disabled");
+       if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
+           if (launchbtn) launchbtn.removeAttribute("disabled");
+           if (updatebtn) updatebtn.removeAttribute("disabled");
            isb.removeAttribute("disabled");
-           pbn.innerText = "Installation move complete!";
-           setTimeout(() => {
-               pb.classList.add("hidden");
-           }, 500);
+           pbn.textContent = "Move complete!";
+           setTimeout(() => {pb.classList.add("hidden");}, 500);
        }
        await sendNotify("TwintailLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete.`, "dialog-information");
        emit("prevent_exit", false).then(() => {});
@@ -25,26 +23,20 @@ export function moveTracker(install: string) {
 
     listen<any>('move_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
-        //let dlbtn = document.getElementById("download_game_btn");
         let isb = document.getElementById(`install_settings_btn`);
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
             if (event.payload.install_id === install) {
-                launchbtn.setAttribute("disabled", "");
-                //dlbtn.setAttribute("disabled", "");
+                if (launchbtn) launchbtn.setAttribute("disabled", "");
+                if (updatebtn) updatebtn.setAttribute("disabled", "");
                 isb.setAttribute("disabled", "");
                 pb.classList.remove("hidden");
-                pbn.innerText = `Moving "${event.payload.file}"`;
-                setTimeout(() => {
-                    for (let i = 1; i < 100; i++) {
-                        setTimeout(() => {
-                            pbv.style.width = `${i}%`;
-                        }, 500);
-                    }
-                }, 300);
+                pbn.textContent = `Moving "${event.payload.file}"`;
+                await simulateProgress();
                 emit("prevent_exit", true).then(() => {});
             }
         }
@@ -73,18 +65,17 @@ export function generalEventsHandler() {
     listen<string>('download_complete', async (event: any) => {
         let launchbtn = await waitForElement("launch_game_btn");
         let isb = await waitForElement("install_settings_btn");
-        //let dlbtn = document.getElementById("download_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = await waitForElement("progress_bar");
         let pbn = await waitForElement("progress_name");
         let pbv = await waitForElement("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            launchbtn.removeAttribute("disabled");
-            isb.removeAttribute("disabled");
-            // @ts-ignore
-            //dlbtn.removeAttribute("disabled");
-            pbn.innerText = "Download complete!";
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
+            pbn.textContent = "Download complete!";
             setTimeout(() => {pb.classList.add("hidden");}, 500);
+            if (launchbtn) launchbtn.removeAttribute("disabled");
+            if (updatebtn) updatebtn.removeAttribute("disabled");
+            isb.removeAttribute("disabled");
         }
         await sendNotify("TwintailLauncher", `Download of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
@@ -93,25 +84,57 @@ export function generalEventsHandler() {
     listen<any>('download_progress', async (event) => {
         let launchbtn = await waitForElement(`launch_game_btn`);
         let isb = await waitForElement(`install_settings_btn`);
-        //let dlbtn = document.getElementById("download_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = await waitForElement("progress_bar");
         let pbn = await waitForElement("progress_name");
         let pbv = await waitForElement("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            launchbtn.setAttribute("disabled", "");
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
+           if (launchbtn) launchbtn.setAttribute("disabled", "");
+           if (updatebtn) updatebtn.setAttribute("disabled", "");
+           isb.setAttribute("disabled", "");
+           pb.classList.remove("hidden");
+           pbn.textContent = `Downloading "${event.payload}"`;
+            await simulateProgress();
+            emit("prevent_exit", true).then(() => {});
+        }
+    }).then(() => {});
+
+    // Update events
+    listen<string>('update_complete', async (event: any) => {
+        let launchbtn = await waitForElement("launch_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
+        let isb = await waitForElement("install_settings_btn");
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
+
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
+            if (launchbtn) launchbtn.removeAttribute("disabled");
+            if (updatebtn) updatebtn.removeAttribute("disabled");
+            isb.removeAttribute("disabled");
+            pbn.textContent = "Updates complete!";
+            setTimeout(() => {pb.classList.add("hidden");}, 500);
+        }
+        await sendNotify("TwintailLauncher", `Updating ${event.payload} complete.`, "dialog-information");
+        emit("prevent_exit", false).then(() => {});
+    }).then(() => {});
+
+    listen<any>('update_progress', async (event) => {
+        let launchbtn = await waitForElement(`launch_game_btn`);
+        let updatebtn = await waitForElement(`update_game_btn`);
+        let isb = await waitForElement(`install_settings_btn`);
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
+
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
+            if (launchbtn) launchbtn.setAttribute("disabled", "");
+            if (updatebtn) updatebtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
-            // @ts-ignore
-            //dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
-            pbn.innerText = `Downloading "${event.payload}"`;
-            setTimeout(() => {
-                for (let i = 1; i < 100; i++) {
-                    setTimeout(() => {
-                        pbv.style.width = `${i}%`;
-                    }, 1000);
-                }
-            }, 3000);
+            pbn.textContent = `Updating "${event.payload}"`;
+            await simulateProgress();
             emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
@@ -120,20 +143,17 @@ export function generalEventsHandler() {
     listen<string>('repair_complete', async (event: any) => {
         let launchbtn = document.getElementById("launch_game_btn");
         let isb = document.getElementById("install_settings_btn");
-        //let dlbtn = document.getElementById("download_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            launchbtn.removeAttribute("disabled");
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
+            if (launchbtn) launchbtn.removeAttribute("disabled");
+            if (updatebtn) updatebtn.removeAttribute("disabled");
             isb.removeAttribute("disabled");
-            // @ts-ignore
-            //dlbtn.removeAttribute("disabled");
-            pbn.innerText = "Repair complete!";
-            setTimeout(() => {
-                pb.classList.add("hidden");
-            }, 500);
+            pbn.textContent = "Repair complete!";
+            setTimeout(() => {pb.classList.add("hidden");}, 500);
         }
         await sendNotify("TwintailLauncher", `Repair of ${event.payload} complete.`, "dialog-information");
         emit("prevent_exit", false).then(() => {});
@@ -142,25 +162,18 @@ export function generalEventsHandler() {
     listen<any>('repair_progress', async (event) => {
         let launchbtn = document.getElementById(`launch_game_btn`);
         let isb = document.getElementById(`install_settings_btn`);
-        //let dlbtn = document.getElementById("download_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
 
-        if (launchbtn !== null && isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            launchbtn.setAttribute("disabled", "");
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
+            if (launchbtn) launchbtn.setAttribute("disabled", "");
+            if (updatebtn) updatebtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
-            // @ts-ignore
-            //dlbtn.setAttribute("disabled", "");
             pb.classList.remove("hidden");
-            pbn.innerText = `Repairing "${event.payload}"`;
-            setTimeout(() => {
-                for (let i = 1; i < 100; i++) {
-                    setTimeout(() => {
-                        pbv.style.width = `${i}%`;
-                    }, 1000);
-                }
-            }, 3000);
+            pbn.textContent = `Repairing "${event.payload}"`;
+            await simulateProgress();
             emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
@@ -181,7 +194,7 @@ export async function sendNotify(title: string, content: string, icon: string) {
 }
 
 function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
         const interval = setInterval(() => {
             const el = document.getElementById(id);
             if (el) {
@@ -191,7 +204,31 @@ function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
         }, 50);
         setTimeout(() => {
             clearInterval(interval);
-            reject(new Error(`Element with id "${id}" not found within timeout`));
+            // @ts-ignore
+            resolve(null)
         }, timeout);
     });
+}
+
+let progress = 0;
+let barWidth = 5;
+
+async function simulateProgress() {
+    let progressBar = await waitForElement("progress_value");
+    let progressPercent = await waitForElement("progress_percent");
+    if (progress < 100) {
+        let base = progress < 60 ? 2 + Math.random() * 2 : progress < 85 ? 1 + Math.random() : 0.2 + Math.random() * 0.5;
+        if (Math.random() < 0.07 && progress > 30 && progress < 95) {
+            setTimeout(simulateProgress, 800 + Math.random() * 5000);
+            return;
+        }
+        progress = Math.min(progress + base, 100);
+        barWidth = 5 + (progress * 0.85);
+        progressBar.style.width = `${barWidth}%`;
+        progressPercent.textContent = `${Math.floor(progress)}%`;
+        setTimeout(simulateProgress, 50 + Math.random() * 220);
+    } else {
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+    }
 }

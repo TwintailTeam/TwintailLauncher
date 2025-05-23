@@ -348,7 +348,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
         
         if fs::read_dir(&p).unwrap().next().is_none() && enabled {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("mkrsym1/jadeite".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
                 if dl {
                     extract_archive(p.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
                 }

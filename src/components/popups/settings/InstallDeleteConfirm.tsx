@@ -60,7 +60,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                         {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-blue-500"}>DXVK</span> used with this installation</li> : null}
                         <li className={"list-none"}>- <span className={"text-blue-500"}>Any tweaks</span> enabled for this installation</li>
                     </p>
-                {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={false} name={"Delete associated wine prefix"} id={"uninstall_prefix_delete"} helpText={"Enabling this will delete wine prefix associated with this game installation/"}/> : null}
+                {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={false} name={"Delete associated wine prefix"} id={"uninstall_prefix_delete"} helpText={"Enabling this will delete wine prefix associated with this game installation."}/> : null}
             </div>
             </div>
     )

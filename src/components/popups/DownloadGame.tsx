@@ -105,8 +105,8 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             setCurrentInstall(r.install_id as string);
                             setBackground(r.background as string);
                             setTimeout(() => {
-                                // @ts-ignore
-                                document.getElementById(r.install_id).focus();
+                                let installui = document.getElementById(r.install_id);
+                                if (installui) installui.focus();
                                 if (!skipdl) {
                                     emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp}).then(() => {});
                                 }
