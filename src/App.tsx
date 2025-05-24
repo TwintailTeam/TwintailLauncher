@@ -6,7 +6,7 @@ import AddRepo from "./components/popups/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
-import {DownloadIcon, Settings} from "lucide-react";
+import {ChevronDown, DownloadIcon, Settings} from "lucide-react";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
@@ -17,6 +17,7 @@ import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConf
 import {generalEventsHandler} from "./utils.ts";
 import GameButton from "./components/GameButton.tsx";
 import PreloadButton from "./components/common/PreloadButton.tsx";
+import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -69,22 +70,35 @@ export default class App extends React.Component<any, any> {
         return (
             <main className="w-full h-screen flex flex-row bg-transparent">
                 <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
-                <div className="h-full w-16 p-2 bg-black/50 flex flex-col gap-4 items-center fixed-backdrop-blur-md justify-between">
-                    <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                        {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
-                            return (
-                                <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
-                            )
-                        })}
+                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center fixed-backdrop-blur-md justify-between">
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none">
+                        <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
+                            invoke("update_settings_manifests_hide", {enabled: !this.state.globalSettings.hide_manifests}).then(() => {});
+                            this.setState((prevState: any) => ({
+                                globalSettings: {
+                                    ...prevState.globalSettings,
+                                    hide_manifests: !prevState.globalSettings.hide_manifests
+                                }
+                            }))
+                        }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-500 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
+                        <div className={"w-full transition-all duration-500 overflow-hidden gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
+                            {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
+                                return (
+                                    <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
+                                )
+                            })}
+                        </div>
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
-                            return (
-                                <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
-                            )
-                        })}
+                        <div className={"gap-3 flex flex-col items-center"}>
+                            {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
+                                return (
+                                    <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
+                                )
+                            })}
+                        </div>
                     </div>
                     <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                        <hr className="text-white/20 bg-white/20" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
+                        <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
                         <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                         <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                     </div>
@@ -181,14 +195,26 @@ export default class App extends React.Component<any, any> {
                 });
 
                 this.setState(() => ({gamesinfo: gi}), () => {
-                    if (games.length > 0 && this.state.currentGame == "") {
+                    if (this.state.installs.length === 0) {
+                        if (games.length > 0 && this.state.currentGame == "") {
+                            this.setCurrentGame(games[0].filename.replace(".json", ""));
+                            this.setDisplayName(games[0].display_name);
+                            this.setBackground(gi[0].assets.game_background);
+                            this.setGameIcon(gi[0].assets.game_icon);
+                            setTimeout(() => {
+                                // @ts-ignore
+                                document.getElementById(gi[0].biz).focus();
+                            }, 20);
+                        }
+                    } else {
                         this.setCurrentGame(games[0].filename.replace(".json", ""));
-                        this.setDisplayName(games[0].display_name);
-                        this.setBackground(gi[0].assets.game_background);
-                        this.setGameIcon(gi[0].assets.game_icon);
+                        this.setDisplayName(this.state.installs[0].name);
+                        this.setBackground(this.state.installs[0].game_background);
+                        this.setGameIcon(this.state.installs[0].game_icon);
+                        this.setCurrentInstall(this.state.installs[0].id);
                         setTimeout(() => {
                             // @ts-ignore
-                            document.getElementById(gi[0].biz).focus();
+                            document.getElementById(`${this.state.installs[0].id}`).focus();
                         }, 20);
                     }
                     setTimeout(() => {generalEventsHandler();}, 20);
@@ -225,7 +251,8 @@ export default class App extends React.Component<any, any> {
     fetchInstallSettings(install: any) {
         invoke("get_install_by_id", {id: install}).then(async data => {
             if (data === null) {
-                console.error("Failed to fetch install settings!")
+                console.error("Failed to fetch install settings!");
+                this.setState(() => ({installSettings: null, gameManifest: null, preloadAvailable: false}));
             } else {
                 let parsed = JSON.parse(data as string);
                 let md = await this.fetchManifestById(parsed.manifest_id);
@@ -277,11 +304,11 @@ export default class App extends React.Component<any, any> {
     }
 
     async fetchManifestById(install: any) {
-        let rslt: {extra: {preload: {}}};
+        let rslt: {latest_version: null, extra: {preload: {metadata: null}}};
         let data = await invoke("get_game_manifest_by_manifest_id", {id: install});
         if (data === null) {
             console.error("Failed to fetch game manifest info!");
-            rslt = {extra: {preload: {}}};
+            rslt = {latest_version: null, extra: {preload: {metadata: null}}};
         } else {
             rslt = JSON.parse(data as string);
         }
@@ -303,7 +330,11 @@ export default class App extends React.Component<any, any> {
         if (!this.state.currentInstall || this.state.currentInstall === "") {
             buttonType = "download";
         } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
-            buttonType = "update";
+            if (this.state.gameManifest.latest_version !== null) {
+                buttonType = "update";
+            } else {
+                buttonType = "launch";
+            }
         } else {
             buttonType = "launch";
         }

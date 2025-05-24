@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fs;
 use std::ops::Add;
+use tauri::{Manager};
+use tauri_plugin_notification::NotificationExt;
 use std::path::Path;
 use std::sync::Arc;
 use fischl::compat::Compat;
@@ -14,8 +16,7 @@ use crate::utils::{copy_dir_all, generate_cuid, runner_from_runner_version, AddI
 use crate::utils::repo_manager::{get_compatibility, get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
-use tauri::{Manager};
-use tauri_plugin_notification::NotificationExt;
+use std::os::unix::fs::symlink;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -373,28 +374,24 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
         if fs::read_dir(&p).unwrap().next().is_none() && enabled {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
                 app.emit("download_progress", String::from("XXMI Modding tool")).unwrap();
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
                 if dl {
                     extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
-
-                    let gimi = String::from("TTL-extras/GIMI-Package");
-                    let srmi = String::from("TTL-extras/SRMI-Package");
-                    let zzmi = String::from("TTL-extras/ZZMI-Package");
-                    let wwmi = String::from("TTL-extras/WWMI-Package");
-                    
-                    /*let gimi = String::from("SilentNightSound/GIMI-Package");
+                    let gimi = String::from("SilentNightSound/GIMI-Package");
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
-                    let wwmi = String::from("SpectrumQT/WWMI-Package");*/
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");
                     
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), true);
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), false);
                     if dl1 {
-                        extract_archive(p.join("gimi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("gimi").as_path().to_str().unwrap().parse().unwrap(), false);
-                        extract_archive(p.join("srmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("srmi").as_path().to_str().unwrap().parse().unwrap(), false);
-                        extract_archive(p.join("zzmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("zzmi").as_path().to_str().unwrap().parse().unwrap(), false);
-                        extract_archive(p.join("wwmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.join("wwmi").as_path().to_str().unwrap().parse().unwrap(), false);
-                        
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi"] {
+                            extract_archive(p.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), p.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
+                                #[cfg(target_os = "linux")]
+                                symlink(p.join(lib), p.join(mi).join(lib)).unwrap();
+                            }
+                        }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
                     }
                 }

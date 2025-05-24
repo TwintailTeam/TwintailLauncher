@@ -48,7 +48,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                             }
                         })
                     }, 20);
-                }}><Rocket/><span id={"launch_game_txt"} className="font-semibold translate-y-px">Launch!</span>
+                }}><Rocket/><span id={"launch_game_txt"} className="font-semibold translate-y-px">Play!</span>
                 </button>
             )}
             {buttonType === "download" && (

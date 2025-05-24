@@ -45,13 +45,13 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 7,
             description: "init_settings_table",
-            sql: r#"CREATE TABLE IF NOT EXISTS settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, "launcher_action" TEXT default null, id integer not null CONSTRAINT settings_pk primary key autoincrement);"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, "launcher_action" TEXT default null, id integer not null, "hide_manifests" bool not null CONSTRAINT settings_pk primary key autoincrement);"#,
             kind: MigrationKind::Up,
         },
         Migration {
             version: 5,
             description: "populate_settings_table",
-            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id) values (null, false, null, null, null, null, "exit", 1);"#,
+            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id, hide_manifests) values (null, false, null, null, null, null, "exit", 1, false);"#,
             kind: MigrationKind::Up,
         }
     ];
@@ -148,6 +148,7 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
             third_party_repo_updates: rslt.get(0).unwrap().get("third_party_repo_updates"),
             default_runner_prefix_path: rslt.get(0).unwrap().get("default_runner_prefix_path"),
             launcher_action: rslt.get(0).unwrap().get("launcher_action"),
+            hide_manifests: rslt.get(0).unwrap().get("hide_manifests"),
         };
 
         Some(rsltt)
@@ -215,6 +216,15 @@ pub fn update_settings_launch_action(app: &AppHandle, action: String) {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE settings SET 'launcher_action' = $1 WHERE id = 1").bind(action);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_hide_manifests(app: &AppHandle, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'hide_manifests' = $1 WHERE id = 1").bind(enabled);
         query.execute(&db).await.unwrap();
     });
 }

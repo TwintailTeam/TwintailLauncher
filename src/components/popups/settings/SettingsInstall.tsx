@@ -1,4 +1,4 @@
-import {Trash2Icon, WrenchIcon, X} from "lucide-react";
+import {FolderOpenIcon, Trash2Icon, WrenchIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import FolderInput from "../../common/FolderInput.tsx";
 import CheckBox from "../../common/CheckBox.tsx";
@@ -51,21 +51,34 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         this.props.setOpenPopup(POPUPS.INSTALLDELETECONFIRMATION);
                     }}><Trash2Icon/><span className="font-semibold translate-y-px">Uninstall</span>
                     </button>
-                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-orange-600 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                         emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id, lang: "en-us"}).then(() => {});
-                    }}><WrenchIcon/>
-                        <span className="font-semibold translate-y-px">Repair install</span>
+                    }}><WrenchIcon/><span className="font-semibold translate-y-px">Repair install</span>
                     </button>
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "install"}).then(() => {});
+                    }}><FolderOpenIcon/><span className="font-semibold translate-y-px">Open game folder</span>
+                    </button>
+                    {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "mods"}).then(() => {});
+                    }}><FolderOpenIcon/><span className="font-semibold translate-y-px">Open mods folder</span>
+                    </button>: null}
                 </div>
                 <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
                     <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={"Location where game is installed. Usually should be set where main game exe is located."}/>
                     <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip checking for game updates."}/>
                     <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
-                    {(window.navigator.platform.includes("Linux") && this.state.gameSwitches.jadeite) ? <CheckBox enabled={this.props.installSettings.use_jadeite} name={"Inject Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Launch game using Jadeite patch."}/> : null}
-                    {(this.state.gameSwitches.xxmi) ? <CheckBox enabled={this.props.installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Enable and inject XXMI Modding tool."}/> : null}
+                    {(window.navigator.platform.includes("Linux") && this.state.gameSwitches.jadeite) ? <CheckBox enabled={this.props.installSettings.use_jadeite} name={"Launch with Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Launch game using Jadeite patch."}/> : null}
+                    {(this.state.gameSwitches.xxmi) ? <CheckBox enabled={this.props.installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Enable and inject XXMI modding tool."}/> : null}
                     {(this.state.gameSwitches.fps_unlocker) ? <CheckBox enabled={this.props.installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Load and inject fps unlocking into the game. Pick FPS in the menu bellow."}/> : null}
                     {(this.state.gameSwitches.fps_unlocker) ? <SelectMenu id={"install_fps_value"} name={"FPS value"} multiple={false} options={this.state.gameFps} selected={`${this.props.installSettings.fps_value}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Target FPS to unlock game to."}/> : null}
                     <TextInput name={"Environment variables"} value={this.props.installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={`Pass extra variables to Wine/Proton. Each entry is divided and list must end with ";"`}/>
