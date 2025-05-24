@@ -180,72 +180,73 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 #[cfg(target_os = "linux")]
 fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
-        wait_for_process(game.as_str(), 100, || {
-            let xxmi_path = xxmi_path.clone();
-            let mipath = get_mi_path_from_game(game.clone()).unwrap();
+        let xxmi_path = xxmi_path.clone();
+        let mipath = get_mi_path_from_game(game.clone()).unwrap();
 
-            let command = if is_proton {
-                format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
-            } else {
-                format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
-            };
+        let command = if is_proton {
+            format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
+        } else {
+            format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
+        };
 
-            let mut cmd = Command::new("bash");
-            cmd.arg("-c");
-            cmd.arg(&command);
+        let mut cmd = Command::new("bash");
+        cmd.arg("-c");
+        cmd.arg(&command);
 
-            cmd.env("WINEARCH","win64");
-            cmd.env("WINEPREFIX", prefix.clone());
-            cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
-            cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("WINEARCH","win64");
+        cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
 
-            cmd.stdout(Stdio::piped());
-            cmd.stderr(Stdio::piped());
-            cmd.current_dir(xxmi_path.clone());
-            cmd.process_group(0);
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(xxmi_path.clone());
+        cmd.process_group(0);
 
-            let spawn = cmd.spawn();
-            if spawn.is_ok() {
-                let process = spawn.unwrap();
-                write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
-            }
-            true
-        });
+        let spawn = cmd.spawn();
+        if spawn.is_ok() {
+            let process = spawn.unwrap();
+            write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+        }
     }
 }
 
 #[cfg(target_os = "linux")]
 fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
-        wait_for_process(game.as_str(), 100, || {
-            let fpsunlock_path = fpsunlock_path.clone();
-            let fpsv = install.fps_value.clone();
-            let command = if is_proton {
-                format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
+        wait_for_process(game.as_str(), 100,6, |found| {
+            if found {
+                let fpsunlock_path = fpsunlock_path.clone();
+                let fpsv = install.fps_value.clone();
+                let command = if is_proton {
+                    format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
+                } else {
+                    format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
+                };
+
+                let mut cmd = Command::new("bash");
+                cmd.arg("-c");
+                cmd.arg(&command);
+
+                cmd.env("WINEARCH","win64");
+                cmd.env("WINEPREFIX", prefix.clone());
+                cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+                cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+
+                cmd.stdout(Stdio::piped());
+                cmd.stderr(Stdio::piped());
+                cmd.current_dir(fpsunlock_path.clone());
+                cmd.process_group(0);
+
+                let spawn = cmd.spawn();
+                if spawn.is_ok() {
+                    let process = spawn.unwrap();
+                    write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                }
+                true
             } else {
-                format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
-            };
-
-            let mut cmd = Command::new("bash");
-            cmd.arg("-c");
-            cmd.arg(&command);
-
-            cmd.env("WINEARCH","win64");
-            cmd.env("WINEPREFIX", prefix.clone());
-            cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
-            cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-
-            cmd.stdout(Stdio::piped());
-            cmd.stderr(Stdio::piped());
-            cmd.current_dir(fpsunlock_path.clone());
-            cmd.process_group(0);
-
-            let spawn = cmd.spawn();
-            if spawn.is_ok() {
-                let process = spawn.unwrap();
-                write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                false
             }
-            true
         });
     }
 }
