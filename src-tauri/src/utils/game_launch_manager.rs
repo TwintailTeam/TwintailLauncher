@@ -214,7 +214,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
 #[cfg(target_os = "linux")]
 fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
-        wait_for_process(game.as_str(), 100,6, |found| {
+        wait_for_process(game.as_str(), 100,20, |found| {
             if found {
                 let fpsunlock_path = fpsunlock_path.clone();
                 let fpsv = install.fps_value.clone();
