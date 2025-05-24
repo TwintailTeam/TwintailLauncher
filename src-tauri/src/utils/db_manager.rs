@@ -45,7 +45,7 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 7,
             description: "init_settings_table",
-            sql: r#"CREATE TABLE IF NOT EXISTS settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, "launcher_action" TEXT default null, id integer not null, "hide_manifests" bool not null CONSTRAINT settings_pk primary key autoincrement);"#,
+            sql: r#"CREATE TABLE IF NOT EXISTS settings ("default_game_path" TEXT default null, "third_party_repo_updates" bool default 0 not null, "xxmi_path" TEXT default null, fps_unlock_path TEXT default null, jadeite_path TEXT default null, default_runner_prefix_path TEXT default null, "launcher_action" TEXT default null, id integer not null CONSTRAINT settings_pk primary key autoincrement, "hide_manifests" bool not null);"#,
             kind: MigrationKind::Up,
         },
         Migration {
