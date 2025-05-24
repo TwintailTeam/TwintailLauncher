@@ -81,7 +81,7 @@ export default class App extends React.Component<any, any> {
                                 }
                             }))
                         }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-500 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
-                        <div className={"w-full transition-all duration-500 overflow-hidden gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
+                        <div className={"w-full transition-all duration-500 overflow-scroll scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
                             {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
                                 return (
                                     <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
@@ -89,7 +89,7 @@ export default class App extends React.Component<any, any> {
                             })}
                         </div>
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        <div className={"gap-3 flex flex-col items-center"}>
+                        <div className={"gap-3 flex flex-col items-center scrollbar-none overflow-scroll"}>
                             {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
                                 return (
                                     <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
