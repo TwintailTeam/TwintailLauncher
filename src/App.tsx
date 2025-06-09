@@ -115,7 +115,7 @@ export default class App extends React.Component<any, any> {
                     </button> : null}
                     <GameButton currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
-                <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 hidden" id={"progress_bar"} style={{top: "82%"}}>
+                <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] hidden" id={"progress_bar"}>
                         <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>?</h4><h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>0%</span>)</h4>
                         <ProgressBar id={"progress_value"} progress={1} className={"transition-all duration-500 ease-out"}/>
                 </div>

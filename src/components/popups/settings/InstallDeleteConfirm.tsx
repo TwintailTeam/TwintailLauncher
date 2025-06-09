@@ -50,7 +50,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                     </button>
                 </div>
             </div>
-            <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg`} style={{maxHeight: (20 * 64) + "px"}}>
+            <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     <p className={"text-white text-start self-start"}>
                         Are you sure you want to uninstall and remove <span className={"text-blue-500 font-bold"}>{install.name}</span> installation?<br/>
                         <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>

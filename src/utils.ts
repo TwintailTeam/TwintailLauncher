@@ -88,15 +88,17 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
         let pbn = await waitForElement("progress_name");
         let pbv = await waitForElement("progress_value");
+        let progressPercent = await waitForElement("progress_percent");
 
         if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
            if (launchbtn) launchbtn.setAttribute("disabled", "");
            if (updatebtn) updatebtn.setAttribute("disabled", "");
            isb.setAttribute("disabled", "");
            pb.classList.remove("hidden");
-           pbn.textContent = `Downloading "${event.payload}"`;
-            await simulateProgress();
-            emit("prevent_exit", true).then(() => {});
+           pbn.textContent = `Downloading "${event.payload.name}"`;
+           pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+           progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+           emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
 
@@ -127,14 +129,16 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
         let pbn = await waitForElement("progress_name");
         let pbv = await waitForElement("progress_value");
+        let progressPercent = await waitForElement("progress_percent");
 
         if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
             if (launchbtn) launchbtn.setAttribute("disabled", "");
             if (updatebtn) updatebtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
             pb.classList.remove("hidden");
-            pbn.textContent = `Updating "${event.payload}"`;
-            await simulateProgress();
+            pbn.textContent = `Updating "${event.payload.name}"`;
+            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
             emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
@@ -166,14 +170,16 @@ export function generalEventsHandler() {
         let pb = document.getElementById("progress_bar");
         let pbn = document.getElementById("progress_name");
         let pbv = document.getElementById("progress_value");
+        let progressPercent = await waitForElement("progress_percent");
 
         if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
             if (launchbtn) launchbtn.setAttribute("disabled", "");
             if (updatebtn) updatebtn.setAttribute("disabled", "");
             isb.setAttribute("disabled", "");
             pb.classList.remove("hidden");
-            pbn.textContent = `Repairing "${event.payload}"`;
-            await simulateProgress();
+            pbn.textContent = `Repairing "${event.payload.name}"`;
+            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
             emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
@@ -212,7 +218,6 @@ function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
 
 let progress = 0;
 let barWidth = 5;
-
 async function simulateProgress() {
     let progressBar = await waitForElement("progress_value");
     let progressPercent = await waitForElement("progress_percent");
@@ -231,4 +236,8 @@ async function simulateProgress() {
         progressBar.style.width = '100%';
         progressPercent.textContent = '100%';
     }
+}
+
+function toPercent(number: any, total: any) {
+    return (parseInt(number) / parseInt(total)) * 100;
 }

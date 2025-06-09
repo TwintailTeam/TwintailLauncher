@@ -121,7 +121,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
 
                 if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
-                    archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+                    let mut dlpayload = HashMap::new();
+
+                    dlpayload.insert("name", runv.to_string());
+                    dlpayload.insert("progress", "90".to_string());
+                    dlpayload.insert("total", "100".to_string());
+                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
 
                     let r0 = Compatibility::download_runner(runnerp.url, runpp.as_str().to_string());
                     if r0 {
@@ -374,7 +379,11 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
         if fs::read_dir(&p).unwrap().next().is_none() && enabled {
             std::thread::spawn(move || {
-                app.emit("download_progress", String::from("XXMI Modding tool")).unwrap();
+                let mut dlpayload = HashMap::new();
+                dlpayload.insert("name", String::from("XXMI Modding tool"));
+                dlpayload.insert("progress", "90".to_string());
+                dlpayload.insert("total", "100".to_string());
+                app.emit("download_progress", dlpayload.clone()).unwrap();
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
                 if dl {
                     extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
@@ -556,7 +565,12 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                 let runnerp = rv.get(0).unwrap().to_owned();
                 let rp = Path::new(runpp.as_str()).to_path_buf();
 
-                archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+                let mut dlpayload = HashMap::new();
+
+                dlpayload.insert("name", runv.to_string());
+                dlpayload.insert("progress", "90".to_string());
+                dlpayload.insert("total", "100".to_string());
+                archandle.emit("download_progress", dlpayload.clone()).unwrap();
 
                 let r0 = Compatibility::download_runner(runnerp.url, runpp.as_str().to_string());
                 if r0 {
@@ -618,10 +632,15 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                 let rp = Path::new(runp.as_str()).to_path_buf();
 
+                let mut dlpayload = HashMap::new();
+
                 let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                 if is_proton {  } else {
-                    archandle.emit("download_progress", runv.as_str().to_string()).unwrap();
+                    dlpayload.insert("name", runv.to_string());
+                    dlpayload.insert("progress", "90".to_string());
+                    dlpayload.insert("total", "100".to_string());
+                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
 
                     let r0 = Compatibility::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string());
                     if r0 {

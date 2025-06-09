@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
-use fischl::utils::{assemble_multipart_archive, extract_archive, KuroFile};
+use fischl::utils::{assemble_multipart_archive, extract_archive};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
@@ -151,21 +151,40 @@ pub fn register_listeners(app: &AppHandle) {
                 let instn = Arc::new(install.name.clone());
                 let tracker = Arc::new(Mutex::new(0));
                 let tc = Arc::clone(&tracker);
+                let dlpayload = Arc::new(Mutex::new(HashMap::new()));
+                let csize = Arc::new(Mutex::new(0));
 
-                h4.emit("download_progress", install.name.clone()).unwrap();
+                let mut dlp = dlpayload.lock().unwrap();
+                dlp.insert("name", install.name.clone());
+                dlp.insert("progress", "0".to_string());
+                dlp.insert("total", "1000".to_string());
+
+                h4.emit("download_progress", dlp.clone()).unwrap();
+                drop(dlp);
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                        /*if !picked.audio.full.is_empty() {
-                            let faudio: Vec<_> = picked.audio.full.iter().filter(|v| v.language == install.audio_langs).collect();
-                            urls.push(faudio.get(0).unwrap().file_url.clone());
-                        }*/
-                        <Game as Hoyo>::download(urls.clone(), install.directory.clone(), move |_, _| {
-                            let mut tracker = tc.lock().unwrap();
-                            *tracker += 1;
-                            tmp.emit("download_progress", instn.as_ref()).unwrap();
+                        let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
+                        <Game as Hoyo>::download(urls.clone(), install.directory.clone(), {
+                            let dlpayload = dlpayload.clone();
+                            let totalsize = totalsize.clone();
+                            move |current, _| {
+                                let mut dlp = dlpayload.lock().unwrap();
+                                let mut tracker = tc.lock().unwrap();
+                                let mut cursize = csize.lock().unwrap();
+                                let ts = totalsize.clone();
+
+                                *tracker += 1;
+                                *cursize += current;
+
+                                dlp.insert("name", instn.to_string());
+                                dlp.insert("progress", cursize.to_string());
+                                dlp.insert("total", ts.to_string());
+                                tmp.emit("download_progress", dlp.clone()).unwrap();
+                                drop(dlp);
+                            }
                         });
                         if *tracker.lock().unwrap() == urls.clone().len() {
                             // Get first entry in the list, and start extraction
@@ -196,10 +215,19 @@ pub fn register_listeners(app: &AppHandle) {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let manifest = urls.get(0).unwrap();
                         run_async_command(async {
-                            <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), move |_, _| {
-                                let mut tracker = tc.lock().unwrap();
-                                *tracker += 1;
-                                tmp.emit("download_progress", instn.as_ref()).unwrap();
+                            <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    let mut tracker = tc.lock().unwrap();
+                                    *tracker += 1;
+
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", total.to_string());
+                                    tmp.emit("download_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
                             }).await;
                         });
                         // Shitty way to validate but will work for the time being
@@ -207,15 +235,28 @@ pub fn register_listeners(app: &AppHandle) {
                             h4.emit("download_complete", install.name.clone()).unwrap();
                         }
                     }
-                    // Raw file mode, PS: Currently only wuwa supported! PGR soon???
+                    // KuroGame only currently
                     "DOWNLOAD_MODE_RAW" => {
-                        let urls = picked.game.full.iter().map(|v| KuroFile { url: v.file_url.clone(), path: v.file_path.clone(), hash: v.file_hash.clone(), size: v.decompressed_size.clone() }).collect::<Vec<KuroFile>>();
-                        <Game as Kuro>::download(urls.clone(), install.directory.clone(), move |_, _| {
-                            let mut tracker = tc.lock().unwrap();
-                            *tracker += 1;
-                            tmp.emit("download_progress", instn.as_ref()).unwrap();
+                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        let manifest = urls.get(0).unwrap();
+                        run_async_command(async {
+                            <Game as Kuro>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    let mut tracker = tc.lock().unwrap();
+                                    *tracker += 1;
+
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", total.to_string());
+                                    tmp.emit("download_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            }).await;
                         });
-                        if *tracker.lock().unwrap() == urls.clone().len() {
+                        // Shitty way to validate but will work for the time being
+                        if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
                             h4.emit("download_complete", install.name.clone()).unwrap();
                         }
                     }
@@ -246,8 +287,15 @@ pub fn register_listeners(app: &AppHandle) {
                 let instn = Arc::new(install.name.clone());
                 let tracker = Arc::new(Mutex::new(0));
                 let tc = Arc::clone(&tracker);
+                let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
-                h5.emit("update_progress", install.name.clone()).unwrap();
+                let mut dlp = dlpayload.lock().unwrap();
+                dlp.insert("name", install.name.clone());
+                dlp.insert("progress", "0".to_string());
+                dlp.insert("total", "1000".to_string());
+
+                h5.emit("update_progress", dlp.clone()).unwrap();
+                drop(dlp);
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game can not account for every case yet
@@ -259,10 +307,19 @@ pub fn register_listeners(app: &AppHandle) {
                         if urls.is_empty() {  } else {
                             let manifest = urls.get(0).unwrap().file_url.clone();
                             run_async_command(async {
-                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), move |_, _| {
-                                    let mut tracker = tc.lock().unwrap();
-                                    *tracker += 1;
-                                    tmp.emit("update_progress", instn.as_ref()).unwrap();
+                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), {
+                                    let dlpayload = dlpayload.clone();
+                                    move |current, total| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        let mut tracker = tc.lock().unwrap();
+                                        *tracker += 1;
+
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("progress", current.to_string());
+                                        dlp.insert("total", total.to_string());
+                                        tmp.emit("update_progress", dlp.clone()).unwrap();
+                                        drop(dlp);
+                                    }
                                 }).await;
                             });
                             // Shitty way to validate but will work for the time being
@@ -277,9 +334,39 @@ pub fn register_listeners(app: &AppHandle) {
                             }
                         }
                     }
-                    // Raw file mode
+                    // KuroGame only currently
                     "DOWNLOAD_MODE_RAW" => {
-                        // TODO: Handle wuwa updates once we deal with krdiff files
+                        let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
+
+                        if urls.is_empty() {  } else {
+                            let manifest = urls.get(0).unwrap().file_url.clone();
+                            run_async_command(async {
+                                <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
+                                    let dlpayload = dlpayload.clone();
+                                    move |current, total| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        let mut tracker = tc.lock().unwrap();
+                                        *tracker += 1;
+
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("progress", current.to_string());
+                                        dlp.insert("total", total.to_string());
+                                        tmp.emit("update_progress", dlp.clone()).unwrap();
+                                        drop(dlp);
+                                    }
+                                }).await;
+                            });
+                            // Shitty way to validate but will work for the time being
+                            if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
+                                h5.emit("update_complete", install.name.clone()).unwrap();
+
+                                let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
+                                let np = install.runner_prefix.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
+                                fs::rename(install.directory.clone(), nd.clone()).unwrap();
+                                fs::rename(install.runner_prefix.clone(), np.clone()).unwrap();
+                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone(), nd, np);
+                            }
+                        }
                     }
                     // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
                     _ => {}
@@ -309,42 +396,32 @@ pub fn register_listeners(app: &AppHandle) {
                 let instn = Arc::new(i.name.clone());
                 let tracker = Arc::new(Mutex::new(0));
                 let tc = Arc::clone(&tracker);
+                let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
-                h5.emit("repair_progress", instn.as_ref()).unwrap();
+                let mut dlp = dlpayload.lock().unwrap();
+                dlp.insert("name", i.name.clone());
+                dlp.insert("progress", "0".to_string());
+                dlp.insert("total", "1000".to_string());
+
+                h5.emit("repair_progress", dlp.clone()).unwrap();
+                drop(dlp);
 
                 match picked.metadata.download_mode.as_str() {
                     // General game repair, PS: Only hoyo games for backwards compatibility
                     "DOWNLOAD_MODE_FILE" => {
-                        let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, move |_, _| {
-                            tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                        let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, {
+                            let dlpayload = dlpayload.clone();
+                            move |current, total| {
+                                let mut dlp = dlpayload.lock().unwrap();
+                                dlp.insert("name", instn.to_string());
+                                dlp.insert("progress", current.to_string());
+                                dlp.insert("total", total.to_string());
+                                tmp.emit("repair_progress", dlp.clone()).unwrap();
+                                drop(dlp);
+                            }
                         });
                         if rslt {
                             if !gm.paths.audio_pkg_res_dir.clone().is_empty() {
-                                /*let dir = Path::new(&i.directory.clone()).join(gm.paths.audio_pkg_res_dir.clone());
-
-                                // Make this shit better as some folder names might be pulled as inaccurate
-                                let locales = vec![
-                                    (VoiceLocale::English, if gm.biz.contains("hk4e") { dir.join(&VoiceLocale::English.to_folder()) } else { dir.join(&VoiceLocale::English.to_name()) }),
-                                    (VoiceLocale::Korean, dir.join(&VoiceLocale::Korean.to_name())),
-                                    (VoiceLocale::Japanese, dir.join(&VoiceLocale::Japanese.to_name())),
-                                    (VoiceLocale::Chinese, if gm.biz.contains("hkrpg") { dir.join(&VoiceLocale::Chinese.to_folder()) } else { dir.join(&VoiceLocale::Chinese.to_name()) }),
-                                ];
-
-                                let instn1 = Arc::new(i.name.clone());
-                                let tmp1 = Arc::new(h5.clone());
-                                // Loop over all available locales and check if their Audio pkg folder exists, if it does start repair for the language
-                                for (locale, path) in locales {
-                                    if path.exists() {
-                                        let instn1c = instn1.clone();
-                                        let tmp1c = tmp1.clone();
-                                        let l = if gm.biz.contains("hk4e") { locale.to_folder() } else { locale.to_name() };
-
-                                        let rslt1 = <Game as Hoyo>::repair_audio(picked.metadata.res_list_url.clone(), l.to_string(), i.directory.clone(), i.skip_hash_check, move |_, _| {
-                                            tmp1c.emit("repair_progress", instn1c.as_ref()).unwrap();
-                                        });
-                                        if rslt1 { h5.emit("repair_complete", i.name.clone()).unwrap(); }
-                                    }
-                                }*/
                                 h5.emit("repair_complete", i.name.clone()).unwrap();
                             } else { h5.emit("repair_complete", i.name.clone()).unwrap(); };
                         }
@@ -354,10 +431,19 @@ pub fn register_listeners(app: &AppHandle) {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let manifest = urls.get(0).unwrap();
                         run_async_command(async {
-                            <Game as Sophon>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), false,move |_, _| {
-                                let mut tracker = tc.lock().unwrap();
-                                *tracker += 1;
-                                tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                            <Game as Sophon>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), false, {
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    let mut tracker = tc.lock().unwrap();
+                                    *tracker += 1;
+
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", total.to_string());
+                                    tmp.emit("repair_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
                             }).await;
                         });
                         // Shitty way to validate but will work for the time being
@@ -365,12 +451,30 @@ pub fn register_listeners(app: &AppHandle) {
                             h5.emit("repair_complete", i.name.clone()).unwrap();
                         }
                     }
-                    // Raw file repair, PS: Only wuwa currently
+                    // KuroGame only currently
                     "DOWNLOAD_MODE_RAW" => {
-                        let rslt = <Game as Kuro>::repair_game(picked.metadata.index_file.clone(), picked.metadata.res_list_url.clone(), i.directory, i.skip_hash_check, move |_, _| {
-                            tmp.emit("repair_progress", instn.as_ref()).unwrap();
+                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        let manifest = urls.get(0).unwrap();
+                        run_async_command(async {
+                            <Game as Sophon>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), false, {
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    let mut tracker = tc.lock().unwrap();
+                                    *tracker += 1;
+
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", total.to_string());
+                                    tmp.emit("repair_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            }).await;
                         });
-                        if rslt { h5.emit("repair_complete", i.name.clone()).unwrap(); }
+                        // Shitty way to validate but will work for the time being
+                        if *tracker.lock().unwrap() <= 3000 || *tracker.lock().unwrap() >= 3000 {
+                            h5.emit("repair_complete", i.name.clone()).unwrap();
+                        }
                     }
                     // Fallback mode
                     _ => {}
