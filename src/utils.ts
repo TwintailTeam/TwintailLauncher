@@ -145,7 +145,7 @@ export function generalEventsHandler() {
 
     // Repair events
     listen<string>('repair_complete', async (event: any) => {
-        let launchbtn = document.getElementById("launch_game_btn");
+        let launchbtn = await waitForElement("launch_game_btn");
         let isb = document.getElementById("install_settings_btn");
         let updatebtn = await waitForElement(`update_game_btn`);
         let pb = document.getElementById("progress_bar");
