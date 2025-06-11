@@ -14,12 +14,9 @@ export default function TextInput({ id, name, value, placeholder, readOnly, patt
                     switch (id) {
                         case "install_env_vars": {
                             if (fetchInstallSettings !== undefined) {
-                                const regex = /^((WINEDLLOVERRIDES="[^"]*"|[\w-]+=(?:[\w-]+|"[\s\w\-\\/]*"));)*$/gi;///^([\w-]+=([\w-]+|"[\s\w-\\/]*");)*$/gi;
-                                if (regex.test(e) || e === "") {
-                                    invoke("update_install_env_vars", {envVars: `${e}`, id: install}).then(() => {
-                                        fetchInstallSettings(install as string)
-                                    });
-                                }
+                                invoke("update_install_env_vars", {envVars: `${e}`, id: install}).then(() => {
+                                    fetchInstallSettings(install as string)
+                                });
                             }
                         }
                         break;
