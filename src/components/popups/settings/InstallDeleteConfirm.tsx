@@ -5,6 +5,7 @@ import CheckBox from "../../common/CheckBox.tsx";
 
 interface IProps {
     games: any,
+    installs: any,
     install: any,
     setOpenPopup: (popup: POPUPS) => void,
     pushInstalls: () => void,
@@ -13,7 +14,7 @@ interface IProps {
     setBackground: (id: string) => void
 }
 
-export default function InstallDeleteConfirm({setOpenPopup, install, games, pushInstalls, setCurrentGame, setCurrentInstall, setBackground}: IProps) {
+export default function InstallDeleteConfirm({setOpenPopup, install, games, installs, pushInstalls, setCurrentGame, setCurrentInstall, setBackground}: IProps) {
     return (
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
@@ -40,11 +41,19 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                         invoke("remove_install", {id: install.id, wipePrefix: wpd}).then(r => {
                             if (r) {
                                 pushInstalls();
-                                setCurrentInstall("");
-                                setCurrentGame(games[0].biz);
-                                setBackground(games[0].assets.game_background);
-                                // @ts-ignore
-                                document.getElementById(games[0].biz).focus();
+                                if (installs.length === 0) {
+                                    setCurrentInstall("");
+                                    setCurrentGame(games[0].biz);
+                                    setBackground(games[0].assets.game_background);
+                                    // @ts-ignore
+                                    document.getElementById(games[0].biz).focus();
+                                } else {
+                                    setCurrentInstall(installs[0].id);
+                                    setCurrentGame(games[0].biz);
+                                    setBackground(installs[0].game_background);
+                                    // @ts-ignore
+                                    document.getElementById(installs[0].id).focus();
+                                }
                             } else {
                                 console.error("Uninstall error!");
                             }
