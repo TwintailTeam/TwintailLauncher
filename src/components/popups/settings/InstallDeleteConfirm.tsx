@@ -34,6 +34,9 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                             wpd = prefixtoggle.checked;
                         }
 
+                        // @ts-ignore
+                        document.getElementById(`${install.id}`).setAttribute("disabled", "");
+
                         invoke("remove_install", {id: install.id, wipePrefix: wpd}).then(r => {
                             if (r) {
                                 pushInstalls();
@@ -42,8 +45,6 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, push
                                 setBackground(games[0].assets.game_background);
                                 // @ts-ignore
                                 document.getElementById(games[0].biz).focus();
-                                // @ts-ignore
-                                document.getElementById(`${install.id}`).setAttribute("disabled", "");
                             } else {
                                 console.error("Uninstall error!");
                             }
