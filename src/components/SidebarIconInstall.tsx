@@ -46,13 +46,17 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
     return (
         <React.Fragment>
             {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={`${id}`} className={`aspect-square w-12 rounded-lg cursor-pointer hover:border-blue-600 hover:border-2 focus:border-2 focus:border-blue-600 outline-none`} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
-                setOpenPopup(POPUPS.NONE)
-                setCurrentInstall(id)
-                setDisplayName(name)
-                setBackground(background)
-                setGameIcon(icon)
+                let elem = document.getElementById(id);
                 // @ts-ignore
-                document.getElementById(id).focus();
+                if (elem.hasAttribute("disabled")) {} else {
+                    setOpenPopup(POPUPS.NONE)
+                    setCurrentInstall(id)
+                    setDisplayName(name)
+                    setBackground(background)
+                    setGameIcon(icon)
+                    // @ts-ignore
+                    elem.focus();
+                }
             }} alt={"?"}/> : null}
             {(enabled) ?
                 (isOpen && popup == POPUPS.NONE) && (
