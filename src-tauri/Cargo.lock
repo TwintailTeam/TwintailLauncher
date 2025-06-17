@@ -1241,7 +1241,7 @@ dependencies = [
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/AndigenaTeam/fischl-rs.git?branch=master#1350894cfd85d389a1482147d3e2b54ea2d590c2"
+source = "git+https://github.com/AndigenaTeam/fischl-rs.git?branch=master#3779869dd0131943f95953b60565037750ce0fd4"
 dependencies = [
  "async-compression",
  "chksum-md5",

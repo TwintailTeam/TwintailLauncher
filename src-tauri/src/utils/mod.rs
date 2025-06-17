@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU64, Ordering};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
 use serde::{Deserialize, Serialize};
@@ -151,7 +152,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 let instn = Arc::new(install.name.clone());
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
-                let csize = Arc::new(Mutex::new(0));
+                let tracker = Arc::new(AtomicU64::new(0));
 
                 let mut dlp = dlpayload.lock().unwrap();
                 dlp.insert("name", install.name.clone());
@@ -169,22 +170,21 @@ pub fn register_listeners(app: &AppHandle) {
                         <Game as Hoyo>::download(urls.clone(), install.directory.clone(), {
                             let dlpayload = dlpayload.clone();
                             let totalsize = totalsize.clone();
-                            let csize = csize.clone();
+                            let tracker = tracker.clone();
                             move |current, _| {
                                 let mut dlp = dlpayload.lock().unwrap();
-                                let mut cursize = csize.lock().unwrap();
                                 let ts = totalsize.clone();
-
-                                *cursize += current;
+                                let tracker = tracker.clone();
+                                tracker.store(current, Ordering::SeqCst);
 
                                 dlp.insert("name", instn.to_string());
-                                dlp.insert("progress", cursize.to_string());
+                                dlp.insert("progress", current.to_string());
                                 dlp.insert("total", ts.to_string());
                                 tmp.emit("download_progress", dlp.clone()).unwrap();
                                 drop(dlp);
                             }
                         });
-                        if *csize.lock().unwrap() == totalsize {
+                        if tracker.load(Ordering::SeqCst) == totalsize {
                             // Get first entry in the list, and start extraction
                             let first = urls.get(0).unwrap();
                             let tmpf = first.split('/').collect::<Vec<&str>>();
@@ -216,11 +216,11 @@ pub fn register_listeners(app: &AppHandle) {
                         run_async_command(async {
                             <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
                                 let dlpayload = dlpayload.clone();
-                                let csize = csize.clone();
+                                let tracker = tracker.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-                                    let mut cursize = csize.lock().unwrap();
-                                    *cursize += current;
+                                    let tracker = tracker.clone();
+                                    tracker.store(current, Ordering::SeqCst);
 
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
@@ -230,7 +230,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await;
                         });
-                        if *csize.lock().unwrap() == totalsize {
+                        if tracker.load(Ordering::SeqCst) == totalsize {
                             h4.emit("download_complete", install.name.clone()).unwrap();
                         }
                     }
@@ -242,11 +242,11 @@ pub fn register_listeners(app: &AppHandle) {
                         run_async_command(async {
                             <Game as Kuro>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
                                 let dlpayload = dlpayload.clone();
-                                let csize = csize.clone();
+                                let tracker = tracker.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-                                    let mut cursize = csize.lock().unwrap();
-                                    *cursize += current;
+                                    let tracker = tracker.clone();
+                                    tracker.store(current, Ordering::SeqCst);
 
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
@@ -256,7 +256,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await;
                         });
-                        if *csize.lock().unwrap() == totalsize {
+                        if tracker.load(Ordering::SeqCst) == totalsize {
                             h4.emit("download_complete", install.name.clone()).unwrap();
                         }
                     }
@@ -285,7 +285,7 @@ pub fn register_listeners(app: &AppHandle) {
                 let tmp = Arc::new(h5.clone());
 
                 let instn = Arc::new(install.name.clone());
-                let tracker = Arc::new(Mutex::new(0));
+                let tracker = Arc::new(AtomicU64::new(0));
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
@@ -317,8 +317,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     let tc = tracker.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
-                                        let mut tracker = tc.lock().unwrap();
-                                        *tracker += current;
+                                        tc.store(current, Ordering::SeqCst);
 
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
@@ -328,7 +327,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     }
                                 }).await;
                             });
-                            if *tracker.lock().unwrap() == totalsize {
+                            if tracker.load(Ordering::SeqCst) == totalsize {
                                 h5.emit("update_complete", install.name.clone()).unwrap();
 
                                 let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
@@ -339,7 +338,7 @@ pub fn register_listeners(app: &AppHandle) {
                             }
                         }
                     }
-                    // KuroGame only currently
+                    // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 
@@ -352,8 +351,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     let tc = tracker.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
-                                        let mut tracker = tc.lock().unwrap();
-                                        *tracker += current;
+                                        tc.store(current, Ordering::SeqCst);
 
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
@@ -363,7 +361,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     }
                                 }).await;
                             });
-                            if *tracker.lock().unwrap() == totalsize {
+                            if tracker.load(Ordering::SeqCst) == totalsize {
                                 h5.emit("update_complete", install.name.clone()).unwrap();
 
                                 let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
@@ -400,7 +398,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 let tmp = Arc::new(h5.clone());
                 let instn = Arc::new(i.name.clone());
-                let tracker = Arc::new(Mutex::new(0));
+                let tracker = Arc::new(AtomicU64::new(0));
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
@@ -442,8 +440,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 let tc = tracker.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-                                    let mut tracker = tc.lock().unwrap();
-                                    *tracker += current;
+                                    tc.store(current, Ordering::SeqCst);
 
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
@@ -453,11 +450,9 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await;
                         });
-                        if *tracker.lock().unwrap() == totalsize {
-                            h5.emit("repair_complete", i.name.clone()).unwrap();
-                        }
+                        if tracker.load(Ordering::SeqCst) == totalsize { h5.emit("repair_complete", i.name.clone()).unwrap(); }
                     }
-                    // KuroGame only currently
+                    // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let manifest = urls.get(0).unwrap();
@@ -468,8 +463,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 let tc = tracker.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-                                    let mut tracker = tc.lock().unwrap();
-                                    *tracker += current;
+                                    tc.store(current, Ordering::SeqCst);
 
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
@@ -479,9 +473,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await;
                         });
-                        if *tracker.lock().unwrap() == totalsize {
-                            h5.emit("repair_complete", i.name.clone()).unwrap();
-                        }
+                        if tracker.load(Ordering::SeqCst) == totalsize { h5.emit("repair_complete", i.name.clone()).unwrap(); }
                     }
                     // Fallback mode
                     _ => {}
@@ -509,7 +501,7 @@ pub fn register_listeners(app: &AppHandle) {
                 let tmp = Arc::new(h5.clone());
 
                 let instn = Arc::new(install.name.clone());
-                let tracker = Arc::new(Mutex::new(0));
+                let tracker = Arc::new(AtomicU64::new(0));
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
@@ -536,8 +528,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     let tc = tracker.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
-                                        let mut tracker = tc.lock().unwrap();
-                                        *tracker += current;
+                                        tc.store(current, Ordering::SeqCst);
 
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
@@ -547,10 +538,10 @@ pub fn register_listeners(app: &AppHandle) {
                                     }
                                 }).await;
                             });
-                            if *tracker.lock().unwrap() == totalsize { h5.emit("preload_complete", install.name.clone()).unwrap(); }
+                            if tracker.load(Ordering::SeqCst) == totalsize { h5.emit("preload_complete", install.name.clone()).unwrap(); }
                         }
                     }
-                    // KuroGame only currently
+                    // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 
