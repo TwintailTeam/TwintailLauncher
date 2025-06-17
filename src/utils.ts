@@ -183,6 +183,47 @@ export function generalEventsHandler() {
             emit("prevent_exit", true).then(() => {});
         }
     }).then(() => {});
+
+    // Preload events
+    listen<string>('preload_complete', async (event: any) => {
+        let launchbtn = await waitForElement("launch_game_btn");
+        let updatebtn = await waitForElement(`update_game_btn`);
+        let isb = await waitForElement("install_settings_btn");
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
+
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
+            if (launchbtn) launchbtn.removeAttribute("disabled");
+            if (updatebtn) updatebtn.removeAttribute("disabled");
+            isb.removeAttribute("disabled");
+            pbn.textContent = "Predownload complete!";
+            setTimeout(() => {pb.classList.add("hidden");}, 500);
+        }
+        await sendNotify("TwintailLauncher", `Predownload for ${event.payload} complete.`, "dialog-information");
+        emit("prevent_exit", false).then(() => {});
+    }).then(() => {});
+
+    listen<any>('preload_progress', async (event) => {
+        let launchbtn = await waitForElement(`launch_game_btn`);
+        let updatebtn = await waitForElement(`update_game_btn`);
+        let isb = await waitForElement(`install_settings_btn`);
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
+        let progressPercent = await waitForElement("progress_percent");
+
+        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
+            if (launchbtn) launchbtn.setAttribute("disabled", "");
+            if (updatebtn) updatebtn.setAttribute("disabled", "");
+            isb.setAttribute("disabled", "");
+            pb.classList.remove("hidden");
+            pbn.textContent = `Predownloading "${event.payload.name}"`;
+            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+            emit("prevent_exit", true).then(() => {});
+        }
+    }).then(() => {});
 }
 
 async function checkPermission() {

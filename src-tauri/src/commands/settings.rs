@@ -128,31 +128,6 @@ pub fn update_extras(app: AppHandle) -> bool {
         let jadeite = Path::new(&s.jadeite_path).to_path_buf();
         let fpsu = Path::new(&s.fps_unlock_path).to_path_buf();
 
-        // Pull latest xxmi and its packages if xxmi is installed
-        if fs::read_dir(&xxmi).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
-                if dl {
-                    extract_archive(xxmi.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
-                    let gimi = String::from("SilentNightSound/GIMI-Package");
-                    let srmi = String::from("SpectrumQT/SRMI-Package");
-                    let zzmi = String::from("leotorrez/ZZMI-Package");
-                    let wwmi = String::from("SpectrumQT/WWMI-Package");
-
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, xxmi.as_path().to_str().unwrap().parse().unwrap(), true);
-                    if dl1 {
-                        for mi in ["gimi", "srmi", "zzmi", "wwmi"] {
-                            extract_archive(xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
-                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
-                                #[cfg(target_os = "linux")]
-                                symlink(xxmi.join(lib), xxmi.join(mi).join(lib)).unwrap();
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
         // Pull latest jadeite if installed
         if fs::read_dir(&jadeite).unwrap().next().is_some() {
             std::thread::spawn(move || {
@@ -167,6 +142,31 @@ pub fn update_extras(app: AppHandle) -> bool {
         if fs::read_dir(&fpsu).unwrap().next().is_some() {
             std::thread::spawn(move || {
                 Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), fpsu.as_path().to_str().unwrap().parse().unwrap());
+            });
+        }
+
+        // Pull latest xxmi and its packages if xxmi is installed
+        if fs::read_dir(&xxmi).unwrap().next().is_some() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                if dl {
+                    extract_archive(xxmi.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let gimi = String::from("SilentNightSound/GIMI-Package");
+                    let srmi = String::from("SpectrumQT/SRMI-Package");
+                    let zzmi = String::from("leotorrez/ZZMI-Package");
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");
+
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                    if dl1 {
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi"] {
+                            extract_archive(xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
+                                #[cfg(target_os = "linux")]
+                                symlink(xxmi.join(lib), xxmi.join(mi).join(lib)).unwrap();
+                            }
+                        }
+                    }
+                }
             });
         }
         true

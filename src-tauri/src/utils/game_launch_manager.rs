@@ -92,14 +92,20 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            splitted.iter().for_each(|env| {
-                if !env.is_empty() {
-                    let tmp = env.splitn(2,"=").collect::<Vec<&str>>();
-                    let k = tmp[0];
-                    let v = tmp[1].replace("\"", "");
+            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
+                if env.is_empty() { return Some(None); }
+                let mut tmp = env.splitn(2, "=");
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                    _ => None,
+                }
+            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
                     cmd.env(k, v);
                 }
-            });
+            }
         }
 
         let spawned = cmd.spawn();
@@ -150,14 +156,20 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            splitted.iter().for_each(|env| {
-                if !env.is_empty() {
-                    let tmp = env.splitn(2, "=").collect::<Vec<&str>>();
-                    let k = tmp[0];
-                    let v = tmp[1].replace("\"", "");
+            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
+                if env.is_empty() { return Some(None); }
+                let mut tmp = env.splitn(2, "=");
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                    _ => None,
+                }
+            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
                     cmd.env(k, v);
                 }
-            });
+            }
         }
 
         let spawned = cmd.spawn();
@@ -214,7 +226,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
 #[cfg(target_os = "linux")]
 fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
-        wait_for_process(game.as_str(), 100,20, |found| {
+        wait_for_process(game.as_str(), 100,30, |found| {
             if found {
                 let fpsunlock_path = fpsunlock_path.clone();
                 let fpsv = install.fps_value.clone();

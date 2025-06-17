@@ -18,6 +18,7 @@ import {generalEventsHandler} from "./utils.ts";
 import GameButton from "./components/GameButton.tsx";
 import PreloadButton from "./components/common/PreloadButton.tsx";
 import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
+import {emit} from "@tauri-apps/api/event";
 
 export default class App extends React.Component<any, any> {
     constructor(props: any) {
@@ -105,7 +106,7 @@ export default class App extends React.Component<any, any> {
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button onClick={() => {
-                        console.log("preload...");
+                        emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
                     }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 w-8 h-8"/>}/>
                     </button>): null}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
