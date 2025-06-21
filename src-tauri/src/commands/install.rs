@@ -17,6 +17,8 @@ use crate::utils::repo_manager::{get_compatibility, get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::symlink;
+#[cfg(target_os = "windows")]
+use std::os::windows::fs::symlink_file;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -391,14 +393,20 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
-                    
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, p.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let himi = String::from("leotorrez/HIMI-Package");
+
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, p.as_path().to_str().unwrap().parse().unwrap(), false);
                     if dl1 {
-                        for mi in ["gimi", "srmi", "zzmi", "wwmi"] {
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive(p.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), p.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
-                                #[cfg(target_os = "linux")]
-                                symlink(p.join(lib), p.join(mi).join(lib)).unwrap();
+                                let linkedpath = p.join(mi).join(lib);
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    symlink(p.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    symlink_file(p.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();

@@ -27,8 +27,16 @@ pub fn run() {
             init_tray(&handle).unwrap();
             register_listeners(&handle);
 
-            let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
-            if !path.exists() { block_telemetry(&handle);
+            let res_dir = app.path().resource_dir().unwrap();
+            let data_dir = app.path().app_data_dir().unwrap();
+
+            let path = data_dir.join(".telemetry_blocked");
+            if !path.exists() { block_telemetry(&handle); }
+
+            for r in ["hpatchz", "hpatchz.exe", "hpatchz_kuro.exe"] {
+                let rd = res_dir.join("resources").join(r);
+                let fd = data_dir.join(r);
+                if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
             }
             Ok(())
         })

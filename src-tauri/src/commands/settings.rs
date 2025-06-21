@@ -1,5 +1,4 @@
 use std::fs;
-use std::os::unix::fs::symlink;
 use std::path::Path;
 use fischl::download::Extras;
 use fischl::utils::extract_archive;
@@ -9,6 +8,11 @@ use tauri_plugin_opener::OpenerExt;
 use crate::utils::{block_telemetry, get_mi_path_from_game};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
+
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::symlink;
+#[cfg(target_os = "windows")]
+use std::os::windows::fs::symlink_file;
 
 #[tauri::command]
 pub async fn list_settings(app: AppHandle) -> Option<String> {
@@ -155,14 +159,20 @@ pub fn update_extras(app: AppHandle) -> bool {
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
+                    let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
                     if dl1 {
-                        for mi in ["gimi", "srmi", "zzmi", "wwmi"] {
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive(xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
-                                #[cfg(target_os = "linux")]
-                                symlink(xxmi.join(lib), xxmi.join(mi).join(lib)).unwrap();
+                                let linkedpath = xxmi.join(mi).join(lib);
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    symlink(xxmi.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    symlink_file(xxmi.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                     }
