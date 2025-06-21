@@ -74,8 +74,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
 
-        let prefix_loc = Path::new(&runner_prefix).join(cuid.clone());
-
         #[cfg(target_os = "windows")]
         {
             dxvk_path = "".to_string();
@@ -88,6 +86,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             let comppath = data_path.join("compatibility");
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
+            let prefix_loc = Path::new(&runner_prefix).join(cuid.clone());
+
             runner_prefix = prefix_loc.to_str().unwrap().to_string();
 
             // Remove prefix just in case
@@ -138,7 +138,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                        if is_proton {  } else {
+                        if is_proton { archandle.emit("download_complete", runv.as_str().to_string()).unwrap(); } else {
                             let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
                             if r1.is_ok() && er {
                                 let r = r1.unwrap();
