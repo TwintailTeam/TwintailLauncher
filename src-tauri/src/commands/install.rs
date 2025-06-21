@@ -233,6 +233,8 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
                     let mut payload = HashMap::new();
                     payload.insert("install_name", install_name.clone());
                     payload.insert("install_type", "Game".to_string());
+                    payload.insert("progress", "0".to_string());
+                    payload.insert("total", "1000".to_string());
                     app1.emit("move_complete", &payload).unwrap();
                 });
             }
@@ -270,6 +272,8 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
                     let mut payload = HashMap::new();
                     payload.insert("install_name", install_name.clone());
                     payload.insert("install_type", "Runner".to_string());
+                    payload.insert("progress", "0".to_string());
+                    payload.insert("total", "1000".to_string());
                     app1.emit("move_complete", &payload).unwrap();
                 });
             }
@@ -305,6 +309,8 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
                     let mut payload = HashMap::new();
                     payload.insert("install_name", install_name.clone());
                     payload.insert("install_type", "DXVK".to_string());
+                    payload.insert("progress", "0".to_string());
+                    payload.insert("total", "1000".to_string());
                     app1.emit("move_complete", &payload).unwrap();
                 });
             }
@@ -382,7 +388,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
             std::thread::spawn(move || {
                 let mut dlpayload = HashMap::new();
                 dlpayload.insert("name", String::from("XXMI Modding tool"));
-                dlpayload.insert("progress", "90".to_string());
+                dlpayload.insert("progress", "80".to_string());
                 dlpayload.insert("total", "100".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
@@ -526,6 +532,8 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
                     let mut payload = HashMap::new();
                     payload.insert("install_name", install_name.clone());
                     payload.insert("install_type", "Prefix".to_string());
+                    payload.insert("progress", "0".to_string());
+                    payload.insert("total", "1000".to_string());
                     app1.emit("move_complete", &payload).unwrap();
                 });
             }
@@ -575,7 +583,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                 let mut dlpayload = HashMap::new();
 
                 dlpayload.insert("name", runv.to_string());
-                dlpayload.insert("progress", "90".to_string());
+                dlpayload.insert("progress", "80".to_string());
                 dlpayload.insert("total", "100".to_string());
                 archandle.emit("download_progress", dlpayload.clone()).unwrap();
 
@@ -645,7 +653,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
                 if is_proton {  } else {
                     dlpayload.insert("name", runv.to_string());
-                    dlpayload.insert("progress", "90".to_string());
+                    dlpayload.insert("progress", "80".to_string());
                     dlpayload.insert("total", "100".to_string());
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
 
