@@ -788,7 +788,7 @@ pub fn update_install_dxvk_version_by_id(app: &AppHandle, id: String, version: S
     });
 }
 
-pub fn update_install_after_update_by_id(app: &AppHandle, id: String, name: String, icon: String, background: String, version: String, dir: String, prefix: String) {
+pub fn update_install_after_update_by_id(app: &AppHandle, id: String, name: String, icon: String, background: String, version: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
@@ -796,15 +796,11 @@ pub fn update_install_after_update_by_id(app: &AppHandle, id: String, name: Stri
         let query2 = sqlx::query("UPDATE install SET 'game_icon' = $1 WHERE id = $2").bind(icon).bind(id.clone());
         let query3 = sqlx::query("UPDATE install SET 'game_background' = $1 WHERE id = $2").bind(background).bind(id.clone());
         let query4 = sqlx::query("UPDATE install SET 'version' = $1 WHERE id = $2").bind(version).bind(id.clone());
-        let query5 = sqlx::query("UPDATE install SET 'directory' = $1 WHERE id = $2").bind(dir).bind(id.clone());
-        let query6 = sqlx::query("UPDATE install SET 'runner_prefix_path' = $1 WHERE id = $2").bind(prefix).bind(id.clone());
 
         query.execute(&db).await.unwrap();
         query2.execute(&db).await.unwrap();
         query3.execute(&db).await.unwrap();
         query4.execute(&db).await.unwrap();
-        query5.execute(&db).await.unwrap();
-        query6.execute(&db).await.unwrap();
     });
 }
 

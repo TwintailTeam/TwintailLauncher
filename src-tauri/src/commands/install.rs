@@ -60,7 +60,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
+pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -70,12 +70,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let install_location = Path::new(directory.as_str()).to_path_buf();
-        if !install_location.exists() {
-            fs::create_dir_all(&install_location).unwrap();
-        }
+        let install_location = Path::new(directory.as_str()).join(cuid.clone()).to_path_buf();
+        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
-        
+
+        let prefix_loc = Path::new(&runner_prefix).join(cuid.clone());
+
         #[cfg(target_os = "windows")]
         {
             dxvk_path = "".to_string();
@@ -88,16 +88,17 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             let comppath = data_path.join("compatibility");
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
+            runner_prefix = prefix_loc.to_str().unwrap().to_string();
 
             // Remove prefix just in case
-            if Path::exists(runner_prefix.as_ref()) { fs::remove_dir_all(&runner_prefix.clone()).unwrap(); }
+            if prefix_loc.exists() { fs::remove_dir_all(runner_prefix.clone()).unwrap(); }
 
             runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
             dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
 
             if !Path::exists(runner_path.as_ref()) { fs::create_dir_all(runner_path.clone()).unwrap(); }
             if !Path::exists(dxvk_path.as_ref()) { fs::create_dir_all(dxvk_path.clone()).unwrap(); }
-            if !Path::exists(runner_prefix.as_ref()) { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
+            if !prefix_loc.exists() { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
             
             let archandle = Arc::new(app.clone());
             let runv = Arc::new(runner_version.clone());
@@ -143,7 +144,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                                 let r = r1.unwrap();
                                 let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
                                 if r2.is_ok() {
-                                    let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string(), false);
+                                    let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), dxvkpp.as_str().to_string(), false);
                                     if da.is_ok() {
                                         Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                                         if skip_game_dl { archandle.emit("download_complete", runv.as_str().to_string()).unwrap(); }
@@ -163,7 +164,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                             let r = r1.unwrap();
                             let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
                             if r2.is_ok() {
-                                let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.to_string(), dxvkpp.as_str().to_string(), false);
+                                let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), dxvkpp.as_str().to_string(), false);
                                 if da.is_ok() {
                                     Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                                 }
@@ -219,9 +220,7 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) {
-            fs::create_dir_all(path.clone()).unwrap();
-        }
+        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
 
         // Initialize move only IF old path has files AND new path is empty directory
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {

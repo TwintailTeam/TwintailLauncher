@@ -175,7 +175,6 @@ pub fn register_listeners(app: &AppHandle) {
                             let dlpayload = dlpayload.clone();
                             move |current, _| {
                                 let mut dlp = dlpayload.lock().unwrap();
-
                                 dlp.insert("name", instn.to_string());
                                 dlp.insert("progress", current.to_string());
                                 dlp.insert("total", totalsize.to_string());
@@ -216,7 +215,6 @@ pub fn register_listeners(app: &AppHandle) {
                                 let dlpayload = dlpayload.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
                                     dlp.insert("total", total.to_string());
@@ -236,7 +234,6 @@ pub fn register_listeners(app: &AppHandle) {
                                 let dlpayload = dlpayload.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
                                     dlp.insert("total", total.to_string());
@@ -308,7 +305,6 @@ pub fn register_listeners(app: &AppHandle) {
                                     let dlpayload = dlpayload.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
-
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
                                         dlp.insert("total", total.to_string());
@@ -319,12 +315,7 @@ pub fn register_listeners(app: &AppHandle) {
                             });
                             if rslt {
                                 h5.emit("update_complete", install.name.clone()).unwrap();
-
-                                let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                let np = install.runner_prefix.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                fs::rename(install.directory.clone(), nd.clone()).unwrap();
-                                fs::rename(install.runner_prefix.clone(), np.clone()).unwrap();
-                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone(), nd, np);
+                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                             }
                         }
                     }
@@ -339,7 +330,6 @@ pub fn register_listeners(app: &AppHandle) {
                                     let dlpayload = dlpayload.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
-
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
                                         dlp.insert("total", total.to_string());
@@ -350,12 +340,7 @@ pub fn register_listeners(app: &AppHandle) {
                             });
                             if rslt {
                                 h5.emit("update_complete", install.name.clone()).unwrap();
-
-                                let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                let np = install.runner_prefix.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                fs::rename(install.directory.clone(), nd.clone()).unwrap();
-                                fs::rename(install.runner_prefix.clone(), np.clone()).unwrap();
-                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone(), nd, np);
+                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                 #[cfg(target_os = "linux")]
                                 {
                                     let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");

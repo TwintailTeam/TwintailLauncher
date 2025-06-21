@@ -69,7 +69,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     let rpp = "none";
                     if (rp !== null) {
                         // @ts-ignore
-                        rpp = rp.value + "/" + gvv;
+                        rpp = rp.value;
                     }
 
                     // @ts-ignore
@@ -80,7 +80,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                         version: gvv,
                         audioLang: vpp,
                         name: displayName,
-                        directory: install_path + "/" + gvv,
+                        directory: install_path,
                         runnerPath: "none",
                         dxvkPath: "none",
                         runnerVersion: rvv,
