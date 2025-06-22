@@ -1,24 +1,16 @@
-import {emit, listen} from "@tauri-apps/api/event";
-import {isPermissionGranted, requestPermission, sendNotification} from "@tauri-apps/plugin-notification";
+import {listen} from "@tauri-apps/api/event";
 
 export function moveTracker(install: string) {
-   listen<string>('move_complete', async (event: any) => {
+   listen<string>('move_complete', async () => {
        let launchbtn = await waitForElement("launch_game_btn");
        let isb = await waitForElement("install_settings_btn");
        let updatebtn = await waitForElement(`update_game_btn`);
        let pb = await waitForElement("progress_bar");
-       let pbn = await waitForElement("progress_name");
-       let pbv = await waitForElement("progress_value");
 
-       if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-           if (launchbtn) launchbtn.removeAttribute("disabled");
-           if (updatebtn) updatebtn.removeAttribute("disabled");
-           isb.removeAttribute("disabled");
-           pbn.textContent = "Move complete!";
-           setTimeout(() => {pb.classList.add("hidden");}, 500);
-       }
-       await emit("prevent_exit", false);
-       await sendNotify("TwintailLauncher", `Moving of ${event.payload.install_name}'s ${event.payload.install_type} files complete.`, "dialog-information");
+       isb.removeAttribute("disabled");
+       setTimeout(() => {pb.classList.add("hidden");}, 500);
+       if (launchbtn) launchbtn.removeAttribute("disabled");
+       if (updatebtn) updatebtn.removeAttribute("disabled");
    }).then(() => {});
 
     listen<any>('move_progress', async (event) => {
@@ -30,51 +22,30 @@ export function moveTracker(install: string) {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            if (event.payload.install_id === install) {
-                if (launchbtn) launchbtn.setAttribute("disabled", "");
-                if (updatebtn) updatebtn.setAttribute("disabled", "");
-                isb.setAttribute("disabled", "");
-                pb.classList.remove("hidden");
-                pbn.textContent = `Moving "${event.payload.file}"`;
-                pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-                progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-                await emit("prevent_exit", true);
-            }
+        if (event.payload.install_id === install) {
+            if (launchbtn) launchbtn.setAttribute("disabled", "");
+            if (updatebtn) updatebtn.setAttribute("disabled", "");
+            isb.setAttribute("disabled", "");
+            pb.classList.remove("hidden");
+            pbn.textContent = `Moving "${event.payload.file}"`;
+            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
         }
     }).then(async () => {});
 }
 
 export function generalEventsHandler() {
-    listen<any>("telemetry_block", (event) => {
-        switch (event.payload) {
-            case 1: {sendNotify("TwintailLauncher", "Successfully blocked telemetry servers.", "dialog-information").then(() => {});}
-            break;
-            case 2: {sendNotify("TwintailLauncher", 'Telemetry servers already blocked.', "dialog-information").then(() => {});}
-            break;
-            case 0: {sendNotify("TwintailLauncher", 'Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!', "dialog-error").then(() => {});}
-            break;
-        }
-    }).then(() => {});
-
     // Download events
-    listen<string>('download_complete', async (event: any) => {
-        let launchbtn = document.getElementById("launch_game_btn");
+    listen<string>('download_complete', async () => {
+        let launchbtn = await waitForElement("launch_game_btn");
         let isb = await waitForElement("install_settings_btn");
-        let updatebtn = document.getElementById(`update_game_btn`);
+        let updatebtn = await waitForElement(`update_game_btn`);
         let pb = await waitForElement("progress_bar");
-        let pbn = await waitForElement("progress_name");
-        let pbv = await waitForElement("progress_value");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            pbn.textContent = "Download complete!";
-            setTimeout(() => {pb.classList.add("hidden");}, 500);
-            if (launchbtn) launchbtn.removeAttribute("disabled");
-            if (updatebtn) updatebtn.removeAttribute("disabled");
-            isb.removeAttribute("disabled");
-        }
-        await emit("prevent_exit", false);
-        await sendNotify("TwintailLauncher", `Download of ${event.payload} complete.`, "dialog-information");
+        isb.removeAttribute("disabled");
+        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        if (launchbtn) launchbtn.removeAttribute("disabled");
+        if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
 
     listen<any>('download_progress', async (event) => {
@@ -86,36 +57,26 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-           if (launchbtn) launchbtn.setAttribute("disabled", "");
-           if (updatebtn) updatebtn.setAttribute("disabled", "");
-           isb.setAttribute("disabled", "");
-           pb.classList.remove("hidden");
-           pbn.textContent = `Downloading "${event.payload.name}"`;
-           pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-           progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-           await emit("prevent_exit", true);
-        }
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
+        isb.setAttribute("disabled", "");
+        pb.classList.remove("hidden");
+        pbn.textContent = `Downloading "${event.payload.name}"`;
+        pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+        progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
     }).then(() => {});
 
     // Update events
-    listen<string>('update_complete', async (event: any) => {
+    listen<string>('update_complete', async () => {
         let launchbtn = await waitForElement("launch_game_btn");
         let updatebtn = await waitForElement(`update_game_btn`);
         let isb = await waitForElement("install_settings_btn");
         let pb = await waitForElement("progress_bar");
-        let pbn = await waitForElement("progress_name");
-        let pbv = await waitForElement("progress_value");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
-            if (launchbtn) launchbtn.removeAttribute("disabled");
-            if (updatebtn) updatebtn.removeAttribute("disabled");
-            isb.removeAttribute("disabled");
-            pbn.textContent = "Updates complete!";
-            setTimeout(() => {pb.classList.add("hidden");}, 500);
-        }
-        await emit("prevent_exit", false);
-        await sendNotify("TwintailLauncher", `Updating ${event.payload} complete.`, "dialog-information");
+        isb.removeAttribute("disabled");
+        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        if (launchbtn) launchbtn.removeAttribute("disabled");
+        if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
 
     listen<any>('update_progress', async (event) => {
@@ -127,77 +88,57 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
-            if (launchbtn) launchbtn.setAttribute("disabled", "");
-            if (updatebtn) updatebtn.setAttribute("disabled", "");
-            isb.setAttribute("disabled", "");
-            pb.classList.remove("hidden");
-            pbn.textContent = `Updating "${event.payload.name}"`;
-            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-            await emit("prevent_exit", true);
-        }
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
+        isb.setAttribute("disabled", "");
+        pb.classList.remove("hidden");
+        pbn.textContent = `Updating "${event.payload.name}"`;
+        pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+        progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
     }).then(() => {});
 
     // Repair events
-    listen<string>('repair_complete', async (event: any) => {
+    listen<string>('repair_complete', async () => {
         let launchbtn = await waitForElement("launch_game_btn");
-        let isb = document.getElementById("install_settings_btn");
+        let isb = await waitForElement("install_settings_btn");
         let updatebtn = await waitForElement(`update_game_btn`);
-        let pb = document.getElementById("progress_bar");
-        let pbn = document.getElementById("progress_name");
-        let pbv = document.getElementById("progress_value");
+        let pb = await waitForElement("progress_bar");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            if (launchbtn) launchbtn.removeAttribute("disabled");
-            if (updatebtn) updatebtn.removeAttribute("disabled");
-            isb.removeAttribute("disabled");
-            pbn.textContent = "Repair complete!";
-            setTimeout(() => {pb.classList.add("hidden");}, 500);
-        }
-        await emit("prevent_exit", false);
-        await sendNotify("TwintailLauncher", `Repair of ${event.payload} complete.`, "dialog-information");
+        isb.removeAttribute("disabled");
+        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        if (launchbtn) launchbtn.removeAttribute("disabled");
+        if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
 
     listen<any>('repair_progress', async (event) => {
-        let launchbtn = document.getElementById(`launch_game_btn`);
-        let isb = document.getElementById(`install_settings_btn`);
+        let launchbtn = await waitForElement(`launch_game_btn`);
+        let isb = await waitForElement(`install_settings_btn`);
         let updatebtn = await waitForElement(`update_game_btn`);
-        let pb = document.getElementById("progress_bar");
-        let pbn = document.getElementById("progress_name");
-        let pbv = document.getElementById("progress_value");
+        let pb = await waitForElement("progress_bar");
+        let pbn = await waitForElement("progress_name");
+        let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null) {
-            if (launchbtn) launchbtn.setAttribute("disabled", "");
-            if (updatebtn) updatebtn.setAttribute("disabled", "");
-            isb.setAttribute("disabled", "");
-            pb.classList.remove("hidden");
-            pbn.textContent = `Repairing "${event.payload.name}"`;
-            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-            await emit("prevent_exit", true);
-        }
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
+        isb.setAttribute("disabled", "");
+        pb.classList.remove("hidden");
+        pbn.textContent = `Repairing "${event.payload.name}"`;
+        pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+        progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
     }).then(() => {});
 
     // Preload events
-    listen<string>('preload_complete', async (event: any) => {
+    listen<string>('preload_complete', async () => {
         let launchbtn = await waitForElement("launch_game_btn");
         let updatebtn = await waitForElement(`update_game_btn`);
         let isb = await waitForElement("install_settings_btn");
         let pb = await waitForElement("progress_bar");
-        let pbn = await waitForElement("progress_name");
-        let pbv = await waitForElement("progress_value");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
-            if (launchbtn) launchbtn.removeAttribute("disabled");
-            if (updatebtn) updatebtn.removeAttribute("disabled");
-            isb.removeAttribute("disabled");
-            pbn.textContent = "Predownload complete!";
-            setTimeout(() => {pb.classList.add("hidden");}, 500);
-        }
-        await emit("prevent_exit", false);
-        await sendNotify("TwintailLauncher", `Predownload for ${event.payload} complete.`, "dialog-information");
+        isb.removeAttribute("disabled");
+        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        if (launchbtn) launchbtn.removeAttribute("disabled");
+        if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
 
     listen<any>('preload_progress', async (event) => {
@@ -209,31 +150,14 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (isb !== null && pb !== null && pbn !== null && pbv !== null && updatebtn !== null) {
-            if (launchbtn) launchbtn.setAttribute("disabled", "");
-            if (updatebtn) updatebtn.setAttribute("disabled", "");
-            isb.setAttribute("disabled", "");
-            pb.classList.remove("hidden");
-            pbn.textContent = `Predownloading "${event.payload.name}"`;
-            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-            await emit("prevent_exit", true);
-        }
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
+        isb.setAttribute("disabled", "");
+        pb.classList.remove("hidden");
+        pbn.textContent = `Predownloading "${event.payload.name}"`;
+        pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+        progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
     }).then(() => {});
-}
-
-async function checkPermission() {
-    if (!(await isPermissionGranted())) {
-        return (await requestPermission()) === 'granted'
-    }
-    return true
-}
-
-export async function sendNotify(title: string, content: string, icon: string) {
-    if (!(await checkPermission())) {
-        return
-    }
-    sendNotification({title: title, body: content, autoCancel: true, icon: icon});
 }
 
 function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
@@ -253,6 +177,4 @@ function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
     });
 }
 
-function toPercent(number: any, total: any) {
-    return (parseInt(number) / parseInt(total)) * 100;
-}
+function toPercent(number: any, total: any) { return (parseInt(number) / parseInt(total)) * 100; }

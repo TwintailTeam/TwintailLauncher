@@ -3,7 +3,7 @@ use std::path::Path;
 use fischl::download::Extras;
 use fischl::utils::extract_archive;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 use crate::utils::{block_telemetry, get_mi_path_from_game};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
@@ -13,6 +13,7 @@ use crate::utils::repo_manager::get_manifest;
 use std::os::unix::fs::symlink;
 #[cfg(target_os = "windows")]
 use std::os::windows::fs::symlink_file;
+use tauri_plugin_notification::NotificationExt;
 
 #[tauri::command]
 pub async fn list_settings(app: AppHandle) -> Option<String> {
@@ -118,7 +119,7 @@ pub fn block_telemetry_cmd(app: AppHandle) -> Option<bool> {
         block_telemetry(&app);
         Some(true)
     } else {
-        app.emit("telemetry_block", 2).unwrap();
+        app.notification().builder().icon("dialog-information").title("TwintailLauncher").body("Telemetry servers already blocked.").show().unwrap();
         None
     }
 }

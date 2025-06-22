@@ -8,6 +8,7 @@ use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::{assemble_multipart_archive, extract_archive, patch_aki};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri_plugin_notification::NotificationExt;
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
 use crate::utils::repo_manager::{get_manifest, get_manifests, DiffGameFile, GameVersion};
 
@@ -34,6 +35,7 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
     let totalsize = dir_size(src.as_ref())?;
     let tracker = Arc::new(AtomicU64::new(0));
 
+    prevent_exit(app, true);
     for entry in fs::read_dir(src.as_ref())? {
         let entry = entry?;
         let ty = entry.file_type()?;
@@ -77,26 +79,21 @@ pub fn block_telemetry(app: &AppHandle) {
                 allhosts.push_str(" ; ");
             });
 
-            if !allhosts.is_empty() {
-                allhosts = allhosts.trim_end_matches(" ; ").to_string();
-            }
+            if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
 
             let output = Command::new("pkexec")
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
-                Ok(output) => if !output.status.success() {
-                    app.emit("telemetry_block", 0).unwrap();
+                Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, Some("dialog-error"));
                 } else {
                     let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
                     if !path.exists() {
-                        app.emit("telemetry_block", 1).unwrap();
+                        send_notification(&app, "Successfully blocked telemetry servers.", Some("dialog-information"));
                         fs::write(&path, ".").unwrap();
-                    } else {
-                        app.emit("telemetry_block", 2).unwrap();
-                    }
+                    } else { send_notification(&app, "Telemetry servers already blocked.", Some("dialog-information")); }
                 }
-                Err(_err) => { app.emit("telemetry_block", 0).unwrap(); }
+                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, Some("dialog-error")); }
             }
         });
 }
@@ -110,9 +107,7 @@ pub fn register_listeners(app: &AppHandle) {
         let blocks = h1.state::<Mutex<ActionBlocks>>();
         let state = blocks.lock().unwrap();
 
-        if state.action_exit {
-            h1.get_window("main").unwrap().hide().unwrap();
-        } else {
+        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else {
             h1.cleanup_before_exit();
             h1.exit(0);
             std::process::exit(0);
@@ -122,22 +117,6 @@ pub fn register_listeners(app: &AppHandle) {
     let h2 = app.clone();
     app.listen("launcher_action_minimize", move |_event| {
         h2.get_window("main").unwrap().minimize().unwrap();
-    });
-
-    let h3 = app.clone();
-    app.listen("prevent_exit", move |event| {
-        let blocks = h3.state::<Mutex<ActionBlocks>>();
-        let mut state = blocks.lock().unwrap();
-        match event.payload().parse::<bool>().unwrap() {
-            true => {
-                state.action_exit = true;
-                drop(state);
-            }
-            false => {
-                state.action_exit = false;
-                drop(state);
-            }
-        }
     });
 
     // Start game download
@@ -165,6 +144,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 h4.emit("download_progress", dlp.clone()).unwrap();
                 drop(dlp);
+                prevent_exit(&h4, true);
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
@@ -197,12 +177,20 @@ pub fn register_listeners(app: &AppHandle) {
                                     let aar = fnn.strip_suffix(".001").unwrap().to_string();
                                     let far = ap.join(aar).to_str().unwrap().to_string();
                                     let ext = extract_archive(far, install.directory.clone(), false);
-                                    if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                                    if ext {
+                                        h4.emit("download_complete", install.name.clone()).unwrap();
+                                        prevent_exit(&h4, false);
+                                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                    }
                                 }
                             } else {
                                 let far = ap.join(fnn.clone()).to_str().unwrap().to_string();
                                 let ext = extract_archive(far, install.directory.clone(), false);
-                                if ext { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                                if ext {
+                                    h4.emit("download_complete", install.name.clone()).unwrap();
+                                    prevent_exit(&h4, false);
+                                    send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                }
                             }
                         }
                     }
@@ -223,7 +211,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await
                         });
-                        if rslt { h4.emit("download_complete", install.name.clone()).unwrap(); }
+                        if rslt {
+                            h4.emit("download_complete", install.name.clone()).unwrap();
+                            prevent_exit(&h4, false);
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                        }
                     }
                     // KuroGame only currently
                     "DOWNLOAD_MODE_RAW" => {
@@ -243,7 +235,9 @@ pub fn register_listeners(app: &AppHandle) {
                             }).await
                         });
                         if rslt {
-                            h4.emit("download_complete", install.name.clone()).unwrap();
+                            h4.emit("download_complete", ()).unwrap();
+                            prevent_exit(&h4, false);
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
@@ -285,6 +279,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 h5.emit("update_progress", dlp.clone()).unwrap();
                 drop(dlp);
+                prevent_exit(&h5, true);
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game can not account for every case yet
@@ -314,7 +309,9 @@ pub fn register_listeners(app: &AppHandle) {
                                 }).await
                             });
                             if rslt {
-                                h5.emit("update_complete", install.name.clone()).unwrap();
+                                h5.emit("update_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
                                 update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                             }
                         }
@@ -339,7 +336,9 @@ pub fn register_listeners(app: &AppHandle) {
                                 }).await
                             });
                             if rslt {
-                                h5.emit("update_complete", install.name.clone()).unwrap();
+                                h5.emit("update_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
                                 update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                 #[cfg(target_os = "linux")]
                                 {
@@ -384,6 +383,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 h5.emit("repair_progress", dlp.clone()).unwrap();
                 drop(dlp);
+                prevent_exit(&h5, true);
 
                 match picked.metadata.download_mode.as_str() {
                     // General game repair, PS: Only hoyo games for backwards compatibility
@@ -399,7 +399,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 drop(dlp);
                             }
                         });
-                        if rslt { h5.emit("repair_complete", i.name.clone()).unwrap(); };
+                        if rslt {
+                            h5.emit("repair_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
+                        };
                     }
                     // Sophon chunk repair, PS: Only hoyo games as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
@@ -419,7 +423,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }).await
                         });
-                        if rslt { h5.emit("repair_complete", i.name.clone()).unwrap(); }
+                        if rslt {
+                            h5.emit("repair_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
+                        }
                     }
                     // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
@@ -440,7 +448,9 @@ pub fn register_listeners(app: &AppHandle) {
                             }).await
                         });
                         if rslt {
-                            h5.emit("repair_complete", i.name.clone()).unwrap();
+                            h5.emit("repair_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&i.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
@@ -483,6 +493,7 @@ pub fn register_listeners(app: &AppHandle) {
 
                 h5.emit("preload_progress", dlp.clone()).unwrap();
                 drop(dlp);
+                prevent_exit(&h5, true);
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game can not account for every case yet
@@ -507,7 +518,11 @@ pub fn register_listeners(app: &AppHandle) {
                                     }
                                 }).await
                             });
-                            if rslt { h5.emit("preload_complete", install.name.clone()).unwrap(); }
+                            if rslt {
+                                h5.emit("preload_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                            }
                         }
                     }
                     // KuroGame only
@@ -553,6 +568,29 @@ pub fn register_listeners(app: &AppHandle) {
             }
         });
     });
+}
+
+pub fn send_notification(app: &AppHandle, body: &str, icon: Option<&str>) {
+    if body.is_empty() { return; }
+    if icon.is_some() {
+        let i = icon.unwrap();
+        app.notification().builder().icon(i).title("TwintailLauncher").body(body).show().unwrap();
+    } else { app.notification().builder().title("TwintailLauncher").body(body).show().unwrap(); }
+}
+
+pub fn prevent_exit(app: &AppHandle, val: bool) {
+    let blocks = app.state::<Mutex<ActionBlocks>>();
+    let mut state = blocks.lock().unwrap();
+    match val {
+        true => {
+            state.action_exit = true;
+            drop(state);
+        }
+        false => {
+            state.action_exit = false;
+            drop(state);
+        }
+    }
 }
 
 #[cfg(target_os = "linux")]

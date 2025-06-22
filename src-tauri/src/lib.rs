@@ -15,8 +15,8 @@ mod commands;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
         .manage(Mutex::new(ActionBlocks { action_exit: false }))
