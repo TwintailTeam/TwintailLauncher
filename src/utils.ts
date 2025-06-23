@@ -1,6 +1,6 @@
 import {listen} from "@tauri-apps/api/event";
 
-export function moveTracker(install: string) {
+export function moveTracker(_install: string) {
    listen<string>('move_complete', async () => {
        let launchbtn = await waitForElement("launch_game_btn");
        let isb = await waitForElement("install_settings_btn");
@@ -8,7 +8,7 @@ export function moveTracker(install: string) {
        let pb = await waitForElement("progress_bar");
 
        isb.removeAttribute("disabled");
-       setTimeout(() => {pb.classList.add("hidden");}, 500);
+       pb.classList.add("hidden");
        if (launchbtn) launchbtn.removeAttribute("disabled");
        if (updatebtn) updatebtn.removeAttribute("disabled");
    }).then(() => {});
@@ -22,15 +22,13 @@ export function moveTracker(install: string) {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (event.payload.install_id === install) {
-            if (launchbtn) launchbtn.setAttribute("disabled", "");
-            if (updatebtn) updatebtn.setAttribute("disabled", "");
-            isb.setAttribute("disabled", "");
-            pb.classList.remove("hidden");
-            pbn.textContent = `Moving "${event.payload.file}"`;
-            pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
-            progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
-        }
+        isb.setAttribute("disabled", "");
+        pb.classList.remove("hidden");
+        pbn.textContent = `Moving "${event.payload.file}"`;
+        pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
+        progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
     }).then(async () => {});
 }
 
@@ -43,7 +41,7 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
 
         isb.removeAttribute("disabled");
-        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        pb.classList.add("hidden");
         if (launchbtn) launchbtn.removeAttribute("disabled");
         if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
@@ -57,13 +55,13 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (launchbtn) launchbtn.setAttribute("disabled", "");
-        if (updatebtn) updatebtn.setAttribute("disabled", "");
         isb.setAttribute("disabled", "");
         pb.classList.remove("hidden");
         pbn.textContent = `Downloading "${event.payload.name}"`;
         pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
         progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
     }).then(() => {});
 
     // Update events
@@ -74,7 +72,7 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
 
         isb.removeAttribute("disabled");
-        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        pb.classList.add("hidden");
         if (launchbtn) launchbtn.removeAttribute("disabled");
         if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
@@ -88,13 +86,13 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (launchbtn) launchbtn.setAttribute("disabled", "");
-        if (updatebtn) updatebtn.setAttribute("disabled", "");
         isb.setAttribute("disabled", "");
         pb.classList.remove("hidden");
         pbn.textContent = `Updating "${event.payload.name}"`;
         pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
         progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
     }).then(() => {});
 
     // Repair events
@@ -105,7 +103,7 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
 
         isb.removeAttribute("disabled");
-        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        pb.classList.add("hidden");
         if (launchbtn) launchbtn.removeAttribute("disabled");
         if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
@@ -119,13 +117,13 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (launchbtn) launchbtn.setAttribute("disabled", "");
-        if (updatebtn) updatebtn.setAttribute("disabled", "");
         isb.setAttribute("disabled", "");
         pb.classList.remove("hidden");
         pbn.textContent = `Repairing "${event.payload.name}"`;
         pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
         progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
     }).then(() => {});
 
     // Preload events
@@ -136,7 +134,7 @@ export function generalEventsHandler() {
         let pb = await waitForElement("progress_bar");
 
         isb.removeAttribute("disabled");
-        setTimeout(() => {pb.classList.add("hidden");}, 500);
+        pb.classList.add("hidden");
         if (launchbtn) launchbtn.removeAttribute("disabled");
         if (updatebtn) updatebtn.removeAttribute("disabled");
     }).then(() => {});
@@ -150,13 +148,13 @@ export function generalEventsHandler() {
         let pbv = await waitForElement("progress_value");
         let progressPercent = await waitForElement("progress_percent");
 
-        if (launchbtn) launchbtn.setAttribute("disabled", "");
-        if (updatebtn) updatebtn.setAttribute("disabled", "");
         isb.setAttribute("disabled", "");
         pb.classList.remove("hidden");
         pbn.textContent = `Predownloading "${event.payload.name}"`;
         pbv.style.width = `${Math.round(toPercent(event.payload.progress, event.payload.total))}%`;
         progressPercent.textContent = `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`;
+        if (launchbtn) launchbtn.setAttribute("disabled", "");
+        if (updatebtn) updatebtn.setAttribute("disabled", "");
     }).then(() => {});
 }
 
