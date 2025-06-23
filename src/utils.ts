@@ -171,8 +171,11 @@ function waitForElement(id: string, timeout = 3000): Promise<HTMLElement> {
         }, 50);
         setTimeout(() => {
             clearInterval(interval);
-            // @ts-ignore
-            resolve(null)
+            const el = document.getElementById(id);
+            if (el) {
+                clearInterval(interval);
+                resolve(el);
+            }
         }, timeout);
     });
 }

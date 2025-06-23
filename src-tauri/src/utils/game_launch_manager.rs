@@ -56,23 +56,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let rslt = if install.launch_command.is_empty() {
         let mut args = "";
-        if !install.launch_args.is_empty() {
-            args = &install.launch_args;
-        }
-
-        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-            format!("'{runner}/{wine64}' run '{dir}/{game}' {args}")
-        } else {
-            format!("'{runner}/{wine64}' '{dir}/{game}' {args}")
-        };
+        if !install.launch_args.is_empty() { args = &install.launch_args; }
+        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") };
 
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
-            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-                format!("'{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
-            } else {
-                format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
-            };
+            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") };
         }
 
         let mut cmd = Command::new("bash");
@@ -102,9 +91,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
 
             if let Some(env_vars) = parsed {
-                for (k, v) in env_vars {
-                    cmd.env(k, v);
-                }
+                for (k, v) in env_vars { cmd.env(k, v); }
             }
         }
 
@@ -124,19 +111,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-            format!("'{runner}/{wine64}' run '{c}'")
-        } else {
-            format!("'{runner}/{wine64}' '{c}'")
-        };
+        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-                format!("'{runner}/{wine64}' run '{c}' {args}")
-            } else {
-                format!("'{runner}/{wine64}' '{c}' {args}")
-            };
+            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
         }
 
         let mut cmd = Command::new("bash");
@@ -166,9 +145,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
 
             if let Some(env_vars) = parsed {
-                for (k, v) in env_vars {
-                    cmd.env(k, v);
-                }
+                for (k, v) in env_vars { cmd.env(k, v); }
             }
         }
 
@@ -194,12 +171,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
     if install.use_xxmi {
         let xxmi_path = xxmi_path.clone();
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
-
-        let command = if is_proton {
-            format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
-        } else {
-            format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
-        };
+        let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -230,11 +202,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
             if found {
                 let fpsunlock_path = fpsunlock_path.clone();
                 let fpsv = install.fps_value.clone();
-                let command = if is_proton {
-                    format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
-                } else {
-                    format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000")
-                };
+                let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000") };
 
                 let mut cmd = Command::new("bash");
                 cmd.arg("-c");
@@ -293,7 +261,6 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
                         game_output.write_all(b"\n")?;
                         written.fetch_add(line.len() + 14, Ordering::Relaxed);
                     }
-
                     if written.load(Ordering::Relaxed) > log_file_size { break; }
                 }
                 Ok(())
@@ -325,13 +292,8 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
         child.wait().unwrap();
         if let Ok(mut file) = game_output.lock() { file.flush().unwrap(); }
         drop(game_output);
-
-        if let Some(join) = stdout_join {
-            join.join().map_err(|err| format!("Failed to join stdout reader thread: {err:?}")).unwrap().unwrap();
-        }
-        if let Some(join) = stderr_join {
-            join.join().map_err(|err| format!("Failed to join stderr reader thread: {err:?}")).unwrap().unwrap();
-        }
+        if let Some(join) = stdout_join { join.join().map_err(|err| format!("Failed to join stdout reader thread: {err:?}")).unwrap().unwrap(); }
+        if let Some(join) = stderr_join { join.join().map_err(|err| format!("Failed to join stderr reader thread: {err:?}")).unwrap().unwrap(); }
     });
 }
 

@@ -715,8 +715,8 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
         let gmm = get_manifest_info_by_id(&app, m.clone().manifest_id).unwrap();
         let gm = get_manifest(&app, gmm.filename).unwrap();
 
-        let rslt = launch(&app, m.clone(), gm, global_settings);
-        if rslt.is_ok() {
+        let rslt = launch(&app, m.clone(), gm, global_settings).unwrap();
+        if rslt {
             Some(true)
         } else {
             send_notification(&app, "Failed to launch game! Please check game.log file inside game directory for more information.", Some("dialog-error"));
