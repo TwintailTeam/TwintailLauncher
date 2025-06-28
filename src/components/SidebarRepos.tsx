@@ -35,7 +35,7 @@ export default function SidebarRepos({setOpenPopup, popup}: {setOpenPopup: (a: P
 
     return (
         <React.Fragment>
-            <Boxes ref={refs.setReference} {...getReferenceProps()} className="text-white w-8 h-10 mb-0 cursor-pointer flex-initial" onClick={() => {
+            <Boxes ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-0 cursor-pointer flex-initial" onClick={() => {
                 setOpenPopup(popup == POPUPS.NONE ? POPUPS.REPOMANAGER : POPUPS.NONE);
             }} />
 

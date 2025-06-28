@@ -29,11 +29,11 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
     return (
         <div className="rounded-lg h-3/4 w-2/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
-                <h1 className="text-white font-bold text-2xl">Download {displayName}</h1>
-                <X className="text-white cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
+                <h1 className="text-white text-stroke font-bold text-2xl">Download {displayName}</h1>
+                <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
+                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;
@@ -117,7 +117,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     });
                 }}><DownloadCloudIcon/><span className="font-semibold translate-y-px">Start download</span></button>
             </div>
-                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
+                <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     {/* @ts-ignore */}
                     <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."}/>
                     <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"} helpText={"This will skip downloading game files, useful if you already have game installed and just want to use that installation."}/>

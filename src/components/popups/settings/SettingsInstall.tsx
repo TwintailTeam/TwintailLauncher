@@ -39,33 +39,33 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
         return (
             <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
                 <div className="flex flex-row items-center justify-between">
-                    <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
-                    <X className="text-white cursor-pointer" onClick={() => {
+                    <h1 className="text-white text-stroke font-bold text-2xl">{this.props.installSettings.name}</h1>
+                    <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                     }}/>
                 </div>
                 <div className="flex flex-row-reverse">
-                    <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 items-center p-2 bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.INSTALLDELETECONFIRMATION);
                     }}><Trash2Icon/><span className="font-semibold translate-y-px">Uninstall</span>
                     </button>
-                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-orange-600 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-orange-600 hover:bg-orange-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                         emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id, lang: "en-us"}).then(() => {});
                     }}><WrenchIcon/><span className="font-semibold translate-y-px">Repair install</span>
                     </button>
-                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                         invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "install"}).then(() => {});
                     }}><FolderOpenIcon/><span className="font-semibold translate-y-px">Open game folder</span>
                     </button>
-                    {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 rounded-lg" onClick={() => {
+                    {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
@@ -73,7 +73,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     }}><FolderOpenIcon/><span className="font-semibold translate-y-px">Open mods folder</span>
                     </button>: null}
                 </div>
-                <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
+                <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={"Location where game is installed. Usually should be set where main game exe is located."}/>
                     <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip checking for game updates."}/>
                     <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>

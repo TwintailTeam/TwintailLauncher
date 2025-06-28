@@ -19,13 +19,13 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
             <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row items-center gap-2">
-                    <ArrowLeft className="text-white cursor-pointer" onClick={() => {
+                    <ArrowLeft className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => {
                         setOpenPopup(POPUPS.INSTALLSETTINGS);
                     }}/>
-                    <h1 className="text-white font-bold text-2xl">Confirm your action</h1>
+                    <h1 className="text-white text-stroke font-bold text-2xl">Confirm your action</h1>
                 </div>
                 <div className="flex flex-row-reverse left-3">
-                    <button className="flex flex-row gap-1 items-center p-2 bg-red-600 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 items-center p-2 bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => {
                         setOpenPopup(POPUPS.NONE);
                         let wpd = false;
 
@@ -62,7 +62,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     </button>
                 </div>
             </div>
-            <div className={`w-full transition-all duration-500 overflow-hidden bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
+            <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     <p className={"text-white text-start self-start"}>
                         Are you sure you want to uninstall and remove <span className={"text-blue-500 font-bold"}>{install.name}</span> installation?<br/>
                         <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>

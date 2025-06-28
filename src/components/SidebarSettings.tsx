@@ -35,7 +35,7 @@ export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a
 
     return (
         <React.Fragment>
-            <Settings ref={refs.setReference} {...getReferenceProps()} className="text-white w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
+            <Settings ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
                 setOpenPopup(popup == POPUPS.NONE ? POPUPS.SETTINGS : POPUPS.NONE);
             }} />
 

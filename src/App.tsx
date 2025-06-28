@@ -2,7 +2,7 @@ import "./App.css";
 import React from "react";
 import RepoManager from "./components/popups/repomanager/RepoManager.tsx";
 import {POPUPS} from "./components/popups/POPUPS.ts";
-import AddRepo from "./components/popups/AddRepo.tsx";
+import AddRepo from "./components/popups/repomanager/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
@@ -107,12 +107,12 @@ export default class App extends React.Component<any, any> {
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button onClick={() => {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
-                    }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 w-8 h-8"/>}/>
+                    }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
                     </button>): null}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
-                    }}><Settings className="text-white w-8 h-8"/>
+                    }}><Settings className="text-white hover:text-white/55 w-8 h-8"/>
                     </button> : null}
                     <GameButton currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
