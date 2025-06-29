@@ -1,16 +1,22 @@
 use std::{fs, io};
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
-use fischl::utils::{assemble_multipart_archive, extract_archive, patch_aki};
+use fischl::utils::{assemble_multipart_archive, extract_archive};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
-use crate::utils::repo_manager::{get_manifest, get_manifests, DiffGameFile, GameVersion};
+use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
+
+#[cfg(target_os = "linux")]
+use fischl::utils::patch_aki;
+#[cfg(target_os = "linux")]
+use std::process::Command;
+#[cfg(target_os = "linux")]
+use crate::utils::repo_manager::get_manifests;
 
 pub mod db_manager;
 pub mod repo_manager;

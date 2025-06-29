@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 use std::fs;
 use std::ops::Add;
-use tauri::{Manager};
 use std::path::Path;
 use std::sync::Arc;
 use fischl::download::{Extras};
 use fischl::utils::{extract_archive, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_dxvk_location_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -22,7 +21,7 @@ use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_install_runner_version_by_id, update_install_dxvk_version_by_id};
+use tauri::{Manager};
 #[cfg(target_os = "windows")]
 use std::os::windows::fs::symlink_file;
 
@@ -66,7 +65,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, mut skip_game_dl: bool) -> Option<AddInstallRsp> {
+pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -84,7 +83,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         {
             dxvk_path = "".to_string();
             runner_path = "".to_string();
-            skip_game_dl = skip_game_dl;
         }
 
         #[cfg(target_os = "linux")]
@@ -326,7 +324,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
                 });
             }
         }
-        update_install_dxvk_location_by_id(&app, m.id, np);
+        crate::utils::db_manager::update_install_dxvk_location_by_id(&app, m.id, np);
         Some(true)
     } else {
         None
@@ -576,7 +574,7 @@ pub fn update_install_launch_args(app: AppHandle, id: String, args: String) -> O
 #[cfg(target_os = "linux")]
 #[tauri::command]
 pub fn update_install_runner_version(app: AppHandle, id: String, version: String) -> Option<bool> {
-        let install = crate::utils::db_manager::get_install_info_by_id(&app, id);
+        let install = get_install_info_by_id(&app, id);
 
         if install.is_some() {
             let m = install.unwrap();
@@ -644,7 +642,7 @@ pub fn update_install_runner_version(_app: AppHandle, _id: String, _version: Str
 #[cfg(target_os = "linux")]
 #[tauri::command]
 pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) -> Option<bool> {
-        let install = crate::utils::db_manager::get_install_info_by_id(&app, id);
+        let install = get_install_info_by_id(&app, id);
 
         if install.is_some() {
             let m = install.unwrap();

@@ -232,19 +232,144 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
 }
 
 #[cfg(target_os = "windows")]
-pub fn launch(_app: &AppHandle, _install: LauncherInstall, _gm: GameManifest, _gs: GlobalSettings) -> Result<bool, Error> {
-    Ok(false)
+pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
+    let dir = install.directory.clone();
+    let game = gm.paths.exe_filename.clone();
+    let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+
+    let pre_launch = install.pre_launch_command.clone();
+
+    if !pre_launch.is_empty() {
+        let command = format!("{}", pre_launch);
+
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg(&command);
+
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(dir.clone());
+
+        let spawned = cmd.spawn();
+        if spawned.is_ok() {
+            let process = spawned?;
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "pre_launch.log".parse().unwrap());
+        }
+    }
+
+    let rslt = if install.launch_command.is_empty() {
+        let mut args = "";
+        if !install.launch_args.is_empty() { args = &install.launch_args; }
+        let command = format!("\"{dir}\\{game}\" {args}");
+
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg(&command);
+
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(dir.clone());
+
+        if !install.env_vars.is_empty() {
+            let envs = install.env_vars.clone();
+            let splitted = envs.split(";").collect::<Vec<&str>>();
+            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
+                if env.is_empty() { return Some(None); }
+                let mut tmp = env.splitn(2, "=");
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                    _ => None,
+                }
+            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars { cmd.env(k, v); }
+            }
+        }
+
+        let spawned = cmd.spawn();
+        if spawned.is_ok() {
+            let process = spawned?;
+            load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            true
+        } else {
+            false
+        }
+    } else {
+        // We assume user knows what he/she is doing so we just execute command that is configured without any checks
+        let c = install.launch_command.clone();
+        let args;
+        let mut command = format!("\"{c}\"");
+
+        if !install.launch_args.is_empty() {
+            args = &install.launch_args;
+            command = format!("\"{c}\" {args}");
+        }
+
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg(&command);
+
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(dir.clone());
+
+        if !install.env_vars.is_empty() {
+            let envs = install.env_vars.clone();
+            let splitted = envs.split(";").collect::<Vec<&str>>();
+            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
+                if env.is_empty() { return Some(None); }
+                let mut tmp = env.splitn(2, "=");
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                    _ => None,
+                }
+            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars { cmd.env(k, v); }
+            }
+        }
+
+        let spawned = cmd.spawn();
+        if spawned.is_ok() {
+            let process = spawned?;
+            load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            true
+        } else {
+            false
+        }
+    };
+    Ok(rslt)
 }
 
 #[cfg(target_os = "windows")]
-fn load_xxmi(_install: LauncherInstall, _prefix: String, _xxmi_path: String, _runner: String, _wine64: String, _game: String) {
+fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
+    if install.use_xxmi {
+        let xxmi_path = xxmi_path.clone();
+        let mipath = get_mi_path_from_game(game.clone()).unwrap();
+        let command = format!("\"{xxmi_path}\\3dmloader.exe\" {mipath}");
 
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg(&command);
+
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(xxmi_path.clone());
+
+        let spawn = cmd.spawn();
+        if spawn.is_ok() {
+            let process = spawn.unwrap();
+            write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+        }
+    }
 }
 
 #[cfg(target_os = "windows")]
-fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: String, _runner: String, _wine64: String) {
-
-}
+fn load_fps_unlock(_install: LauncherInstall, _fpsunlock_path: String) {}
 
 fn write_log(log_dir: PathBuf, child: Child, file: String) {
     let ld1 = Arc::new(Mutex::new(log_dir.clone()));
