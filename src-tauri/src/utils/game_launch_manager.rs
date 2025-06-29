@@ -231,7 +231,21 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
     }
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(target_os = "windows")]
+pub fn launch(_app: &AppHandle, _install: LauncherInstall, _gm: GameManifest, _gs: GlobalSettings) -> Result<bool, Error> {
+    Ok(false)
+}
+
+#[cfg(target_os = "windows")]
+fn load_xxmi(_install: LauncherInstall, _prefix: String, _xxmi_path: String, _runner: String, _wine64: String, _game: String) {
+
+}
+
+#[cfg(target_os = "windows")]
+fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: String, _runner: String, _wine64: String) {
+
+}
+
 fn write_log(log_dir: PathBuf, child: Child, file: String) {
     let ld1 = Arc::new(Mutex::new(log_dir.clone()));
     let c1 = Arc::new(Mutex::new(child));
@@ -276,7 +290,7 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
                 while let Ok(read) = stderr.read(&mut buf) {
                     if read == 0 { break; }
                     let Ok(mut game_output) = game_output.lock() else { break; };
-                    
+
                     for line in buf[..read].split(|c| c == &b'\n') {
                         game_output.write_all(b"[!] [stderr] ")?;
                         game_output.write_all(line)?;
@@ -295,24 +309,4 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
         if let Some(join) = stdout_join { join.join().map_err(|err| format!("Failed to join stdout reader thread: {err:?}")).unwrap().unwrap(); }
         if let Some(join) = stderr_join { join.join().map_err(|err| format!("Failed to join stderr reader thread: {err:?}")).unwrap().unwrap(); }
     });
-}
-
-#[cfg(target_os = "windows")]
-pub fn launch(_app: &AppHandle, _install: LauncherInstall, _gm: GameManifest, _gs: GlobalSettings) -> Result<bool, Error> {
-    Ok(false)
-}
-
-#[cfg(target_os = "windows")]
-fn load_xxmi(_install: LauncherInstall, _prefix: String, _xxmi_path: String, _runner: String, _wine64: String, _game: String) {
-
-}
-
-#[cfg(target_os = "windows")]
-fn load_fps_unlock(_install: LauncherInstall, _prefix: String, _fpsunlock_path: String, _runner: String, _wine64: String) {
-
-}
-
-#[cfg(target_os = "windows")]
-fn write_log(_log_dir: PathBuf, _child: Child, _file: String) {
-
 }

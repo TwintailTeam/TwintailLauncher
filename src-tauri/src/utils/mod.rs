@@ -85,15 +85,15 @@ pub fn block_telemetry(app: &AppHandle) {
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
-                Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, Some("dialog-error"));
+                Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None);
                 } else {
                     let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
                     if !path.exists() {
-                        send_notification(&app, "Successfully blocked telemetry servers.", Some("dialog-information"));
+                        send_notification(&app, "Successfully blocked telemetry servers.", None);
                         fs::write(&path, ".").unwrap();
-                    } else { send_notification(&app, "Telemetry servers already blocked.", Some("dialog-information")); }
+                    } else { send_notification(&app, "Telemetry servers already blocked.", None); }
                 }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, Some("dialog-error")); }
+                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None); }
             }
         });
 }
@@ -180,7 +180,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     if ext {
                                         h4.emit("download_complete", install.name.clone()).unwrap();
                                         prevent_exit(&h4, false);
-                                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                                     }
                                 }
                             } else {
@@ -189,7 +189,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 if ext {
                                     h4.emit("download_complete", install.name.clone()).unwrap();
                                     prevent_exit(&h4, false);
-                                    send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                    send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                                 }
                             }
                         }
@@ -214,7 +214,7 @@ pub fn register_listeners(app: &AppHandle) {
                         if rslt {
                             h4.emit("download_complete", install.name.clone()).unwrap();
                             prevent_exit(&h4, false);
-                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                         }
                     }
                     // KuroGame only currently
@@ -237,7 +237,7 @@ pub fn register_listeners(app: &AppHandle) {
                         if rslt {
                             h4.emit("download_complete", ()).unwrap();
                             prevent_exit(&h4, false);
-                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
@@ -311,7 +311,7 @@ pub fn register_listeners(app: &AppHandle) {
                             if rslt {
                                 h5.emit("update_complete", ()).unwrap();
                                 prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
                                 update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                             }
                         }
@@ -338,7 +338,7 @@ pub fn register_listeners(app: &AppHandle) {
                             if rslt {
                                 h5.emit("update_complete", ()).unwrap();
                                 prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
                                 update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                 #[cfg(target_os = "linux")]
                                 {
@@ -402,7 +402,7 @@ pub fn register_listeners(app: &AppHandle) {
                         if rslt {
                             h5.emit("repair_complete", ()).unwrap();
                             prevent_exit(&h5, false);
-                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                         };
                     }
                     // Sophon chunk repair, PS: Only hoyo games as it is their literal format
@@ -426,7 +426,7 @@ pub fn register_listeners(app: &AppHandle) {
                         if rslt {
                             h5.emit("repair_complete", ()).unwrap();
                             prevent_exit(&h5, false);
-                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                         }
                     }
                     // KuroGame only
@@ -450,7 +450,7 @@ pub fn register_listeners(app: &AppHandle) {
                         if rslt {
                             h5.emit("repair_complete", ()).unwrap();
                             prevent_exit(&h5, false);
-                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), Some("dialog-information"));
+                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&i.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
@@ -523,7 +523,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 if rslt {
                                     h5.emit("preload_complete", ()).unwrap();
                                     prevent_exit(&h5, false);
-                                    send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), Some("dialog-information"));
+                                    send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), None);
                                 }
                             }
                         }

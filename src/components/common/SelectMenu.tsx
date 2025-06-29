@@ -1,8 +1,9 @@
 import {invoke} from "@tauri-apps/api/core";
 import HelpTooltip from "./HelpTooltip.tsx";
+import {POPUPS} from "../popups/POPUPS.ts";
 
 
-export default function SelectMenu({ id, name, options, selected, multiple, install, biz, lang, version, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes, helpText}: { id: string, name: string, options: any, selected: any, multiple: boolean, install?: string, biz?: string, lang?: () => string, version?: () => any, dir?: () => string, helpText: string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void }) {
+export default function SelectMenu({ id, name, options, selected, multiple, install, biz, lang, version, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes, helpText, setOpenPopup}: { id: string, name: string, options: any, selected: any, multiple: boolean, install?: string, biz?: string, lang?: () => string, version?: () => any, dir?: () => string, helpText: string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void, setOpenPopup: (popup: POPUPS) => void }) {
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
             <span className="text-white text-sm flex items-center gap-1">{name}
@@ -92,7 +93,8 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                         case "install_runner_version": {
                             if (fetchInstallSettings !== undefined) {
                                 invoke("update_install_runner_version", {version: `${e.target.value}`, id: install}).then(() => {
-                                    fetchInstallSettings(install as string)
+                                    fetchInstallSettings(install as string);
+                                    setOpenPopup(POPUPS.NONE);
                                 });
                             }
                         }
@@ -100,7 +102,8 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                         case "install_dxvk_version": {
                             if (fetchInstallSettings !== undefined) {
                                 invoke("update_install_dxvk_version", {version: `${e.target.value}`, id: install}).then(() => {
-                                    fetchInstallSettings(install as string)
+                                    fetchInstallSettings(install as string);
+                                    setOpenPopup(POPUPS.NONE);
                                 });
                             }
                         }

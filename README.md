@@ -1,3 +1,78 @@
 # TwintailLauncher
-A cross-platform launcher for your anime games, featuring Linux and Windows support.
+<!-- TOC -->
+* [TwintailLauncher](#twintaillauncher)
+  * [About](#about)
+    * [Supported games](#supported-games)
+    * [Is this safe to use? Can I get banned?](#is-this-safe-to-use-can-i-get-banned)
+  * [Installation](#installation)
+  * [Developers & Compiling](#developers--compiling)
+    * [Prerequisites](#prerequisites)
+    * [Building](#building)
+  * [Issues and contributions](#issues-and-contributions)
+<!-- TOC -->
 
+## About
+Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.<br>
+TTL is an all-in-one tool for downloading, managing, and launching your favorite anime games. It’s designed with flexibility, ease of use, and customization in mind.
+### Supported games
+* Genshin Impact,
+* Honkai: Star Rail,
+* Honkai Impact 3rd,
+* Zenless Zone Zero,
+* Wuthering Waves,
+* Punishing: Gray Raven
+
+### Is this safe to use? Can I get banned?
+We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
+
+## Installation
+
+| Platform        | Link                                              | Note(s)                                      |
+|-----------------|---------------------------------------------------|----------------------------------------------|
+| Windows (x64)   | [Download](https://twintaillauncher.app/download) | N/A                                          |
+| Linux (Flatpak) | [Flathub]()                                       | Good on `Bazzite` / `SteamOS` / `Any distro` |
+| Linux (AUR)     | [twintaillauncher-git]()                          | Use `yay` / `paru` as AUR helper             |
+| Linux (AUR)     | [twintaillauncher-bin]()                          | Use `yay` / `paru` as AUR helper             |
+| Linux (RPM)     | [Download]()                                      | **NOT RECOMMENDED**                          |
+| Linux (DEB)     | [Download]()                                      | **NOT RECOMMENDED**                          |
+
+## Developers & Compiling
+
+### Prerequisites
+* Rust (Install from [rustup](https://rustup.rs))
+* Node.js (Install from [official website](https://nodejs.org/en/download))
+* pnpm (Install from [official website](https://pnpm.io/installation))
+* Protobuf (Install from [official website](https://protobuf.dev/installation/))
+* Tauri (Follow [Tauri docs](https://tauri.app/start/prerequisites/))
+* Cargo-xwin (Follow [Tauri docs](https://tauri.app/distribute/windows-installer/#experimental-build-windows-apps-on-linux-and-macos))
+
+### Building
+Make sure you have rust nightly toolchain
+```shell
+rustup toolchain install nightly
+```
+Install Node.js dependencies
+```shell
+pnpm install
+```
+Run for debugging
+```shell
+pnpm dev:tauri
+```
+Build for production (Current OS)
+```shell
+pnpm build:native
+```
+Build for production (Cross compile for Linux)
+```shell
+pnpm build:linux
+```
+Build for production (Cross compile for Windows)
+```shell
+pnpm build:windows
+```
+You can find built binaries in `target/release` for current os, `target/x86_64-unknown-linux-gnu` for linux cross compile and `target/x86_64-pc-windows-msvc` for windows cross compile.
+
+## Issues and contributions
+Feel free to open issues and PRs usually we try to get to everyone as fast as possible.<br>
+Avoid opening multiple issues and please respect everyone's time we are all doing the work for free after all we are not required to answer and fix issues at all.

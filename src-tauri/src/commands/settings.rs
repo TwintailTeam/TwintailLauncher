@@ -5,7 +5,7 @@ use fischl::utils::extract_archive;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
-use crate::utils::{block_telemetry, get_mi_path_from_game};
+use crate::utils::{block_telemetry, get_mi_path_from_game, send_notification};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
 
@@ -162,7 +162,7 @@ pub fn update_extras(app: AppHandle) -> bool {
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
                     let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, xxmi.as_path().to_str().unwrap().parse().unwrap());
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive(xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
@@ -180,6 +180,7 @@ pub fn update_extras(app: AppHandle) -> bool {
                 }
             });
         }
+        send_notification(&app, "Successfully updated extras.", None);
         true
     } else {
         false
