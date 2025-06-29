@@ -7,7 +7,7 @@ import {invoke} from "@tauri-apps/api/core";
 
 export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: {settings: any, fetchSettings: () => void, setOpenPopup: (popup: POPUPS) => void}) {
     return (
-        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll">
+        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white text-stroke font-bold text-2xl">Settings</h1>
                     <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
