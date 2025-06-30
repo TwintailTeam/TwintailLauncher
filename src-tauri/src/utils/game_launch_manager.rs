@@ -268,7 +268,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let full_path = Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
 
-        let command = format!("{} {}", full_path_str, args);
+        let command = format!("\"{}\" {}", full_path_str, args);
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
