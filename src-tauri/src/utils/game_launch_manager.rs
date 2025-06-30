@@ -241,7 +241,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
     let pre_launch = install.pre_launch_command.clone();
 
     if !pre_launch.is_empty() {
-        let command = format!("{}", pre_launch);
+        let command = format!("\"{}\"", pre_launch);
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
@@ -261,10 +261,14 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
     let rslt = if install.launch_command.is_empty() {
         let mut args = "";
         if !install.launch_args.is_empty() { args = &install.launch_args; }
-        let dir = dir.trim_start_matches('\\').trim_end_matches('\\');
-        let game = game.trim_start_matches('\\').trim_end_matches('\\');
+        let dir = dir.trim_matches('\\');
+        let game = game.trim_matches('\\');
         let tmp = game.replace("/", "\\");
-        let command = format!("\"{dir}\\{tmp}\" {args}");
+
+        let full_path = Path::new(dir).join(&tmp);
+        let full_path_str = full_path.to_str().unwrap();
+
+        let command = format!("\"{}\" {}", full_path_str, args);
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
@@ -295,6 +299,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         if spawned.is_ok() {
             let process = spawned?;
             load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            load_fps_unlock(install.clone(), String::new());
             write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
@@ -340,6 +345,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         if spawned.is_ok() {
             let process = spawned?;
             load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            load_fps_unlock(install.clone(), String::new());
             write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
@@ -352,9 +358,11 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
 #[cfg(target_os = "windows")]
 fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
     if install.use_xxmi {
-        let xxmi_path = xxmi_path.clone();
+        let xxmi_path = xxmi_path.trim_matches('\\'); // Remove leading/trailing backslashes
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
-        let command = format!("\"{xxmi_path}\\3dmloader.exe\" {mipath}");
+        let loader_path = Path::new(xxmi_path).join("3dmloader.exe");
+        let loader_path_str = loader_path.to_str().unwrap();
+        let command = format!("\"{}\" {}", loader_path_str, mipath);
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
