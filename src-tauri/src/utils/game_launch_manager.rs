@@ -241,10 +241,10 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
     let pre_launch = install.pre_launch_command.clone();
 
     if !pre_launch.is_empty() {
-        let command = format!("{}", pre_launch);
+        let command = format!("Start-Process -FilePath '{pre_launch}' -WorkingDirectory '{dir}' -Verb RunAs");
 
-        let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b");
+        let mut cmd = Command::new("powershell");
+        cmd.arg("-Command");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -268,10 +268,10 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let full_path = Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
 
-        let command = format!("{} {}", full_path_str, args);
+        let command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs");
 
-        let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b");
+        let mut cmd = Command::new("powershell");
+        cmd.arg("-Command");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -309,15 +309,15 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = format!("{c}");
+        let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs");
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = format!("{c} {args}");
+            command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs");
         }
 
-        let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b");
+        let mut cmd = Command::new("powershell");
+        cmd.arg("-Command");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -370,7 +370,7 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
-        cmd.current_dir(xxmi_path.clone());
+        cmd.current_dir(xxmi_path);
 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
