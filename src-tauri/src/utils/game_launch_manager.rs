@@ -362,18 +362,20 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
         let loader_path = Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
-        let command = format!("{} {}", loader_path_str, mipath);
+        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -Verb RunAs", loader_path_str, mipath);
 
-        let mut cmd = runas::Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b");
+        let mut cmd = Command::new("powershell");
+        cmd.arg("-Command");
         cmd.arg(&command);
-        cmd.gui(true).force_prompt(true);
 
-        // NOTE: We need to elevate 3dmloader.exe because game on windows is actually elevated so logs are also useless
-        let child = cmd.status();
-        match child {
-            Ok(_process) => {}
-            Err(_e) => {}
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(loader_path_str.clone());
+
+        let spawned = cmd.spawn();
+        if spawned.is_ok() {
+            let process = spawned.unwrap();
+            write_log(Path::new(&loader_path_str).to_path_buf(), process, "xxmi.log".parse().unwrap());
         }
     }
 }
