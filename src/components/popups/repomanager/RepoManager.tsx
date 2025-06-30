@@ -9,7 +9,7 @@ export default function RepoManager({repos, setOpenPopup, fetchRepositories}: {r
                 <h1 className="text-white text-stroke font-bold text-2xl">Repositories and Manifests</h1>
                 <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
-            <div className="flex flex-row-reverse">
+            <div className="flex-row-reverse hidden">
                 <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {setOpenPopup(POPUPS.ADDREPO)}}>
                     <Plus className="stroke-[4px]"/>
                     <span className="font-semibold translate-y-px">Add Repository</span>

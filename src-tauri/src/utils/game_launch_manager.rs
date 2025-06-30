@@ -261,7 +261,10 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
     let rslt = if install.launch_command.is_empty() {
         let mut args = "";
         if !install.launch_args.is_empty() { args = &install.launch_args; }
-        let command = format!("\"{dir}\\{game}\" {args}");
+        let dir = dir.trim_start_matches('\\').trim_end_matches('\\');
+        let game = game.trim_start_matches('\\').trim_end_matches('\\');
+        let tmp = game.replace("/", "\\");
+        let command = format!("\"{dir}\\{tmp}\" {args}");
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
@@ -269,7 +272,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
-        cmd.current_dir(dir.clone());
+        cmd.current_dir(dir);
 
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
@@ -292,7 +295,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         if spawned.is_ok() {
             let process = spawned?;
             load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
