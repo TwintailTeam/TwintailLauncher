@@ -241,10 +241,10 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
     let pre_launch = install.pre_launch_command.clone();
 
     if !pre_launch.is_empty() {
-        let command = format!("\"{}\"", pre_launch);
+        let command = format!("{}", pre_launch);
 
         let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg("/C").arg("start").arg("/b");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -268,10 +268,10 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let full_path = Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
 
-        let command = format!("\"{}\" {}", full_path_str, args);
+        let command = format!("{} {}", full_path_str, args);
 
         let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg("/C").arg("start").arg("/b");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -309,15 +309,15 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = format!("\"{c}\"");
+        let mut command = format!("{c}");
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = format!("\"{c}\" {args}");
+            command = format!("{c} {args}");
         }
 
         let mut cmd = Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg("/C").arg("start").arg("/b");
         cmd.arg(&command);
 
         cmd.stdout(Stdio::piped());
@@ -365,7 +365,7 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
         let command = format!("{} {}", loader_path_str, mipath);
 
         let mut cmd = runas::Command::new("cmd");
-        cmd.arg("/C").arg("start").arg("/b").arg("");
+        cmd.arg("/C").arg("start").arg("/b");
         cmd.arg(&command);
         cmd.gui(true).force_prompt(true);
 
