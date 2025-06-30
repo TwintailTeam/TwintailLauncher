@@ -346,7 +346,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
             let process = spawned?;
             load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
             load_fps_unlock(install.clone(), String::new());
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -364,18 +364,16 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
         let loader_path_str = loader_path.to_str().unwrap();
         let command = format!("\"{}\" {}", loader_path_str, mipath);
 
-        let mut cmd = Command::new("cmd");
+        let mut cmd = runas::Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
         cmd.arg(&command);
+        cmd.gui(true).force_prompt(true);
 
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        cmd.current_dir(xxmi_path.clone());
-
-        let spawn = cmd.spawn();
-        if spawn.is_ok() {
-            let process = spawn.unwrap();
-            write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+        // NOTE: We need to elevate 3dmloader.exe because game on windows is actually elevated so logs are also useless
+        let child = cmd.status();
+        match child {
+            Ok(_process) => {}
+            Err(_e) => {}
         }
     }
 }

@@ -278,6 +278,7 @@ pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerMan
 
 // === STRUCTS ===
 
+#[cfg(target_os = "linux")]
 #[derive(Default)]
 pub struct RunnerLoader(pub RwLock<LinkedHashMap<String, RunnerManifest>>);
 
@@ -286,6 +287,7 @@ pub struct ManifestLoader(pub RwLock<LinkedHashMap<String, GameManifest>>);
 
 pub struct ManifestLoaders {
     pub game: ManifestLoader,
+    #[cfg(target_os = "linux")]
     pub runner: RunnerLoader,
 }
 

@@ -352,6 +352,7 @@ pub fn create_manifest(app: &AppHandle, id: String, repository_id: String, displ
     }
 }
 
+#[allow(dead_code)]
 pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
@@ -369,6 +370,7 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
     }
 }
 
+#[allow(dead_code)]
 pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
@@ -770,6 +772,7 @@ pub fn update_install_launch_args_by_id(app: &AppHandle, id: String, args: Strin
     });
 }
 
+#[allow(dead_code)]
 pub fn update_install_runner_version_by_id(app: &AppHandle, id: String, version: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
@@ -779,6 +782,7 @@ pub fn update_install_runner_version_by_id(app: &AppHandle, id: String, version:
     });
 }
 
+#[allow(dead_code)]
 pub fn update_install_dxvk_version_by_id(app: &AppHandle, id: String, version: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();

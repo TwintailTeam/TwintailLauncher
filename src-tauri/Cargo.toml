@@ -36,6 +36,10 @@ tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-opener = "2"
 
+# shitdows only ffs
+[target.'cfg(windows)'.dependencies]
+runas = "1.2.0"
+
 [profile.dev]
 incremental = true # Compile your binary in smaller steps.
 rustflags = ["-Zthreads=8"] # Better compile performance.

@@ -22,8 +22,6 @@ use fischl::compat::Compat;
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use tauri::{Manager};
-#[cfg(target_os = "windows")]
-use std::os::windows::fs::symlink_file;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -64,6 +62,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
     }
 }
 
+#[allow(unused_mut, unused_variables)]
 #[tauri::command]
 pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
@@ -420,7 +419,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                                     #[cfg(target_os = "linux")]
                                     symlink(p.join(lib), linkedpath).unwrap();
                                     #[cfg(target_os = "windows")]
-                                    symlink_file(p.join(lib), linkedpath).unwrap();
+                                    fs::copy(p.join(lib), linkedpath).unwrap();
                                 }
                             }
                         }

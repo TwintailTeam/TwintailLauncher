@@ -11,8 +11,6 @@ use crate::utils::repo_manager::get_manifest;
 
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::symlink;
-#[cfg(target_os = "windows")]
-use std::os::windows::fs::symlink_file;
 use tauri_plugin_notification::NotificationExt;
 
 #[tauri::command]
@@ -172,7 +170,7 @@ pub fn update_extras(app: AppHandle) -> bool {
                                     #[cfg(target_os = "linux")]
                                     symlink(xxmi.join(lib), linkedpath).unwrap();
                                     #[cfg(target_os = "windows")]
-                                    symlink_file(xxmi.join(lib), linkedpath).unwrap();
+                                    fs::copy(xxmi.join(lib), linkedpath).unwrap();
                                 }
                             }
                         }
