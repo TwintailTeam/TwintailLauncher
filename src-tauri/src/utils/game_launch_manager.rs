@@ -266,9 +266,9 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let tmp = game.replace("/", "\\");
 
         let full_path = Path::new(dir).join(&tmp);
-        let full_path_str = full_path.to_str().unwrap();
+        let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
 
-        let command = format!("\"{}\" {}", full_path_str, args);
+        let command = format!("{} {}", full_path_str, args);
 
         let mut cmd = Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
@@ -358,11 +358,11 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
 #[cfg(target_os = "windows")]
 fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
     if install.use_xxmi {
-        let xxmi_path = xxmi_path.trim_matches('\\'); // Remove leading/trailing backslashes
+        let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
         let loader_path = Path::new(xxmi_path).join("3dmloader.exe");
-        let loader_path_str = loader_path.to_str().unwrap();
-        let command = format!("\"{}\" {}", loader_path_str, mipath);
+        let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
+        let command = format!("{} {}", loader_path_str, mipath);
 
         let mut cmd = runas::Command::new("cmd");
         cmd.arg("/C").arg("start").arg("/b").arg("");
