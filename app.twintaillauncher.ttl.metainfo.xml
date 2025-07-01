@@ -27,4 +27,8 @@
         </screenshot>
     </screenshots>
     <launchable type="desktop-id">app.twintaillauncher.ttl.desktop</launchable>
+    <license>GPL-3.0-only</license>
+    <categories>
+        <category>Utility</category>
+    </categories>
 </component>
