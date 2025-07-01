@@ -34,7 +34,8 @@
         "linux": {
             "deb": {
                 "files": {
-                    "/usr/share/applications/twintaillauncher.desktop": "../twintaillauncher.desktop"
+                    "/usr/share/applications/twintaillauncher.desktop": "../twintaillauncher.desktop",
+                    "/app/share/metainfo/app.twintaillauncher.ttl.metainfo.xml": "../app.twintaillauncher.ttl.metainfo.xml"
                 }
             },
             "rpm": {
