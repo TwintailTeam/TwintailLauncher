@@ -258,17 +258,23 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         }
     }
 
+    // Run xxmi first
+    load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+
     let rslt = if install.launch_command.is_empty() {
-        let mut args = "";
-        if !install.launch_args.is_empty() { args = &install.launch_args; }
+        let args;
         let dir = dir.trim_matches('\\');
         let game = game.trim_matches('\\');
         let tmp = game.replace("/", "\\");
 
         let full_path = Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
+        let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
-        let command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs");
+        if !install.launch_args.is_empty() {
+            args = &install.launch_args;
+            command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs");
+        }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
@@ -298,7 +304,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            //load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
             load_fps_unlock(install.clone(), String::new());
             write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
             true
@@ -344,7 +350,7 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+            //load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
             load_fps_unlock(install.clone(), String::new());
             write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
             true
