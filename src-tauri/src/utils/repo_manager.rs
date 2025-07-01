@@ -11,7 +11,7 @@ use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
-    let url = "https://github.com/AndigenaTeam/game-manifests.git";
+    let url = "https://github.com/TwintailTeam/game-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
@@ -119,7 +119,7 @@ pub fn update_repositories(path: &PathBuf) -> Result<bool, Error> {
 
 #[cfg(target_os = "linux")]
 pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
-    let url = "https://github.com/AndigenaTeam/runner-manifests.git";
+    let url = "https://github.com/TwintailTeam/runner-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
