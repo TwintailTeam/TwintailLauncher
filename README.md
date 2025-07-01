@@ -4,6 +4,7 @@
   * [About](#about)
     * [Supported games](#supported-games)
     * [Is this safe to use? Can I get banned?](#is-this-safe-to-use-can-i-get-banned)
+    * [Screenshots](#screenshots)
   * [Installation](#installation)
   * [Developers & Compiling](#developers--compiling)
     * [Prerequisites](#prerequisites)
@@ -24,6 +25,30 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 
 ### Is this safe to use? Can I get banned?
 We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
+
+### Screenshots
+
+<details>
+<summary>Windows</summary>
+
+![Pic1](screenshots/windows/pic01.png)
+![Pic2](screenshots/windows/pic02.png)
+![Pic3](screenshots/windows/pic03.png)
+![Pic4](screenshots/windows/pic04.png)
+![Pic5](screenshots/windows/pic05.png)
+
+</details>
+
+<details>
+<summary>Linux</summary>
+
+![Pic1](screenshots/linux/pic01.png)
+![Pic2](screenshots/linux/pic02.png)
+![Pic3](screenshots/linux/pic03.png)
+![Pic4](screenshots/linux/pic04.png)
+![Pic5](screenshots/linux/pic05.png)
+
+</details>
 
 ## Installation
 
