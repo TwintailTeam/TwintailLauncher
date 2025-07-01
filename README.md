@@ -16,11 +16,11 @@
 Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.<br>
 TTL is an all-in-one tool for downloading, managing, and launching your favorite anime games. It’s designed with flexibility, ease of use, and customization in mind.
 ### Supported games
-* Genshin Impact,
-* Honkai: Star Rail,
-* Honkai Impact 3rd,
-* Zenless Zone Zero,
-* Wuthering Waves,
+* Genshin Impact
+* Honkai: Star Rail
+* Honkai Impact 3rd
+* Zenless Zone Zero
+* Wuthering Waves
 * Punishing: Gray Raven
 
 ### Is this safe to use? Can I get banned?
