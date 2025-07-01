@@ -52,14 +52,14 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 
 ## Installation
 
-| Platform        | Link                                              | Note(s)                                      |
-|-----------------|---------------------------------------------------|----------------------------------------------|
-| Windows (x64)   | [Download](https://twintaillauncher.app/download) | N/A                                          |
-| Linux (Flatpak) | [Flathub]()                                       | Good on `Bazzite` / `SteamOS` / `Any distro` |
-| Linux (AUR)     | [twintaillauncher-git]()                          | Use `yay` / `paru` as AUR helper             |
-| Linux (AUR)     | [twintaillauncher-bin]()                          | Use `yay` / `paru` as AUR helper             |
-| Linux (RPM)     | [Download]()                                      | **NOT RECOMMENDED**                          |
-| Linux (DEB)     | [Download]()                                      | **NOT RECOMMENDED**                          |
+| Platform        | Link                                                                            | Note(s)                                      |
+|-----------------|---------------------------------------------------------------------------------|----------------------------------------------|
+| Windows (x64)   | [Download](https://twintaillauncher.app/download)                               | N/A                                          |
+| Linux (Flatpak) | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Good on `Bazzite` / `SteamOS` / `Any distro` |
+| Linux (AUR)     | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use `yay` / `paru` as AUR helper             |
+| Linux (AUR)     | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use `yay` / `paru` as AUR helper             |
+| Linux (RPM)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED**                          |
+| Linux (DEB)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED**                          |
 
 ## Developers & Compiling
 
