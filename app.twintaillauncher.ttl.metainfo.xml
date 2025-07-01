@@ -22,8 +22,24 @@
     <url type="homepage">https://twintaillauncher.app/</url>
     <screenshots>
         <screenshot type="default">
-            <image>https://yourprojecthomepage.example.com/screenshot1.png</image>
+            <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic01.png</image>
             <caption>Main window</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic02.png</image>
+            <caption>Download in progress</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic03.png</image>
+            <caption>Application settings</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic04.png</image>
+            <caption>Installation settings</caption>
+        </screenshot>
+        <screenshot>
+            <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic05.png</image>
+            <caption>Repositories and manifests settings</caption>
         </screenshot>
     </screenshots>
     <launchable type="desktop-id">app.twintaillauncher.ttl.desktop</launchable>
