@@ -2,7 +2,7 @@
 <component type="desktop-application">
     <id>app.twintaillauncher.ttl</id>
     <name>Twintail Launcher</name>
-    <summary>A cross-platform launcher for your anime games, featuring Linux and Windows support. </summary>
+    <summary>A cross-platform launcher for your anime games, featuring Linux and Windows support</summary>
     <description>
         <p>
             Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.
@@ -27,8 +27,12 @@
         </screenshot>
     </screenshots>
     <launchable type="desktop-id">app.twintaillauncher.ttl.desktop</launchable>
-    <license>GPL-3.0-only</license>
+    <metadata_license>0BSD</metadata_license>
+    <developer id="app.twintaillauncher.ttl">
+        <name>TwintailLauncher team</name>
+    </developer>
     <categories>
         <category>Utility</category>
     </categories>
+    <content_rating type="oars-1.0" />
 </component>
