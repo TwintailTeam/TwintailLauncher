@@ -7,7 +7,7 @@ use fischl::download::{Extras};
 use fischl::utils::{extract_archive, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_runner_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -131,7 +131,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "90".to_string());
                     dlpayload.insert("total", "100".to_string());
-                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                    //archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
                     let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true);
@@ -284,7 +284,7 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
                 });
             }
         }
-        update_install_runner_location_by_id(&app, m.id, np);
+        crate::utils::db_manager::update_install_runner_location_by_id(&app, m.id, np);
         Some(true)
     } else {
         None
@@ -598,8 +598,8 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "80".to_string());
                     dlpayload.insert("total", "100".to_string());
-                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                    crate::utils::prevent_exit(&*archandle, true);
+                    //archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                    prevent_exit(&*archandle, true);
 
                     let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true);
                     if r0 {
@@ -609,13 +609,13 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         if is_proton {  } else { Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap(); }
                         archandle.emit("download_complete", ()).unwrap();
-                        crate::utils::prevent_exit(&*archandle, false);
-                        crate::utils::send_notification(&*archandle, format!("Download of {rnn} complete.", rnn = runv.as_str().to_string()).as_str(), None);
+                        prevent_exit(&*archandle, false);
+                        send_notification(&*archandle, format!("Download of {rnn} complete.", rnn = runv.as_str().to_string()).as_str(), None);
                     }
                 });
             } else {
                 std::thread::spawn(move || {
-                    let rm = crate::utils::repo_manager::get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                     let rp = Path::new(runpp.as_str()).to_path_buf();
 
                     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -658,8 +658,8 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
             if fs::read_dir(pn.as_str()).unwrap().next().is_none() {
                 std::thread::spawn(move || {
-                    let rm = crate::utils::repo_manager::get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
-                    let dm = crate::utils::repo_manager::get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                     let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
                     let dxp = dv.get(0).unwrap().to_owned();
                     let dxpp = Path::new(dxpp.as_str()).to_path_buf();
@@ -673,8 +673,8 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                         dlpayload.insert("name", runv.to_string());
                         dlpayload.insert("progress", "80".to_string());
                         dlpayload.insert("total", "100".to_string());
-                        archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                        crate::utils::prevent_exit(&*archandle, true);
+                        //archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                        prevent_exit(&*archandle, true);
 
                         let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true);
                         if r0 {
@@ -685,15 +685,15 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                             if r1.is_ok() {
                                 Compat::add_dxvk(winebin, rpp.as_str().to_string(), dxpp.to_str().unwrap().to_string(), false).unwrap();
                                 archandle.emit("download_complete", ()).unwrap();
-                                crate::utils::prevent_exit(&*archandle, false);
-                                crate::utils::send_notification(&*archandle, format!("Download of {dxvn} complete.", dxvn = dxvkv.as_str().to_string()).as_str(), None);
+                                prevent_exit(&*archandle, false);
+                                send_notification(&*archandle, format!("Download of {dxvn} complete.", dxvn = dxvkv.as_str().to_string()).as_str(), None);
                             }
                         }
                     }
                 });
             } else {
                 std::thread::spawn(move || {
-                    let rm = crate::utils::repo_manager::get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                     let dxpp = Path::new(dxpp.as_str()).to_path_buf();
                     let rp = Path::new(runp.as_str()).to_path_buf();
 
