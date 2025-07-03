@@ -197,7 +197,7 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
                 let fm = get_mi_path_from_game(mm.paths.exe_filename).unwrap();
 
                 let xxmi = Path::new(&s.xxmi_path).to_path_buf();
-                let fp = xxmi.join(&fm).join("Mods");
+                let fp = xxmi.join(&fm).join("d3dx.ini");
                 app.opener().reveal_item_in_dir(fp.as_path()).unwrap();
             }
         },
