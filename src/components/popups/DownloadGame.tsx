@@ -33,7 +33,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                 <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
+                <button className="flex flex-row gap-1 items-center p-2 bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;

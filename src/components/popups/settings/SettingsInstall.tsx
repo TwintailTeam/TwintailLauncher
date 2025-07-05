@@ -58,14 +58,14 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id, lang: "en-us"}).then(() => {});
                     }}><WrenchIcon/><span className="font-semibold translate-y-px">Repair install</span>
                     </button>
-                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-1 me-2 items-center p-2 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                         invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "install"}).then(() => {});
                     }}><FolderOpenIcon/><span className="font-semibold translate-y-px">Open game folder</span>
                     </button>
-                    {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-1 me-2 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {
+                    {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-1 me-2 items-center p-2 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();

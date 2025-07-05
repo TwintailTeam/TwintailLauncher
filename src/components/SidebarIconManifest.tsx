@@ -46,7 +46,7 @@ export default function SidebarIconManifest({icon, name, id, setGameIcon, setCur
 
     return (
         <React.Fragment>
-            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className="aspect-square w-12 rounded-lg cursor-pointer hover:border-2 hover:border-blue-600 focus:border-2 focus:border-blue-600 outline-none" srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className="aspect-square w-12 rounded-lg cursor-pointer hover:border-2 hover:border-purple-600 focus:border-2 focus:border-purple-600 outline-none" srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
                 setCurrentInstall("")

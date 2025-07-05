@@ -64,13 +64,13 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
             </div>
             <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     <p className={"text-white text-start self-start"}>
-                        Are you sure you want to uninstall and remove <span className={"text-blue-500 font-bold"}>{install.name}</span> installation?<br/>
+                        Are you sure you want to uninstall and remove <span className={"text-purple-500 font-bold"}>{install.name}</span> installation?<br/>
                         <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>
                         This action will <span className={"text-red-500 font-bold"}>NOT</span> remove:
-                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-blue-500"}>Wine prefix</span> associated with this installation (Can be deleted with checkbox below)</li> : null}
-                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-blue-500"}>Wine runner</span> used with this installation</li> : null}
-                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-blue-500"}>DXVK</span> used with this installation</li> : null}
-                        <li className={"list-none"}>- <span className={"text-blue-500"}>Any tweaks</span> enabled for this installation</li>
+                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-purple-500"}>Wine prefix</span> associated with this installation (Can be deleted with checkbox below)</li> : null}
+                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-purple-500"}>Wine runner</span> used with this installation</li> : null}
+                        {(window.navigator.platform.includes("Linux")) ? <li className={"list-none"}>- <span className={"text-purple-500"}>DXVK</span> used with this installation</li> : null}
+                        <li className={"list-none"}>- <span className={"text-purple-500"}>Any tweaks</span> enabled for this installation</li>
                     </p>
                 {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={false} name={"Delete associated wine prefix"} id={"uninstall_prefix_delete"} helpText={"Enabling this will delete wine prefix associated with this game installation."}/> : null}
             </div>

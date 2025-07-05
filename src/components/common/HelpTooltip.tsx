@@ -16,7 +16,7 @@ export default function HelpTooltip({text}: {text: string}) {
     return (
         <>
         <span className="relative" ref={refs.setReference} tabIndex={0} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-            <CircleHelpIcon className="w-4 h-4 text-gray-400 hover:cursor-pointer hover:text-blue-600"/>
+            <CircleHelpIcon className="w-4 h-4 text-gray-400 hover:cursor-pointer hover:text-purple-600"/>
         </span>
         {open && (
             <div ref={refs.setFloating} style={floatingStyles} className="z-50 bg-black/75 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
