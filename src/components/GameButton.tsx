@@ -12,7 +12,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
     return (
         <>
             {buttonType === "launch" && (
-                <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-blue-600 rounded-lg disabled:bg-gray-500 hover:bg-blue-700" onClick={() => {
+                <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 rounded-lg disabled:bg-gray-500 hover:bg-purple-700" onClick={() => {
                     setTimeout(() => {
                         invoke("game_launch", {id: currentInstall}).then((r: any) => {
                             if (r) {
@@ -52,7 +52,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 </button>
             )}
             {buttonType === "download" && (
-            <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-blue-600 rounded-lg hover:bg-blue-700" onClick={() => {
+            <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
                 refreshDownloadButtonInfo();
             }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
             </button>

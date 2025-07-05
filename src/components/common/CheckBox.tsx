@@ -10,7 +10,7 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
             <span className="text-white text-sm flex items-center gap-1">{name}
                 <HelpTooltip text={helpText}/>
             </span>
-            <div className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-blue-600" : "bg-white/10"} cursor-pointer`}>
+            <div className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-white/10"} cursor-pointer`}>
                 <input type={"checkbox"} className={`focus:outline-none focus:ring-0 focus:ring-offset-0 h-full aspect-square rounded-full bg-white transition-all absolute appearance-none cursor-pointer ${isEnabled ? 'translate-x-full' : 'translate-x-0'}`} id={id} defaultChecked={isEnabled} onChange={() => {
                     switch (id) {
                         case "third_party_repo_updates": {
@@ -85,7 +85,6 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                         break;
                     }
                 }}/>
-                {/*<div className={`h-full aspect-square rounded-full bg-white transition-all absolute ${isEnabled ? "translate-x-full" : "translate-x-0"}`}/>*/}
             </div>
         </div>
     )

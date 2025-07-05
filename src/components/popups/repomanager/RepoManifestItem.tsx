@@ -7,7 +7,7 @@ export default function RepoManifestItem({name, id, enabled, fetchRepositories}:
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
             <span className="text-white text-sm">{name}</span>
-            <div className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-blue-600" : "bg-white/10"} cursor-pointer`}
+            <div className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-white/10"} cursor-pointer`}
                 onClick={() => {
                     invoke("update_manifest_enabled", { id: id, enabled: !isEnabled }).then(() => {
                         setIsEnabled(!isEnabled);
