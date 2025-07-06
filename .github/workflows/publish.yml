@@ -1,12 +1,23 @@
 name: "publish"
 on:
+  workflow_dispatch:
   push:
+    paths:
+      - '.github/workflows/publish.yml'
+      - 'package.json'
+      - 'src-tauri/**/*'
+      - 'src/**/*'
     branches:
       - stable
-
-# `tauri-action` can also upload app bundles to an existing GitHub release.
-# This workflow uses different actions to create and publish the release.
-# `tauri-action` will only build and upload the app bundles to the specified release.
+  pull_request:
+    paths:
+      - '.github/workflows/publish.yml'
+      - 'package.json'
+      - 'src-tauri/**/*'
+      - 'src/**/*'
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
   create-release:
