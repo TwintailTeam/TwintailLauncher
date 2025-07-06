@@ -202,26 +202,30 @@ pub fn register_listeners(app: &AppHandle) {
                     }
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
-                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                        let manifest = urls.get(0).unwrap();
-                        let rslt = run_async_command(async {
-                            <Game as Sophon>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
-                                let dlpayload = dlpayload.clone();
-                                move |current, total| {
-                                    let mut dlp = dlpayload.lock().unwrap();
-                                    dlp.insert("name", instn.to_string());
-                                    dlp.insert("progress", current.to_string());
-                                    dlp.insert("total", total.to_string());
-                                    tmp.emit("download_progress", dlp.clone()).unwrap();
-                                    drop(dlp);
-                                }
-                            }).await
+                        let urls = picked.game.full.clone();
+                        urls.into_iter().for_each(|e| {
+                            run_async_command(async {
+                                <Game as Sophon>::download(e.file_url.clone(), e.file_path.clone(), install.directory.clone(), {
+                                    let dlpayload = dlpayload.clone();
+                                    let instn = instn.clone();
+                                    let tmp = tmp.clone();
+                                    move |current, total| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        let instn = instn.clone();
+                                        let tmp = tmp.clone();
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("progress", current.to_string());
+                                        dlp.insert("total", total.to_string());
+                                        tmp.emit("download_progress", dlp.clone()).unwrap();
+                                        drop(dlp);
+                                    }
+                                }).await
+                            });
                         });
-                        if rslt {
-                            h4.emit("download_complete", install.name.clone()).unwrap();
-                            prevent_exit(&h4, false);
-                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
-                        }
+                        // We finished the loop emit complete
+                        h4.emit("download_complete", install.name.clone()).unwrap();
+                        prevent_exit(&h4, false);
+                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                     }
                     // KuroGame only currently
                     "DOWNLOAD_MODE_RAW" => {
@@ -289,7 +293,10 @@ pub fn register_listeners(app: &AppHandle) {
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game can not account for every case yet
-                    "DOWNLOAD_MODE_FILE" => {}
+                    "DOWNLOAD_MODE_FILE" => {
+                        h5.emit("update_complete", ()).unwrap();
+                        prevent_exit(&h5, false);
+                    }
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
@@ -297,12 +304,13 @@ pub fn register_listeners(app: &AppHandle) {
                         if urls.is_empty() {  } else {
                             let manifest = urls.get(0).unwrap().file_url.clone();
                             let is_preload = Path::new(&install.directory).join("patching").join(".preload").exists();
+                            let compression = if gm.biz == "nap_global" { true } else { false }; // Goober devs
                             #[cfg(target_os = "linux")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz");
                             #[cfg(target_os = "windows")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz.exe");
                             let rslt = run_async_command(async {
-                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, {
+                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, compression, {
                                     let dlpayload = dlpayload.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
@@ -413,27 +421,30 @@ pub fn register_listeners(app: &AppHandle) {
                     }
                     // Sophon chunk repair, PS: Only hoyo games as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
-                        let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                        let manifest = urls.get(0).unwrap();
-                        let rslt = run_async_command(async {
-                            <Game as Sophon>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), false, {
-                                let dlpayload = dlpayload.clone();
-                                move |current, total| {
-                                    let mut dlp = dlpayload.lock().unwrap();
-
-                                    dlp.insert("name", instn.to_string());
-                                    dlp.insert("progress", current.to_string());
-                                    dlp.insert("total", total.to_string());
-                                    tmp.emit("repair_progress", dlp.clone()).unwrap();
-                                    drop(dlp);
-                                }
-                            }).await
+                        let urls = picked.game.full.clone();
+                        urls.into_iter().for_each(|e| {
+                            run_async_command(async {
+                                <Game as Sophon>::repair_game(e.file_url.clone(), e.file_path.clone(), i.directory.clone(), false, {
+                                    let dlpayload = dlpayload.clone();
+                                    let instn = instn.clone();
+                                    let tmp = tmp.clone();
+                                    move |current, total| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        let instn = instn.clone();
+                                        let tmp = tmp.clone();
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("progress", current.to_string());
+                                        dlp.insert("total", total.to_string());
+                                        tmp.emit("repair_progress", dlp.clone()).unwrap();
+                                        drop(dlp);
+                                    }
+                                }).await
+                            });
                         });
-                        if rslt {
-                            h5.emit("repair_complete", ()).unwrap();
-                            prevent_exit(&h5, false);
-                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
-                        }
+                        // We fnished the loop emit complete
+                        h5.emit("repair_complete", ()).unwrap();
+                        prevent_exit(&h5, false);
+                        send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                     }
                     // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
@@ -504,7 +515,10 @@ pub fn register_listeners(app: &AppHandle) {
 
                     match pmd.download_mode.as_str() {
                         // Generic zipped mode, Variety per game can not account for every case yet
-                        "DOWNLOAD_MODE_FILE" => {}
+                        "DOWNLOAD_MODE_FILE" => {
+                            h5.emit("preload_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                        }
                         // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
                         "DOWNLOAD_MODE_CHUNK" => {
                             let pg = picked.game.unwrap();
@@ -535,6 +549,8 @@ pub fn register_listeners(app: &AppHandle) {
                         }
                         // KuroGame only
                         "DOWNLOAD_MODE_RAW" => {
+                            h5.emit("preload_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
                             /*let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 
                             if urls.is_empty() {  } else {
