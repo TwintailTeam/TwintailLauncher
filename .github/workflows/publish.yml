@@ -9,12 +9,6 @@ on:
       - 'src/**/*'
     branches:
       - stable
-  pull_request:
-    paths:
-      - '.github/workflows/publish.yml'
-      - 'package.json'
-      - 'src-tauri/**/*'
-      - 'src/**/*'
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
