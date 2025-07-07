@@ -170,6 +170,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 #[cfg(target_os = "linux")]
 fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
+        std::thread::sleep(std::time::Duration::from_millis(100));
         let xxmi_path = xxmi_path.clone();
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
         let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
