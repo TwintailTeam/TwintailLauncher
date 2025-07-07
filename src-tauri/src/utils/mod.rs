@@ -301,33 +301,37 @@ pub fn register_listeners(app: &AppHandle) {
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 
-                        if urls.is_empty() {  } else {
-                            let manifest = urls.get(0).unwrap().file_url.clone();
+                        if urls.is_empty() {
+                            h5.emit("update_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                        } else {
                             let is_preload = Path::new(&install.directory).join("patching").join(".preload").exists();
                             let compression = if gm.biz == "nap_global" { true } else { false }; // Goober devs
                             #[cfg(target_os = "linux")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz");
                             #[cfg(target_os = "windows")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz.exe");
-                            let rslt = run_async_command(async {
-                                <Game as Sophon>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.diff_list_url.game.clone(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, compression, {
-                                    let dlpayload = dlpayload.clone();
-                                    move |current, total| {
-                                        let mut dlp = dlpayload.lock().unwrap();
-                                        dlp.insert("name", instn.to_string());
-                                        dlp.insert("progress", current.to_string());
-                                        dlp.insert("total", total.to_string());
-                                        tmp.emit("update_progress", dlp.clone()).unwrap();
-                                        drop(dlp);
-                                    }
-                                }).await
+                            urls.into_iter().for_each(|e| {
+                                run_async_command(async {
+                                    <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, compression, {
+                                        let dlpayload = dlpayload.clone();
+                                        let tmp = tmp.clone();
+                                        let instn = instn.clone();
+                                        move |current, total| {
+                                            let mut dlp = dlpayload.lock().unwrap();
+                                            dlp.insert("name", instn.to_string());
+                                            dlp.insert("progress", current.to_string());
+                                            dlp.insert("total", total.to_string());
+                                            tmp.emit("update_progress", dlp.clone()).unwrap();
+                                            drop(dlp);
+                                        }
+                                    }).await
+                                });
                             });
-                            if rslt {
-                                h5.emit("update_complete", ()).unwrap();
-                                prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
-                                update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
-                            }
+                            h5.emit("update_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                            send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
+                            update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                         }
                     }
                     // KuroGame only
@@ -524,27 +528,33 @@ pub fn register_listeners(app: &AppHandle) {
                             let pg = picked.game.unwrap();
                             let urls = pg.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 
-                            if urls.is_empty() {  } else {
-                                let manifest = urls.get(0).unwrap().file_url.clone();
-                                let rslt = run_async_command(async {
-                                    <Game as Sophon>::preload(manifest.to_owned(), install.version.clone(), pmd.diff_list_url.game.clone(), install.directory.clone(), {
-                                        let dlpayload = dlpayload.clone();
-                                        move |current, total| {
-                                            let mut dlp = dlpayload.lock().unwrap();
+                            if urls.is_empty() {
+                                h5.emit("preload_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                            } else {
+                                urls.into_iter().for_each(|e| {
+                                    run_async_command(async {
+                                        <Game as Sophon>::preload(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), {
+                                            let dlpayload = dlpayload.clone();
+                                            let tmp = tmp.clone();
+                                            let instn = instn.clone();
+                                            move |current, total| {
+                                                let mut dlp = dlpayload.lock().unwrap();
+                                                let tmp = tmp.clone();
+                                                let instn = instn.clone();
 
-                                            dlp.insert("name", instn.to_string());
-                                            dlp.insert("progress", current.to_string());
-                                            dlp.insert("total", total.to_string());
-                                            tmp.emit("preload_progress", dlp.clone()).unwrap();
-                                            drop(dlp);
-                                        }
-                                    }).await
+                                                dlp.insert("name", instn.to_string());
+                                                dlp.insert("progress", current.to_string());
+                                                dlp.insert("total", total.to_string());
+                                                tmp.emit("preload_progress", dlp.clone()).unwrap();
+                                                drop(dlp);
+                                            }
+                                        }).await
+                                    });
                                 });
-                                if rslt {
-                                    h5.emit("preload_complete", ()).unwrap();
-                                    prevent_exit(&h5, false);
-                                    send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), None);
-                                }
+                                h5.emit("preload_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), None);
                             }
                         }
                         // KuroGame only
