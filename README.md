@@ -3,7 +3,7 @@
 * [TwintailLauncher](#twintaillauncher)
   * [About](#about)
     * [Supported games](#supported-games)
-    * [Is this safe to use? Can I get banned?](#is-this-safe-to-use-can-i-get-banned)
+    * [Is TTL safe to use? Can I get banned?](#is-ttl-safe-to-use-can-i-get-banned)
     * [Screenshots](#screenshots)
   * [Installation](#installation)
   * [Developers & Compiling](#developers--compiling)
@@ -23,7 +23,7 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 * Wuthering Waves
 * Punishing: Gray Raven
 
-### Is this safe to use? Can I get banned?
+### Is TTL safe to use? Can I get banned?
 We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
 
 ### Screenshots
@@ -54,7 +54,7 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 
 | Platform        | Link                                                                            | Note(s)                                      |
 |-----------------|---------------------------------------------------------------------------------|----------------------------------------------|
-| Windows (x64)   | [Download](https://twintaillauncher.app/download)                               | N/A                                          |
+| Windows (x64)   | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | Use `winget` it is only supported method     |
 | Linux (Flatpak) | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Good on `Bazzite` / `SteamOS` / `Any distro` |
 | Linux (AUR)     | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use `yay` / `paru` as AUR helper             |
 | Linux (AUR)     | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use `yay` / `paru` as AUR helper             |
