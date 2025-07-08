@@ -4,7 +4,6 @@ import {open} from "@tauri-apps/plugin-dialog"
 import TextInputPart from "./TextInputPart.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import {POPUPS} from "../popups/POPUPS.ts";
-import {moveTracker} from "../../utils.ts";
 import HelpTooltip from "./HelpTooltip.tsx";
 
 // Thanks Cultivation FUCK NO im not making this myself
@@ -173,7 +172,6 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -185,7 +183,6 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -197,7 +194,6 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker(this.props.install as string);
                     }
                 }
             }
@@ -212,7 +208,6 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
-                        moveTracker(this.props.install as string);
                     }
                 }
             }

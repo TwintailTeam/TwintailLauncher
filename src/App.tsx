@@ -14,13 +14,26 @@ import DownloadGame from "./components/popups/DownloadGame.tsx";
 import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
-import {generalEventsHandler} from "./utils.ts";
 import GameButton from "./components/GameButton.tsx";
 import PreloadButton from "./components/common/PreloadButton.tsx";
 import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
-import {emit} from "@tauri-apps/api/event";
+import {emit, listen} from "@tauri-apps/api/event";
+
+const EVENTS = [
+    'download_progress',
+    'download_complete',
+    'update_progress',
+    'update_complete',
+    'repair_progress',
+    'repair_complete',
+    'preload_progress',
+    'preload_complete',
+    'move_progress',
+    'move_complete'
+];
 
 export default class App extends React.Component<any, any> {
+    unlistenFns: (() => void)[] = [];
     constructor(props: any) {
         super(props);
 
@@ -62,7 +75,15 @@ export default class App extends React.Component<any, any> {
             downloadSizes: {},
             downloadDir: "",
             downloadVersion: "",
-            gameManifest: {}
+            gameManifest: {},
+            disableRun: false,
+            disableUpdate: false,
+            disableDownload: false,
+            disableInstallEdit: false,
+            hideProgressBar: true,
+            progressName: "?",
+            progressVal: 0,
+            progressPercent: "0%",
         }
     }
 
@@ -109,16 +130,16 @@ export default class App extends React.Component<any, any> {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
                     }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
                     </button>): null}
-                    {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} onClick={() => {
+                    {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
                     }}><Settings className="text-white hover:text-white/55 w-8 h-8"/>
                     </button> : null}
-                    <GameButton currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
+                    <GameButton disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
-                <div className="absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] hidden" id={"progress_bar"}>
-                        <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>?</h4><h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>0%</span>)</h4>
-                        <ProgressBar id={"progress_value"} progress={1} className={"transition-all duration-500 ease-out"}/>
+                <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
+                        <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4><h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span>)</h4>
+                        <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
                 </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
@@ -135,6 +156,19 @@ export default class App extends React.Component<any, any> {
     componentDidMount() {
         this.fetchSettings();
         this.fetchRepositories();
+        setTimeout(async () => {
+            for (const eventType of EVENTS) {
+                const unlisten = await listen<string>(eventType, (event) => {
+                    const newState = registerEvents(eventType, event);
+                    if (newState !== undefined) this.setState(() => ({...newState}));
+                });
+                this.unlistenFns.push(unlisten);
+            }
+        }, 20);
+    }
+
+    componentWillUnmount() {
+        this.unlistenFns.forEach((fn) => fn());
     }
 
     componentDidUpdate(_prevProps: any, prevState: any) {
@@ -218,7 +252,6 @@ export default class App extends React.Component<any, any> {
                             document.getElementById(`${this.state.installs[0].id}`).focus();
                         }, 20);
                     }
-                    setTimeout(() => {generalEventsHandler();}, 20);
                 });
             }
         }).catch(e => {
@@ -342,31 +375,90 @@ export default class App extends React.Component<any, any> {
         return buttonType;
     }
 
-    setOpenPopup(state: POPUPS) {
-        this.setState({openPopup: state});
-    }
+    setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
+    setCurrentGame(game: string) {this.setState({currentGame: game});}
+    setDisplayName(name: string) {this.setState({displayName: name});}
+    setBackground(file: string) {this.setState({gameBackground: file});}
+    setGameIcon(file: string) {this.setState({gameIcon: file});}
+    setReposList(reposList: any) {this.setState({reposList: reposList});}
+    setCurrentInstall(game: string) {this.setState({currentInstall: game});}
+}
 
-    setCurrentGame(game: string) {
-        this.setState({currentGame: game});
-    }
-
-    setDisplayName(name: string) {
-        this.setState({displayName: name});
-    }
-
-    setBackground(file: string) {
-        this.setState({gameBackground: file});
-    }
-
-    setGameIcon(file: string) {
-        this.setState({gameIcon: file});
-    }
-
-    setReposList(reposList: any) {
-        this.setState({reposList: reposList});
-    }
-
-    setCurrentInstall(game: string) {
-        this.setState({currentInstall: game});
+// === UTILITY ===
+function registerEvents(eventType: string, event: any) {
+    switch (eventType) {
+        case "move_complete":
+        case 'download_complete':
+        case 'update_complete':
+        case 'repair_complete':
+        case 'preload_complete': {
+            return {
+                hideProgressBar: true,
+                disableInstallEdit: false,
+                disableRun: false,
+                disableUpdate: false,
+                disableDownload: false,
+                progressName: `?`,
+                progressVal: 0,
+                progressPercent: `0%`
+            };
+        }
+        case 'move_progress': {
+            return {hideProgressBar: false,
+                disableInstallEdit: true,
+                disableRun: true,
+                disableUpdate: true,
+                disableDownload: true,
+                progressName: `Moving "${event.payload.file}"`,
+                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+            };
+        }
+        case 'download_progress': {
+            return {hideProgressBar: false,
+                disableInstallEdit: true,
+                disableRun: true,
+                disableUpdate: true,
+                disableDownload: true,
+                progressName: `Downloading "${event.payload.name}"`,
+                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+            };
+        }
+        case 'update_progress': {
+            return {hideProgressBar: false,
+                disableInstallEdit: true,
+                disableRun: true,
+                disableUpdate: true,
+                disableDownload: true,
+                progressName: `Updating "${event.payload.name}"`,
+                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+            };
+        }
+        case 'repair_progress': {
+            return {hideProgressBar: false,
+                disableInstallEdit: true,
+                disableRun: true,
+                disableUpdate: true,
+                disableDownload: true,
+                progressName: `Repairing "${event.payload.name}"`,
+                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+            };
+        }
+        case 'preload_progress': {
+            return {hideProgressBar: false,
+                disableInstallEdit: true,
+                disableRun: true,
+                disableUpdate: true,
+                disableDownload: true,
+                progressName: `Predownloading "${event.payload.name}"`,
+                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+            };
+        }
     }
 }
+
+function toPercent(number: any, total: any) { return (parseInt(number) / parseInt(total)) * 100; }

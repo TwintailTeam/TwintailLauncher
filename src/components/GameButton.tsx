@@ -6,13 +6,16 @@ interface IProps {
     currentInstall: any,
     globalSettings: any,
     buttonType: string,
-    refreshDownloadButtonInfo: () => void
+    refreshDownloadButtonInfo: () => void,
+    disableRun: boolean,
+    disableUpdate: boolean,
+    disableDownload: boolean,
 }
-export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo}: IProps) {
+export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload}: IProps) {
     return (
         <>
             {buttonType === "launch" && (
-                <button id={`launch_game_btn`} className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 rounded-lg disabled:bg-gray-500 hover:bg-purple-700" onClick={() => {
+                <button id={`launch_game_btn`} disabled={disableRun} className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 rounded-lg disabled:bg-gray-500 hover:bg-purple-700" onClick={() => {
                     setTimeout(() => {
                         invoke("game_launch", {id: currentInstall}).then((r: any) => {
                             if (r) {
@@ -52,13 +55,13 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 </button>
             )}
             {buttonType === "download" && (
-            <button id={"download_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
+            <button id={"download_game_btn"} disabled={disableDownload} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
                 refreshDownloadButtonInfo();
             }}><HardDriveDownloadIcon/><span className="font-semibold translate-y-px">Download</span>
             </button>
             )}
             {buttonType === "update" && (
-                <button id={"update_game_btn"} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-green-600 rounded-lg hover:bg-green-700" onClick={() => {
+                <button id={"update_game_btn"} disabled={disableUpdate} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-green-600 rounded-lg hover:bg-green-700" onClick={() => {
                     emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
                 }}><DownloadIcon/><span className="font-semibold translate-y-px">Update</span>
                 </button>

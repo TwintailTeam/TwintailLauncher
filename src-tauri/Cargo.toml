@@ -2,7 +2,7 @@ cargo-features = ["profile-rustflags", "trim-paths"]
 
 [package]
 name = "twintaillauncher"
-version = "0.1.0"
+version = "1.0.0"
 description = "Launcher for anime games with Linux and Windows support"
 authors = ["TukanDev"]
 edition = "2024"
