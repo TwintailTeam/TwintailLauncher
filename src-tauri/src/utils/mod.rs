@@ -48,6 +48,8 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
         let f = entry.file_name();
         let ep = entry.path();
 
+        if ep == dst.as_ref() { continue; }
+
         if ty.is_dir() {
             copy_dir_all(&app, ep.clone(), dst.as_ref().join(f), install.clone(), install_name.clone(), install_type.clone())?;
             fs::remove_dir_all(ep)?;

@@ -74,7 +74,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let install_location = Path::new(directory.as_str()).join(cuid.clone()).to_path_buf();
+        let install_location = if skip_game_dl { Path::new(directory.as_str()).to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).to_path_buf() };
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
 
@@ -598,7 +598,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "80".to_string());
                     dlpayload.insert("total", "100".to_string());
-                    //archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
                     let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true);
