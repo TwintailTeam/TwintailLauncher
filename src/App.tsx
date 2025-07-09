@@ -133,7 +133,7 @@ export default class App extends React.Component<any, any> {
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
-                    }}><Settings fill={"white"} className="text-white hover:text-white/55 stroke-black w-8 h-8"/>
+                    }}><Settings fill={"white"} className="hover:stroke-neutral-400 stroke-black w-8 h-8"/>
                     </button> : null}
                     <GameButton disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
