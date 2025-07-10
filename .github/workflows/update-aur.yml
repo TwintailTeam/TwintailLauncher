@@ -26,7 +26,8 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: |
           PKGVER="${VERSION#ttl-v}"
-          PKGVER="${PKGVER//-/_}"
+          echo "VERSION is: $VERSION"
+          echo "PKGVER is: $PKGVER"
           # Calculate checksums for both architectures
           x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGVER}_amd64.deb"
 
