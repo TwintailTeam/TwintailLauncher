@@ -28,18 +28,16 @@ jobs:
           PKGV="${VERSION#ttl-v}"
           echo "VERSION is: $VERSION"
           echo "PKGVER is: $PKGV"
-          # Calculate checksums for both architectures
+          # Calculate checksum
           x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGV}_amd64.deb"
-
-          echo "Downloading and calculating checksums..."
-          curl -L "$x86_64_url" -o twintaillauncher_${PKGV}_amd64.deb
-
-          x86_64_sum=$(sha256sum twintaillauncher_${PKGV}_amd64.deb | cut -d' ' -f1)
+          echo "Downloading and calculating checksum..."
+          curl -L "$x86_64_url" -o twintaillauncher-${PKGV}.deb
+          x86_64_sum=$(sha256sum twintaillauncher-${PKGV}.deb | cut -d' ' -f1)
 
           cat > PKGBUILD << EOF
           pkgname=twintaillauncher-bin
           _pkgname="${pkgname%-bin}"
-          pkgver=${PKGV}
+          pkgver="${PKGV}"
           pkgrel=1
           pkgdesc="A multi-platform launcher for your anime games"
           arch=('x86_64')
@@ -47,7 +45,7 @@ jobs:
           license=('GPL-3.0-only')
           depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'hdiffpatch')
           options=('!debug')
-          source=("${_pkgname}_${pkgver}_amd64.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
+          source=("${_pkgname}-${pkgver}.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
           sha256sums=('$x86_64_sum')
           
           build() {
