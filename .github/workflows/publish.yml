@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - '.github/workflows/publish.yml'
-      - '.github/workflows/update-aur.yml'
       - 'package.json'
       - 'src-tauri/**/*'
       - 'src/**/*'
