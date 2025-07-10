@@ -198,7 +198,14 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
 
                 let xxmi = Path::new(&s.xxmi_path).to_path_buf();
                 let fp = xxmi.join(&fm).join("d3dx.ini");
-                app.opener().reveal_item_in_dir(fp.as_path()).unwrap();
+                if fp.exists() {
+                    match app.opener().reveal_item_in_dir(fp.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { send_notification(&app, "Directory opening failed, try again later!", None); }
+                    }
+                } else {
+                    send_notification(&app, "XXMI is not downloaded or folder structure is corrupt! Can not open the folder.", None);
+                };
             }
         },
         "install" => {
@@ -206,7 +213,14 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
             if install.is_some() {
                 let i = install.unwrap();
                 let fp = Path::new(&i.directory).join("game.log");
-                app.opener().reveal_item_in_dir(fp.as_path()).unwrap();
+                if fp.exists() {
+                    match app.opener().reveal_item_in_dir(fp.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { send_notification(&app, "Directory opening failed, try again later!", None); }
+                    }
+                } else {
+                    send_notification(&app, "Can not open game directory, Please run the game once!", None);
+                };
             }
         },
         _ => {}

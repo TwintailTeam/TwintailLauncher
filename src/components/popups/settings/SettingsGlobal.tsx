@@ -4,6 +4,7 @@ import CheckBox from "../../common/CheckBox.tsx";
 import FolderInput from "../../common/FolderInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
+import TTLVersion from "../../common/TTLVersion.tsx";
 
 export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: {settings: any, fetchSettings: () => void, setOpenPopup: (popup: POPUPS) => void}) {
     return (
@@ -33,6 +34,9 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Jadeite location"} clearable={true} folder={true} value={`${settings.jadeite_path}`} id={"default_jadeite_path"} fetchSettings={fetchSettings} helpText={"Location where jadeite patch is stored."}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default runner prefix location"} clearable={true} folder={true} value={`${settings.default_runner_prefix_path}`} id={"default_prefix_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all Wine/Proton prefixes will be stored."}/> : null}
                     <SelectMenu id={"launcher_action"} name={"After game launch"} multiple={false} options={[{value: "exit", name: "Close launcher"}, {value: "keep", name: "Keep launcher open"}, {value: "minimize", name: "Minimize launcher to tray"}]} selected={`${settings.launcher_action}`} fetchSettings={fetchSettings} helpText={"What will launcher do once it launches a game."} setOpenPopup={setOpenPopup}/>
+                    <div className={"content-center"}>
+                        <p className={"text-white"}>{<TTLVersion/>}</p>
+                    </div>
                 </div>
             </div>
     )
