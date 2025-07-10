@@ -37,7 +37,7 @@ jobs:
           cat > PKGBUILD << EOF
           pkgname=twintaillauncher-bin
           _pkgname="${pkgname%-bin}"
-          pkgver="${PKGV}"
+          pkgver=${PKGV}
           pkgrel=1
           pkgdesc="A multi-platform launcher for your anime games"
           arch=('x86_64')
@@ -45,7 +45,7 @@ jobs:
           license=('GPL-3.0-only')
           depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'hdiffpatch')
           options=('!debug')
-          source=("${_pkgname}-${pkgver}.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
+          source=("${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
           sha256sums=('$x86_64_sum')
           
           build() {
