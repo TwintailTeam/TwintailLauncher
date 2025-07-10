@@ -31,9 +31,9 @@ jobs:
           x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGVER}_amd64.deb"
 
           echo "Downloading and calculating checksums..."
-          curl -L "$x86_64_url" -o x86_64.deb
+          curl -L "$x86_64_url" -o twintaillauncher_${PKGVER}_amd64.deb
 
-          x86_64_sum=$(sha256sum x86_64.deb | cut -d' ' -f1)
+          x86_64_sum=$(sha256sum twintaillauncher_${PKGVER}_amd64.deb | cut -d' ' -f1)
 
           cat > PKGBUILD << EOF
           pkgname=twintaillauncher-bin
@@ -46,7 +46,7 @@ jobs:
           license=('GPL-3.0-only')
           depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'hdiffpatch')
           options=('!debug')
-          source=("${_pkgname}-${pkgver}.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
+          source=("${_pkgname}-${pkgver}_amd64.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
           sha256sums=('$x86_64_sum')
           
           build() {
