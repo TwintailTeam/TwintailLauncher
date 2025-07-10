@@ -23,6 +23,8 @@ jobs:
           fi
       - name: Generate PKGBUILD
         run: |
+          PKGVER="${VERSION#ttl-v}"
+          PKGVER="${PKGVER//-/_}"
           # Calculate checksums for both architectures
           x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/ttl-v$VERSION/twintaillauncher_${VERSION#ttl-v}_amd64.deb"
 
@@ -34,7 +36,7 @@ jobs:
           cat > PKGBUILD << EOF
           pkgname=twintaillauncher-bin
           _pkgname="${pkgname%-bin}"
-          pkgver=${VERSION#ttl-v}
+          pkgver=$PKGVER
           pkgrel=1
           pkgdesc="A multi-platform launcher for your anime games"
           arch=('x86_64')
