@@ -1,0 +1,85 @@
+name: update-aur.yml
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. ttl-0.6.6)"
+        required: true
+
+jobs:
+  update-aur-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          fi
+      - name: Generate PKGBUILD
+        run: |
+          # Calculate checksums for both architectures
+          x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/ttl-v$VERSION/twintaillauncher_${VERSION#ttl-v}_amd64.deb"
+
+          echo "Downloading and calculating checksums..."
+          curl -L "$x86_64_url" -o x86_64.deb
+
+          x86_64_sum=$(sha256sum x86_64.deb | cut -d' ' -f1)
+
+          cat > PKGBUILD << EOF
+          pkgname=twintaillauncher-bin
+          _pkgname="${pkgname%-bin}"
+          pkgver="${VERSION#ttl-v}"
+          pkgrel=1
+          pkgdesc="A multi-platform launcher for your anime games"
+          arch=('x86_64')
+          url="https://github.com/TwintailTeam/TwintailLauncher"
+          license=('GPL-3.0-only')
+          depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'hdiffpatch')
+          options=('!debug')
+          source=("${_pkgname}-${pkgver}.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
+          sha256sums=('$x86_64_sum')
+          
+          build() {
+            bsdtar -x -f data.tar.gz
+          }
+  
+          package() {
+            install -Dm755 usr/bin/twintaillauncher -t $pkgdir/usr/bin
+            install -Dm755 usr/lib/twintaillauncher/resources/hpatchz_kuro.exe -t $pkgdir/usr/lib/twintaillauncher/resources
+            install -Dm755 usr/lib/twintaillauncher/resources/hpatchz -t $pkgdir/usr/lib/twintaillauncher/resources
+            install -Dm644 usr/share/icons/hicolor/32x32/apps/twintaillauncher.png $pkgdir/usr/share/icons/hicolor/32x32/apps/$_pkgname.png
+            install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png $pkgdir/usr/share/icons/hicolor/128x128/apps/$_pkgname.png
+            install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png $pkgdir/usr/share/icons/hicolor/256x256@2/apps/$_pkgname.png
+            install -Dm644 usr/share/applications/twintaillauncher.desktop -t $pkgdir/usr/share/applications
+          }
+          EOF
+      - name: Generate .SRCINFO
+        run: makepkg --printsrcinfo > .SRCINFO
+      - name: Test PKGBUILD
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: twintaillauncher-bin
+          pkgbuild: ./PKGBUILD
+          test: true
+          commit_username: ${{ secrets.GIT_USER }}
+          commit_email: ${{ secrets.GIT_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ env.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Publish AUR package
+        if: success()
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
+        with:
+          pkgname: twintaillauncher-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.GIT_USER }}
+          commit_email: ${{ secrets.GIT_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ env.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519

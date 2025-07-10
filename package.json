@@ -1,12 +1,12 @@
 {
     "name": "twintaillauncher",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.0.1",
     "type": "module",
     "scripts": {
-        "dev": "vite",
+        "dev": "vite --mode master",
         "dev:tauri": "tauri dev",
-        "build": "tsc && vite build",
+        "build": "tsc && vite build --mode stable",
         "tauri": "tauri",
         "build:windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
         "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
