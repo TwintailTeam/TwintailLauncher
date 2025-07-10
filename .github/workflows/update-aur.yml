@@ -59,10 +59,6 @@ jobs:
             install -Dm644 usr/share/applications/twintaillauncher.desktop -t $pkgdir/usr/share/applications
           }
           EOF
-      - name: Generate .SRCINFO
-        run: |
-          docker run --rm -v "$PWD:/build" -w /build archlinux:base-devel \
-            bash -c "useradd builder && chown -R builder . && su builder -c 'makepkg --printsrcinfo > .SRCINFO'"
       - name: Test PKGBUILD
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
