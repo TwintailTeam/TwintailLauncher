@@ -26,7 +26,7 @@ jobs:
           PKGVER="${VERSION#ttl-v}"
           PKGVER="${PKGVER//-/_}"
           # Calculate checksums for both architectures
-          x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/ttl-v$VERSION/twintaillauncher_${VERSION#ttl-v}_amd64.deb"
+          x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGVER}_amd64.deb"
 
           echo "Downloading and calculating checksums..."
           curl -L "$x86_64_url" -o x86_64.deb
