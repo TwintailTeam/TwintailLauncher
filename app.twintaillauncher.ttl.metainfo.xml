@@ -18,6 +18,13 @@
             We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the launcher to disable the anti-cheat to get them running (Linux only). Use TTL at your own risk.
         </p>
     </description>
+    <releases>
+        <release version="1.0.1" date="2025-07-12">
+            <description>
+                <p>First flatpak release.</p>
+            </description>
+        </release>
+    </releases>
     <url type="homepage">https://twintaillauncher.app/</url>
     <screenshots>
         <screenshot type="default">
@@ -43,6 +50,7 @@
     </screenshots>
     <launchable type="desktop-id">app.twintaillauncher.ttl.desktop</launchable>
     <metadata_license>0BSD</metadata_license>
+    <project_license>GPL-3.0-only</project_license>
     <developer id="app.twintaillauncher.ttl">
         <name>TwintailLauncher Team</name>
     </developer>
