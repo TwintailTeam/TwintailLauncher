@@ -5,25 +5,17 @@
     <summary>A cross-platform launcher for your anime games, featuring Linux and Windows support</summary>
     <description>
         <p>
-            Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.
+            Twintaillauncher (TTL) is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.
         </p>
         <p>
             TTL is an all-in-one tool for downloading, managing, and launching your favorite anime games. It’s designed with flexibility, ease of use, and customization in mind.
         </p>
         <p>
-            <b>Supported games:</b>
-            <ul>
-                <li>Genshin Impact</li>
-                <li>Honkai: Star Rail</li>
-                <li>Honkai Impact 3rd</li>
-                <li>Zenless Zone Zero</li>
-                <li>Wuthering Waves</li>
-                <li>Punishing: Gray Raven</li>
-            </ul>
+            Supported games: Genshin Impact, Honkai: Star Rail, Honkai Impact 3rd, Zenless Zone Zero, Wuthering Waves, Punishing: Gray Raven.
         </p>
         <p>
-            <b>Is TTL safe to use? Can I get banned?</b><br/>
-            We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
+            Is TTL safe to use? Can I get banned?
+            We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the launcher to disable the anti-cheat to get them running (Linux only). Use TTL at your own risk.
         </p>
     </description>
     <url type="homepage">https://twintaillauncher.app/</url>
