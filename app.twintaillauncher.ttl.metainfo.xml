@@ -19,13 +19,14 @@
         </p>
     </description>
     <releases>
-        <release version="1.0.1" date="2025-07-12">
+        <release version="1.0.2" date="2025-07-13">
             <description>
                 <p>First flatpak release.</p>
+                <p>For further changelogs please visit github repository's latest release notes.</p>
             </description>
         </release>
     </releases>
-    <url type="homepage">https://twintaillauncher.app/</url>
+    <url type="homepage">https://twintaillauncher.app</url>
     <screenshots>
         <screenshot type="default">
             <image>https://github.com/TwintailTeam/TwintailLauncher/raw/master/screenshots/linux/pic01.png</image>
