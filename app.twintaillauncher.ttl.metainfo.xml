@@ -2,7 +2,7 @@
 <component type="desktop-application">
     <id>app.twintaillauncher.ttl</id>
     <name>Twintail Launcher</name>
-    <summary>A cross-platform launcher for your anime games, featuring Linux and Windows support</summary>
+    <summary>Launcher for your anime games</summary>
     <description>
         <p>
             Twintaillauncher (TTL) is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.
@@ -59,4 +59,8 @@
         <category>Utility</category>
     </categories>
     <content_rating type="oars-1.0" />
+    <branding>
+        <color type="primary" scheme_preference="light">#ffffff</color>
+        <color type="primary" scheme_preference="dark">#000000</color>
+    </branding>
 </component>
