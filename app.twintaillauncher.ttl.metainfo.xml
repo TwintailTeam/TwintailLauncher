@@ -19,7 +19,7 @@
         </p>
     </description>
     <releases>
-        <release version="1.0.2" date="2025-07-13">
+        <release version="1.0.3" date="2025-07-14">
             <description>
                 <p>First flatpak release.</p>
                 <p>For further changelogs please visit github repository's latest release notes.</p>
