@@ -80,6 +80,7 @@ export default class App extends React.Component<any, any> {
             disableUpdate: false,
             disableDownload: false,
             disableInstallEdit: false,
+            disablePreload: false,
             hideProgressBar: true,
             progressName: "?",
             progressVal: 0,
@@ -126,7 +127,7 @@ export default class App extends React.Component<any, any> {
                     </div>
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
-                    {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button onClick={() => {
+                    {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button disabled={this.state.disablePreload} onClick={() => {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
                     }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
                     </button>): null}
@@ -397,6 +398,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: false,
                 disableUpdate: false,
                 disableDownload: false,
+                disablePreload: false,
                 progressName: `?`,
                 progressVal: 0,
                 progressPercent: `0%`
@@ -408,6 +410,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: true,
                 disableUpdate: true,
                 disableDownload: true,
+                disablePreload: true,
                 progressName: `Moving "${event.payload.file}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -419,6 +422,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: true,
                 disableUpdate: true,
                 disableDownload: true,
+                disablePreload: true,
                 progressName: `Downloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -430,6 +434,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: true,
                 disableUpdate: true,
                 disableDownload: true,
+                disablePreload: true,
                 progressName: `Updating "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -441,6 +446,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: true,
                 disableUpdate: true,
                 disableDownload: true,
+                disablePreload: true,
                 progressName: `Repairing "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -452,6 +458,7 @@ function registerEvents(eventType: string, event: any) {
                 disableRun: true,
                 disableUpdate: true,
                 disableDownload: true,
+                disablePreload: true,
                 progressName: `Predownloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
