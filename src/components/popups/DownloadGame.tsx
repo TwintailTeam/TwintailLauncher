@@ -137,12 +137,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
 
 function formatDir() {
     // @ts-ignore
-    let install_path = document.getElementById("install_game_path").value;
-    // @ts-ignore
-    let gv = document.getElementById("game_version");
-    // @ts-ignore
-    let gvv = gv.options[gv.selectedIndex].value;
-    return install_path + "/" + gvv;
+    return document.getElementById("install_game_path").value;
 }
 
 function getVersion() {

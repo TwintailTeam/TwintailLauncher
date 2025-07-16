@@ -1,14 +1,14 @@
 import {useRef, useState} from "react";
 import {arrow, autoUpdate, flip, FloatingArrow, offset, shift, useFloating} from "@floating-ui/react";
 
-export default function PreloadButton({text, icon}: {text: string, icon: any}) {
+export default function TooltipIcon({text, icon, side}: {text: string, icon: any, side: any}) {
     const [open, setOpen] = useState(false);
     const arrowRef = useRef(null);
     const { refs, floatingStyles, context } = useFloating({
         open,
         onOpenChange: setOpen,
         middleware: [offset(8), flip(), shift({ padding: 8 }), arrow({ element: arrowRef }),],
-        placement: "top",
+        placement: side,
         whileElementsMounted: autoUpdate,
     });
 
