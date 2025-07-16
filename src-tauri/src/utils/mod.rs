@@ -134,13 +134,12 @@ pub fn register_listeners(app: &AppHandle) {
         std::thread::spawn(move || {
             let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
             let install = get_install_info_by_id(&h4, payload.install).unwrap(); // Should exist by now, if not we FUCKED UP
-            let gid = payload.biz.clone() + ".json";
+            let gid = get_manifest_info_by_id(&h4, install.manifest_id).unwrap();
 
-            let mm = get_manifest(&h4, gid);
+            let mm = get_manifest(&h4, gid.filename);
             if let Some(gm) = mm {
                 let version = gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>();
                 let picked = version.get(0).unwrap();
-                let tmp = Arc::new(h4.clone());
 
                 let instn = Arc::new(install.name.clone());
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
@@ -161,12 +160,13 @@ pub fn register_listeners(app: &AppHandle) {
                         let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
                         let rslt = <Game as Hoyo>::download(urls.clone(), install.directory.clone(), {
                             let dlpayload = dlpayload.clone();
+                            let h4 = h4.clone();
                             move |current, _| {
                                 let mut dlp = dlpayload.lock().unwrap();
                                 dlp.insert("name", instn.to_string());
                                 dlp.insert("progress", current.to_string());
                                 dlp.insert("total", totalsize.to_string());
-                                tmp.emit("download_progress", dlp.clone()).unwrap();
+                                h4.emit("download_progress", dlp.clone()).unwrap();
                                 drop(dlp);
                             }
                         });
@@ -180,7 +180,7 @@ pub fn register_listeners(app: &AppHandle) {
                             let parts = urls.into_iter().map(|e| e.split('/').collect::<Vec<&str>>().last().unwrap().to_string()).collect::<Vec<String>>();
 
                             if fnn.ends_with(".001") {
-                               let r = assemble_multipart_archive(parts, aps);
+                                let r = assemble_multipart_archive(parts, aps);
                                 if r {
                                     let aar = fnn.strip_suffix(".001").unwrap().to_string();
                                     let far = ap.join(aar).to_str().unwrap().to_string();
@@ -205,25 +205,24 @@ pub fn register_listeners(app: &AppHandle) {
                     // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.full.clone();
-                        urls.into_iter().for_each(|e| {
+                        for e in urls.clone() {
+                            let h4 = h4.clone();
                             run_async_command(async {
                                 <Game as Sophon>::download(e.file_url.clone(), e.file_path.clone(), install.directory.clone(), {
                                     let dlpayload = dlpayload.clone();
                                     let instn = instn.clone();
-                                    let tmp = tmp.clone();
                                     move |current, total| {
                                         let mut dlp = dlpayload.lock().unwrap();
                                         let instn = instn.clone();
-                                        let tmp = tmp.clone();
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());
                                         dlp.insert("total", total.to_string());
-                                        tmp.emit("download_progress", dlp.clone()).unwrap();
+                                        h4.emit("download_progress", dlp.clone()).unwrap();
                                         drop(dlp);
                                     }
                                 }).await
                             });
-                        });
+                        }
                         // We finished the loop emit complete
                         h4.emit("download_complete", install.name.clone()).unwrap();
                         prevent_exit(&h4, false);
@@ -236,12 +235,13 @@ pub fn register_listeners(app: &AppHandle) {
                         let rslt = run_async_command(async {
                             <Game as Kuro>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
                                 let dlpayload = dlpayload.clone();
+                                let h4 = h4.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
                                     dlp.insert("total", total.to_string());
-                                    tmp.emit("download_progress", dlp.clone()).unwrap();
+                                    h4.emit("download_progress", dlp.clone()).unwrap();
                                     drop(dlp);
                                 }
                             }).await
@@ -308,14 +308,13 @@ pub fn register_listeners(app: &AppHandle) {
                             prevent_exit(&h5, false);
                         } else {
                             let is_preload = Path::new(&install.directory).join("patching").join(".preload").exists();
-                            let compression = if gm.biz == "nap_global" { true } else { false }; // Goober devs
                             #[cfg(target_os = "linux")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz");
                             #[cfg(target_os = "windows")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz.exe");
                             urls.into_iter().for_each(|e| {
                                 run_async_command(async {
-                                    <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, compression, {
+                                    <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, false, {
                                         let dlpayload = dlpayload.clone();
                                         let tmp = tmp.clone();
                                         let instn = instn.clone();
@@ -330,6 +329,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     }).await
                                 });
                             });
+                            if is_preload { let p = Path::new(&install.directory).join("patching"); fs::remove_dir_all(p).unwrap(); }
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                             send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
@@ -339,8 +339,10 @@ pub fn register_listeners(app: &AppHandle) {
                     // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
-
-                        if urls.is_empty() {  } else {
+                        if urls.is_empty() {
+                            h5.emit("update_complete", ()).unwrap();
+                            prevent_exit(&h5, false);
+                        } else {
                             let manifest = urls.get(0).unwrap().file_url.clone();
                             let rslt = run_async_command(async {
                                 <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), false, {
@@ -731,4 +733,12 @@ pub struct DownloadSizesRsp {
     pub free_disk_space: String,
     pub game_decompressed_size_raw: u64,
     pub free_disk_space_raw: u64
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResumeStatesRsp {
+    pub downloading: bool,
+    pub updating: bool,
+    pub preloading: bool,
+    pub repairing: bool
 }

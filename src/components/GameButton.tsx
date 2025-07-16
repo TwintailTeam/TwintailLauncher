@@ -1,4 +1,4 @@
-import {DownloadIcon, HardDriveDownloadIcon, Rocket} from "lucide-react";
+import {DownloadIcon, HardDriveDownloadIcon, RefreshCcwIcon, Rocket} from "lucide-react";
 import {emit} from "@tauri-apps/api/event";
 import {invoke} from "@tauri-apps/api/core";
 
@@ -10,8 +10,9 @@ interface IProps {
     disableRun: boolean,
     disableUpdate: boolean,
     disableDownload: boolean,
+    resumeStates: any
 }
-export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload}: IProps) {
+export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload, resumeStates}: IProps) {
     return (
         <>
             {buttonType === "launch" && (
@@ -64,6 +65,23 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 <button id={"update_game_btn"} disabled={disableUpdate} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-green-600 rounded-lg hover:bg-green-700" onClick={() => {
                     emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
                 }}><DownloadIcon/><span className="font-semibold translate-y-px">Update</span>
+                </button>
+            )}
+            {buttonType === "resume" && (
+                <button id={"resume_btn"} disabled={disableDownload} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
+                    if (resumeStates.downloading) {
+                        emit("start_game_download", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                    }
+                    if (resumeStates.updating) {
+                        emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                    }
+                    if (resumeStates.preloading) {
+                        emit("start_game_preload", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                    }
+                    if (resumeStates.repairing) {
+                        emit("start_game_repair", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                    }
+                }}><RefreshCcwIcon/><span className="font-semibold translate-y-px">Resume</span>
                 </button>
             )}
         </>

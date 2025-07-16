@@ -15,7 +15,7 @@ import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
 import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
 import GameButton from "./components/GameButton.tsx";
-import PreloadButton from "./components/common/PreloadButton.tsx";
+import TooltipIcon from "./components/common/TooltipIcon.tsx";
 import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 import {emit, listen} from "@tauri-apps/api/event";
 
@@ -85,6 +85,7 @@ export default class App extends React.Component<any, any> {
             progressName: "?",
             progressVal: 0,
             progressPercent: "0%",
+            resumeStates: {}
         }
     }
 
@@ -129,17 +130,18 @@ export default class App extends React.Component<any, any> {
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button disabled={this.state.disablePreload} onClick={() => {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
-                    }}><PreloadButton text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
+                    }}><TooltipIcon side={"top"} text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
                     </button>): null}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
                     }}><Settings fill={"white"} className="hover:stroke-neutral-500 stroke-black w-8 h-8"/></button> : null}
-                    <GameButton disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
+                    <GameButton resumeStates={this.state.resumeStates} disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
                 <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
-                        <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4><h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span>)</h4>
-                        <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
+                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4>
+                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span>)</h4>
+                    <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
                 </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
@@ -174,6 +176,7 @@ export default class App extends React.Component<any, any> {
     componentDidUpdate(_prevProps: any, prevState: any) {
         if (this.state.currentInstall && this.state.currentInstall !== prevState.currentInstall) {
             this.fetchInstallSettings(this.state.currentInstall);
+            this.fetchInstallResumeStates(this.state.currentInstall);
             this.fetchCompatibilityVersions();
         }
     }
@@ -247,6 +250,7 @@ export default class App extends React.Component<any, any> {
                         this.setBackground(this.state.installs[0].game_background);
                         this.setGameIcon(this.state.installs[0].game_icon);
                         this.setCurrentInstall(this.state.installs[0].id);
+                        this.fetchInstallResumeStates(this.state.installs[0].id);
                         setTimeout(() => {
                             // @ts-ignore
                             document.getElementById(`${this.state.installs[0].id}`).focus();
@@ -349,28 +353,78 @@ export default class App extends React.Component<any, any> {
         return rslt;
     }
 
+    fetchInstallResumeStates(install: any) {
+        invoke("get_resume_states", {install: install}).then(async data => {
+            if (data === null) {
+                console.error("Failed to fetch install resume states!");
+                this.setState(() => ({resumeStates: {downloading: false, updating: false, preloading: false, repairing: false}}));
+            } else {
+                let parsed = JSON.parse(data as string);
+                console.log(parsed);
+                this.setState(() => ({resumeStates: parsed}));
+            }
+        });
+    }
+
     refreshDownloadButtonInfo() {
         this.fetchGameVersions(this.state.currentGame);
         this.fetchCompatibilityVersions();
         setTimeout(() => {
-            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, () => {});
+            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, (disk) => {
+                // @ts-ignore
+                let btn = document.getElementById("game_dl_btn");
+                // @ts-ignore
+                let freedisk = document.getElementById("game_disk_free");
+
+                if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                    // @ts-ignore
+                    btn.setAttribute("disabled", "");
+                    // @ts-ignore
+                    freedisk.classList.add("text-red-600");
+                    // @ts-ignore
+                    freedisk.classList.remove("text-white");
+                    // @ts-ignore
+                    freedisk.classList.add("font-bold");
+                } else {
+                    // @ts-ignore
+                    btn.removeAttribute("disabled");
+                    // @ts-ignore
+                    freedisk.classList.remove("text-red-600");
+                    // @ts-ignore
+                    freedisk.classList.add("text-white");
+                    // @ts-ignore
+                    freedisk.classList.remove("font-bold");
+                }
+            });
             this.setState({openPopup: POPUPS.DOWNLOADGAME});
         }, 20);
     }
 
     determineButtonType() {
-        let buttonType: "download" | "update" | "launch";
+        let buttonType: "download" | "update" | "launch" | "resume";
 
         if (!this.state.currentInstall || this.state.currentInstall === "") {
             buttonType = "download";
         } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
             if (this.state.gameManifest.latest_version !== null) {
-                buttonType = "update";
+                if (this.state.resumeStates.updating) {
+                    buttonType = "resume";
+                } else {
+                    buttonType = "update";
+                }
+            } else {
+                if (this.state.resumeStates.updating) {
+                    buttonType = "resume";
+                } else {
+                    buttonType = "launch";
+                }
+            }
+        } else {
+            if (this.state.resumeStates.downloading) {
+                buttonType = "resume";
             } else {
                 buttonType = "launch";
             }
-        } else {
-            buttonType = "launch";
         }
         return buttonType;
     }

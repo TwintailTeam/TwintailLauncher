@@ -9,7 +9,7 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp};
+use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
@@ -779,6 +779,64 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
             }).unwrap();
         };
         
+        Some(stringified)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
+    let install = get_install_info_by_id(&app, install);
+
+    if install.is_some() {
+        let i = install.unwrap();
+
+        let ip = Path::new(&i.directory);
+        let dp = ip.join("downloading");
+        let up = ip.join("patching");
+        let pup = ip.join("patching").join(".preload");
+        let rep = ip.join("repairing");
+        
+        let frsp: ResumeStatesRsp;
+        if dp.exists() && !rep.exists() && !up.exists() && !pup.exists() {
+            frsp = ResumeStatesRsp {
+                downloading: true,
+                updating: false,
+                preloading: false,
+                repairing: false,
+            };
+        } else if up.exists() && !rep.exists() && !pup.exists() && !dp.exists() {
+            frsp = ResumeStatesRsp {
+                downloading: false,
+                updating: true,
+                preloading: false,
+                repairing: false,
+            };
+        } else if pup.exists() && !dp.exists() && !up.exists() && !rep.exists() {
+            frsp = ResumeStatesRsp {
+                downloading: false,
+                updating: false,
+                preloading: true,
+                repairing: false,
+            };
+        } else if rep.exists() && !dp.exists() && !up.exists() && !pup.exists() {
+            frsp = ResumeStatesRsp {
+                downloading: false,
+                updating: false,
+                preloading: false,
+                repairing: true,
+            };
+        } else {
+            frsp = ResumeStatesRsp {
+                downloading: false,
+                updating: false,
+                preloading: false,
+                repairing: false,
+            };
+        }
+
+        let stringified = serde_json::to_string(&frsp).unwrap();
         Some(stringified)
     } else {
         None
