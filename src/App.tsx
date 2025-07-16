@@ -81,6 +81,7 @@ export default class App extends React.Component<any, any> {
             disableDownload: false,
             disableInstallEdit: false,
             disablePreload: false,
+            disableResume: false,
             hideProgressBar: true,
             progressName: "?",
             progressVal: 0,
@@ -136,7 +137,7 @@ export default class App extends React.Component<any, any> {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
                     }}><Settings fill={"white"} className="hover:stroke-neutral-500 stroke-black w-8 h-8"/></button> : null}
-                    <GameButton resumeStates={this.state.resumeStates} disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
+                    <GameButton resumeStates={this.state.resumeStates} disableResume={this.state.disableResume} disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
                 <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
                     <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4>
@@ -453,6 +454,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: false,
                 disableDownload: false,
                 disablePreload: false,
+                disableResume: false,
                 progressName: `?`,
                 progressVal: 0,
                 progressPercent: `0%`
@@ -465,6 +467,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: true,
                 disableDownload: true,
                 disablePreload: true,
+                disableResume: true,
                 progressName: `Moving "${event.payload.file}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -477,6 +480,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: true,
                 disableDownload: true,
                 disablePreload: true,
+                disableResume: true,
                 progressName: `Downloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -489,6 +493,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: true,
                 disableDownload: true,
                 disablePreload: true,
+                disableResume: true,
                 progressName: `Updating "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -501,6 +506,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: true,
                 disableDownload: true,
                 disablePreload: true,
+                disableResume: true,
                 progressName: `Repairing "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
@@ -513,6 +519,7 @@ function registerEvents(eventType: string, event: any) {
                 disableUpdate: true,
                 disableDownload: true,
                 disablePreload: true,
+                disableResume: true,
                 progressName: `Predownloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
                 progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`

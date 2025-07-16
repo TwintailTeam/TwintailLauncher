@@ -10,9 +10,10 @@ interface IProps {
     disableRun: boolean,
     disableUpdate: boolean,
     disableDownload: boolean,
+    disableResume: boolean,
     resumeStates: any
 }
-export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload, resumeStates}: IProps) {
+export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload, disableResume, resumeStates}: IProps) {
     return (
         <>
             {buttonType === "launch" && (
@@ -68,7 +69,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 </button>
             )}
             {buttonType === "resume" && (
-                <button id={"resume_btn"} disabled={disableDownload} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
+                <button id={"resume_btn"} disabled={disableResume} className="flex flex-row gap-2 items-center py-2 px-4 disabled:bg-gray-500 bg-purple-600 rounded-lg hover:bg-purple-700" onClick={() => {
                     if (resumeStates.downloading) {
                         emit("start_game_download", {install: currentInstall, biz: "", lang: ""}).then(() => {});
                     }
