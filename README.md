@@ -72,10 +72,6 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 * Cargo-xwin (Follow [Tauri docs](https://tauri.app/distribute/windows-installer/#experimental-build-windows-apps-on-linux-and-macos))
 
 ### Building
-Make sure you have rust nightly toolchain
-```shell
-rustup toolchain install nightly
-```
 Install Node.js dependencies
 ```shell
 pnpm install
