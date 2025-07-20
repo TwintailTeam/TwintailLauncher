@@ -42,6 +42,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -73,6 +74,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -127,6 +129,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -183,6 +186,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -214,6 +218,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+                cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
