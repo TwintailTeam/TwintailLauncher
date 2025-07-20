@@ -11,9 +11,10 @@ import {
     useInteractions
 } from "@floating-ui/react";
 import {POPUPS} from "./popups/POPUPS.ts";
-import {Settings} from "lucide-react";
+import {MessageCircleIcon} from "lucide-react";
+import {invoke} from "@tauri-apps/api/core";
 
-export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
+export default function SidebarCommunity({uri, popup}: {uri: string, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -35,14 +36,14 @@ export default function SidebarSettings({setOpenPopup, popup}: {setOpenPopup: (a
 
     return (
         <React.Fragment>
-            <Settings ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 cursor-pointer flex-initial" onClick={() => {
-                setOpenPopup(popup == POPUPS.NONE ? POPUPS.SETTINGS : POPUPS.NONE);
+            <MessageCircleIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
+                invoke('open_uri', {uri: uri}).then(() => {});
             }} />
 
             {(isOpen && popup == POPUPS.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 w-full min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">Settings</span>
+                    <span className="text-white z-50">Discord</span>
                 </div>
             )}
         </React.Fragment>

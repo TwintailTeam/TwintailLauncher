@@ -227,6 +227,14 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
     }
 }
 
+#[tauri::command]
+pub fn open_uri(app: AppHandle, uri: String) {
+    match app.opener().open_url(uri, None::<&str>) {
+        Ok(_) => {},
+        Err(_e) => { send_notification(&app, "Opening URL in browser failed!", None); }
+    }
+}
+
 // === STRUCTS ===
 
 #[derive(Serialize, Deserialize, Debug)]
