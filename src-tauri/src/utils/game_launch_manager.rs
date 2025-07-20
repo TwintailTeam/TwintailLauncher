@@ -22,9 +22,9 @@ use fischl::utils::wait_for_process;
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
 
-    let dir = install.directory.clone();
-    let prefix = install.runner_prefix.clone();
-    let runner = install.runner_path.clone();
+    let dir = Path::new(install.directory.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let prefix = Path::new(install.runner_prefix.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let runner = Path::new(install.runner_path.as_str()).follow_symlink()?.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
@@ -52,7 +52,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "pre_launch.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "pre_launch.log".parse().unwrap());
         }
     }
 
@@ -105,7 +105,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -160,7 +160,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
