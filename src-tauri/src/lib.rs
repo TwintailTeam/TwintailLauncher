@@ -22,7 +22,7 @@ pub fn run() {
         {
             // Temporary fix rendering for nvidia GPU's
             // Ref: https://github.com/tauri-apps/tauri/issues/10702
-            unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); }
+            unsafe { std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1"); }
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
@@ -76,7 +76,6 @@ pub fn run() {
                     WindowEvent::CloseRequested { api, .. } => {
                         let blocks = app.state::<Mutex<ActionBlocks>>();
                         let state = blocks.lock().unwrap();
-
                         if state.action_exit {
                             app.get_window("main").unwrap().hide().unwrap();
                             api.prevent_close();
@@ -86,9 +85,7 @@ pub fn run() {
                 }
             }
             RunEvent::Exit => {
-                    run_async_command(async {
-                        app.state::<DbInstances>().0.lock().await.get("db").unwrap().close().await;
-                    });
+                    run_async_command(async { app.state::<DbInstances>().0.lock().await.get("db").unwrap().close().await; });
             }
             _ => ()
         }

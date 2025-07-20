@@ -408,20 +408,20 @@ export default class App extends React.Component<any, any> {
             buttonType = "download";
         } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
             if (this.state.gameManifest.latest_version !== null) {
-                if (this.state.resumeStates.updating) {
+                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                     buttonType = "resume";
                 } else {
                     buttonType = "update";
                 }
             } else {
-                if (this.state.resumeStates.updating) {
+                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                     buttonType = "resume";
                 } else {
                     buttonType = "launch";
                 }
             }
         } else {
-            if (this.state.resumeStates.downloading) {
+            if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                 buttonType = "resume";
             } else {
                 buttonType = "launch";

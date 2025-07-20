@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::get_mi_path_from_game;
+use crate::utils::{get_mi_path_from_game, PathResolve};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
@@ -51,7 +51,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "pre_launch.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "pre_launch.log".parse().unwrap());
         }
     }
 
@@ -103,7 +103,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -157,7 +157,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink().unwrap().to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -192,7 +192,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         let spawn = cmd.spawn();
         if spawn.is_ok() {
             let process = spawn.unwrap();
-            write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+            write_log(Path::new(&xxmi_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
         }
     }
 }
@@ -223,7 +223,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 let spawn = cmd.spawn();
                 if spawn.is_ok() {
                     let process = spawn.unwrap();
-                    write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                    write_log(Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
                 }
                 true
             } else {

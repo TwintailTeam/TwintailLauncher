@@ -5,7 +5,7 @@ use fischl::utils::extract_archive;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
-use crate::utils::{block_telemetry, get_mi_path_from_game, send_notification};
+use crate::utils::{block_telemetry, get_mi_path_from_game, send_notification, PathResolve};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
 
@@ -34,7 +34,7 @@ pub fn update_settings_third_party_repo_updates(app: AppHandle, enabled: bool) -
 
 #[tauri::command]
 pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option<bool> {
-    let p = Path::new(&path);
+    let p = Path::new(&path).follow_symlink().unwrap();
 
     if !p.exists() && p.is_dir() {
         fs::create_dir_all(&p).unwrap();
@@ -47,7 +47,7 @@ pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option
 
 #[tauri::command]
 pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option<bool> {
-    let p = Path::new(&path);
+    let p = Path::new(&path).follow_symlink().unwrap();
 
     if !p.exists() && p.is_dir() {
         fs::create_dir_all(&p).unwrap();
@@ -60,7 +60,7 @@ pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option
 
 #[tauri::command]
 pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> Option<bool> {
-    let p = Path::new(&path);
+    let p = Path::new(&path).follow_symlink().unwrap();
 
     if !p.exists() && p.is_dir() {
         fs::create_dir_all(&p).unwrap();
@@ -73,7 +73,7 @@ pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> 
 
 #[tauri::command]
 pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Option<bool> {
-    let p = Path::new(&path);
+    let p = Path::new(&path).follow_symlink().unwrap();
 
     if !p.exists() && p.is_dir() {
         fs::create_dir_all(&p).unwrap();
@@ -86,7 +86,7 @@ pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Opt
 
 #[tauri::command]
 pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Option<bool> {
-    let p = Path::new(&path);
+    let p = Path::new(&path).follow_symlink().unwrap();
 
     if !p.exists() && p.is_dir() {
         fs::create_dir_all(&p).unwrap();
@@ -127,9 +127,9 @@ pub fn update_extras(app: AppHandle) -> bool {
     let settings = get_settings(&app);
     if settings.is_some() {
         let s = settings.unwrap();
-        let xxmi = Path::new(&s.xxmi_path).to_path_buf();
-        let jadeite = Path::new(&s.jadeite_path).to_path_buf();
-        let fpsu = Path::new(&s.fps_unlock_path).to_path_buf();
+        let xxmi = Path::new(&s.xxmi_path).follow_symlink().unwrap().to_path_buf();
+        let jadeite = Path::new(&s.jadeite_path).follow_symlink().unwrap().to_path_buf();
+        let fpsu = Path::new(&s.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
         // Pull latest jadeite if installed
         if fs::read_dir(&jadeite).unwrap().next().is_some() {
@@ -196,7 +196,7 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
                 let mm = get_manifest(&app, m.filename).unwrap();
                 let fm = get_mi_path_from_game(mm.paths.exe_filename).unwrap();
 
-                let xxmi = Path::new(&s.xxmi_path).to_path_buf();
+                let xxmi = Path::new(&s.xxmi_path).follow_symlink().unwrap().to_path_buf();
                 let fp = xxmi.join(&fm).join("d3dx.ini");
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
@@ -212,7 +212,7 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
             let install = get_install_info_by_id(&app, install_id);
             if install.is_some() {
                 let i = install.unwrap();
-                let fp = Path::new(&i.directory).join("game.log");
+                let fp = Path::new(&i.directory).join("game.log").follow_symlink().unwrap().to_path_buf();
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}

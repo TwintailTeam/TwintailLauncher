@@ -175,7 +175,7 @@ pub fn register_listeners(app: &AppHandle) {
                             let first = urls.get(0).unwrap();
                             let tmpf = first.split('/').collect::<Vec<&str>>();
                             let fnn = tmpf.last().unwrap().to_string();
-                            let ap = Path::new(&install.directory);
+                            let ap = Path::new(&install.directory).follow_symlink().unwrap();
                             let aps = ap.to_str().unwrap().to_string();
                             let parts = urls.into_iter().map(|e| e.split('/').collect::<Vec<&str>>().last().unwrap().to_string()).collect::<Vec<String>>();
 
@@ -252,7 +252,7 @@ pub fn register_listeners(app: &AppHandle) {
                             send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
-                                let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
+                                let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
                                 patch_aki(target.to_str().unwrap().to_string());
                             }
                         }
@@ -307,7 +307,7 @@ pub fn register_listeners(app: &AppHandle) {
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                         } else {
-                            let is_preload = Path::new(&install.directory).join("patching").join(".preload").exists();
+                            let is_preload = Path::new(&install.directory).join("patching").join(".preload").follow_symlink().unwrap().exists();
                             #[cfg(target_os = "linux")]
                             let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz");
                             #[cfg(target_os = "windows")]
@@ -329,7 +329,7 @@ pub fn register_listeners(app: &AppHandle) {
                                     }).await
                                 });
                             });
-                            if is_preload { let p = Path::new(&install.directory).join("patching"); fs::remove_dir_all(p).unwrap(); }
+                            if is_preload { let p = Path::new(&install.directory).join("patching").follow_symlink().unwrap(); fs::remove_dir_all(p).unwrap(); }
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                             send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
@@ -364,7 +364,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                 #[cfg(target_os = "linux")]
                                 {
-                                    let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
+                                    let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
                                     patch_aki(target.to_str().unwrap().to_string());
                                 }
                             }
@@ -478,7 +478,7 @@ pub fn register_listeners(app: &AppHandle) {
                             send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
-                                let target = Path::new(&i.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
+                                let target = Path::new(&i.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
                                 patch_aki(target.to_str().unwrap().to_string());
                             }
                         }
@@ -741,4 +741,14 @@ pub struct ResumeStatesRsp {
     pub updating: bool,
     pub preloading: bool,
     pub repairing: bool
+}
+
+pub trait PathResolve {
+    fn follow_symlink(&self) -> io::Result<std::path::PathBuf>;
+}
+
+impl PathResolve for Path {
+    fn follow_symlink(&self) -> io::Result<std::path::PathBuf> {
+        fs::canonicalize(self)
+    }
 }

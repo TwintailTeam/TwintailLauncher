@@ -9,7 +9,7 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp};
+use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
 
 #[cfg(target_os = "linux")]
@@ -74,7 +74,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let install_location = if skip_game_dl { Path::new(directory.as_str()).to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).to_path_buf() };
+        let install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
 
@@ -90,15 +90,15 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             let comppath = data_path.join("compatibility");
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
-            let prefix_loc = Path::new(&runner_prefix).join(cuid.clone());
+            let prefix_loc = Path::new(&runner_prefix).join(cuid.clone()).follow_symlink().unwrap();
 
             runner_prefix = prefix_loc.to_str().unwrap().to_string();
 
             // Remove prefix just in case
             if prefix_loc.exists() { fs::remove_dir_all(runner_prefix.clone()).unwrap(); }
 
-            runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
-            dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
+            runner_path = wine.join(runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
+            dxvk_path = dxvk.join(dxvk_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
 
             if !Path::exists(runner_path.as_ref()) { fs::create_dir_all(runner_path.clone()).unwrap(); }
             if !Path::exists(dxvk_path.as_ref()) { fs::create_dir_all(dxvk_path.clone()).unwrap(); }
@@ -115,7 +115,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                 let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                 let runnerp = rv.get(0).unwrap().to_owned();
-                let rp = Path::new(runpp.as_str()).to_path_buf();
+                let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                 // Download selected DXVK
                 let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
@@ -229,7 +229,7 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
                 std::thread::spawn(move || {
-                    let ap = Path::new(op.as_ref());
+                    let ap = Path::new(op.as_ref()).follow_symlink().unwrap();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id, install_name.clone(), "Game".to_string()).unwrap();
 
                     let mut payload = HashMap::new();
@@ -262,15 +262,13 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) {
-            fs::create_dir_all(path.clone()).unwrap();
-        }
+        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
 
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
                 std::thread::spawn(move || {
-                    let ap = Path::new(op.as_ref());
+                    let ap = Path::new(op.as_ref()).follow_symlink().unwrap();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id, install_name.clone(), "Runner".to_string()).unwrap();
 
                     let mut payload = HashMap::new();
@@ -309,7 +307,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
                 std::thread::spawn(move || {
-                    let ap = Path::new(op.as_ref());
+                    let ap = Path::new(op.as_ref()).follow_symlink().unwrap();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id, install_name.clone(),"DXVK".to_string()).unwrap();
 
                     let mut payload = HashMap::new();
@@ -363,7 +361,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = Path::new(&settings.jadeite_path).to_path_buf();
+        let p = Path::new(&settings.jadeite_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_jadeite_by_id(&app, m.id, enabled);
         
@@ -388,7 +386,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = Path::new(&settings.xxmi_path).to_path_buf();
+        let p = Path::new(&settings.xxmi_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_xxmi_by_id(&app, m.id, enabled);
 
@@ -442,7 +440,7 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = Path::new(&settings.fps_unlock_path).to_path_buf();
+        let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
 
@@ -464,7 +462,7 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
 
     if install.is_some() {
         let m = install.unwrap();
-        let p = Path::new(&settings.fps_unlock_path).to_path_buf();
+        let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_fps_value_by_id(&app, m.id, fps);
 
@@ -536,7 +534,7 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
                 std::thread::spawn(move || {
-                    let ap = Path::new(op.as_ref());
+                    let ap = Path::new(op.as_ref()).follow_symlink().unwrap();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id, install_name.clone(), "Prefix".to_string()).unwrap();
 
                     let mut payload = HashMap::new();
@@ -588,10 +586,10 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
             if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
                 std::thread::spawn(move || {
-                    let rm = crate::utils::repo_manager::get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                     let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                     let runnerp = rv.get(0).unwrap().to_owned();
-                    let rp = Path::new(runpp.as_str()).to_path_buf();
+                    let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let mut dlpayload = HashMap::new();
 
@@ -616,7 +614,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
             } else {
                 std::thread::spawn(move || {
                     let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
-                    let rp = Path::new(runpp.as_str()).to_path_buf();
+                    let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                     let winebin = rp.join(wine64).to_str().unwrap().to_string();
@@ -662,18 +660,18 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                     let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
                     let dxp = dv.get(0).unwrap().to_owned();
-                    let dxpp = Path::new(dxpp.as_str()).to_path_buf();
-                    let rp = Path::new(runp.as_str()).to_path_buf();
+                    let dxpp = Path::new(dxpp.as_str()).follow_symlink().unwrap().to_path_buf();
+                    let rp = Path::new(runp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let mut dlpayload = HashMap::new();
 
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                    if is_proton {  } else {
+                    if is_proton { send_notification(&*archandle, "Skipping DXVK download because Proton ships with DXVK.", None); } else {
                         dlpayload.insert("name", runv.to_string());
                         dlpayload.insert("progress", "80".to_string());
                         dlpayload.insert("total", "100".to_string());
-                        //archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                        archandle.emit("download_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&*archandle, true);
 
                         let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true);
@@ -693,9 +691,9 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                 });
             } else {
                 std::thread::spawn(move || {
-                    let rm = get_compatibility(archandle.as_ref(), &crate::utils::runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
-                    let dxpp = Path::new(dxpp.as_str()).to_path_buf();
-                    let rp = Path::new(runp.as_str()).to_path_buf();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let dxpp = Path::new(dxpp.as_str()).follow_symlink().unwrap().to_path_buf();
+                    let rp = Path::new(runp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
@@ -760,7 +758,7 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
             fss = gs.add(audio);
         }
         
-        let a = available(Path::new(&path));
+        let a = available(Path::new(&path).follow_symlink().unwrap());
         let stringified;
         
         if a.is_some() {
@@ -792,7 +790,7 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
     if install.is_some() {
         let i = install.unwrap();
 
-        let ip = Path::new(&i.directory);
+        let ip = Path::new(&i.directory).follow_symlink().unwrap();
         let dp = ip.join("downloading");
         let up = ip.join("patching");
         let pup = ip.join("patching").join(".preload");
