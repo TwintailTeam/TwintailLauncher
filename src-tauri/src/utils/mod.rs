@@ -749,6 +749,6 @@ pub trait PathResolve {
 
 impl PathResolve for Path {
     fn follow_symlink(&self) -> io::Result<std::path::PathBuf> {
-        if self.is_symlink() { self.read_link() } else { Ok(self.to_path_buf()) }
+        if self.is_symlink() { self.canonicalize() } else { Ok(self.to_path_buf()) }
     }
 }
