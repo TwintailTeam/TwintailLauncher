@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
-use crate::utils::{run_async_command};
+use crate::utils::{run_async_command, PathResolve};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -73,10 +73,10 @@ pub async fn init_db(app: &AppHandle) {
     app.manage(instances);
 
     // Init and setup default paths...
-    let defgpath = data_path.join("games");
-    let xxmipath = data_path.join("extras").join("xxmi");
-    let fpsunlockpath = data_path.join("extras").join("fps_unlock");
-    let jadeitepath = data_path.join("extras").join("jadeite");
+    let defgpath = data_path.join("games").follow_symlink().unwrap();
+    let xxmipath = data_path.join("extras").join("xxmi").follow_symlink().unwrap();
+    let fpsunlockpath = data_path.join("extras").join("fps_unlock").follow_symlink().unwrap();
+    let jadeitepath = data_path.join("extras").join("jadeite").follow_symlink().unwrap();
 
     if !defgpath.exists() {
         fs::create_dir_all(&defgpath).unwrap();
@@ -100,10 +100,10 @@ pub async fn init_db(app: &AppHandle) {
 
     #[cfg(target_os = "linux")]
     {
-        let comppath = data_path.join("compatibility");
-        let wine = comppath.join("runners");
-        let dxvk = comppath.join("dxvk");
-        let prefixes = comppath.join("prefixes");
+        let comppath = data_path.join("compatibility").follow_symlink().unwrap();
+        let wine = comppath.join("runners").follow_symlink().unwrap();
+        let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
+        let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
 
         if !comppath.exists() {
             fs::create_dir_all(&wine).unwrap();
