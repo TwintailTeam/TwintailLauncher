@@ -6,7 +6,7 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, get_manifest_info_by_filename, get_repository_info_by_github_id};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_repository_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
 use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -240,6 +240,16 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
             let dbrr = dbr.unwrap();
             let cuid = generate_cuid();
             create_manifest(&app, cuid, dbrr.id, display_name, filename.as_str(), true).unwrap();
+        }
+    } else {
+        // Handle cleanup of removed manifests
+        let user = path.parent().unwrap().components().last().unwrap().as_os_str().to_str().unwrap();
+        let repo_name = path.components().last().unwrap().as_os_str().to_str().unwrap();
+        let dbr = get_repository_info_by_github_id(&app, format!("{user}/{repo_name}"));
+
+        if dbr.is_some() {
+            let mp = path.join(filename.as_str());
+            if !mp.exists() { delete_manifest_by_repository_id(&app, dbr.unwrap().id.clone()).unwrap(); }
         }
     }
 }
