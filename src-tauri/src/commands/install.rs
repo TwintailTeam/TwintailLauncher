@@ -757,11 +757,13 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
             let audio = audios.get(0).unwrap().decompressed_size.parse::<u64>().unwrap();
             fss = gs.add(audio);
         }
-        
-        let a = available(Path::new(&path).follow_symlink().unwrap());
+
+        let p = Path::new(&path).follow_symlink().unwrap();
+        let a = available(p);
         let stringified;
         
         if a.is_some() {
+            println!("available: {}", a.unwrap());
             stringified = serde_json::to_string(&DownloadSizesRsp {
                 game_decompressed_size: prettify_bytes(fss),
                 free_disk_space: prettify_bytes(a.unwrap()),
@@ -769,6 +771,7 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
                 free_disk_space_raw: a.unwrap(),
             }).unwrap();
         } else {
+            println!("not available");
             stringified = serde_json::to_string(&DownloadSizesRsp {
                 game_decompressed_size: prettify_bytes(fss),
                 free_disk_space: prettify_bytes(0),
