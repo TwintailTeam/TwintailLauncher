@@ -344,10 +344,14 @@ pub fn register_listeners(app: &AppHandle) {
                             prevent_exit(&h5, false);
                         } else {
                             let manifest = urls.get(0).unwrap().file_url.clone();
+                            #[cfg(target_os = "linux")]
+                            let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz");
+                            #[cfg(target_os = "windows")]
+                            let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz.exe");
                             let rslt = run_async_command(async {
-                                <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), false, {
+                                <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), krpatchz.to_str().unwrap().to_string(), false, {
                                     let dlpayload = dlpayload.clone();
-                                    move |current, total| {
+                                    move |current: u64, total: u64| {
                                         let mut dlp = dlpayload.lock().unwrap();
                                         dlp.insert("name", instn.to_string());
                                         dlp.insert("progress", current.to_string());

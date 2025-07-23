@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#ba4bb8513d47e47f65f98abca02f80fca8d06ee4"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#165d5e3529013f57cead6087eca2ef990e0baaeb"
 dependencies = [
  "async-compression",
  "chksum-md5",
