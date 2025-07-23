@@ -1,13 +1,14 @@
 use std::fs;
 use std::io::BufReader;
-use std::path::{PathBuf};
+use std::path::{Path, PathBuf};
 use std::sync::{RwLock};
+use fischl::compat::Compat;
 use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_repository_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
-use crate::utils::{generate_cuid};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_repository_id, get_installs, get_manifest_info_by_filename, get_repository_info_by_github_id, update_install_runner_location_by_id, update_install_runner_version_by_id};
+use crate::utils::{generate_cuid, runner_from_runner_version, PathResolve};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
@@ -249,7 +250,44 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
 
         if dbr.is_some() {
             let mp = path.join(filename.as_str());
-            if !mp.exists() { delete_manifest_by_repository_id(&app, dbr.unwrap().id.clone()).unwrap(); }
+            if !mp.exists() {
+                let dbrr = dbr.unwrap();
+                // Very bad way to validate but can work for now as we only want to reset runner
+                if dbrr.github_id.as_str() == "runner-manifests" {
+                    let installs = get_installs(&app);
+                    if installs.is_some() {
+                        let install = installs.unwrap();
+                        for i in install {
+                            let ir = runner_from_runner_version(i.runner_version.clone()).unwrap();
+                            if ir == filename {
+                                let file = fs::File::open(path.join("proton_cachyos.json")).unwrap();
+                                let reader = BufReader::new(file);
+                                let manifest_data = serde_json::from_reader(reader).unwrap();
+                                match manifest_data {
+                                    ManifestData::Game(_mi) => {}
+                                    #[cfg(target_os = "linux")]
+                                    ManifestData::Runner(ri) => {
+                                        let first = ri.versions.first().unwrap();
+                                        let np = i.runner_path.replace(i.runner_version.as_str(), first.version.as_str());
+                                        let pp = Path::new(&np).follow_symlink().unwrap();
+                                        if !pp.exists() {
+                                            fs::create_dir_all(&pp).unwrap();
+                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                        } else {
+                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                        }
+                                        update_install_runner_location_by_id(&app, i.id.clone(), np);
+                                        update_install_runner_version_by_id(&app, i.id, first.version.clone());
+                                    }
+                                    #[cfg(target_os = "windows")]
+                                    ManifestData::Runner(_) => {}
+                                }
+                            }
+                        }
+                    }
+                }
+                delete_manifest_by_repository_id(&app, dbrr.id.clone()).unwrap();
+            }
         }
     }
 }

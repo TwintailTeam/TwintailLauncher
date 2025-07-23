@@ -678,6 +678,9 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         if runner_version.contains("proton-cachyos") {
             rslt = "proton_cachyos.json".to_string();
         }
+        if runner_version.contains("proton-cachyos-spritz") {
+            rslt = "proton_cachyos_spritz.json".to_string();
+        }
         if runner_version.contains("proton-umu") {
             rslt = "proton_umu.json".to_string();
         }
