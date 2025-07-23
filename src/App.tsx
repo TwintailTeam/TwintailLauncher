@@ -18,6 +18,7 @@ import GameButton from "./components/GameButton.tsx";
 import TooltipIcon from "./components/common/TooltipIcon.tsx";
 import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 import {emit, listen} from "@tauri-apps/api/event";
+import SidebarCommunity from "./components/SidebarCommunity.tsx";
 
 const EVENTS = [
     'download_progress',
@@ -126,6 +127,7 @@ export default class App extends React.Component<any, any> {
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
                         <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                         <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                        <SidebarCommunity popup={this.state.openPopup} uri={"https://discord.gg/nDMJDwuj7s"} />
                     </div>
                 </div>
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
@@ -136,7 +138,7 @@ export default class App extends React.Component<any, any> {
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
                         setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
-                    }}><Settings fill={"white"} className="hover:stroke-neutral-500 stroke-black w-8 h-8"/></button> : null}
+                    }}><TooltipIcon side={"top"} text={"Install settings"} icon={<Settings fill={"white"} className="hover:stroke-neutral-500 stroke-black w-8 h-8"/>}/></button> : null}
                     <GameButton resumeStates={this.state.resumeStates} disableResume={this.state.disableResume} disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
                 </div>
                 <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
@@ -408,20 +410,20 @@ export default class App extends React.Component<any, any> {
             buttonType = "download";
         } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
             if (this.state.gameManifest.latest_version !== null) {
-                if (this.state.resumeStates.updating) {
+                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                     buttonType = "resume";
                 } else {
                     buttonType = "update";
                 }
             } else {
-                if (this.state.resumeStates.updating) {
+                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                     buttonType = "resume";
                 } else {
                     buttonType = "launch";
                 }
             }
         } else {
-            if (this.state.resumeStates.downloading) {
+            if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
                 buttonType = "resume";
             } else {
                 buttonType = "launch";

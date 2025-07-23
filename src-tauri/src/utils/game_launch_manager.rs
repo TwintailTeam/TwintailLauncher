@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::get_mi_path_from_game;
+use crate::utils::{get_mi_path_from_game};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
@@ -17,14 +17,16 @@ use crate::utils::runner_from_runner_version;
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
 use fischl::utils::wait_for_process;
+#[cfg(target_os = "linux")]
+use crate::utils::{PathResolve};
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
 
-    let dir = install.directory.clone();
-    let prefix = install.runner_prefix.clone();
-    let runner = install.runner_path.clone();
+    let dir = Path::new(install.directory.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let prefix = Path::new(install.runner_prefix.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let runner = Path::new(install.runner_path.as_str()).follow_symlink()?.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
@@ -42,6 +44,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -51,7 +54,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned?;
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "pre_launch.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "pre_launch.log".parse().unwrap());
         }
     }
 
@@ -73,6 +76,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -103,7 +107,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -127,6 +131,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -157,7 +162,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
             load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
             load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "game.log".parse().unwrap());
+            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
             true
         } else {
             false
@@ -183,6 +188,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -192,7 +198,7 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         let spawn = cmd.spawn();
         if spawn.is_ok() {
             let process = spawn.unwrap();
-            write_log(Path::new(&xxmi_path.clone()).to_path_buf(), process, "xxmi.log".parse().unwrap());
+            write_log(Path::new(&xxmi_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
         }
     }
 }
@@ -214,6 +220,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+                cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
@@ -223,7 +230,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 let spawn = cmd.spawn();
                 if spawn.is_ok() {
                     let process = spawn.unwrap();
-                    write_log(Path::new(&fpsunlock_path.clone()).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                    write_log(Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
                 }
                 true
             } else {
