@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#165d5e3529013f57cead6087eca2ef990e0baaeb"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#6e2279abd6a930e48503d886a9dc50f9b61b3a0b"
 dependencies = [
  "async-compression",
  "chksum-md5",
@@ -3676,9 +3676,9 @@ checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
 name = "prettyplease"
-version = "0.2.35"
+version = "0.2.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "061c1221631e079b26479d25bbf2275bfe5917ae8419cd7e34f13bfc2aa7539a"
+checksum = "ff24dfcda44452b9816fff4cd4227e1bb73ff5a2f1bc1105aa92fb8565ce44d2"
 dependencies = [
  "proc-macro2",
  "syn 2.0.104",
