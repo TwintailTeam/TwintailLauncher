@@ -1,7 +1,7 @@
 {
     "name": "twintaillauncher",
     "private": true,
-    "version": "1.0.5",
+    "version": "1.0.6",
     "type": "module",
     "scripts": {
         "dev": "vite --mode master",
@@ -21,7 +21,7 @@
         "react-dom": "^18.3.1"
     },
     "devDependencies": {
-        "@tauri-apps/cli": "^2.6.2",
+        "@tauri-apps/cli": "^2.7.1",
         "@types/react": "^18.3.23",
         "@types/react-dom": "^18.3.7",
         "@vitejs/plugin-react": "^4.7.0",

@@ -34,7 +34,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
-        let command = format!("'{pre_launch}'"); //format!("'{runner}/{wine64}' '{pre_launch}'");
+        let command = format!("{pre_launch}"); //format!("'{runner}/{wine64}' '{pre_launch}'");
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -44,7 +44,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -61,11 +60,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let rslt = if install.launch_command.is_empty() {
         let mut args = "";
         if !install.launch_args.is_empty() { args = &install.launch_args; }
-        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") };
+        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
+            if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' run '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' run '{dir}/{game}' {args}") }
+        } else {
+            if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
+        };
 
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
-            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") };
+            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
+                if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") }
+            } else {
+                if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") }
+            };
         }
 
         let mut cmd = Command::new("bash");
@@ -76,7 +83,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONFIXES_DISABLE", "1");
+        //cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -116,11 +123,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
+        let mut command = format!("{c}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
+            command = format!("{c} {args}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
         }
 
         let mut cmd = Command::new("bash");
@@ -131,7 +138,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -188,7 +194,6 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -220,7 +225,6 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-                cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());

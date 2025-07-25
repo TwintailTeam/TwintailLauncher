@@ -184,7 +184,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 if r {
                                     let aar = fnn.strip_suffix(".001").unwrap().to_string();
                                     let far = ap.join(aar).to_str().unwrap().to_string();
-                                    let ext = extract_archive(far, install.directory.clone(), false);
+                                    #[cfg(target_os = "linux")]
+                                    let sz = h4.path().app_data_dir().unwrap().join("7zr");
+                                    #[cfg(target_os = "windows")]
+                                    let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
+                                    let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                     if ext {
                                         h4.emit("download_complete", install.name.clone()).unwrap();
                                         prevent_exit(&h4, false);
@@ -193,7 +197,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             } else {
                                 let far = ap.join(fnn.clone()).to_str().unwrap().to_string();
-                                let ext = extract_archive(far, install.directory.clone(), false);
+                                #[cfg(target_os = "linux")]
+                                let sz = h4.path().app_data_dir().unwrap().join("7zr");
+                                #[cfg(target_os = "windows")]
+                                let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
+                                let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                 if ext {
                                     h4.emit("download_complete", install.name.clone()).unwrap();
                                     prevent_exit(&h4, false);
@@ -343,13 +351,13 @@ pub fn register_listeners(app: &AppHandle) {
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                         } else {
-                            let manifest = urls.get(0).unwrap().file_url.clone();
+                            let manifest = urls.get(0).unwrap();
                             #[cfg(target_os = "linux")]
                             let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz");
                             #[cfg(target_os = "windows")]
                             let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz.exe");
                             let rslt = run_async_command(async {
-                                <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), krpatchz.to_str().unwrap().to_string(), false, {
+                                <Game as Kuro>::patch(manifest.file_url.to_owned(), install.version.clone(), manifest.file_hash.to_owned(), install.directory.clone(), krpatchz.to_str().unwrap().to_string(), false, {
                                     let dlpayload = dlpayload.clone();
                                     move |current: u64, total: u64| {
                                         let mut dlp = dlpayload.lock().unwrap();

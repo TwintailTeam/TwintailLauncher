@@ -136,7 +136,7 @@ pub fn update_extras(app: AppHandle) -> bool {
             std::thread::spawn(move || {
                 let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap());
                 if dl {
-                    extract_archive(jadeite.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap(), false);
+                    extract_archive("".to_string(), jadeite.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap(), false);
                 }
             });
         }
@@ -153,7 +153,7 @@ pub fn update_extras(app: AppHandle) -> bool {
             std::thread::spawn(move || {
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
                 if dl {
-                    extract_archive(xxmi.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
+                    extract_archive("".to_string(), xxmi.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
@@ -163,7 +163,7 @@ pub fn update_extras(app: AppHandle) -> bool {
                     let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, xxmi.as_path().to_str().unwrap().parse().unwrap());
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
-                            extract_archive(xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            extract_archive("".to_string(), xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = xxmi.join(mi).join(lib);
                                 if !linkedpath.exists() {

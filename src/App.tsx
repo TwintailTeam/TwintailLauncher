@@ -87,6 +87,8 @@ export default class App extends React.Component<any, any> {
             progressName: "?",
             progressVal: 0,
             progressPercent: "0%",
+            progressPretty: 0,
+            progressPrettyTotal: 0,
             resumeStates: {}
         }
     }
@@ -143,7 +145,7 @@ export default class App extends React.Component<any, any> {
                 </div>
                 <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
                     <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4>
-                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span>)</h4>
+                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span> | <span id={"progress_pretty"}>{this.state.progressPretty} / {this.state.progressPrettyTotal}</span>)</h4>
                     <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
                 </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
@@ -459,7 +461,9 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: false,
                 progressName: `?`,
                 progressVal: 0,
-                progressPercent: `0%`
+                progressPercent: `0%`,
+                progressPretty: 0,
+                progressPrettyTotal: 0
             };
         }
         case 'move_progress': {
@@ -472,7 +476,9 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: true,
                 progressName: `Moving "${event.payload.file}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
+                progressPretty: `${formatBytes(event.payload.progress)}`,
+                progressPrettyTotal: `${formatBytes(event.payload.total)}`
             };
         }
         case 'download_progress': {
@@ -485,7 +491,9 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: true,
                 progressName: `Downloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
+                progressPretty: `${formatBytes(event.payload.progress)}`,
+                progressPrettyTotal: `${formatBytes(event.payload.total)}`
             };
         }
         case 'update_progress': {
@@ -498,7 +506,9 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: true,
                 progressName: `Updating "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
+                progressPretty: `${formatBytes(event.payload.progress)}`,
+                progressPrettyTotal: `${formatBytes(event.payload.total)}`
             };
         }
         case 'repair_progress': {
@@ -511,7 +521,9 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: true,
                 progressName: `Repairing "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
+                progressPretty: `${formatBytes(event.payload.progress)}`,
+                progressPrettyTotal: `${formatBytes(event.payload.total)}`
             };
         }
         case 'preload_progress': {
@@ -524,10 +536,26 @@ function registerEvents(eventType: string, event: any) {
                 disableResume: true,
                 progressName: `Predownloading "${event.payload.name}"`,
                 progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`
+                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
+                progressPretty: `${formatBytes(event.payload.progress)}`,
+                progressPrettyTotal: `${formatBytes(event.payload.total)}`
             };
         }
     }
 }
 
 function toPercent(number: any, total: any) { return (parseInt(number) / parseInt(total)) * 100; }
+
+function formatBytes(bytes: any) {
+    const MiB = 1024 * 1024;
+    const GiB = 1024 * MiB;
+    let b =  parseInt(bytes);
+
+    if (b >= GiB) {
+        return (b / GiB).toFixed(2) + ' GiB';
+    } else if (b >= MiB) {
+        return (b / MiB).toFixed(2) + ' MiB';
+    } else {
+        return b + ' bytes';
+    }
+}

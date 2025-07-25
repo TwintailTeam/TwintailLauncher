@@ -53,6 +53,13 @@ pub async fn init_db(app: &AppHandle) {
             description: "populate_settings_table",
             sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id, hide_manifests) values (null, false, null, null, null, null, "exit", 1, false);"#,
             kind: MigrationKind::Up,
+        },
+        // Beginning of update migrations
+        Migration {
+            version: 8,
+            description: "alter_install_table_106",
+            sql: r#"ALTER TABLE install ADD COLUMN use_gamemode bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
         }
     ];
 
@@ -477,13 +484,13 @@ pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool)
 
 // === INSTALLS ===
 
-pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, audio_langs: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String, launch_args: String) -> Result<bool, Error> {
+pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, audio_langs: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String, launch_args: String, use_gamemode: bool) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode);
         rslt = query.execute(&db).await.unwrap();
     });
 
@@ -545,7 +552,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             launch_command: rslt.get(0).unwrap().get("launch_command"),
             fps_value: rslt.get(0).unwrap().get("fps_value"),
             runner_prefix: rslt.get(0).unwrap().get("runner_prefix_path"),
-            launch_args: rslt.get(0).unwrap().get("launch_args")
+            launch_args: rslt.get(0).unwrap().get("launch_args"),
+            use_gamemode: rslt.get(0).unwrap().get("use_gamemode")
         };
 
         Some(rsltt)
@@ -590,7 +598,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 launch_command: r.get("launch_command"),
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
-                launch_args: r.get("launch_args")
+                launch_args: r.get("launch_args"),
+                use_gamemode: r.get("use_gamemode")
             })
         }
 
@@ -636,7 +645,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 launch_command: r.get("launch_command"),
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
-                launch_args: r.get("launch_args")
+                launch_args: r.get("launch_args"),
+                use_gamemode: r.get("use_gamemode")
             })
         }
 
@@ -723,6 +733,15 @@ pub fn update_install_fps_value_by_id(app: &AppHandle, id: String, fps: String) 
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'fps_value' = $1 WHERE id = $2").bind(fps).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_gamemode_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_gamemode' = $1 WHERE id = $2").bind(enabled).bind(id);
         query.execute(&db).await.unwrap();
     });
 }
