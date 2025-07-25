@@ -7,7 +7,7 @@ use fischl::download::{Extras};
 use fischl::utils::{extract_archive, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -176,7 +176,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
             });
         }
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false).unwrap();
         Some(AddInstallRsp {
             success: true,
             install_id: cuid.clone(),
@@ -369,7 +369,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
             std::thread::spawn(move || {
                 let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
                 if dl {
-                    extract_archive(p.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
+                    extract_archive("".to_string(), p.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
                 }
             });
         }
@@ -400,7 +400,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                 prevent_exit(&app, true);
                 let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), true);
                 if dl {
-                    extract_archive(p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
+                    extract_archive("".to_string(), p.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
                     let srmi = String::from("SpectrumQT/SRMI-Package");
                     let zzmi = String::from("leotorrez/ZZMI-Package");
@@ -410,7 +410,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
                     let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, p.as_path().to_str().unwrap().parse().unwrap());
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
-                            extract_archive(p.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), p.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            extract_archive("".to_string(), p.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), p.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = p.join(mi).join(lib);
                                 if !linkedpath.exists() {
@@ -471,6 +471,19 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
                 Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), p.as_path().to_str().unwrap().parse().unwrap());
             });
         }
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_gamemode(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_use_gamemode_by_id(&app, m.id, enabled);
         Some(true)
     } else {
         None

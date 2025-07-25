@@ -36,6 +36,7 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 ![Pic3](screenshots/windows/pic03.png)
 ![Pic4](screenshots/windows/pic04.png)
 ![Pic5](screenshots/windows/pic05.png)
+![Pic6](screenshots/windows/pic06.png)
 
 </details>
 
@@ -47,6 +48,7 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 ![Pic3](screenshots/linux/pic03.png)
 ![Pic4](screenshots/linux/pic04.png)
 ![Pic5](screenshots/linux/pic05.png)
+![Pic6](screenshots/linux/pic06.png)
 
 </details>
 

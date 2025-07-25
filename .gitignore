@@ -1,3 +1,7 @@
+# Custom
+node_sources.json
+src-tauri/cargo_sources.json
+
 # Logs
 logs
 *.log

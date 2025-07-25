@@ -404,7 +404,8 @@ pub struct LauncherInstall {
     pub launch_command: String,
     pub fps_value: String,
     pub runner_prefix: String,
-    pub launch_args: String
+    pub launch_args: String,
+    pub use_gamemode: bool
 }
 
 // === MANIFESTS ===

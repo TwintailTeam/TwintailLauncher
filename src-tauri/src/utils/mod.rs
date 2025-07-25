@@ -184,7 +184,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 if r {
                                     let aar = fnn.strip_suffix(".001").unwrap().to_string();
                                     let far = ap.join(aar).to_str().unwrap().to_string();
-                                    let ext = extract_archive(far, install.directory.clone(), false);
+                                    #[cfg(target_os = "linux")]
+                                    let sz = h4.path().app_data_dir().unwrap().join("7zr");
+                                    #[cfg(target_os = "windows")]
+                                    let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
+                                    let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                     if ext {
                                         h4.emit("download_complete", install.name.clone()).unwrap();
                                         prevent_exit(&h4, false);
@@ -193,7 +197,11 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             } else {
                                 let far = ap.join(fnn.clone()).to_str().unwrap().to_string();
-                                let ext = extract_archive(far, install.directory.clone(), false);
+                                #[cfg(target_os = "linux")]
+                                let sz = h4.path().app_data_dir().unwrap().join("7zr");
+                                #[cfg(target_os = "windows")]
+                                let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
+                                let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                 if ext {
                                     h4.emit("download_complete", install.name.clone()).unwrap();
                                     prevent_exit(&h4, false);
