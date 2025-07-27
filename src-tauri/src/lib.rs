@@ -46,6 +46,27 @@ pub fn run() {
             init_tray(&handle).unwrap();
             register_listeners(&handle);
 
+            // Hide decorations on most common tiler WindowManagers on linux
+            #[cfg(target_os = "linux")]
+            {
+                match std::env::var("XDG_SESSION_DESKTOP") {
+                    Ok(val) => {
+                        if val.to_ascii_lowercase() == "hyprland" ||
+                            val.to_ascii_lowercase() == "i3" ||
+                            val.to_ascii_lowercase() == "sway" ||
+                            val.to_ascii_lowercase() == "bspwm" ||
+                            val.to_ascii_lowercase() == "awesome" ||
+                            val.to_ascii_lowercase() == "dwm" ||
+                            val.to_ascii_lowercase() == "xmonad" ||
+                            val.to_ascii_lowercase() == "qtile" ||
+                            val.to_ascii_lowercase() == "niri" {
+                                app.get_window("main").unwrap().set_decorations(false).unwrap();
+                        } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
+                    },
+                    Err(_e) => {},
+                }
+            }
+
             let res_dir = app.path().resource_dir().unwrap();
             let data_dir = app.path().app_data_dir().unwrap();
 
