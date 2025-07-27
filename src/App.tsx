@@ -166,7 +166,7 @@ export default class App extends React.Component<any, any> {
         setTimeout(async () => {
             for (const eventType of EVENTS) {
                 const unlisten = await listen<string>(eventType, (event) => {
-                    const newState = registerEvents(eventType, event);
+                    const newState = registerEvents(eventType, event, this.pushInstalls);
                     if (newState !== undefined) this.setState(() => ({...newState}));
                 });
                 this.unlistenFns.push(unlisten);
@@ -365,7 +365,6 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({resumeStates: {downloading: false, updating: false, preloading: false, repairing: false}}));
             } else {
                 let parsed = JSON.parse(data as string);
-                console.log(parsed);
                 this.setState(() => ({resumeStates: parsed}));
             }
         });
@@ -444,13 +443,14 @@ export default class App extends React.Component<any, any> {
 }
 
 // === UTILITY ===
-function registerEvents(eventType: string, event: any) {
+function registerEvents(eventType: string, event: any, pushInstalls: () => void) {
     switch (eventType) {
         case "move_complete":
         case 'download_complete':
         case 'update_complete':
         case 'repair_complete':
         case 'preload_complete': {
+            pushInstalls();
             return {
                 hideProgressBar: true,
                 disableInstallEdit: false,
