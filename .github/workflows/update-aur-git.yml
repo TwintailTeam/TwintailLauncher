@@ -1,8 +1,8 @@
 name: update-aur-git.yml
 on:
-#  push:
-#    branches:
-#      - master
+  push:
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
