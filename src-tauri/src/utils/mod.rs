@@ -125,7 +125,7 @@ pub fn register_listeners(app: &AppHandle) {
 
     let h2 = app.clone();
     app.listen("launcher_action_minimize", move |_event| {
-        h2.get_window("main").unwrap().minimize().unwrap();
+        h2.get_window("main").unwrap().hide().unwrap();
     });
 
     // Start game download
