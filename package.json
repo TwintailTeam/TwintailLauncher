@@ -1,7 +1,7 @@
 {
     "name": "twintaillauncher",
     "private": true,
-    "version": "1.0.6",
+    "version": "1.0.7",
     "type": "module",
     "scripts": {
         "dev": "vite --mode master",
@@ -13,9 +13,9 @@
         "build:native": "tauri build"
     },
     "dependencies": {
-        "@floating-ui/react": "^0.27.13",
+        "@floating-ui/react": "^0.27.14",
         "@tauri-apps/api": "^2.7.0",
-        "@tauri-apps/plugin-dialog": "^2.3.1",
+        "@tauri-apps/plugin-dialog": "^2.3.2",
         "lucide-react": "^0.487.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
