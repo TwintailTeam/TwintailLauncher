@@ -20,6 +20,10 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
           echo "COMMIT_COUNT=$COMMIT_COUNT" >> $GITHUB_ENV
+      - name: install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - name: Generate PKGBUILD
         env:
           VERSION: ${{ env.VERSION }}
@@ -68,10 +72,8 @@ jobs:
             install -Dm644 \$_pkgname/src-tauri/icons/128x128@2x.png \$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$_pkgname.png
           }
           EOF
-      - name: install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - name: install frontend dependencies
+        run: pnpm install
       - name: Test PKGBUILD
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
