@@ -13,9 +13,9 @@ export default function RepoManifestCombo({name, items, roundTop, roundBottom, f
             </div>
             <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-900 gap-4 flex flex-col items-center justify-between px-4 ${isFolded ? "py-0" : "py-4"} ${roundBottom ? "rounded-b-lg" : ""}`}
                 style={{maxHeight: isFolded ? "0px" : (items.length * 64) + "px"}}>
-                {items.map((name: any) => {
+                {items.map((name1: any) => {
                     return (
-                    <RepoManifestItem name={name.display_name} key={name.id} id={name.id} enabled={name.enabled} fetchRepositories={fetchRepositories} />
+                    <RepoManifestItem name={name1.display_name} key={name1.id} id={name1.id} enabled={name1.enabled} fetchRepositories={fetchRepositories} repo={name} />
                 )})}
             </div>
         </React.Fragment>

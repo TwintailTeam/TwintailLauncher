@@ -135,7 +135,7 @@ export default class App extends React.Component<any, any> {
                 <div className="flex flex-row absolute bottom-8 right-16 gap-4">
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button disabled={this.state.disablePreload} onClick={() => {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
-                    }}><TooltipIcon side={"top"} text={"Predownload update"} icon={<DownloadIcon className="text-green-600 hover:text-green-700 w-8 h-8"/>}/>
+                    }}><TooltipIcon side={"top"} text={"Predownload update"} icon={<DownloadIcon className="text-yellow-600 hover:text-yellow-700 w-8 h-8"/>}/>
                     </button>): null}
                     {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
                         // Delay for very unnoticeable time to prevent popup opening before state is synced
@@ -166,7 +166,7 @@ export default class App extends React.Component<any, any> {
         setTimeout(async () => {
             for (const eventType of EVENTS) {
                 const unlisten = await listen<string>(eventType, (event) => {
-                    const newState = registerEvents(eventType, event);
+                    const newState = registerEvents(eventType, event, this.pushInstalls);
                     if (newState !== undefined) this.setState(() => ({...newState}));
                 });
                 this.unlistenFns.push(unlisten);
@@ -365,7 +365,6 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({resumeStates: {downloading: false, updating: false, preloading: false, repairing: false}}));
             } else {
                 let parsed = JSON.parse(data as string);
-                console.log(parsed);
                 this.setState(() => ({resumeStates: parsed}));
             }
         });
@@ -444,13 +443,14 @@ export default class App extends React.Component<any, any> {
 }
 
 // === UTILITY ===
-function registerEvents(eventType: string, event: any) {
+function registerEvents(eventType: string, event: any, pushInstalls: () => void) {
     switch (eventType) {
         case "move_complete":
         case 'download_complete':
         case 'update_complete':
         case 'repair_complete':
         case 'preload_complete': {
+            pushInstalls();
             return {
                 hideProgressBar: true,
                 disableInstallEdit: false,

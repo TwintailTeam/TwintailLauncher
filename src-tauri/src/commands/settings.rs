@@ -1,16 +1,11 @@
 use std::fs;
 use std::path::Path;
-use fischl::download::Extras;
-use fischl::utils::extract_archive;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
-use crate::utils::{block_telemetry, get_mi_path_from_game, send_notification, PathResolve};
+use crate::utils::{block_telemetry, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, get_mi_path_from_game, send_notification, PathResolve};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
-
-#[cfg(target_os = "linux")]
-use std::os::unix::fs::symlink;
 use tauri_plugin_notification::NotificationExt;
 
 #[tauri::command]
@@ -131,53 +126,9 @@ pub fn update_extras(app: AppHandle) -> bool {
         let jadeite = Path::new(&s.jadeite_path).follow_symlink().unwrap().to_path_buf();
         let fpsu = Path::new(&s.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
-        // Pull latest jadeite if installed
-        if fs::read_dir(&jadeite).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap());
-                if dl {
-                    extract_archive("".to_string(), jadeite.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), jadeite.as_path().to_str().unwrap().parse().unwrap(), false);
-                }
-            });
-        }
-
-        // Pull latest fps unlock if installed
-        if fs::read_dir(&fpsu).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), fpsu.as_path().to_str().unwrap().parse().unwrap());
-            });
-        }
-
-        // Pull latest xxmi and its packages if xxmi is installed
-        if fs::read_dir(&xxmi).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
-                if dl {
-                    extract_archive("".to_string(), xxmi.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), xxmi.as_path().to_str().unwrap().parse().unwrap(), false);
-                    let gimi = String::from("SilentNightSound/GIMI-Package");
-                    let srmi = String::from("SpectrumQT/SRMI-Package");
-                    let zzmi = String::from("leotorrez/ZZMI-Package");
-                    let wwmi = String::from("SpectrumQT/WWMI-Package");
-                    let himi = String::from("leotorrez/HIMI-Package");
-
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, xxmi.as_path().to_str().unwrap().parse().unwrap());
-                    if dl1 {
-                        for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
-                            extract_archive("".to_string(), xxmi.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), xxmi.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
-                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
-                                let linkedpath = xxmi.join(mi).join(lib);
-                                if !linkedpath.exists() {
-                                    #[cfg(target_os = "linux")]
-                                    symlink(xxmi.join(lib), linkedpath).unwrap();
-                                    #[cfg(target_os = "windows")]
-                                    fs::copy(xxmi.join(lib), linkedpath).unwrap();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        download_or_update_jadeite(jadeite, true);
+        download_or_update_fps_unlock(fpsu, true);
+        download_or_update_xxmi(&app, xxmi, true);
         send_notification(&app, "Successfully updated extras.", None);
         true
     } else {

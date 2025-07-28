@@ -1,6 +1,6 @@
 use std::{fs, io};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
@@ -15,6 +15,7 @@ use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 use fischl::utils::patch_aki;
 #[cfg(target_os = "linux")]
 use std::process::Command;
+use fischl::download::Extras;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
 
@@ -124,7 +125,7 @@ pub fn register_listeners(app: &AppHandle) {
 
     let h2 = app.clone();
     app.listen("launcher_action_minimize", move |_event| {
-        h2.get_window("main").unwrap().minimize().unwrap();
+        h2.get_window("main").unwrap().hide().unwrap();
     });
 
     // Start game download
@@ -724,6 +725,115 @@ fn dir_size(path: &Path) -> io::Result<u64> {
     Ok(size)
 }
 
+pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
+    if update_mode {
+        if fs::read_dir(&path).unwrap().next().is_some() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+                if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
+            });
+        }
+    } else {
+        if fs::read_dir(&path).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+                if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
+            });
+        }
+    }
+}
+
+pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
+    if update_mode {
+        if fs::read_dir(&path).unwrap().next().is_some() {
+            std::thread::spawn(move || {
+                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+            });
+        }
+    } else {
+        if fs::read_dir(&path).unwrap().next().is_none() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+                if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
+            });
+        }
+    }
+}
+
+pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool) {
+    if update_mode {
+        if fs::read_dir(&path).unwrap().next().is_some() {
+            std::thread::spawn(move || {
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
+                if dl {
+                    extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let gimi = String::from("SilentNightSound/GIMI-Package");
+                    let srmi = String::from("SpectrumQT/SRMI-Package");
+                    let zzmi = String::from("leotorrez/ZZMI-Package");
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");
+                    let himi = String::from("leotorrez/HIMI-Package");
+
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    if dl1 {
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
+                            extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
+                                let linkedpath = path.join(mi).join(lib);
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } else {
+        if fs::read_dir(&path).unwrap().next().is_none() {
+            let app = app.clone();
+            std::thread::spawn(move || {
+                let app = app.clone();
+                let mut dlpayload = HashMap::new();
+                dlpayload.insert("name", String::from("XXMI Modding tool"));
+                dlpayload.insert("progress", "80".to_string());
+                dlpayload.insert("total", "100".to_string());
+                app.emit("download_progress", dlpayload.clone()).unwrap();
+                prevent_exit(&app, true);
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true);
+                if dl {
+                    extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
+                    let gimi = String::from("SilentNightSound/GIMI-Package");
+                    let srmi = String::from("SpectrumQT/SRMI-Package");
+                    let zzmi = String::from("leotorrez/ZZMI-Package");
+                    let wwmi = String::from("SpectrumQT/WWMI-Package");
+                    let himi = String::from("leotorrez/HIMI-Package");
+
+                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    if dl1 {
+                        for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
+                            extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
+                            for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
+                                let linkedpath = path.join(mi).join(lib);
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
+                            }
+                        }
+                        app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
+                        prevent_exit(&app, false);
+                    }
+                }
+            });
+        }
+    }
+}
+
 pub struct ActionBlocks {
     pub action_exit: bool,
 }
@@ -759,11 +869,11 @@ pub struct ResumeStatesRsp {
 }
 
 pub trait PathResolve {
-    fn follow_symlink(&self) -> io::Result<std::path::PathBuf>;
+    fn follow_symlink(&self) -> io::Result<PathBuf>;
 }
 
 impl PathResolve for Path {
-    fn follow_symlink(&self) -> io::Result<std::path::PathBuf> {
+    fn follow_symlink(&self) -> io::Result<PathBuf> {
         if self.is_symlink() { self.canonicalize() } else { Ok(self.to_path_buf()) }
     }
 }
