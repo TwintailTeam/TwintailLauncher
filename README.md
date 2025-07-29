@@ -9,6 +9,7 @@
   * [Developers & Compiling](#developers--compiling)
     * [Prerequisites](#prerequisites)
     * [Building](#building)
+  * [Thanks to our contributors](#thanks-to-our-contributors)
   * [Issues and contributions](#issues-and-contributions)
 <!-- TOC -->
 
@@ -95,6 +96,12 @@ Build for production (Cross compile for Windows)
 pnpm build:windows
 ```
 You can find built binaries in `target/release` for current os, `target/x86_64-unknown-linux-gnu` for linux cross compile and `target/x86_64-pc-windows-msvc` for windows cross compile.
+
+## Thanks to our contributors
+
+<a href="https://github.com/twintailteam/twintaillauncher/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=twintailteam/twintaillauncher"  alt="contributors image"/>
+</a>
 
 ## Issues and contributions
 Feel free to open issues and PRs usually we try to get to everyone as fast as possible.<br>
