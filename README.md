@@ -16,6 +16,7 @@
 ## About
 Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.<br>
 TTL is an all-in-one tool for downloading, managing, and launching your favorite anime games. It’s designed with flexibility, ease of use, and customization in mind.
+
 ### Supported games
 * Genshin Impact
 * Honkai: Star Rail
@@ -55,14 +56,13 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 
 ## Installation
 
-| Platform        | Link                                                                            | Note(s)                                      |
-|-----------------|---------------------------------------------------------------------------------|----------------------------------------------|
-| Windows (x64)   | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | Use `winget` it is only supported method     |
-| Linux (Flatpak) | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Good on `Bazzite` / `SteamOS` / `Any distro` |
-| Linux (AUR)     | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use `yay` / `paru` as AUR helper             |
-| Linux (AUR)     | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use `yay` / `paru` as AUR helper             |
-| Linux (RPM)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED**                          |
-| Linux (DEB)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED**                          |
+| Platform        | Link                                                                            | Note(s)                                     |
+|-----------------|---------------------------------------------------------------------------------|---------------------------------------------|
+| Windows (x64)   | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                           | Installation is only supported via `winget` |
+| Linux (Flatpak) | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Recommended method for all distributions    |
+| Linux (AUR)     | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use AUR helper (`yay` / `paru`)             |
+| Linux (AUR)     | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use AUR helper (`yay` / `paru`)             |
+| Linux (DEB)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED** Used for AUR bin        |
 
 ## Developers & Compiling
 
