@@ -522,11 +522,11 @@ pub fn register_listeners(app: &AppHandle) {
                     let tmp = Arc::new(h5.clone());
 
                     let pmd = picked.metadata.unwrap();
-                    let instn = Arc::new(install.name.clone());
+                    let instn = Arc::new(install.name.replace(install.version.as_str(), pmd.version.as_str()).clone());
                     let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                     let mut dlp = dlpayload.lock().unwrap();
-                    dlp.insert("name", install.name.clone());
+                    dlp.insert("name", instn.to_string());
                     dlp.insert("progress", "0".to_string());
                     dlp.insert("total", "1000".to_string());
 
@@ -571,7 +571,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 });
                                 h5.emit("preload_complete", ()).unwrap();
                                 prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), None);
+                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = instn).as_str(), None);
                             }
                         }
                         // KuroGame only
