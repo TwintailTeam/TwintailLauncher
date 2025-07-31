@@ -134,6 +134,20 @@ export default class FolderInput extends React.Component<IProps, IState> {
                 }
             }
             break;
+            case 'default_runner_path': {
+                if (this.props.fetchSettings !== undefined) {
+                    invoke("update_settings_default_runner_path", {path: path}).then(() => {});
+                    this.props.fetchSettings();
+                }
+            }
+            break;
+            case 'default_dxvk_path': {
+                if (this.props.fetchSettings !== undefined) {
+                    invoke("update_settings_default_dxvk_path", {path: path}).then(() => {});
+                    this.props.fetchSettings();
+                }
+            }
+            break;
             case "install_game_path": {
                 if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined && this.props.lang !== undefined) {
                     this.props.fetchDownloadSizes(this.props.biz, this.props.version(), this.props.lang(), path, (disk) => {

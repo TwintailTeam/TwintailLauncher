@@ -8,13 +8,12 @@ use fischl::utils::{assemble_multipart_archive, extract_archive};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
+use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 
 #[cfg(target_os = "linux")]
 use fischl::utils::patch_aki;
 #[cfg(target_os = "linux")]
-use std::process::Command;
 use fischl::download::Extras;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
@@ -90,7 +89,7 @@ pub fn block_telemetry(app: &AppHandle) {
 
             if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
 
-            let output = Command::new("pkexec")
+            let output = std::process::Command::new("pkexec")
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
@@ -723,6 +722,63 @@ fn dir_size(path: &Path) -> io::Result<u64> {
         if metadata.is_dir() { size += dir_size(&entry.path())?; } else { size += metadata.len(); }
     }
     Ok(size)
+}
+
+pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
+    let defgpath = path.join("games").follow_symlink().unwrap();
+    let xxmipath = path.join("extras").join("xxmi").follow_symlink().unwrap();
+    let fpsunlockpath = path.join("extras").join("fps_unlock").follow_symlink().unwrap();
+
+    if fix_mode {
+        // Fix empty db entries and remake dirs
+        let gs = get_settings(app);
+
+        if gs.is_some() {
+            let g = gs.unwrap();
+            if g.default_game_path == "" { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
+            if g.xxmi_path == "" { fs::create_dir_all(&xxmipath).unwrap(); update_settings_default_xxmi_location(app, xxmipath.to_str().unwrap().to_string()); }
+            if g.fps_unlock_path == "" { fs::create_dir_all(&fpsunlockpath).unwrap(); update_settings_default_fps_unlock_location(app, fpsunlockpath.to_str().unwrap().to_string()); }
+
+            #[cfg(target_os = "linux")]
+            {
+                let comppath = path.join("compatibility").follow_symlink().unwrap();
+                let wine = comppath.join("runners").follow_symlink().unwrap();
+                let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
+                let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
+                let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
+
+                if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
+                if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
+                if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap(); update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
+                if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
+            }
+
+        }
+    } else {
+        if !defgpath.exists() { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
+        if !xxmipath.exists() { fs::create_dir_all(&xxmipath).unwrap(); update_settings_default_xxmi_location(app, xxmipath.to_str().unwrap().to_string()); }
+        if !fpsunlockpath.exists() { fs::create_dir_all(&fpsunlockpath).unwrap(); update_settings_default_fps_unlock_location(app, fpsunlockpath.to_str().unwrap().to_string()); }
+
+        #[cfg(target_os = "linux")]
+        {
+            let comppath = path.join("compatibility").follow_symlink().unwrap();
+            let wine = comppath.join("runners").follow_symlink().unwrap();
+            let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
+            let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
+            let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
+
+            if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
+
+            if !comppath.exists() {
+                fs::create_dir_all(&wine).unwrap();
+                fs::create_dir_all(&dxvk).unwrap();
+                fs::create_dir_all(&prefixes).unwrap();
+                update_settings_default_runner_location(app, wine.to_str().unwrap().to_string());
+                update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string());
+                update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string());
+            }
+        }
+    }
 }
 
 pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
