@@ -358,9 +358,7 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
-
-        let query = query("DELETE FROM manifest WHERE repository_id = $1").bind(repository_id);
-        rslt = query.execute(&db).await.unwrap();
+        rslt = query("DELETE FROM manifest WHERE repository_id = ? LIMIT = 1;").bind(&repository_id).execute(&db).await.unwrap();
     });
 
     if rslt.rows_affected() >= 1 {
@@ -370,7 +368,6 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
     }
 }
 
-#[allow(dead_code)]
 pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
