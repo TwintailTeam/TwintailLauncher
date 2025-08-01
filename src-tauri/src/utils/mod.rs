@@ -732,7 +732,6 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
     if fix_mode {
         // Fix empty db entries and remake dirs
         let gs = get_settings(app);
-
         if gs.is_some() {
             let g = gs.unwrap();
             if g.default_game_path == "" { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
@@ -752,13 +751,11 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
                 if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap(); update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
                 if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
             }
-
         }
     } else {
         if !defgpath.exists() { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
         if !xxmipath.exists() { fs::create_dir_all(&xxmipath).unwrap(); update_settings_default_xxmi_location(app, xxmipath.to_str().unwrap().to_string()); }
         if !fpsunlockpath.exists() { fs::create_dir_all(&fpsunlockpath).unwrap(); update_settings_default_fps_unlock_location(app, fpsunlockpath.to_str().unwrap().to_string()); }
-
         #[cfg(target_os = "linux")]
         {
             let comppath = path.join("compatibility").follow_symlink().unwrap();
@@ -768,7 +765,6 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
             let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
 
             if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
-
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
                 fs::create_dir_all(&dxvk).unwrap();
