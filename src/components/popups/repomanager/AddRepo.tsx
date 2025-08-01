@@ -13,7 +13,7 @@ export default function AddRepo({setOpenPopup}: {setOpenPopup: (popup: POPUPS) =
                 }}/>
                 <h1 className="text-white text-stroke font-bold text-2xl">Add a Repository</h1>
                 <div className="flex-grow">{/* Spacer */}</div>
-                <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
+                <X className="text-white hover:text-gray-200 cursor-pointer drop-shadow-lg" style={{filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))'}} onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
 
             <div>{/* Spacer */}</div>
