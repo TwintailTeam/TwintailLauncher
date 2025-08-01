@@ -5,18 +5,19 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
+use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 
 #[cfg(target_os = "linux")]
 use fischl::utils::patch_aki;
 #[cfg(target_os = "linux")]
-use fischl::download::Extras;
-#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
+#[cfg(target_os = "linux")]
+use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 
 pub mod db_manager;
 pub mod repo_manager;
