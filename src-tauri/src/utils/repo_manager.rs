@@ -6,7 +6,7 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id, get_repository_info_by_id};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
 use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -232,7 +232,7 @@ pub fn load_manifests(app: &AppHandle) {
                                         let ml = dbm.unwrap();
                                         #[cfg(target_os = "linux")]
                                         {
-                                            let dbr = get_repository_info_by_id(&app, ml.repository_id.clone());
+                                            let dbr = crate::utils::db_manager::get_repository_info_by_id(&app, ml.repository_id.clone());
                                             if dbr.is_some() {
                                                 let dbrr = dbr.unwrap();
                                                 if dbrr.github_id.contains("runner-manifests") {
