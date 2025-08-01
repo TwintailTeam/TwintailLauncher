@@ -40,7 +40,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
             <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white text-stroke font-bold text-2xl">{this.props.installSettings.name}</h1>
-                    <X className="text-white hover:text-gray-200 cursor-pointer drop-shadow-lg" style={{filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.8))'}} onClick={() => {
+                    <X className="text-white hover:text-gray-200 cursor-pointer drop-shadow-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
