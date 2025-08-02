@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game};
+use crate::utils::{get_mi_path_from_game, send_notification};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
@@ -55,6 +55,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if spawned.is_ok() {
             let process = spawned?;
             write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "pre_launch.log".parse().unwrap());
+        } else {
+            send_notification(&app, "Failed to execute prelaunch command! Please try again or check the command correctness.", None);
         }
     }
 
@@ -184,8 +186,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             false
         }
     };
-
-    Ok(rslt)
+    if rslt { Ok(true) } else { Ok(false) }
 }
 
 #[cfg(target_os = "linux")]
