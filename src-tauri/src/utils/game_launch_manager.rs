@@ -85,6 +85,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("PROTONFIXES_DISABLE", "1");
+        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -143,6 +144,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("PROTONFIXES_DISABLE", "1");
+        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }

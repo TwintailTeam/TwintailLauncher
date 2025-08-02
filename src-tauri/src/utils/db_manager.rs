@@ -72,7 +72,13 @@ pub async fn init_db(app: &AppHandle) {
             description: "alter_settings_table_108_2",
             sql: r#"ALTER TABLE settings ADD COLUMN default_dxvk_path TEXT default null;"#,
             kind: MigrationKind::Up,
-        }
+        },
+        Migration {
+            version: 11,
+            description: "alter_install_table_108_3",
+            sql: r#"ALTER TABLE install ADD COLUMN use_mangohud bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -543,7 +549,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             fps_value: rslt.get(0).unwrap().get("fps_value"),
             runner_prefix: rslt.get(0).unwrap().get("runner_prefix_path"),
             launch_args: rslt.get(0).unwrap().get("launch_args"),
-            use_gamemode: rslt.get(0).unwrap().get("use_gamemode")
+            use_gamemode: rslt.get(0).unwrap().get("use_gamemode"),
+            use_mangohud: rslt.get(0).unwrap().get("use_mangohud")
         };
 
         Some(rsltt)
@@ -589,7 +596,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
                 launch_args: r.get("launch_args"),
-                use_gamemode: r.get("use_gamemode")
+                use_gamemode: r.get("use_gamemode"),
+                use_mangohud: r.get("use_mangohud")
             })
         }
 
@@ -636,7 +644,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
                 launch_args: r.get("launch_args"),
-                use_gamemode: r.get("use_gamemode")
+                use_gamemode: r.get("use_gamemode"),
+                use_mangohud: r.get("use_mangohud")
             })
         }
 
@@ -732,6 +741,15 @@ pub fn update_install_use_gamemode_by_id(app: &AppHandle, id: String, enabled: b
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'use_gamemode' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_mangohud_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_mangohud' = $1 WHERE id = $2").bind(enabled).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

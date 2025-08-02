@@ -87,7 +87,16 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                                 });
                             }
                         }
-                            break;
+                        break;
+                        case "tweak_mangohud": {
+                            if (fetchInstallSettings !== undefined) {
+                                invoke("update_install_use_mangohud", {enabled: !isEnabled, id: install}).then(() => {
+                                    setIsEnabled(!isEnabled);
+                                    fetchInstallSettings(install as string)
+                                });
+                            }
+                        }
+                        break;
                         case "uninstall_prefix_delete": {
                             setIsEnabled(!isEnabled);
                         }
