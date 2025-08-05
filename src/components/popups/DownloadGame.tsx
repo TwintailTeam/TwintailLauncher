@@ -27,13 +27,13 @@ interface IProps {
 export default function DownloadGame({disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground, fetchDownloadSizes}: IProps) {
 
     return (
-        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6">
             <div className="flex flex-row items-center justify-between">
-                <h1 className="text-white text-stroke font-bold text-2xl">Download {displayName}</h1>
-                <X className="text-white hover:text-gray-200 cursor-pointer drop-shadow-lg" onClick={() => setOpenPopup(POPUPS.NONE)}/>
+                <h1 className="text-white font-bold text-2xl">Download {displayName}</h1>
+                <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse">
-                <button className="flex flex-row gap-1 items-center p-2 bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
+                <button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg disabled:bg-gray-500" id={"game_dl_btn"} onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     // @ts-ignore
                     let hash_skip = document.getElementById("skip_hash_validation").checked;
@@ -115,9 +115,10 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             console.error("Download error!");
                         }
                     });
-                }}><DownloadCloudIcon/><span className="font-semibold translate-y-px">Start download</span></button>
+                }}><DownloadCloudIcon/><span className="font-semibold">Start download</span></button>
             </div>
-                <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
+            <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-4 -mr-4">
+                <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                     {/* @ts-ignore */}
                     <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."}/>
                     <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"} helpText={"This will skip downloading game files, useful if you already have game installed and just want to use that installation."}/>
@@ -125,13 +126,14 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
                     <TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
                     <TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={getAudio} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup}/>
-                    <SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={""} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={getVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup}/>
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={null} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={getAudio} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup}/>
+                    <SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={null} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={getVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup}/>
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} multiple={false} options={runnerVersions} selected={runnerVersions[0].value} helpText={"Wine/Proton version to use for this installation."} setOpenPopup={setOpenPopup}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={dxvkVersions[0].value} helpText={"What DXVK version to use for this installation."} setOpenPopup={setOpenPopup}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"} helpText={"Location where to store Wine/Proton prefix."}/>: null}
                 </div>
             </div>
+        </div>
     )
 }
 
