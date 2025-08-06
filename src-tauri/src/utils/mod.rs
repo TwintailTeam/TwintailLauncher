@@ -927,6 +927,9 @@ pub trait PathResolve {
 
 impl PathResolve for Path {
     fn follow_symlink(&self) -> io::Result<PathBuf> {
-        if self.is_symlink() { self.canonicalize() } else { Ok(self.to_path_buf()) }
+        #[cfg(target_os = "linux")]
+        return if self.is_symlink() { self.read_link() } else { Ok(self.to_path_buf()) };
+        #[cfg(target_os = "windows")]
+        return Ok(self.to_path_buf())
     }
 }
