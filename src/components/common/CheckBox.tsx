@@ -2,7 +2,7 @@ import {useState} from "react";
 import {invoke} from "@tauri-apps/api/core";
 import HelpTooltip from "./HelpTooltip.tsx";
 
-export default function CheckBox({ id, name, enabled, install, fetchSettings, fetchInstallSettings, helpText}: { id: string, name: string, enabled: boolean, install?: string, fetchSettings?: () => void, fetchInstallSettings?: (id: string) => void, helpText: string }) {
+export default function CheckBox({ id, name, enabled, install, fetchSettings, fetchInstallSettings, helpText, onToggle}: { id: string, name: string, enabled: boolean, install?: string, fetchSettings?: () => void, fetchInstallSettings?: (id: string) => void, helpText: string, onToggle?: (checked: boolean) => void }) {
     const [isEnabled, setIsEnabled] = useState<boolean>(enabled);
 
     return (
@@ -24,6 +24,9 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                         break;
                         case "skip_game_dl": {
                             setIsEnabled(!isEnabled);
+                            if (onToggle) {
+                                onToggle(!isEnabled);
+                            }
                         }
                         break;
                         case "skip_version_updates": {

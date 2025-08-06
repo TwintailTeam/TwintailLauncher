@@ -29,7 +29,8 @@ interface IProps {
     version?: () => string,
     lang?: () => string,
     fetchDownloadSizes?: (biz: any, version: any, lang: any, path: any, callback: (data: any) => void) => void,
-    helpText: string
+    helpText: string,
+    skipGameDownload?: boolean
 }
 
 interface IState {
@@ -156,16 +157,8 @@ export default class FolderInput extends React.Component<IProps, IState> {
                         // @ts-ignore
                         let freedisk = document.getElementById("game_disk_free");
 
-                        if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                            // @ts-ignore
-                            btn.setAttribute("disabled", "");
-                            // @ts-ignore
-                            freedisk.classList.add("text-red-600");
-                            // @ts-ignore
-                            freedisk.classList.remove("text-white");
-                            // @ts-ignore
-                            freedisk.classList.add("font-bold");
-                        } else {
+                        // Skip space validation if existing installation is selected
+                        if (this.props.skipGameDownload || disk.game_decompressed_size_raw <= disk.free_disk_space_raw) {
                             // @ts-ignore
                             btn.removeAttribute("disabled");
                             // @ts-ignore
@@ -174,6 +167,15 @@ export default class FolderInput extends React.Component<IProps, IState> {
                             freedisk.classList.add("text-white");
                             // @ts-ignore
                             freedisk.classList.remove("font-bold");
+                        } else {
+                            // @ts-ignore
+                            btn.setAttribute("disabled", "");
+                            // @ts-ignore
+                            freedisk.classList.add("text-red-600");
+                            // @ts-ignore
+                            freedisk.classList.remove("text-white");
+                            // @ts-ignore
+                            freedisk.classList.add("font-bold");
                         }
                     });
                 }
