@@ -117,7 +117,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     });
                 }}><DownloadCloudIcon/><span className="font-semibold">Start download</span></button>
             </div>
-            <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-4 -mr-4">
+            <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
                 <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                     {/* @ts-ignore */}
                     <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."}/>
