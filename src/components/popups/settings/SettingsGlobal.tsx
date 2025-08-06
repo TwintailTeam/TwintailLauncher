@@ -14,7 +14,7 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex flex-row-reverse gap-2">
-                <button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {
+                <button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg me-5" onClick={() => {
                     setOpenPopup(POPUPS.NONE);
                     invoke("update_extras").then(() => {});
                 }}><WrenchIcon/><span className="font-semibold">Update extras</span>

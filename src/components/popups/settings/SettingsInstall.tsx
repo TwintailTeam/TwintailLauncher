@@ -47,7 +47,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     }}/>
                 </div>
                 <div className="flex flex-row-reverse gap-2">
-                    <button className="flex flex-row gap-2 items-center py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-2 items-center py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg me-5" onClick={() => {
                         this.props.setOpenPopup(POPUPS.INSTALLDELETECONFIRMATION);
                     }}><Trash2Icon/><span className="font-semibold">Uninstall</span>
                     </button>

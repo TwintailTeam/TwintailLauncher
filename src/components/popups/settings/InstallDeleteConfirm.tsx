@@ -25,7 +25,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     <h1 className="text-white font-bold text-2xl">Confirm your action</h1>
                 </div>
                 <div className="flex flex-row-reverse">
-                    <button className="flex flex-row gap-2 items-center py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => {
+                    <button className="flex flex-row gap-2 items-center py-2 px-4 bg-red-600 hover:bg-red-700 rounded-lg me-2" onClick={() => {
                         setOpenPopup(POPUPS.NONE);
                         let wpd = false;
 
