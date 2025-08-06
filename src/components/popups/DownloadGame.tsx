@@ -6,6 +6,7 @@ import TextDisplay from "../common/TextDisplay.tsx";
 import SelectMenu from "../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import {emit} from "@tauri-apps/api/event";
+import {useState, useEffect} from "react";
 
 interface IProps {
     icon: string,
@@ -25,6 +26,31 @@ interface IProps {
 }
 
 export default function DownloadGame({disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground, fetchDownloadSizes}: IProps) {
+    const [skipGameDownload, setSkipGameDownload] = useState(false);
+
+    // Update button state when skipGameDownload changes
+    useEffect(() => {
+        const btn = document.getElementById("game_dl_btn");
+        const freedisk = document.getElementById("game_disk_free");
+
+        if (btn && freedisk) {
+            if (skipGameDownload) {
+                // Enable button and reset disk space styling when skipping download
+                btn.removeAttribute("disabled");
+                freedisk.classList.remove("text-red-600");
+                freedisk.classList.add("text-white");
+                freedisk.classList.remove("font-bold");
+            } else {
+                // Re-check disk space when not skipping download
+                if (disk && disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                    btn.setAttribute("disabled", "");
+                    freedisk.classList.add("text-red-600");
+                    freedisk.classList.remove("text-white");
+                    freedisk.classList.add("font-bold");
+                }
+            }
+        }
+    }, [skipGameDownload, disk]);
 
     return (
         <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
@@ -115,18 +141,18 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             console.error("Download error!");
                         }
                     });
-                }}><DownloadCloudIcon/><span className="font-semibold translate-y-px">Start download</span></button>
+                }}><DownloadCloudIcon/><span className="font-semibold translate-y-px">{skipGameDownload ? "Add existing installation" : "Start download"}</span></button>
             </div>
                 <div className={`w-full transition-all duration-500 overflow-scroll scrollbar-none bg-neutral-700 gap-4 flex flex-col items-center justify-between px-4 p-4 rounded-b-lg rounded-t-lg max-h-[80vh] sm:max-h-[90vh]`}>
                     {/* @ts-ignore */}
-                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."}/>
-                    <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"} helpText={"This will skip downloading game files, useful if you already have game installed and just want to use that installation."}/>
+                    <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."} skipGameDownload={skipGameDownload}/>
+                    <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"} helpText={"This will skip downloading game files, useful if you already have game installed and just want to use that installation."} onToggle={setSkipGameDownload}/>
                     <CheckBox enabled={false} name={"Skip version update check"} id={"skip_version_updates"} helpText={"Skip checking for game updates."}/>
                     <CheckBox enabled={false} name={"Skip hash validation"} id={"skip_hash_validation"} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
                     <TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3"}/>
                     <TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3"}/>
-                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={getAudio} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup}/>
-                    <SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={""} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={getVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup}/>
+                    <SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={""} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={getAudio} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload}/>
+                    <SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={""} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={getVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload}/>
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"runner_version"} name={"Runner version"} multiple={false} options={runnerVersions} selected={runnerVersions[0].value} helpText={"Wine/Proton version to use for this installation."} setOpenPopup={setOpenPopup}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={dxvkVersions[0].value} helpText={"What DXVK version to use for this installation."} setOpenPopup={setOpenPopup}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"} helpText={"Location where to store Wine/Proton prefix."}/>: null}
