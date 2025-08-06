@@ -6,7 +6,7 @@ import AddRepo from "./components/popups/repomanager/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
-import {ChevronDown, DownloadIcon, Settings} from "lucide-react";
+import {DownloadIcon, Settings} from "lucide-react";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
@@ -16,7 +16,6 @@ import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
 import GameButton from "./components/GameButton.tsx";
 import TooltipIcon from "./components/common/TooltipIcon.tsx";
-import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 import {emit, listen} from "@tauri-apps/api/event";
 import SidebarCommunity from "./components/SidebarCommunity.tsx";
 
