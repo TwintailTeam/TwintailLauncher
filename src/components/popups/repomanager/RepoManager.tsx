@@ -4,7 +4,7 @@ import {POPUPS} from "../POPUPS.ts";
 
 export default function RepoManager({repos, setOpenPopup, fetchRepositories}: {repos: any, setOpenPopup: (popup: POPUPS) => void, fetchRepositories: () => void}) {
     return (
-        <div className="rounded-lg h-full w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6">
+        <div className="rounded-lg h-full w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Repositories and Manifests</h1>
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>

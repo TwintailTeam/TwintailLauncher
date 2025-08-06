@@ -7,7 +7,7 @@ export default function RepoManifestCombo({name, items, roundTop, roundBottom, f
 
     return (
         <React.Fragment>
-            <div className={`w-full bg-neutral-800 h-14 flex flex-row items-center justify-between p-4 ${roundTop ? "rounded-t-lg" : ""} ${roundBottom && isFolded ? "rounded-b-lg" : ""}`}>
+            <div className={`w-full bg-neutral-800 h-14 flex flex-row items-center justify-between p-4 scrollbar-none overflow-scroll ${roundTop ? "rounded-t-lg" : ""} ${roundBottom && isFolded ? "rounded-b-lg" : ""}`}>
                 <span className="text-white">{name}</span>
                 <ChevronDown color="white" onClick={() => setIsFolded(!isFolded)} className={`h-10 w-10 hover:bg-white/10 border-x-4 border-y-5 border-transparent transition rounded-lg cursor-pointer duration-500 ${isFolded ? "rotate-00" : "rotate-180"}`}/>
             </div>
