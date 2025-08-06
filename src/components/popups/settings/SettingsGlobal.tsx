@@ -26,7 +26,7 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                     </button>
                 : null}
             </div>
-            <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-4 -mr-4">
+            <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
                 <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                     <CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Auto update 3rd party repositories"} fetchSettings={fetchSettings} id={"third_party_repo_updates"} helpText={"Allow launcher to automatically update 3rd party repositories and their manifests."}/>
                     <FolderInput name={"Default game install location"} clearable={true} value={`${settings.default_game_path}`} folder={true} id={"default_game_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all games will be installed."}/>
