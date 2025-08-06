@@ -15,7 +15,7 @@ export default function RepoManager({repos, setOpenPopup, fetchRepositories}: {r
                     <span className="font-semibold">Add Repository</span>
                 </button>
             </div>
-            <div className="rounded-lg w-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+            <div className="rounded-lg w-full overflow-y-auto overflow-scroll scrollbar-none">
                 {repos.map((repo:any, idx: number) => {
                     return (
                         <RepoManifestCombo key={repo.id} name={repo.github_id} items={repo.manifests} roundTop={idx == 0} roundBottom={idx == repos.length - 1} fetchRepositories={fetchRepositories} />
