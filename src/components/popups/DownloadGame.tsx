@@ -27,7 +27,7 @@ interface IProps {
 export default function DownloadGame({disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground, fetchDownloadSizes}: IProps) {
 
     return (
-        <div className="rounded-lg h-full w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Download {displayName}</h1>
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
