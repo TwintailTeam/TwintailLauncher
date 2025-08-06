@@ -73,7 +73,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     }}><FolderOpenIcon/><span className="font-semibold">Open mods folder</span>
                     </button>: null}
                 </div>
-                <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-4 -mr-4">
+                <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
                     <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                         <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={"Location where game is installed. Usually should be set where main game exe is located."}/>
                         <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip checking for game updates."}/>
