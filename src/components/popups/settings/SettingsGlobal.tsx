@@ -39,7 +39,7 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                     <SelectMenu id={"launcher_action"} name={"After game launch"} multiple={false} options={[{value: "exit", name: "Close launcher"}, {value: "keep", name: "Keep launcher open"}, {value: "minimize", name: "Minimize launcher to tray"}]} selected={`${settings.launcher_action}`} fetchSettings={fetchSettings} helpText={"What will launcher do once it launches a game."} setOpenPopup={setOpenPopup}/>
                 </div>
             </div>
-            <div className={"text-center text-gray-400"}>
+            <div className={"text-center text-white"}>
                 <TTLVersion/>
             </div>
         </div>
