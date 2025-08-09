@@ -6,7 +6,7 @@ export default function AddRepo({setOpenPopup}: {setOpenPopup: (popup: POPUPS) =
     const [advanncedOptionsOpen, setAdvanncedOptionsOpen] = useState<boolean>(false);
 
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-4 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-4 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center gap-4">
                 <ArrowLeft className="text-gray-400 hover:text-white cursor-pointer" onClick={() => {
                     setOpenPopup(POPUPS.REPOMANAGER);

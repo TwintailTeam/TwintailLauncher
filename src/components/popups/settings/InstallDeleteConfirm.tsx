@@ -16,7 +16,7 @@ interface IProps {
 
 export default function InstallDeleteConfirm({setOpenPopup, install, games, installs, pushInstalls, setCurrentGame, setCurrentInstall, setBackground}: IProps) {
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/50 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row items-center gap-4">
                     <ArrowLeft className="text-gray-400 hover:text-white cursor-pointer" onClick={() => {
