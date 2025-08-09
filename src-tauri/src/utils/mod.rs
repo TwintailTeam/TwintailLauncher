@@ -9,7 +9,7 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_install_info_by_id, get_installs, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 
 #[cfg(target_os = "linux")]
@@ -883,6 +883,21 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     }
                 }
             });
+        }
+    }
+}
+
+pub fn deprecate_jadeite(app: &AppHandle) {
+    let installs = get_installs(app);
+    if installs.is_some() {
+        let i = installs.unwrap();
+        for ci in i {
+            let im = get_manifest_info_by_id(&app, ci.manifest_id);
+            if im.is_some() {
+                let lm = im.unwrap();
+                // Shit validation but will work
+                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id, false); }
+            }
         }
     }
 }

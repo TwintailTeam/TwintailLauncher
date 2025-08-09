@@ -6,7 +6,7 @@ use crate::commands::repository::{list_repositories, remove_repository, add_repo
 use crate::commands::settings::{block_telemetry_cmd, list_settings, open_folder, open_uri, update_extras, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{block_telemetry, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{block_telemetry, deprecate_jadeite, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
 use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
@@ -79,6 +79,7 @@ pub fn run() {
             let data_dir = app.path().app_data_dir().unwrap();
 
             setup_or_fix_default_paths(handle, data_dir.clone(), true);
+            deprecate_jadeite(handle);
 
             let path = data_dir.join(".telemetry_blocked");
             if !path.exists() { block_telemetry(&handle); }
