@@ -51,16 +51,11 @@ pub fn run() {
             let handle = app.handle();
             run_async_command(async { init_db(&handle).await; });
 
-        #[cfg(target_arch = "aarch64")]
+            #[cfg(target_arch = "aarch64")]
             {
                 use tauri_plugin_dialog::DialogExt;
                 let h = handle.clone();
-                handle.dialog().message("TwintailLauncher does not support arm based architectures. Flatpak required arm builds to be provided but they are not supported!").show(move |_| {
-                    let h = h.clone();
-                    h.cleanup_before_exit();
-                    h.exit(0);
-                    std::process::exit(0);
-                });
+                handle.dialog().message("TwintailLauncher does not support arm based architectures. Flatpak required arm builds to be provided but they are not supported!").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
             }
 
             #[cfg(target_arch = "x86_64")]
