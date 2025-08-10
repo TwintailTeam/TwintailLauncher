@@ -16,7 +16,7 @@ interface IProps {
 
 export default function InstallDeleteConfirm({setOpenPopup, install, games, installs, pushInstalls, setCurrentGame, setCurrentInstall, setBackground}: IProps) {
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <div className="flex flex-row items-center gap-4">
                     <ArrowLeft className="text-gray-400 hover:text-white cursor-pointer" onClick={() => {
@@ -62,7 +62,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     </button>
                 </div>
             </div>
-            <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
+            <div className="bg-black/70 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                 <p className={"text-white text-start"}>
                     Are you sure you want to uninstall and remove <span className={"text-purple-400 font-bold"}>{install.name}</span> installation?<br/>
                     <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>

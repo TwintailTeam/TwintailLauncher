@@ -53,7 +53,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
     }, [skipGameDownload, disk]);
 
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Download {displayName}</h1>
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
@@ -144,7 +144,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                 }}><DownloadCloudIcon/><span className="font-semibold">{skipGameDownload ? "Add existing installation" : "Start download"}</span></button>
             </div>
             <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
-                <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
+                <div className="bg-black/70 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                     {/* @ts-ignore */}
                     <FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={getVersion} lang={getAudio} helpText={"Location where to download game files."} skipGameDownload={skipGameDownload}/>
                     <CheckBox enabled={false} name={"Skip game download (Existing install)"} id={"skip_game_dl"} helpText={"This will skip downloading game files, useful if you already have game installed and just want to use that installation."} onToggle={setSkipGameDownload}/>

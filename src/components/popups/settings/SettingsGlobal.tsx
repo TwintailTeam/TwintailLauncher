@@ -8,7 +8,7 @@ import TTLVersion from "../../common/TTLVersion.tsx";
 
 export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: {settings: any, fetchSettings: () => void, setOpenPopup: (popup: POPUPS) => void}) {
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Settings</h1>
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
@@ -27,7 +27,7 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                 : null}
             </div>
             <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
-                <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
+                <div className="bg-black/70 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                     <CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Auto update 3rd party repositories"} fetchSettings={fetchSettings} id={"third_party_repo_updates"} helpText={"Allow launcher to automatically update 3rd party repositories and their manifests."}/>
                     <FolderInput name={"Default game install location"} clearable={true} value={`${settings.default_game_path}`} folder={true} id={"default_game_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all games will be installed."}/>
                     <FolderInput name={"XXMI location"} clearable={true} folder={true} value={`${settings.xxmi_path}`} id={"default_xxmi_path"} fetchSettings={fetchSettings} helpText={"Location where all XXMI modding tool files will be stored."}/>

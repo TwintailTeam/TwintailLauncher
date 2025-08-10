@@ -98,7 +98,7 @@ export default class App extends React.Component<any, any> {
         return (
             <main className="w-full h-screen flex flex-row bg-transparent">
                 <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
-                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center fixed-backdrop-blur-md justify-between">
+                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between">
                     <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none">
                         <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
                             invoke("update_settings_manifests_hide", {enabled: !this.state.globalSettings.hide_manifests}).then(() => {});
@@ -148,7 +148,7 @@ export default class App extends React.Component<any, any> {
                     <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span> | <span id={"progress_pretty"}>{this.state.progressPretty} / {this.state.progressPrettyTotal}</span>)</h4>
                     <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
                 </div>
-                <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
+                <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex bg-white/10"}`}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}

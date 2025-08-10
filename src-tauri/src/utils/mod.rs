@@ -102,7 +102,7 @@ pub fn block_telemetry(app: &AppHandle) {
                         fs::write(&path, ".").unwrap();
                     } else { send_notification(&app, "Telemetry servers already blocked.", None); }
                 }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None); }
+                Err(_err) => { send_notification(&app, r#"Failed to block telemetry server, something seriously failed or we are running under flatpak!"#, None); }
             }
         });
 }
@@ -115,18 +115,11 @@ pub fn register_listeners(app: &AppHandle) {
     app.listen("launcher_action_exit", move |_event| {
         let blocks = h1.state::<Mutex<ActionBlocks>>();
         let state = blocks.lock().unwrap();
-
-        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else {
-            h1.cleanup_before_exit();
-            h1.exit(0);
-            std::process::exit(0);
-        }
+        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else { h1.cleanup_before_exit();h1.exit(0);std::process::exit(0); }
     });
 
     let h2 = app.clone();
-    app.listen("launcher_action_minimize", move |_event| {
-        h2.get_window("main").unwrap().hide().unwrap();
-    });
+    app.listen("launcher_action_minimize", move |_event| { h2.get_window("main").unwrap().hide().unwrap(); });
 
     // Start game download
     let h4 = app.clone();

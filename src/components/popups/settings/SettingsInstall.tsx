@@ -37,7 +37,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
     
     render() {
         return (
-            <div className="rounded-lg h-full w-1/2 bg-black/70 fixed-backdrop-blur-md border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+            <div className="rounded-lg h-full w-1/2 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
                     <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => {
@@ -74,7 +74,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     </button>: null}
                 </div>
                 <div className="w-full overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
-                    <div className="bg-black/20 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
+                    <div className="bg-black/70 border border-white/10 rounded-lg p-4 flex flex-col gap-4">
                         <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={"Location where game is installed. Usually should be set where main game exe is located."}/>
                         <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip checking for game updates."}/>
                         <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
