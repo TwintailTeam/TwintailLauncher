@@ -28,7 +28,7 @@ pub fn run() {
         {
             // Temporary fix rendering for nvidia GPU's
             // Ref: https://github.com/tauri-apps/tauri/issues/10702
-            unsafe { std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1"); }
+            //unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); }
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
@@ -50,44 +50,60 @@ pub fn run() {
     }.setup(|app| {
             let handle = app.handle();
             run_async_command(async { init_db(&handle).await; });
-            load_manifests(&handle);
-            init_tray(&handle).unwrap();
-            register_listeners(&handle);
 
-            // Hide decorations on most common tiler WindowManagers on linux
-            #[cfg(target_os = "linux")]
+        #[cfg(target_arch = "aarch64")]
             {
-                match std::env::var("XDG_SESSION_DESKTOP") {
-                    Ok(val) => {
-                        if val.to_ascii_lowercase() == "hyprland" ||
-                            val.to_ascii_lowercase() == "i3" ||
-                            val.to_ascii_lowercase() == "sway" ||
-                            val.to_ascii_lowercase() == "bspwm" ||
-                            val.to_ascii_lowercase() == "awesome" ||
-                            val.to_ascii_lowercase() == "dwm" ||
-                            val.to_ascii_lowercase() == "xmonad" ||
-                            val.to_ascii_lowercase() == "qtile" ||
-                            val.to_ascii_lowercase() == "niri" {
-                                app.get_window("main").unwrap().set_decorations(false).unwrap();
-                        } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
-                    },
-                    Err(_e) => {},
-                }
+                use tauri_plugin_dialog::DialogExt;
+                let h = handle.clone();
+                handle.dialog().message("TwintailLauncher does not support arm based architectures. Flatpak required arm builds to be provided but they are not supported!").show(move |_| {
+                    let h = h.clone();
+                    h.cleanup_before_exit();
+                    h.exit(0);
+                    std::process::exit(0);
+                });
             }
 
-            let res_dir = app.path().resource_dir().unwrap();
-            let data_dir = app.path().app_data_dir().unwrap();
+            #[cfg(target_arch = "x86_64")]
+            {
+                load_manifests(&handle);
+                init_tray(&handle).unwrap();
+                register_listeners(&handle);
 
-            setup_or_fix_default_paths(handle, data_dir.clone(), true);
-            deprecate_jadeite(handle);
+                // Hide decorations on most common tiler WindowManagers on linux
+                #[cfg(target_os = "linux")]
+                {
+                    match std::env::var("XDG_SESSION_DESKTOP") {
+                        Ok(val) => {
+                            if val.to_ascii_lowercase() == "hyprland" ||
+                                val.to_ascii_lowercase() == "i3" ||
+                                val.to_ascii_lowercase() == "sway" ||
+                                val.to_ascii_lowercase() == "bspwm" ||
+                                val.to_ascii_lowercase() == "awesome" ||
+                                val.to_ascii_lowercase() == "dwm" ||
+                                val.to_ascii_lowercase() == "xmonad" ||
+                                val.to_ascii_lowercase() == "qtile" ||
+                                val.to_ascii_lowercase() == "niri" {
+                                app.get_window("main").unwrap().set_decorations(false).unwrap();
+                            } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
+                        },
+                        Err(_e) => {},
+                    }
+                }
 
-            let path = data_dir.join(".telemetry_blocked");
-            if !path.exists() { block_telemetry(&handle); }
+                let res_dir = app.path().resource_dir().unwrap();
+                let data_dir = app.path().app_data_dir().unwrap();
 
-            for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe"] {
-                let rd = res_dir.join("resources").join(r);
-                let fd = data_dir.join(r);
-                if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
+                setup_or_fix_default_paths(handle, data_dir.clone(), true);
+                deprecate_jadeite(handle);
+
+                let path = data_dir.join(".telemetry_blocked");
+                if !path.exists() { block_telemetry(&handle); }
+
+                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe"] {
+                    let rd = res_dir.join("resources").join(r);
+                    let fd = data_dir.join(r);
+                    if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
+                }
             }
             Ok(())
         }).invoke_handler(tauri::generate_handler![open_uri, open_folder, update_extras, block_telemetry_cmd, list_settings, update_settings_third_party_repo_updates, update_settings_default_game_path, update_settings_default_xxmi_path, update_settings_default_fps_unlock_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_dxvk_path, update_settings_launcher_action, update_settings_manifests_hide,
@@ -116,9 +132,7 @@ pub fn run() {
                     _ => {}
                 }
             }
-            RunEvent::Exit => {
-                    run_async_command(async { app.state::<DbInstances>().0.lock().await.get("db").unwrap().close().await; });
-            }
+            RunEvent::Exit => { run_async_command(async { app.state::<DbInstances>().0.lock().await.get("db").unwrap().close().await; }); }
             _ => ()
         }
     })
