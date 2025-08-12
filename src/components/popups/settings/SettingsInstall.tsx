@@ -37,7 +37,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
     
     render() {
         return (
-            <div className="rounded-lg h-auto w-4/5 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+            <div className="rounded-lg h-auto w-3/6 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
                     <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => {
@@ -56,7 +56,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
                         emit("start_game_repair", {install: this.props.installSettings.id, biz: this.props.installSettings.manifest_id, lang: "en-us"}).then(() => {});
-                    }}><WrenchIcon/><span className="font-semibold">Repair install</span>
+                    }}><WrenchIcon/><span className="font-semibold">Repair</span>
                     </button>
                     <button className="flex flex-row gap-2 me-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
