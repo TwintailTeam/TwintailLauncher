@@ -38,17 +38,100 @@
             0 -1px black;
 }
 
-/* === Popup background enhancement (no GPU heavy blur) === */
-.popup-open #app-bg {
-    will-change: transform, filter;
-}
-
+/* === Loading animations === */
 @keyframes fadeInOpacity {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-.animate-fadeIn { animation: fadeInOpacity 160ms ease-out; }
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes slideInLeft {
+    from { 
+        opacity: 0; 
+        transform: translateX(-20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+@keyframes slideInRight {
+    from { 
+        opacity: 0; 
+        transform: translateX(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.animate-fadeIn { 
+    animation: fadeInOpacity 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideUp { 
+    animation: slideUp 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideInLeft { 
+    animation: slideInLeft 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideInRight { 
+    animation: slideInRight 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.animate-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+/* Delay classes for staggered animations */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* === Popup background enhancement (no GPU heavy blur) === */
+.popup-open #app-bg {
+    will-change: transform, filter;
+}
 
 /* Subtle film grain / noise */
 .popup-noise {
@@ -75,11 +158,6 @@
 
 .no-scroll { overflow: hidden !important; height: 100%; }
 
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    .animate-fadeIn, .popup-noise { animation: none; }
-}
-
 /* === Background crossfade when switching games === */
 @keyframes bgFadeIn {
     0% { opacity: 0; transform: scale(1.015); }
@@ -95,7 +173,16 @@
 
 .animate-bg-fade-out { animation: bgFadeOut 420ms ease-out forwards; }
 
-/* Reduced motion respect */
+/* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-    .animate-bg-fade-in { animation: none; }
+    .animate-fadeIn, 
+    .animate-slideUp, 
+    .animate-slideInLeft, 
+    .animate-slideInRight, 
+    .animate-shimmer,
+    .animate-bg-fade-in, 
+    .animate-bg-fade-out,
+    .popup-noise { 
+        animation: none; 
+    }
 }
