@@ -21,7 +21,8 @@
                 "minimizable": true,
                 "resizable": true,
                 "dragDropEnabled": false,
-                "incognito": true
+                "incognito": true,
+                "backgroundColor": "#0f172a"
             }
         ],
         "security": {

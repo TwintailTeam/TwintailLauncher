@@ -23,7 +23,7 @@ export default function AddRepo({setOpenPopup}: {setOpenPopup: (popup: POPUPS) =
                 setAdvanncedOptionsOpen(!advanncedOptionsOpen)
             }}>
                 <ChevronDown
-                    className={`text-white transition-all ${advanncedOptionsOpen ? "rotate-180" : "rotate-0"}`}/>
+                    className={`text-white transition-all duration-300 ${advanncedOptionsOpen ? "rotate-180" : "rotate-0"}`}/>
                 <span className="text-white select-none">Advanced options</span>
             </div>
             {advanncedOptionsOpen && <React.Fragment>
