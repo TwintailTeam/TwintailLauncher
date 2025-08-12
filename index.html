@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8"/>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg"/>
+    <link rel="icon" type="image/png" href="/launcher-icon.png"/>
     <link rel="dns-prefetch" href="https://fastcdn.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://launcher-webstatic.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://wutheringwaves.kurogames.com"/>
@@ -12,10 +12,41 @@
     <link rel="preconnect" href="https://wutheringwaves.kurogames.com"/>
     <link rel="preconnect" href="https://hw-pcdownload-qcloud.aki-game.net"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>.</title>
+    <title>TwintailLauncher</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial loading screen that shows immediately -->
+      <div id="initial-loader">
+        <div>
+          <!-- App Icon -->
+          <div class="icon-container">
+            <img src="/launcher-icon.png" 
+                 srcset="/launcher-icon.png 1x, /launcher-icon-128.png 2x"
+                 alt="TwintailLauncher" id="launcher-icon" />
+            <div class="icon-overlay"></div>
+          </div>
+          
+          <!-- App Name -->
+          <div class="text-container">
+            <h1>TwintailLauncher</h1>
+            <p id="initial-status">Loading...</p>
+          </div>
+          
+          <!-- Loading Bar -->
+          <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Handle launcher icon error
+      document.getElementById('launcher-icon').addEventListener('error', function() {
+        this.style.display = 'none';
+        this.parentElement.style.background = 'linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234))';
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
