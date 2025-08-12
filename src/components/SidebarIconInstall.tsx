@@ -1,4 +1,5 @@
 import React, {useRef, useState} from "react";
+import ReactDOM from "react-dom";
 import {
     arrow,
     autoUpdate,
@@ -58,12 +59,15 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
                     elem.focus();
                 }
             }} alt={"?"}/> : null}
-            {(enabled) ?
-                (isOpen && popup == POPUPS.NONE) && (
-                    <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
-                        <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                        <span className="text-white z-50">{name}</span>
-                    </div>
+            {(enabled && isOpen && popup == POPUPS.NONE) ?
+                (typeof window !== "undefined" && window.document &&
+                    ReactDOM.createPortal(
+                        <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
+                            <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
+                            <span className="text-white z-50">{name}</span>
+                        </div>,
+                        window.document.body
+                    )
                 ) : null}
         </React.Fragment>
     )
