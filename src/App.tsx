@@ -114,15 +114,11 @@ export default class App extends React.Component<any, any> {
         // Show loading screen while app is initializing
         if (this.state.isInitialLoading) {
             return (
-                <main className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+                <main className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 scrollbar-none">
                     <div className="flex flex-col items-center space-y-6 animate-fadeIn">
                         {/* App Logo/Icon */}
                         <div className="relative w-16 h-16 rounded-xl animate-pulse shadow-2xl shadow-blue-500/20 overflow-hidden bg-slate-700/50">
-                            <img 
-                                src="/launcher-icon.png"
-                                srcSet="/launcher-icon.png 1x, /launcher-icon-128.png 2x"
-                                alt="TwintailLauncher"
-                                className="w-full h-full object-cover rounded-xl"
+                            <img src="/launcher-icon.png" srcSet="/launcher-icon.png 1x, /launcher-icon-128.png 2x" alt="TwintailLauncher" className="w-full h-full object-cover rounded-xl"
                                 onError={(e) => {
                                     e.currentTarget.style.display = 'none';
                                     e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234))';
@@ -139,10 +135,7 @@ export default class App extends React.Component<any, any> {
                         
                         {/* Loading Bar */}
                         <div className="w-64 h-1 bg-slate-700 rounded-full overflow-hidden animate-slideUp delay-200">
-                            <div 
-                                className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out animate-shimmer"
-                                style={{ width: `${this.state.loadingProgress}%` }}
-                            ></div>
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out animate-shimmer" style={{ width: `${this.state.loadingProgress}%` }}></div>
                         </div>
                         
                         {/* Loading Dots */}
@@ -160,23 +153,9 @@ export default class App extends React.Component<any, any> {
             <main className={`w-full h-screen flex flex-row bg-transparent overflow-x-hidden transition-opacity duration-500 ${this.state.isContentLoaded ? 'opacity-100' : 'opacity-0'} ${this.state.openPopup != POPUPS.NONE ? "popup-open" : ""}`}>
                 <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
                     {this.state.transitioningBackground && this.state.previousBackground && (
-                        <img
-                            key={`prev-${this.state.bgVersion}`}
-                            className={`w-full h-screen object-cover object-center absolute inset-0 transition-none animate-bg-fade-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`}
-                            alt={"previous background"}
-                            src={this.state.previousBackground}
-                            loading="lazy"
-                            decoding="async"
-                        />
+                        <img key={`prev-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center absolute inset-0 transition-none animate-bg-fade-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"previous background"} src={this.state.previousBackground} loading="lazy" decoding="async"/>
                     )}
-                    <img
-                        id="app-bg"
-                        key={`curr-${this.state.bgVersion}`}
-                        className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.transitioningBackground ? "animate-bg-fade-in" : ""} ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`}
-                        alt={"?"}
-                        src={this.state.gameBackground}
-                        loading="lazy"
-                        decoding="async"
+                    <img id="app-bg" key={`curr-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.transitioningBackground ? "animate-bg-fade-in" : ""} ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async"
                         onLoad={() => {
                             // Ensure content is marked as loaded when main background loads
                             if (!this.state.isContentLoaded) {
@@ -195,7 +174,7 @@ export default class App extends React.Component<any, any> {
                     </div>
                 )}
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between animate-slideInLeft" style={{ animationDelay: '100ms' }}>
-                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-visible scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
                         <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
                             // If we're about to hide manifests, trigger closing animation first
                             if (!this.state.globalSettings.hide_manifests) {
@@ -240,12 +219,10 @@ export default class App extends React.Component<any, any> {
                         }}>
                             {this.state.currentGame != "" && (!this.state.globalSettings.hide_manifests || this.state.manifestsClosing) && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
                                 return (
-                                    <div key={game.biz} className={
-                                        this.state.manifestsClosing ? "animate-slideOutLeft" : 
-                                        (this.state.manifestsOpening ? "animate-slideInLeft" : 
+                                    <div key={game.biz} className={this.state.manifestsClosing ? "animate-slideOutLeft" :
+                                        (this.state.manifestsOpening ? "animate-slideInLeft" :
                                         (this.state.manifestsInitialLoading ? "animate-slideInLeft" : ""))
-                                    } style={{ 
-                                        animationDelay: this.state.manifestsClosing ? `${(this.state.gamesinfo.length - index - 1) * 50}ms` : 
+                                    } style={{animationDelay: this.state.manifestsClosing ? `${(this.state.gamesinfo.length - index - 1) * 50}ms` :
                                                       (this.state.manifestsOpening ? `${index * 60 + 50}ms` : 
                                                       (this.state.manifestsInitialLoading ? `${index * 100 + 400}ms` : "0ms"))
                                     }}>
@@ -259,7 +236,7 @@ export default class App extends React.Component<any, any> {
                             animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
                             '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
                         } as React.CSSProperties}/>
-                        <div className={`gap-3 flex flex-col items-center scrollbar-none overflow-visible transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : (this.state.globalSettings.hide_manifests ? '' : 'animate-slideDownToPosition')}`} style={{
+                        <div className={`gap-3 flex flex-col items-center scrollbar-none overflow-scroll transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : (this.state.globalSettings.hide_manifests ? '' : 'animate-slideDownToPosition')}`} style={{
                             animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
                             '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
                         } as React.CSSProperties}>
@@ -303,9 +280,7 @@ export default class App extends React.Component<any, any> {
                 </div>
                 <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex bg-white/10"}`} onClick={(e) => {
                     // Close popup when clicking on the overlay (but not on the popup content)
-                    if (e.target === e.currentTarget) {
-                        this.setOpenPopup(POPUPS.NONE);
-                    }
+                    if (e.target === e.currentTarget) {this.setOpenPopup(POPUPS.NONE);}
                 }}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
@@ -322,7 +297,6 @@ export default class App extends React.Component<any, any> {
         // Set minimum loading time to account for startup
         const startTime = Date.now();
         const minimumLoadTime = 2800; // 2.8 seconds minimum
-        
         // Start loading with progress animation
         this.animateLoadingProgress();
         
@@ -379,29 +353,19 @@ export default class App extends React.Component<any, any> {
             const rawProgress = currentStep / steps;
             const easedProgress = 1 - Math.pow(1 - rawProgress, 3); // Ease-out cubic
             const progress = Math.min(easedProgress * 90, 90); // Cap at 90% until data loads
-            
             this.setState({ loadingProgress: progress });
-            
-            if (currentStep >= steps) {
-                clearInterval(progressInterval);
-            }
+            if (currentStep >= steps) {clearInterval(progressInterval);}
         }, interval);
     }
 
     completeInitialLoading() {
         // Finish the progress bar quickly
         this.setState({ loadingProgress: 100 });
-        
         // Wait a moment then hide loading screen with smooth transition
         setTimeout(() => {
-            this.setState({ 
-                isInitialLoading: false 
-            });
-            
+            this.setState({isInitialLoading: false});
             // Mark content as loaded after a brief delay for smoother transition
-            setTimeout(() => {
-                this.setState({ isContentLoaded: true });
-            }, 200);
+            setTimeout(() => {this.setState({ isContentLoaded: true });}, 200);
         }, 300);
     }
 
@@ -485,9 +449,7 @@ export default class App extends React.Component<any, any> {
                     if (this.state.manifestsInitialLoading && gi.length > 0) {
                         const maxDelay = (gi.length - 1) * 100 + 400; // Last item delay
                         const animationDuration = 600; // slideInLeft duration
-                        setTimeout(() => {
-                            this.setState({ manifestsInitialLoading: false });
-                        }, maxDelay + animationDuration + 50);
+                        setTimeout(() => {this.setState({ manifestsInitialLoading: false });}, maxDelay + animationDuration + 50);
                     }
                     
                     if (this.state.installs.length === 0) {

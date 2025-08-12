@@ -90,7 +90,7 @@ pub fn block_telemetry(app: &AppHandle) {
 
             if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
 
-            let output = std::process::Command::new("pkexec")
+            let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers")
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
@@ -102,7 +102,7 @@ pub fn block_telemetry(app: &AppHandle) {
                         fs::write(&path, ".").unwrap();
                     } else { send_notification(&app, "Telemetry servers already blocked.", None); }
                 }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry server, something seriously failed or we are running under flatpak!"#, None); }
+                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
             }
         });
 }
