@@ -484,8 +484,17 @@ export default class App extends React.Component<any, any> {
     setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
     setCurrentGame(game: string) {this.setState({currentGame: game});}
     setDisplayName(name: string) {this.setState({displayName: name});}
+    // Store the background transition timeout ID
+    bgTransitionTimeout?: number;
+
     setBackground(file: string) {
         if (!file || file === this.state.gameBackground) return; // nothing to do
+
+        // Cancel any previous transition timeout
+        if (this.bgTransitionTimeout) {
+            clearTimeout(this.bgTransitionTimeout);
+            this.bgTransitionTimeout = undefined;
+        }
 
         // Preload image to avoid flash of old bg when new not ready
         const img = new Image();
@@ -497,12 +506,13 @@ export default class App extends React.Component<any, any> {
                 bgVersion: prev.bgVersion + 1
             }), () => {
                 if (this.state.transitioningBackground) {
-                    setTimeout(() => {
+                    this.bgTransitionTimeout = window.setTimeout(() => {
                         // After animation remove previous; keep if multiple rapid switches occurred
-                            this.setState({
-                                transitioningBackground: false,
-                                previousBackground: ""
-                            });
+                        this.setState({
+                            transitioningBackground: false,
+                            previousBackground: ""
+                        });
+                        this.bgTransitionTimeout = undefined;
                     }, 480); // match CSS duration
                 }
             });
