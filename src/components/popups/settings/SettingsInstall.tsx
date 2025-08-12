@@ -37,7 +37,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
     
     render() {
         return (
-            <div className="rounded-lg h-full w-1/2 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
+            <div className="rounded-lg h-full w-3/5 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
                 <div className="flex flex-row items-center justify-between">
                     <h1 className="text-white font-bold text-2xl">{this.props.installSettings.name}</h1>
                     <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => {
