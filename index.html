@@ -13,112 +13,29 @@
     <link rel="preconnect" href="https://hw-pcdownload-qcloud.aki-game.net"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>TwintailLauncher</title>
-    <style>
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-      
-      @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        50% { transform: translateX(0%); }
-        100% { transform: translateX(100%); }
-      }
-    </style>
   </head>
-  <body style="background:#000;">
+  <body>
     <div id="root">
       <!-- Initial loading screen that shows immediately -->
-      <div id="initial-loader" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgb(15 23 42) 0%, rgb(30 41 59) 50%, rgb(15 23 42) 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        font-family: system-ui, -apple-system, sans-serif;
-      ">
-        <div style="
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 24px;
-          animation: fadeIn 600ms ease-out;
-        ">
+      <div id="initial-loader">
+        <div>
           <!-- App Icon -->
-          <div style="
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3);
-            animation: pulse 2s infinite;
-            overflow: hidden;
-            background: rgba(30, 41, 59, 0.8);
-          ">
+          <div class="icon-container">
             <img src="/launcher-icon.png" 
                  srcset="/launcher-icon.png 1x, /launcher-icon-128.png 2x"
-                 alt="TwintailLauncher" style="
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-              border-radius: 12px;
-            " id="launcher-icon" />
-            <div style="
-              position: absolute;
-              inset: 0;
-              background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
-              border-radius: 12px;
-            "></div>
+                 alt="TwintailLauncher" id="launcher-icon" />
+            <div class="icon-overlay"></div>
           </div>
           
           <!-- App Name -->
-          <div style="text-align: center;">
-            <h1 style="
-              color: white;
-              font-size: 24px;
-              font-weight: bold;
-              margin: 0 0 8px 0;
-              animation: slideUp 600ms ease-out 100ms both;
-            ">TwintailLauncher</h1>
-            <p style="
-              color: rgb(148 163 184);
-              font-size: 14px;
-              margin: 0;
-              animation: slideUp 600ms ease-out 200ms both;
-            " id="initial-status">Loading...</p>
+          <div class="text-container">
+            <h1>TwintailLauncher</h1>
+            <p id="initial-status">Loading...</p>
           </div>
           
           <!-- Loading Bar -->
-          <div style="
-            width: 256px;
-            height: 4px;
-            background: rgb(51 65 85);
-            border-radius: 2px;
-            overflow: hidden;
-            animation: slideUp 600ms ease-out 300ms both;
-          ">
-            <div style="
-              height: 100%;
-              background: linear-gradient(90deg, rgb(59 130 246), rgb(147 51 234));
-              border-radius: 2px;
-              animation: shimmer 2s ease-in-out infinite;
-              width: 100%;
-            "></div>
+          <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
           </div>
         </div>
       </div>
