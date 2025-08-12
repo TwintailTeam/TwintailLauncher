@@ -37,3 +37,45 @@
             1px 0 black,
             0 -1px black;
 }
+
+/* === Popup background enhancement (no GPU heavy blur) === */
+.popup-open #app-bg {
+    will-change: transform, filter;
+}
+
+@keyframes fadeInOpacity {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.animate-fadeIn { animation: fadeInOpacity 160ms ease-out; }
+
+/* Subtle film grain / noise */
+.popup-noise {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAc8AAtUBpJ1AAAAAAElFTkSuQmCC");
+    background-size: 100px 100px;
+    image-rendering: pixelated;
+    animation: noiseShift 1.2s steps(2,end) infinite;
+}
+
+@keyframes noiseShift {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-10%,5%); }
+    50% { transform: translate(5%,-10%); }
+    75% { transform: translate(10%,5%); }
+    100% { transform: translate(0,0); }
+}
+
+/* Light grid for structure */
+.backdrop-fallback-grid {
+    background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px;
+    mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,1) 100%);
+}
+
+.no-scroll { overflow: hidden !important; height: 100%; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fadeIn, .popup-noise { animation: none; }
+}

@@ -96,8 +96,17 @@ export default class App extends React.Component<any, any> {
     render() {
         let buttonType = this.determineButtonType();
         return (
-            <main className="w-full h-screen flex flex-row bg-transparent">
-                <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
+            <main className={`w-full h-screen flex flex-row bg-transparent overflow-x-hidden ${this.state.openPopup != POPUPS.NONE ? "popup-open" : ""}`}>
+                <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+                    <img id="app-bg" className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
+                </div>
+                {this.state.openPopup != POPUPS.NONE && (
+                    <div className="pointer-events-none absolute top-0 bottom-0 left-16 right-0 z-10 animate-fadeIn">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,10,15,0.55)_0%,rgba(5,5,10,0.70)_55%,rgba(0,0,0,0.82)_100%)]"/>
+                        <div className="absolute inset-0 popup-noise opacity-30 mix-blend-overlay"/>
+                        <div className="absolute inset-0 backdrop-fallback-grid opacity-[0.04]"/>
+                    </div>
+                )}
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between">
                     <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none">
                         <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
@@ -183,6 +192,15 @@ export default class App extends React.Component<any, any> {
             this.fetchInstallSettings(this.state.currentInstall);
             this.fetchInstallResumeStates(this.state.currentInstall);
             this.fetchCompatibilityVersions();
+        }
+        if (this.state.openPopup !== prevState.openPopup) {
+            if (this.state.openPopup !== POPUPS.NONE) {
+                document.documentElement.classList.add("no-scroll");
+                document.body.classList.add("no-scroll");
+            } else {
+                document.documentElement.classList.remove("no-scroll");
+                document.body.classList.remove("no-scroll");
+            }
         }
     }
 
