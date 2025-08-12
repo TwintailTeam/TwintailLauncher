@@ -192,7 +192,7 @@ export default class App extends React.Component<any, any> {
                     </div>
                 )}
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between animate-slideInLeft">
-                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none">
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-visible scrollbar-none">
                         <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
                             invoke("update_settings_manifests_hide", {enabled: !this.state.globalSettings.hide_manifests}).then(() => {});
                             this.setState((prevState: any) => ({
@@ -202,7 +202,7 @@ export default class App extends React.Component<any, any> {
                                 }
                             }))
                         }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-500 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
-                        <div className={"w-full transition-all duration-500 overflow-scroll scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
+                        <div className={"w-full transition-all duration-500 overflow-visible scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
                             {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
                                 return (
                                     <div key={game.biz} className="animate-slideInLeft" style={{ animationDelay: `${index * 100 + 300}ms` }}>
@@ -212,7 +212,7 @@ export default class App extends React.Component<any, any> {
                             })}
                         </div>
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        <div className={"gap-3 flex flex-col items-center scrollbar-none overflow-scroll"}>
+                        <div className={"gap-3 flex flex-col items-center scrollbar-none overflow-visible"}>
                             {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }, index: number) => {
                                 return (
                                     <div key={install.id} className="animate-slideInLeft" style={{ animationDelay: `${index * 100 + 600}ms` }}>
@@ -222,7 +222,7 @@ export default class App extends React.Component<any, any> {
                             })}
                         </div>
                     </div>
-                    <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '800ms' }}>
+                    <div className="flex flex-col gap-4 flex-shrink overflow-visible scrollbar-none animate-slideInLeft" style={{ animationDelay: '800ms' }}>
                         <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
                         <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                         <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
