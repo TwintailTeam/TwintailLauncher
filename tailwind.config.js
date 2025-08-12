@@ -16,8 +16,11 @@ export default {
 			animation: {
 				'fadeIn': 'fadeInOpacity 600ms ease-out',
 				'slideUp': 'slideUp 600ms ease-out',
-				'slideInLeft': 'slideInLeft 600ms ease-out',
+				'slideInLeft': 'slideInLeft 300ms ease-out',
 				'slideInRight': 'slideInRight 600ms ease-out',
+				'slideOutLeft': 'slideOutLeft 200ms ease-in',
+				'slideUpToPosition': 'slideUpToPosition 300ms ease-in',
+				'slideDownToPosition': 'slideDownToPosition 300ms ease-out',
 				'shimmer': 'shimmer 2s infinite',
 				'bg-fade-in': 'bgFadeIn 420ms ease-out',
 				'bg-fade-out': 'bgFadeOut 420ms ease-out forwards',
@@ -38,6 +41,18 @@ export default {
 				slideInRight: {
 					'0%': { opacity: '0', transform: 'translateX(20px)' },
 					'100%': { opacity: '1', transform: 'translateX(0)' }
+				},
+				slideOutLeft: {
+					'0%': { opacity: '1', transform: 'translateX(0)' },
+					'100%': { opacity: '0', transform: 'translateX(-20px)' }
+				},
+				slideUpToPosition: {
+					'0%': { transform: 'translateY(0)' },
+					'100%': { transform: 'translateY(var(--target-y))' }
+				},
+				slideDownToPosition: {
+					'0%': { transform: 'translateY(var(--target-y))' },
+					'100%': { transform: 'translateY(0)' }
 				},
 				shimmer: {
 					'0%': { transform: 'translateX(-100%)' },

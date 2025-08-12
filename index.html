@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8"/>
     <link rel="icon" type="image/png" href="/launcher-icon.png"/>
+    <link rel="stylesheet" href="/index.css"/>
     <link rel="dns-prefetch" href="https://fastcdn.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://launcher-webstatic.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://wutheringwaves.kurogames.com"/>
@@ -16,36 +17,24 @@
   </head>
   <body>
     <div id="root">
-      <!-- Initial loading screen that shows immediately -->
-      <div id="initial-loader">
-        <div>
-          <!-- App Icon -->
-          <div class="icon-container">
-            <img src="/launcher-icon.png" 
-                 srcset="/launcher-icon.png 1x, /launcher-icon-128.png 2x"
-                 alt="TwintailLauncher" id="launcher-icon" />
-            <div class="icon-overlay"></div>
-          </div>
-          
-          <!-- App Name -->
-          <div class="text-container">
-            <h1>TwintailLauncher</h1>
-            <p id="initial-status">Loading...</p>
-          </div>
-          
-          <!-- Loading Bar -->
-          <div class="loading-bar">
-            <div class="loading-bar-fill"></div>
-          </div>
-        </div>
+      <div id="initial-loading">
+        <div class="loading-spinner"></div>
       </div>
     </div>
     <script>
-      // Handle launcher icon error
-      document.getElementById('launcher-icon').addEventListener('error', function() {
-        this.style.display = 'none';
-        this.parentElement.style.background = 'linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234))';
+      // Remove initial loading when React mounts
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length > 0) {
+            const initialLoading = document.getElementById('initial-loading');
+            if (initialLoading) {
+              initialLoading.remove();
+              observer.disconnect();
+            }
+          }
+        });
       });
+      observer.observe(document.getElementById('root'), { childList: true });
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
