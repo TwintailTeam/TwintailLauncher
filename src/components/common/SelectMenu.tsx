@@ -3,7 +3,7 @@ import HelpTooltip from "./HelpTooltip.tsx";
 import {POPUPS} from "../popups/POPUPS.ts";
 
 
-export default function SelectMenu({ id, name, options, selected, multiple, install, biz, lang, version, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes, helpText, setOpenPopup}: { id: string, name: string, options: any, selected: any, multiple: boolean, install?: string, biz?: string, lang?: () => string, version?: () => any, dir?: () => string, helpText: string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void, setOpenPopup: (popup: POPUPS) => void }) {
+export default function SelectMenu({ id, name, options, selected, multiple, install, biz, lang, version, dir, fetchInstallSettings, fetchSettings, fetchDownloadSizes, helpText, setOpenPopup, skipGameDownload}: { id: string, name: string, options: any, selected: any, multiple: boolean, install?: string, biz?: string, lang?: () => string, version?: () => any, dir?: () => string, helpText: string, fetchInstallSettings?: (id: string) => void, fetchSettings?: () => void, fetchDownloadSizes?: (biz: any, version: any, lang: any, dir: any, callback: (data: any) => void) => void, setOpenPopup: (popup: POPUPS) => void, skipGameDownload?: boolean }) {
     return (
         <div className="flex flex-row items-center justify-between w-full h-6">
             <span className="text-white text-sm flex items-center gap-1">{name}
@@ -20,16 +20,8 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                                     // @ts-ignore
                                     let freedisk = document.getElementById("game_disk_free");
 
-                                    if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                                        // @ts-ignore
-                                        btn.setAttribute("disabled", "");
-                                        // @ts-ignore
-                                        freedisk.classList.add("text-red-600");
-                                        // @ts-ignore
-                                        freedisk.classList.remove("text-white");
-                                        // @ts-ignore
-                                        freedisk.classList.add("font-bold");
-                                    } else {
+                                    // Skip space validation if existing installation is selected
+                                    if (skipGameDownload || disk.game_decompressed_size_raw <= disk.free_disk_space_raw) {
                                         // @ts-ignore
                                         btn.removeAttribute("disabled");
                                         // @ts-ignore
@@ -38,6 +30,15 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                                         freedisk.classList.add("text-white");
                                         // @ts-ignore
                                         freedisk.classList.remove("font-bold");
+                                    } else {
+                                        // @ts-ignore
+                                        btn.setAttribute("disabled", "");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.add("font-bold");
                                     }
                                 });
                             }
@@ -51,16 +52,8 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                                     // @ts-ignore
                                     let freedisk = document.getElementById("game_disk_free");
 
-                                    if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                                        // @ts-ignore
-                                        btn.setAttribute("disabled", "");
-                                        // @ts-ignore
-                                        freedisk.classList.add("text-red-600");
-                                        // @ts-ignore
-                                        freedisk.classList.remove("text-white");
-                                        // @ts-ignore
-                                        freedisk.classList.add("font-bold");
-                                    } else {
+                                    // Skip space validation if existing installation is selected
+                                    if (skipGameDownload || disk.game_decompressed_size_raw <= disk.free_disk_space_raw) {
                                         // @ts-ignore
                                         btn.removeAttribute("disabled");
                                         // @ts-ignore
@@ -69,6 +62,15 @@ export default function SelectMenu({ id, name, options, selected, multiple, inst
                                         freedisk.classList.add("text-white");
                                         // @ts-ignore
                                         freedisk.classList.remove("font-bold");
+                                    } else {
+                                        // @ts-ignore
+                                        btn.setAttribute("disabled", "");
+                                        // @ts-ignore
+                                        freedisk.classList.add("text-red-600");
+                                        // @ts-ignore
+                                        freedisk.classList.remove("text-white");
+                                        // @ts-ignore
+                                        freedisk.classList.add("font-bold");
                                     }
                                 });
                             }

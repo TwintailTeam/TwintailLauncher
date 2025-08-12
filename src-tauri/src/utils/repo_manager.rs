@@ -6,7 +6,7 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_repository_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
 use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -202,26 +202,77 @@ pub fn load_manifests(app: &AppHandle) {
                             let mut tmp1 = ml.runner.0.write().unwrap();
 
                             for m in rma.manifests {
-                                let file = fs::File::open(&p.join(&m.as_str())).unwrap();
-                                let reader = BufReader::new(file);
-                                let manifest_data = serde_json::from_reader(reader).unwrap();
-                                
-                                match manifest_data {
-                                    ManifestData::Game(mi) => {
-                                        tmp.insert(m.clone(), mi.clone());
-                                        update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
-                                        #[cfg(debug_assertions)]
-                                        { println!("Loaded game manifest {}", m.as_str()); }
+                                let mp = p.join(&m.as_str());
+                                if mp.exists() {
+                                    let file = fs::File::open(&mp).unwrap();
+                                    let reader = BufReader::new(file);
+                                    let manifest_data = serde_json::from_reader(reader).unwrap();
+
+                                    match manifest_data {
+                                        ManifestData::Game(mi) => {
+                                            tmp.insert(m.clone(), mi.clone());
+                                            update_manifest_table(&app, m.clone(), mi.display_name.clone().as_str(), p.clone());
+                                            #[cfg(debug_assertions)]
+                                            { println!("Loaded game manifest {}", m.as_str()); }
+                                        }
+                                        #[cfg(target_os = "linux")]
+                                        ManifestData::Runner(ri) => {
+                                            tmp1.insert(m.clone(), ri.clone());
+                                            update_manifest_table(&app, m.clone(), ri.display_name.clone().as_str(), p.clone());
+                                            #[cfg(debug_assertions)]
+                                            { println!("Loaded compatibility manifest {}", m.as_str()); }
+                                        }
+                                        #[cfg(target_os = "windows")]
+                                        ManifestData::Runner(_) => {}
                                     }
-                                    #[cfg(target_os = "linux")]
-                                    ManifestData::Runner(ri) => {
-                                        tmp1.insert(m.clone(), ri.clone());
-                                        update_manifest_table(&app, m.clone(), ri.display_name.clone().as_str(), p.clone());
-                                        #[cfg(debug_assertions)]
-                                        { println!("Loaded compatibility manifest {}", m.as_str()); }
-                                    }
-                                    #[cfg(target_os = "windows")]
-                                    ManifestData::Runner(_) => {}
+                                } else {
+                                    // Delete manifests that no longer exist
+                                    let dbm = get_manifest_info_by_filename(&app, m.clone());
+                                    if dbm.is_some() {
+                                        let ml = dbm.unwrap();
+                                        #[cfg(target_os = "linux")]
+                                        {
+                                            let dbr = crate::utils::db_manager::get_repository_info_by_id(&app, ml.repository_id.clone());
+                                            if dbr.is_some() {
+                                                let dbrr = dbr.unwrap();
+                                                if dbrr.github_id.contains("runner-manifests") {
+                                                    let installs = get_installs(&app);
+                                                    if installs.is_some() {
+                                                        let install = installs.unwrap();
+                                                        // Fallback installs that use deprecated runner
+                                                        for i in install {
+                                                            let ir = runner_from_runner_version(i.runner_version.clone()).unwrap();
+                                                            if ir == m {
+                                                                let file = fs::File::open(p.join("proton_cachyos.json")).unwrap();
+                                                                let reader = BufReader::new(file);
+                                                                let manifest_data = serde_json::from_reader(reader).unwrap();
+                                                                match manifest_data {
+                                                                    ManifestData::Game(_mi) => {}
+                                                                    #[cfg(target_os = "linux")]
+                                                                    ManifestData::Runner(ri) => {
+                                                                        let first = ri.versions.first().unwrap();
+                                                                        let np = i.runner_path.replace(i.runner_version.as_str(), first.version.as_str());
+                                                                        let pp = Path::new(&np).follow_symlink().unwrap();
+                                                                        if !pp.exists() {
+                                                                            fs::create_dir_all(&pp).unwrap();
+                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                                                        } else {
+                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                                                        }
+                                                                        update_install_runner_location_by_id(&app, i.id.clone(), np);
+                                                                        update_install_runner_version_by_id(&app, i.id, first.version.clone());
+                                                                    }
+                                                                    #[cfg(target_os = "windows")]
+                                                                    ManifestData::Runner(_) => {}
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        delete_manifest_by_id(app, ml.id).unwrap();
+                                    } // cleanup end
                                 }
                             }
 
@@ -249,56 +300,6 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
             let dbrr = dbr.unwrap();
             let cuid = generate_cuid();
             create_manifest(&app, cuid, dbrr.id, display_name, filename.as_str(), true).unwrap();
-        }
-    } else {
-        // Handle cleanup of removed manifests
-        let user = path.parent().unwrap().components().last().unwrap().as_os_str().to_str().unwrap();
-        let repo_name = path.components().last().unwrap().as_os_str().to_str().unwrap();
-        let dbr = get_repository_info_by_github_id(&app, format!("{user}/{repo_name}"));
-
-        if dbr.is_some() {
-            let mp = path.join(filename.as_str());
-            if !mp.exists() {
-                let dbrr = dbr.unwrap();
-                // Very bad way to validate but can work for now as we only want to reset runner
-                #[cfg(target_os = "linux")]
-                {
-                    if dbrr.github_id.as_str() == "runner-manifests" {
-                        let installs = get_installs(&app);
-                        if installs.is_some() {
-                            let install = installs.unwrap();
-                            for i in install {
-                                let ir = runner_from_runner_version(i.runner_version.clone()).unwrap();
-                                if ir == filename {
-                                    let file = fs::File::open(path.join("proton_cachyos.json")).unwrap();
-                                    let reader = BufReader::new(file);
-                                    let manifest_data = serde_json::from_reader(reader).unwrap();
-                                    match manifest_data {
-                                        ManifestData::Game(_mi) => {}
-                                        #[cfg(target_os = "linux")]
-                                        ManifestData::Runner(ri) => {
-                                            let first = ri.versions.first().unwrap();
-                                            let np = i.runner_path.replace(i.runner_version.as_str(), first.version.as_str());
-                                            let pp = Path::new(&np).follow_symlink().unwrap();
-                                            if !pp.exists() {
-                                                fs::create_dir_all(&pp).unwrap();
-                                                Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
-                                            } else {
-                                                Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
-                                            }
-                                            update_install_runner_location_by_id(&app, i.id.clone(), np);
-                                            update_install_runner_version_by_id(&app, i.id, first.version.clone());
-                                        }
-                                        #[cfg(target_os = "windows")]
-                                        ManifestData::Runner(_) => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                delete_manifest_by_repository_id(&app, dbrr.id.clone()).unwrap();
-            }
         }
     }
 }
@@ -405,7 +406,8 @@ pub struct LauncherInstall {
     pub fps_value: String,
     pub runner_prefix: String,
     pub launch_args: String,
-    pub use_gamemode: bool
+    pub use_gamemode: bool,
+    pub use_mangohud: bool
 }
 
 // === MANIFESTS ===

@@ -20,7 +20,7 @@ export default function CollapsableTooltip({text, icon}: {text: string, icon: an
             {icon}
         </span>
         {open && (
-            <div ref={refs.setFloating} style={floatingStyles} className="bg-black/75 rounded-md p-2 w-full min-w-max z-50 text-white">
+            <div ref={refs.setFloating} style={floatingStyles} className="bg-black/75 rounded-md p-2 min-w-max z-50 text-white">
                 {text}
                 <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
             </div>

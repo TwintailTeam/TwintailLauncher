@@ -4,18 +4,18 @@ import {POPUPS} from "../POPUPS.ts";
 
 export default function RepoManager({repos, setOpenPopup, fetchRepositories}: {repos: any, setOpenPopup: (popup: POPUPS) => void, fetchRepositories: () => void}) {
     return (
-        <div className="rounded-lg h-full w-3/4 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-1/2 bg-black/70 border border-white/20 flex flex-col p-6 gap-6 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
-                <h1 className="text-white text-stroke font-bold text-2xl">Repositories and Manifests</h1>
-                <X className="text-neutral-500 hover:text-neutral-700 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
+                <h1 className="text-white font-bold text-2xl">Repositories and Manifests</h1>
+                <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
-            <div className="flex-row-reverse hidden">
-                <button className="flex flex-row gap-1 items-center p-2 bg-blue-600 hover:bg-blue-700 rounded-lg" onClick={() => {setOpenPopup(POPUPS.ADDREPO)}}>
-                    <Plus className="stroke-[4px]"/>
-                    <span className="font-semibold translate-y-px">Add Repository</span>
+            <div className="flex-row-reverse flex">
+                <button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {setOpenPopup(POPUPS.ADDREPO)}}>
+                    <Plus className="stroke-[3px]"/>
+                    <span className="font-semibold">Add Repository</span>
                 </button>
             </div>
-            <div className="rounded-lg w-full">
+            <div className="rounded-lg w-full overflow-y-auto overflow-scroll scrollbar-none">
                 {repos.map((repo:any, idx: number) => {
                     return (
                         <RepoManifestCombo key={repo.id} name={repo.github_id} items={repo.manifests} roundTop={idx == 0} roundBottom={idx == repos.length - 1} fetchRepositories={fetchRepositories} />

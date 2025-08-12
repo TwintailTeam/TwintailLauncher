@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
-use crate::utils::{run_async_command, PathResolve};
+use crate::utils::{run_async_command, setup_or_fix_default_paths};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -60,7 +60,25 @@ pub async fn init_db(app: &AppHandle) {
             description: "alter_install_table_106",
             sql: r#"ALTER TABLE install ADD COLUMN use_gamemode bool DEFAULT false NOT NULL;"#,
             kind: MigrationKind::Up,
-        }
+        },
+        Migration {
+            version: 9,
+            description: "alter_settings_table_108",
+            sql: r#"ALTER TABLE settings ADD COLUMN default_runner_path TEXT default null;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 10,
+            description: "alter_settings_table_108_2",
+            sql: r#"ALTER TABLE settings ADD COLUMN default_dxvk_path TEXT default null;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 11,
+            description: "alter_install_table_108_3",
+            sql: r#"ALTER TABLE install ADD COLUMN use_mangohud bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -68,7 +86,6 @@ pub async fn init_db(app: &AppHandle) {
     let instances = DbInstances::default();
     let mut tmp = instances.0.lock().await;
     let pool: Pool<Sqlite> = Pool::connect(&conn_url.to_str().unwrap()).await.unwrap();
-
     tmp.insert(String::from("db"), pool.clone());
 
     if let Some(migrations) = migrations.as_mut().unwrap().remove("db") {
@@ -80,45 +97,7 @@ pub async fn init_db(app: &AppHandle) {
     app.manage(instances);
 
     // Init and setup default paths...
-    let defgpath = data_path.join("games").follow_symlink().unwrap();
-    let xxmipath = data_path.join("extras").join("xxmi").follow_symlink().unwrap();
-    let fpsunlockpath = data_path.join("extras").join("fps_unlock").follow_symlink().unwrap();
-    let jadeitepath = data_path.join("extras").join("jadeite").follow_symlink().unwrap();
-
-    if !defgpath.exists() {
-        fs::create_dir_all(&defgpath).unwrap();
-        query("UPDATE settings SET 'default_game_path' = $1 WHERE id = 1;").bind(defgpath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
-    }
-
-    if !xxmipath.exists() {
-        fs::create_dir_all(&xxmipath).unwrap();
-        query("UPDATE settings SET 'xxmi_path' = $1 WHERE id = 1;").bind(xxmipath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
-    }
-
-    if !fpsunlockpath.exists() {
-        fs::create_dir_all(&fpsunlockpath).unwrap();
-        query("UPDATE settings SET 'fps_unlock_path' = $1 WHERE id = 1;").bind(fpsunlockpath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
-    }
-
-    if !jadeitepath.exists() {
-        fs::create_dir_all(&jadeitepath).unwrap();
-        query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1;").bind(jadeitepath.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        let comppath = data_path.join("compatibility").follow_symlink().unwrap();
-        let wine = comppath.join("runners").follow_symlink().unwrap();
-        let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
-        let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
-
-        if !comppath.exists() {
-            fs::create_dir_all(&wine).unwrap();
-            fs::create_dir_all(&dxvk).unwrap();
-            fs::create_dir_all(&prefixes).unwrap();
-            query("UPDATE settings SET 'default_runner_prefix_path' = $1 WHERE id = 1;").bind(prefixes.as_path().to_str().unwrap()).execute(&pool).await.unwrap();
-        }
-    }
+    setup_or_fix_default_paths(app, data_path, false);
 
     // Init this fuck AFTER you add shitty DB instances to state
     if !manifests_dir.exists() {
@@ -156,6 +135,8 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
             default_runner_prefix_path: rslt.get(0).unwrap().get("default_runner_prefix_path"),
             launcher_action: rslt.get(0).unwrap().get("launcher_action"),
             hide_manifests: rslt.get(0).unwrap().get("hide_manifests"),
+            default_runner_path: rslt.get(0).unwrap().get("default_runner_path"),
+            default_dxvk_path: rslt.get(0).unwrap().get("default_dxvk_path"),
         };
 
         Some(rsltt)
@@ -214,6 +195,24 @@ pub fn update_settings_default_prefix_location(app: &AppHandle, path: String) {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE settings SET 'default_runner_prefix_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_runner_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'default_runner_path' = $1 WHERE id = 1").bind(path);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_default_dxvk_location(app: &AppHandle, path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE settings SET 'default_dxvk_path' = $1 WHERE id = 1").bind(path);
         query.execute(&db).await.unwrap();
     });
 }
@@ -365,9 +364,7 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
-
-        let query = query("DELETE FROM manifest WHERE repository_id = $1").bind(repository_id);
-        rslt = query.execute(&db).await.unwrap();
+        rslt = query("DELETE FROM manifest WHERE repository_id = ? LIMIT = 1;").bind(&repository_id).execute(&db).await.unwrap();
     });
 
     if rslt.rows_affected() >= 1 {
@@ -377,7 +374,6 @@ pub fn delete_manifest_by_repository_id(app: &AppHandle, repository_id: String) 
     }
 }
 
-#[allow(dead_code)]
 pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
@@ -553,7 +549,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             fps_value: rslt.get(0).unwrap().get("fps_value"),
             runner_prefix: rslt.get(0).unwrap().get("runner_prefix_path"),
             launch_args: rslt.get(0).unwrap().get("launch_args"),
-            use_gamemode: rslt.get(0).unwrap().get("use_gamemode")
+            use_gamemode: rslt.get(0).unwrap().get("use_gamemode"),
+            use_mangohud: rslt.get(0).unwrap().get("use_mangohud")
         };
 
         Some(rsltt)
@@ -599,7 +596,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
                 launch_args: r.get("launch_args"),
-                use_gamemode: r.get("use_gamemode")
+                use_gamemode: r.get("use_gamemode"),
+                use_mangohud: r.get("use_mangohud")
             })
         }
 
@@ -646,7 +644,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 fps_value: r.get("fps_value"),
                 runner_prefix: r.get("runner_prefix_path"),
                 launch_args: r.get("launch_args"),
-                use_gamemode: r.get("use_gamemode")
+                use_gamemode: r.get("use_gamemode"),
+                use_mangohud: r.get("use_mangohud")
             })
         }
 
@@ -742,6 +741,15 @@ pub fn update_install_use_gamemode_by_id(app: &AppHandle, id: String, enabled: b
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'use_gamemode' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_mangohud_by_id(app: &AppHandle, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_mangohud' = $1 WHERE id = $2").bind(enabled).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 use crate::utils::{block_telemetry, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, get_mi_path_from_game, send_notification, PathResolve};
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
+use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
 use tauri_plugin_notification::NotificationExt;
 
@@ -88,6 +88,32 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
         update_settings_default_prefix_location(&app, p.to_str().unwrap().parse().unwrap());
     } else {
         update_settings_default_prefix_location(&app, p.to_str().unwrap().parse().unwrap());
+    }
+    Some(true)
+}
+
+#[tauri::command]
+pub fn update_settings_default_runner_path(app: AppHandle, path: String) -> Option<bool> {
+    let p = Path::new(&path).follow_symlink().unwrap();
+
+    if !p.exists() && p.is_dir() {
+        fs::create_dir_all(&p).unwrap();
+        update_settings_default_runner_location(&app, p.to_str().unwrap().parse().unwrap());
+    } else {
+        update_settings_default_runner_location(&app, p.to_str().unwrap().parse().unwrap());
+    }
+    Some(true)
+}
+
+#[tauri::command]
+pub fn update_settings_default_dxvk_path(app: AppHandle, path: String) -> Option<bool> {
+    let p = Path::new(&path).follow_symlink().unwrap();
+
+    if !p.exists() && p.is_dir() {
+        fs::create_dir_all(&p).unwrap();
+        update_settings_default_dxvk_location(&app, p.to_str().unwrap().parse().unwrap());
+    } else {
+        update_settings_default_dxvk_location(&app, p.to_str().unwrap().parse().unwrap());
     }
     Some(true)
 }
@@ -197,5 +223,7 @@ pub struct GlobalSettings {
     pub third_party_repo_updates: i32,
     pub default_runner_prefix_path: String,
     pub launcher_action: String,
-    pub hide_manifests: bool
+    pub hide_manifests: bool,
+    pub default_runner_path: String,
+    pub default_dxvk_path: String,
 }

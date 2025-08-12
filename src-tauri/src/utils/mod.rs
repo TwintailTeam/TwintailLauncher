@@ -5,19 +5,19 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
 use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
+use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
+use crate::utils::db_manager::{get_install_info_by_id, get_installs, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 
 #[cfg(target_os = "linux")]
 use fischl::utils::patch_aki;
 #[cfg(target_os = "linux")]
-use std::process::Command;
-use fischl::download::Extras;
-#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
+#[cfg(target_os = "linux")]
+use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -90,7 +90,7 @@ pub fn block_telemetry(app: &AppHandle) {
 
             if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
 
-            let output = Command::new("pkexec")
+            let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers")
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
             match output.and_then(|child| child.wait_with_output()) {
@@ -102,7 +102,7 @@ pub fn block_telemetry(app: &AppHandle) {
                         fs::write(&path, ".").unwrap();
                     } else { send_notification(&app, "Telemetry servers already blocked.", None); }
                 }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None); }
+                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
             }
         });
 }
@@ -115,18 +115,11 @@ pub fn register_listeners(app: &AppHandle) {
     app.listen("launcher_action_exit", move |_event| {
         let blocks = h1.state::<Mutex<ActionBlocks>>();
         let state = blocks.lock().unwrap();
-
-        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else {
-            h1.cleanup_before_exit();
-            h1.exit(0);
-            std::process::exit(0);
-        }
+        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else { h1.cleanup_before_exit();h1.exit(0);std::process::exit(0); }
     });
 
     let h2 = app.clone();
-    app.listen("launcher_action_minimize", move |_event| {
-        h2.get_window("main").unwrap().hide().unwrap();
-    });
+    app.listen("launcher_action_minimize", move |_event| { h2.get_window("main").unwrap().hide().unwrap(); });
 
     // Start game download
     let h4 = app.clone();
@@ -522,11 +515,11 @@ pub fn register_listeners(app: &AppHandle) {
                     let tmp = Arc::new(h5.clone());
 
                     let pmd = picked.metadata.unwrap();
-                    let instn = Arc::new(install.name.clone());
+                    let instn = Arc::new(install.name.replace(install.version.as_str(), pmd.version.as_str()).clone());
                     let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                     let mut dlp = dlpayload.lock().unwrap();
-                    dlp.insert("name", install.name.clone());
+                    dlp.insert("name", instn.to_string());
                     dlp.insert("progress", "0".to_string());
                     dlp.insert("total", "1000".to_string());
 
@@ -571,7 +564,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 });
                                 h5.emit("preload_complete", ()).unwrap();
                                 prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = install.name).as_str(), None);
+                                send_notification(&h5, format!("Predownload for {inn} complete.", inn = instn).as_str(), None);
                             }
                         }
                         // KuroGame only
@@ -725,6 +718,59 @@ fn dir_size(path: &Path) -> io::Result<u64> {
     Ok(size)
 }
 
+pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
+    let defgpath = path.join("games").follow_symlink().unwrap();
+    let xxmipath = path.join("extras").join("xxmi").follow_symlink().unwrap();
+    let fpsunlockpath = path.join("extras").join("fps_unlock").follow_symlink().unwrap();
+
+    if fix_mode {
+        // Fix empty db entries and remake dirs
+        let gs = get_settings(app);
+        if gs.is_some() {
+            let g = gs.unwrap();
+            if g.default_game_path == "" { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
+            if g.xxmi_path == "" { fs::create_dir_all(&xxmipath).unwrap(); update_settings_default_xxmi_location(app, xxmipath.to_str().unwrap().to_string()); }
+            if g.fps_unlock_path == "" { fs::create_dir_all(&fpsunlockpath).unwrap(); update_settings_default_fps_unlock_location(app, fpsunlockpath.to_str().unwrap().to_string()); }
+
+            #[cfg(target_os = "linux")]
+            {
+                let comppath = path.join("compatibility").follow_symlink().unwrap();
+                let wine = comppath.join("runners").follow_symlink().unwrap();
+                let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
+                let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
+                let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
+
+                if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
+                if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
+                if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap(); update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
+                if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
+            }
+        }
+    } else {
+        if !defgpath.exists() { fs::create_dir_all(&defgpath).unwrap(); update_settings_default_game_location(app, defgpath.to_str().unwrap().to_string()); }
+        if !xxmipath.exists() { fs::create_dir_all(&xxmipath).unwrap(); update_settings_default_xxmi_location(app, xxmipath.to_str().unwrap().to_string()); }
+        if !fpsunlockpath.exists() { fs::create_dir_all(&fpsunlockpath).unwrap(); update_settings_default_fps_unlock_location(app, fpsunlockpath.to_str().unwrap().to_string()); }
+        #[cfg(target_os = "linux")]
+        {
+            let comppath = path.join("compatibility").follow_symlink().unwrap();
+            let wine = comppath.join("runners").follow_symlink().unwrap();
+            let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
+            let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
+            let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
+
+            if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
+            if !comppath.exists() {
+                fs::create_dir_all(&wine).unwrap();
+                fs::create_dir_all(&dxvk).unwrap();
+                fs::create_dir_all(&prefixes).unwrap();
+                update_settings_default_runner_location(app, wine.to_str().unwrap().to_string());
+                update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string());
+                update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string());
+            }
+        }
+    }
+}
+
 pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
@@ -834,6 +880,21 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     }
 }
 
+pub fn deprecate_jadeite(app: &AppHandle) {
+    let installs = get_installs(app);
+    if installs.is_some() {
+        let i = installs.unwrap();
+        for ci in i {
+            let im = get_manifest_info_by_id(&app, ci.manifest_id);
+            if im.is_some() {
+                let lm = im.unwrap();
+                // Shit validation but will work
+                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id, false); }
+            }
+        }
+    }
+}
+
 pub struct ActionBlocks {
     pub action_exit: bool,
 }
@@ -874,6 +935,9 @@ pub trait PathResolve {
 
 impl PathResolve for Path {
     fn follow_symlink(&self) -> io::Result<PathBuf> {
-        if self.is_symlink() { self.canonicalize() } else { Ok(self.to_path_buf()) }
+        #[cfg(target_os = "linux")]
+        return if self.is_symlink() { self.read_link() } else { Ok(self.to_path_buf()) };
+        #[cfg(target_os = "windows")]
+        return Ok(self.to_path_buf())
     }
 }

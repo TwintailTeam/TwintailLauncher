@@ -7,7 +7,8 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game};
+use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{PathResolve};
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
@@ -17,8 +18,6 @@ use crate::utils::runner_from_runner_version;
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
 use fischl::utils::wait_for_process;
-#[cfg(target_os = "linux")]
-use crate::utils::{PathResolve};
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -40,10 +39,16 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("GAME_ID", "umu-default");
+        cmd.env("UMU_ID", "umu-default");
+        cmd.env("SteamAppId", "default");
+        cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
@@ -51,10 +56,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.current_dir(dir.clone());
         cmd.process_group(0);
 
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "pre_launch.log".parse().unwrap());
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run prelaunch command! Please try again or check install settings.", None); } }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "pre_launch.log".parse().unwrap()); }
+                    Err(_) => { send_notification(&app, "Failed to run prelaunch command! Please try again or check the command correctness.", None); }
+                }
+            }
+            Err(_) => { send_notification(&app, "Failed to run prelaunch command! Something serious is wrong.", None); }
         }
     }
 
@@ -80,11 +90,18 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("GAME_ID", "umu-default");
+        cmd.env("UMU_ID", "umu-default");
+        cmd.env("SteamAppId", "default");
+        cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+ //       cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
+        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -105,24 +122,27 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     _ => None,
                 }
             }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+        }
 
-            if let Some(env_vars) = parsed {
-                for (k, v) in env_vars { cmd.env(k, v); }
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); }
+                    }
+                    Ok(None) => {
+                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                        load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        load_fps_unlock(app, install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
+                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
+                    }
+                    Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
+                }
             }
+            Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
-
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
-
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
-            true
-        } else {
-            false
-        }
+        true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
@@ -138,11 +158,18 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("GAME_ID", "umu-default");
+        cmd.env("UMU_ID", "umu-default");
+        cmd.env("SteamAppId", "default");
+        cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
+        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -163,31 +190,31 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     _ => None,
                 }
             }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+        }
 
-            if let Some(env_vars) = parsed {
-                for (k, v) in env_vars { cmd.env(k, v); }
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
+                    Ok(None) => {
+                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                        load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        load_fps_unlock(app, install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
+                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
+                    }
+                    Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
+                }
             }
+            Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
-
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
-
-            load_xxmi(install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-            load_fps_unlock(install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
-            write_log(Path::new(&dir.clone()).follow_symlink()?.to_path_buf(), process, "game.log".parse().unwrap());
-            true
-        } else {
-            false
-        }
+        true
     };
-
-    Ok(rslt)
+    if rslt { Ok(true) } else { Ok(false) }
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
+fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
         std::thread::sleep(std::time::Duration::from_millis(100));
         let xxmi_path = xxmi_path.clone();
@@ -198,10 +225,16 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("GAME_ID", "umu-default");
+        cmd.env("UMU_ID", "umu-default");
+        cmd.env("SteamAppId", "default");
+        cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
+        cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+//        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
@@ -212,13 +245,13 @@ fn load_xxmi(install: LauncherInstall, prefix: String, xxmi_path: String, runner
         let spawn = cmd.spawn();
         if spawn.is_ok() {
             let process = spawn.unwrap();
-            write_log(Path::new(&xxmi_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
+            write_log(app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
         }
     }
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
+fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
         wait_for_process(game.as_str(), 100,30, |found| {
             if found {
@@ -230,10 +263,16 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 cmd.arg("-c");
                 cmd.arg(&command);
 
+                cmd.env("GAME_ID", "umu-default");
+                cmd.env("UMU_ID", "umu-default");
+                cmd.env("SteamAppId", "default");
+                cmd.env("SteamGameId", "default");
                 cmd.env("WINEARCH","win64");
                 cmd.env("WINEPREFIX", prefix.clone());
+                cmd.env("STEAM_COMPAT_APP_ID", "default");
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+//                cmd.env("PROTONPATH", runner.clone());
                 cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
@@ -244,7 +283,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
                 let spawn = cmd.spawn();
                 if spawn.is_ok() {
                     let process = spawn.unwrap();
-                    write_log(Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                    write_log(app, Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
                 }
                 true
             } else {
@@ -255,7 +294,7 @@ fn load_fps_unlock(install: LauncherInstall, prefix: String, fpsunlock_path: Str
 }
 
 #[cfg(target_os = "windows")]
-pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
+pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let dir = install.directory.clone();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
@@ -273,15 +312,20 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
         cmd.stderr(Stdio::piped());
         cmd.current_dir(dir.clone());
 
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            write_log(Path::new(&dir.clone()).to_path_buf(), process, "pre_launch.log".parse().unwrap());
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run prelaunch command! Please try again or check install settings.", None); } }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "pre_launch.log".parse().unwrap()); }
+                    Err(_) => { send_notification(&app, "Failed to run prelaunch command! Please try again or check the command correctness.", None); }
+                }
+            }
+            Err(_) => { send_notification(&app, "Failed to run prelaunch command! Something serious is wrong.", None); }
         }
     }
 
     // Run xxmi first
-    load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
+    load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
 
     let rslt = if install.launch_command.is_empty() {
         let args;
@@ -323,16 +367,20 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
             }
         }
 
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            //load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
-            load_fps_unlock(install.clone(), String::new());
-            write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
-            true
-        } else {
-            false
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
+                    Ok(None) => {
+                        load_fps_unlock(install, gs.fps_unlock_path);
+                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
+                    }
+                    Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
+                }
+            }
+            Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
+        true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
@@ -369,22 +417,26 @@ pub fn launch(_app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: 
             }
         }
 
-        let spawned = cmd.spawn();
-        if spawned.is_ok() {
-            let process = spawned?;
-            //load_xxmi(install.clone(), gs.xxmi_path, exe.clone());
-            load_fps_unlock(install.clone(), String::new());
-            write_log(Path::new(&dir).to_path_buf(), process, "game.log".parse().unwrap());
-            true
-        } else {
-            false
+        match cmd.spawn() {
+            Ok(mut child) => {
+                match child.try_wait() {
+                    Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
+                    Ok(None) => {
+                        load_fps_unlock(install, gs.fps_unlock_path);
+                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
+                    }
+                    Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
+                }
+            }
+            Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
+        true
     };
     Ok(rslt)
 }
 
 #[cfg(target_os = "windows")]
-fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
+fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game: String) {
     if install.use_xxmi {
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
@@ -403,7 +455,7 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
         let spawned = cmd.spawn();
         if spawned.is_ok() {
             let process = spawned.unwrap();
-            write_log(Path::new(&xxmi_path).to_path_buf(), process, "xxmi.log".parse().unwrap());
+            write_log(app, Path::new(&xxmi_path).to_path_buf(), process, "xxmi.log".parse().unwrap());
         }
     }
 }
@@ -411,9 +463,10 @@ fn load_xxmi(install: LauncherInstall, xxmi_path: String, game: String) {
 #[cfg(target_os = "windows")]
 fn load_fps_unlock(_install: LauncherInstall, _fpsunlock_path: String) {}
 
-fn write_log(log_dir: PathBuf, child: Child, file: String) {
+fn write_log(app: &AppHandle, log_dir: PathBuf, child: Child, file: String) {
     let ld1 = Arc::new(Mutex::new(log_dir.clone()));
     let c1 = Arc::new(Mutex::new(child));
+    let ac = Arc::new(app.clone());
     std::thread::spawn(move || {
         let log_dir = ld1.lock().unwrap().clone();
         let mut child = c1.lock().unwrap();
@@ -468,7 +521,16 @@ fn write_log(log_dir: PathBuf, child: Child, file: String) {
             }));
         }
 
-        child.wait().unwrap();
+        // Send notify if we fail to execute any command
+        let status = child.wait().unwrap();
+        let mut stderr_output = String::new();
+        if let Some(mut stderr) = child.stderr.take() { let _ = stderr.read_to_string(&mut stderr_output); }
+
+        if !status.success() || !stderr_output.trim().is_empty() {
+            let message = if !stderr_output.trim().is_empty() { format!("Failed to run command: {}", stderr_output.trim()) } else { "Failed to run command! Please try again or check logs available in game directory or respective tool's directory.".to_string() };
+            send_notification(&ac, &message, None);
+        }
+
         if let Ok(mut file) = game_output.lock() { file.flush().unwrap(); }
         drop(game_output);
         if let Some(join) = stdout_join { join.join().map_err(|err| format!("Failed to join stdout reader thread: {err:?}")).unwrap().unwrap(); }

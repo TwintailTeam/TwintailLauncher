@@ -56,13 +56,25 @@ export default class App extends React.Component<any, any> {
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
+    this.preloadBackgrounds = this.preloadBackgrounds.bind(this);
+
+    // Track which backgrounds have been preloaded to avoid duplicate fetches
+    // @ts-ignore
+    this.preloadedBackgrounds = new Set();
 
         this.state = {
+            isInitialLoading: true,
+            isContentLoaded: false,
+            loadingProgress: 0,
+            loadingMessage: "Initializing...",
             openPopup: POPUPS.NONE,
             currentGame: "",
             currentInstall: "",
             displayName: "",
             gameBackground: "",
+            previousBackground: "",
+            transitioningBackground: false,
+            bgVersion: 0,
             gameIcon: "",
             gamesinfo: [],
             reposList: [],
@@ -71,6 +83,9 @@ export default class App extends React.Component<any, any> {
             preloadAvailable: false,
             gameVersions: [],
             installSettings: {},
+            manifestsClosing: false,
+            manifestsOpening: false,
+            manifestsInitialLoading: true,
             runnerVersions: [],
             dxvkVersions: [],
             downloadSizes: {},
@@ -95,44 +110,159 @@ export default class App extends React.Component<any, any> {
 
     render() {
         let buttonType = this.determineButtonType();
+        
+        // Show loading screen while app is initializing
+        if (this.state.isInitialLoading) {
+            return (
+                <main className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 scrollbar-none">
+                    <div className="flex flex-col items-center space-y-6 animate-fadeIn">
+                        {/* App Logo/Icon */}
+                        <div className="relative w-16 h-16 rounded-xl animate-pulse shadow-2xl shadow-blue-500/20 overflow-hidden bg-slate-700/50">
+                            <img src="/launcher-icon.png" srcSet="/launcher-icon.png 1x, /launcher-icon-128.png 2x" alt="TwintailLauncher" className="w-full h-full object-cover rounded-xl"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234))';
+                                }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-xl"></div>
+                        </div>
+                        
+                        {/* App Name */}
+                        <div className="text-center">
+                            <h1 className="text-2xl font-bold text-white mb-2 animate-slideUp">TwintailLauncher</h1>
+                            <p className="text-slate-400 text-sm animate-slideUp delay-100">{this.state.loadingMessage}</p>
+                        </div>
+                        
+                        {/* Loading Bar */}
+                        <div className="w-64 h-1 bg-slate-700 rounded-full overflow-hidden animate-slideUp delay-200">
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out animate-shimmer" style={{ width: `${this.state.loadingProgress}%` }}></div>
+                        </div>
+                        
+                        {/* Loading Dots */}
+                        <div className="flex space-x-1 animate-slideUp delay-300">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
+                            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce delay-200"></div>
+                        </div>
+                    </div>
+                </main>
+            );
+        }
+        
         return (
-            <main className="w-full h-screen flex flex-row bg-transparent">
-                <img className="w-full h-screen object-cover object-center absolute top-0 left-0 right-0 bottom-0 -z-10" alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
-                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center fixed-backdrop-blur-md justify-between">
-                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none">
+            <main className={`w-full h-screen flex flex-row bg-transparent overflow-x-hidden transition-opacity duration-500 ${this.state.isContentLoaded ? 'opacity-100' : 'opacity-0'} ${this.state.openPopup != POPUPS.NONE ? "popup-open" : ""}`}>
+                <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+                    {this.state.transitioningBackground && this.state.previousBackground && (
+                        <img key={`prev-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center absolute inset-0 transition-none animate-bg-fade-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"previous background"} src={this.state.previousBackground} loading="lazy" decoding="async"/>
+                    )}
+                    <img id="app-bg" key={`curr-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.transitioningBackground ? "animate-bg-fade-in" : ""} ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async"
+                        onLoad={() => {
+                            // Ensure content is marked as loaded when main background loads
+                            if (!this.state.isContentLoaded) {
+                                setTimeout(() => {
+                                    this.setState({ isContentLoaded: true });
+                                }, 100);
+                            }
+                        }}
+                    />
+                </div>
+                {this.state.openPopup != POPUPS.NONE && (
+                    <div className="pointer-events-none absolute top-0 bottom-0 left-16 right-0 z-10 animate-fadeIn">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,10,15,0.55)_0%,rgba(5,5,10,0.70)_55%,rgba(0,0,0,0.82)_100%)]"/>
+                        <div className="absolute inset-0 popup-noise opacity-30 mix-blend-overlay"/>
+                        <div className="absolute inset-0 backdrop-fallback-grid opacity-[0.04]"/>
+                    </div>
+                )}
+                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between animate-slideInLeft" style={{ animationDelay: '100ms' }}>
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
                         <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
-                            invoke("update_settings_manifests_hide", {enabled: !this.state.globalSettings.hide_manifests}).then(() => {});
-                            this.setState((prevState: any) => ({
-                                globalSettings: {
-                                    ...prevState.globalSettings,
-                                    hide_manifests: !prevState.globalSettings.hide_manifests
-                                }
-                            }))
-                        }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-500 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
-                        <div className={"w-full transition-all duration-500 overflow-scroll scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{maxHeight: this.state.globalSettings.hide_manifests ? "0px" : (this.state.gamesinfo.length * 120) + "px"}}>
-                            {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }) => {
+                            // If we're about to hide manifests, trigger closing animation first
+                            if (!this.state.globalSettings.hide_manifests) {
+                                // Start closing animation
+                                this.setState({ manifestsClosing: true });
+                                // Calculate total animation time: base animation (200ms) + max stagger delay
+                                const maxStaggerDelay = (this.state.gamesinfo.length - 1) * 50;
+                                const totalAnimationTime = 200 + maxStaggerDelay + 100; // Add extra buffer
+                                // After all animations complete, hide manifests
+                                setTimeout(() => {
+                                    invoke("update_settings_manifests_hide", {enabled: true}).then(() => {});
+                                    this.setState((prevState: any) => ({
+                                        globalSettings: {
+                                            ...prevState.globalSettings,
+                                            hide_manifests: true
+                                        },
+                                        manifestsClosing: false
+                                    }));
+                                }, totalAnimationTime);
+                            } else {
+                                // Show manifests with opening animation
+                                this.setState({ manifestsOpening: true });
+                                invoke("update_settings_manifests_hide", {enabled: false}).then(() => {});
+                                this.setState((prevState: any) => ({
+                                    globalSettings: {
+                                        ...prevState.globalSettings,
+                                        hide_manifests: false
+                                    }
+                                }));
+                                // Reset opening state after all animations complete
+                                const maxDelay = (this.state.gamesinfo.length - 1) * 60 + 50; // Last item delay
+                                const animationDuration = 300; // slideInLeft duration
+                                setTimeout(() => {
+                                    this.setState({ manifestsOpening: false });
+                                }, maxDelay + animationDuration + 50); // Add small buffer
+                            }
+                        }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-300 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
+                        <div className={"w-full transition-all duration-500 ease-in-out overflow-visible scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{
+                            maxHeight: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? "0px" : (this.state.gamesinfo.length * 120) + "px",
+                            opacity: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? 0 : 1,
+                            transform: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? "translateY(-10px)" : "translateY(0px)"
+                        }}>
+                            {this.state.currentGame != "" && (!this.state.globalSettings.hide_manifests || this.state.manifestsClosing) && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
                                 return (
-                                    <SidebarIconManifest key={game.biz} popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
+                                    <div key={game.biz} className={this.state.manifestsClosing ? "animate-slideOutLeft" :
+                                        (this.state.manifestsOpening ? "animate-slideInLeft" :
+                                        (this.state.manifestsInitialLoading ? "animate-slideInLeft" : ""))
+                                    } style={{animationDelay: this.state.manifestsClosing ? `${(this.state.gamesinfo.length - index - 1) * 50}ms` :
+                                                      (this.state.manifestsOpening ? `${index * 60 + 50}ms` : 
+                                                      (this.state.manifestsInitialLoading ? `${index * 100 + 400}ms` : "0ms"))
+                                    }}>
+                                        <SidebarIconManifest popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
+                                    </div>
                                 )
                             })}
                         </div>
-                        <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        <div className={"gap-3 flex flex-col items-center scrollbar-none overflow-scroll"}>
-                            {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }) => {
+                        <hr className={`text-white/20 bg-white/20 p-0 transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : ''}`} style={{
+                            borderColor: "rgb(255 255 255 / 0.2)",
+                            animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
+                            '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
+                        } as React.CSSProperties}/>
+                        <div className={`gap-3 flex flex-col items-center scrollbar-none overflow-scroll transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : (this.state.globalSettings.hide_manifests ? '' : 'animate-slideDownToPosition')}`} style={{
+                            animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
+                            '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
+                        } as React.CSSProperties}>
+                            {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }, index: number) => {
                                 return (
-                                    <SidebarIconInstall key={install.id} popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
+                                    <div key={install.id} className="animate-slideInLeft" style={{ animationDelay: `${index * 100 + 600}ms` }}>
+                                        <SidebarIconInstall popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
+                                    </div>
                                 )
                             })}
                         </div>
                     </div>
-                    <div className="flex flex-col gap-4 flex-shrink overflow-scroll scrollbar-none">
-                        <hr className="text-white/20 bg-white/20 p-0" style={{borderColor: "rgb(255 255 255 / 0.2)"}}/>
-                        <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
-                        <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
-                        <SidebarCommunity popup={this.state.openPopup} uri={"https://discord.gg/nDMJDwuj7s"} />
+                    <div className="flex flex-col gap-4 flex-shrink overflow-visible scrollbar-none animate-slideInLeft" style={{ animationDelay: '900ms' }}>
+                        <hr className="text-white/20 bg-white/20 p-0 animate-slideInLeft" style={{borderColor: "rgb(255 255 255 / 0.2)", animationDelay: '950ms'}}/>
+                        <div className="animate-slideInLeft" style={{ animationDelay: '1000ms' }}>
+                            <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                        </div>
+                        <div className="animate-slideInLeft" style={{ animationDelay: '1100ms' }}>
+                            <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                        </div>
+                        <div className="animate-slideInLeft" style={{ animationDelay: '1200ms' }}>
+                            <SidebarCommunity popup={this.state.openPopup} uri={"https://discord.gg/nDMJDwuj7s"} />
+                        </div>
                     </div>
                 </div>
-                <div className="flex flex-row absolute bottom-8 right-16 gap-4">
+                <div className="flex flex-row absolute bottom-8 right-16 gap-4 animate-slideInRight" style={{ animationDelay: '900ms' }}>
                     {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button disabled={this.state.disablePreload} onClick={() => {
                         emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
                     }}><TooltipIcon side={"top"} text={"Predownload update"} icon={<DownloadIcon className="text-yellow-600 hover:text-yellow-700 w-8 h-8"/>}/>
@@ -148,7 +278,10 @@ export default class App extends React.Component<any, any> {
                     <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span> | <span id={"progress_pretty"}>{this.state.progressPretty} / {this.state.progressPrettyTotal}</span>)</h4>
                     <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
                 </div>
-                <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex fixed-backdrop-blur-lg bg-white/10"}`}>
+                <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex bg-white/10"}`} onClick={(e) => {
+                    // Close popup when clicking on the overlay (but not on the popup content)
+                    if (e.target === e.currentTarget) {this.setOpenPopup(POPUPS.NONE);}
+                }}>
                     {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
                     {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
                     {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
@@ -161,8 +294,42 @@ export default class App extends React.Component<any, any> {
     }
 
     componentDidMount() {
-        this.fetchSettings();
-        this.fetchRepositories();
+        // Set minimum loading time to account for startup
+        const startTime = Date.now();
+        const minimumLoadTime = 2800; // 2.8 seconds minimum
+        // Start loading with progress animation
+        this.animateLoadingProgress();
+        
+        // Update loading messages with timing
+        setTimeout(() => this.setState({ loadingMessage: "Loading settings..." }), 900);
+        setTimeout(() => this.setState({ loadingMessage: "Connecting to repositories..." }), 1400);
+        setTimeout(() => this.setState({ loadingMessage: "Loading game data..." }), 1900);
+        
+        // Start fetching data
+        Promise.all([
+            this.fetchSettings(),
+            this.fetchRepositories()
+        ]).then(() => {
+            this.setState({ loadingMessage: "Almost ready..." });
+            
+            // Calculate remaining time needed
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, minimumLoadTime - elapsedTime);
+            
+            // Complete loading after minimum time has passed
+            setTimeout(() => {
+                this.completeInitialLoading();
+            }, remainingTime);
+        }).catch((error) => {
+            console.error("Error during initialization:", error);
+            this.setState({ loadingMessage: "Finishing up..." });
+            // Still complete loading even if there are errors
+            setTimeout(() => {
+                this.completeInitialLoading();
+            }, 1000);
+        });
+        
+        // Set up event listeners after a delay
         setTimeout(async () => {
             for (const eventType of EVENTS) {
                 const unlisten = await listen<string>(eventType, (event) => {
@@ -172,6 +339,34 @@ export default class App extends React.Component<any, any> {
                 this.unlistenFns.push(unlisten);
             }
         }, 20);
+    }
+
+    animateLoadingProgress() {
+        const duration = 1800; // 1.8 seconds
+        const interval = 100; // Update every 100ms
+        const steps = duration / interval;
+        let currentStep = 0;
+
+        const progressInterval = setInterval(() => {
+            currentStep++;
+            // Use eased progress that starts fast then slows down
+            const rawProgress = currentStep / steps;
+            const easedProgress = 1 - Math.pow(1 - rawProgress, 3); // Ease-out cubic
+            const progress = Math.min(easedProgress * 90, 90); // Cap at 90% until data loads
+            this.setState({ loadingProgress: progress });
+            if (currentStep >= steps) {clearInterval(progressInterval);}
+        }, interval);
+    }
+
+    completeInitialLoading() {
+        // Finish the progress bar quickly
+        this.setState({ loadingProgress: 100 });
+        // Wait a moment then hide loading screen with smooth transition
+        setTimeout(() => {
+            this.setState({isInitialLoading: false});
+            // Mark content as loaded after a brief delay for smoother transition
+            setTimeout(() => {this.setState({ isContentLoaded: true });}, 200);
+        }, 300);
     }
 
     componentWillUnmount() {
@@ -184,10 +379,19 @@ export default class App extends React.Component<any, any> {
             this.fetchInstallResumeStates(this.state.currentInstall);
             this.fetchCompatibilityVersions();
         }
+        if (this.state.openPopup !== prevState.openPopup) {
+            if (this.state.openPopup !== POPUPS.NONE) {
+                document.documentElement.classList.add("no-scroll");
+                document.body.classList.add("no-scroll");
+            } else {
+                document.documentElement.classList.remove("no-scroll");
+                document.body.classList.remove("no-scroll");
+            }
+        }
     }
 
     fetchRepositories() {
-        invoke("list_repositories").then(r => {
+        return invoke("list_repositories").then(r => {
             if (r === null) {
                 console.error("Repository database table contains nothing, some serious fuck up happened!")
             } else {
@@ -238,6 +442,16 @@ export default class App extends React.Component<any, any> {
                 });
 
                 this.setState(() => ({gamesinfo: gi}), () => {
+                    // Preload all backgrounds once games are available
+                    this.preloadBackgrounds();
+                    
+                    // Reset initial loading state after animations complete
+                    if (this.state.manifestsInitialLoading && gi.length > 0) {
+                        const maxDelay = (gi.length - 1) * 100 + 400; // Last item delay
+                        const animationDuration = 600; // slideInLeft duration
+                        setTimeout(() => {this.setState({ manifestsInitialLoading: false });}, maxDelay + animationDuration + 50);
+                    }
+                    
                     if (this.state.installs.length === 0) {
                         if (games.length > 0 && this.state.currentGame == "") {
                             this.setCurrentGame(games[0].filename.replace(".json", ""));
@@ -282,7 +496,7 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchSettings() {
-        invoke("list_settings").then(data => {
+        return invoke("list_settings").then(data => {
             if (data === null) {
                 console.error("Settings database table contains nothing, some serious fuck up happened!")
             } else {
@@ -380,9 +594,13 @@ export default class App extends React.Component<any, any> {
                 // @ts-ignore
                 let freedisk = document.getElementById("game_disk_free");
 
+                // Always enable button initially - the DownloadGame component will handle disabling based on checkbox state
+                // @ts-ignore
+                btn.removeAttribute("disabled");
+
+                // Set disk space styling based on available space (but don't disable button)
+
                 if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                    // @ts-ignore
-                    btn.setAttribute("disabled", "");
                     // @ts-ignore
                     freedisk.classList.add("text-red-600");
                     // @ts-ignore
@@ -390,8 +608,6 @@ export default class App extends React.Component<any, any> {
                     // @ts-ignore
                     freedisk.classList.add("font-bold");
                 } else {
-                    // @ts-ignore
-                    btn.removeAttribute("disabled");
                     // @ts-ignore
                     freedisk.classList.remove("text-red-600");
                     // @ts-ignore
@@ -436,10 +652,63 @@ export default class App extends React.Component<any, any> {
     setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
     setCurrentGame(game: string) {this.setState({currentGame: game});}
     setDisplayName(name: string) {this.setState({displayName: name});}
-    setBackground(file: string) {this.setState({gameBackground: file});}
+    // Store the background transition timeout ID
+    bgTransitionTimeout?: number;
+
+    setBackground(file: string) {
+        if (!file || file === this.state.gameBackground) return; // nothing to do
+
+        // Cancel any previous transition timeout
+        if (this.bgTransitionTimeout) {
+            clearTimeout(this.bgTransitionTimeout);
+            this.bgTransitionTimeout = undefined;
+        }
+
+        // Preload image to avoid flash of old bg when new not ready
+        const img = new Image();
+        img.onload = () => {
+            this.setState((prev: any) => ({
+                previousBackground: prev.gameBackground || prev.previousBackground || "",
+                gameBackground: file,
+                transitioningBackground: prev.gameBackground !== "",
+                bgVersion: prev.bgVersion + 1
+            }), () => {
+                if (this.state.transitioningBackground) {
+                    this.bgTransitionTimeout = window.setTimeout(() => {
+                        // After animation remove previous; keep if multiple rapid switches occurred
+                        this.setState({
+                            transitioningBackground: false,
+                            previousBackground: ""
+                        });
+                        this.bgTransitionTimeout = undefined;
+                    }, 480); // match CSS duration
+                }
+            });
+        };
+        img.src = file;
+    }
     setGameIcon(file: string) {this.setState({gameIcon: file});}
     setReposList(reposList: any) {this.setState({reposList: reposList});}
     setCurrentInstall(game: string) {this.setState({currentInstall: game});}
+
+    // === PRELOAD BACKGROUNDS ===
+    preloadBackgrounds() {
+        // @ts-ignore
+        const cache: Set<string> = this.preloadedBackgrounds;
+        const list = this.state.gamesinfo || [];
+        if (!list.length) return;
+        list.forEach((g: any, idx: number) => {
+            const src = g?.assets?.game_background;
+            if (!src || cache.has(src)) return;
+            // Stagger slightly to avoid network burst
+            setTimeout(() => {
+                const img = new Image();
+                img.onload = () => { cache.add(src); };
+                img.onerror = () => { /* Ignore failures */ };
+                img.src = src;
+            }, idx * 40);
+        });
+    }
 }
 
 // === UTILITY ===

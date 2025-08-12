@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === Global Styles === */
+body {
+    background: #000;
+}
+
 .fixed-backdrop-blur-sm {
     backdrop-filter: blur(4px);
 }
@@ -36,4 +41,210 @@
             0 1px black,
             1px 0 black,
             0 -1px black;
+}
+
+/* === Loading animations === */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInOpacity {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes slideInLeft {
+    from { 
+        opacity: 0; 
+        transform: translateX(-20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+@keyframes slideInRight {
+    from { 
+        opacity: 0; 
+        transform: translateX(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+@keyframes slideOutLeft {
+    from { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+    to { 
+        opacity: 0; 
+        transform: translateX(-20px); 
+    }
+}
+
+@keyframes slideUpToPosition {
+    from { 
+        transform: translateY(0); 
+    }
+    to { 
+        transform: translateY(0px);
+    }
+}
+
+@keyframes slideDownToPosition {
+    from { 
+        transform: translateY(0px);
+    }
+    to { 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.animate-fadeIn { 
+    animation: fadeInOpacity 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideUp { 
+    animation: slideUp 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideInLeft { 
+    animation: slideInLeft 300ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideInRight { 
+    animation: slideInRight 600ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-slideOutLeft { 
+    animation: slideOutLeft 200ms ease-in; 
+    animation-fill-mode: both;
+}
+
+.animate-slideUpToPosition { 
+    animation: slideUpToPosition 300ms ease-in; 
+    animation-fill-mode: both;
+}
+
+.animate-slideDownToPosition { 
+    animation: slideDownToPosition 300ms ease-out; 
+    animation-fill-mode: both;
+}
+
+.animate-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.animate-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+/* Delay classes for staggered animations */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* === Popup background enhancement (no GPU heavy blur) === */
+.popup-open #app-bg {
+    will-change: transform, filter;
+}
+
+/* Subtle film grain / noise */
+.popup-noise {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAc8AAtUBpJ1AAAAAAElFTkSuQmCC");
+    background-size: 100px 100px;
+    image-rendering: pixelated;
+    animation: noiseShift 1.2s steps(2,end) infinite;
+}
+
+@keyframes noiseShift {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-10%,5%); }
+    50% { transform: translate(5%,-10%); }
+    75% { transform: translate(10%,5%); }
+    100% { transform: translate(0,0); }
+}
+
+/* Light grid for structure */
+.backdrop-fallback-grid {
+    background-image: linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 64px 64px, 64px 64px;
+    mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,1) 100%);
+}
+
+.no-scroll { overflow: hidden !important; height: 100%; }
+
+/* === Background crossfade when switching games === */
+@keyframes bgFadeIn {
+    0% { opacity: 0; transform: scale(1.015); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-bg-fade-in { animation: bgFadeIn 420ms ease-out; }
+
+@keyframes bgFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.animate-bg-fade-out { animation: bgFadeOut 420ms ease-out forwards; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fadeIn, 
+    .animate-slideUp, 
+    .animate-slideInLeft, 
+    .animate-slideInRight, 
+    .animate-slideOutLeft,
+    .animate-slideUpToPosition,
+    .animate-slideDownToPosition,
+    .animate-shimmer,
+    .animate-bg-fade-in, 
+    .animate-bg-fade-out,
+    .popup-noise { 
+        animation: none; 
+    }
 }

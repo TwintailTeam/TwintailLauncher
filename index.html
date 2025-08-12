@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8"/>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg"/>
+    <link rel="icon" type="image/png" href="/launcher-icon.png"/>
+    <link rel="stylesheet" href="/index.css"/>
     <link rel="dns-prefetch" href="https://fastcdn.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://launcher-webstatic.hoyoverse.com"/>
     <link rel="dns-prefetch" href="https://wutheringwaves.kurogames.com"/>
@@ -12,10 +13,29 @@
     <link rel="preconnect" href="https://wutheringwaves.kurogames.com"/>
     <link rel="preconnect" href="https://hw-pcdownload-qcloud.aki-game.net"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>.</title>
+    <title>TwintailLauncher</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+    <script>
+      // Remove initial loading when React mounts
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length > 0) {
+            const initialLoading = document.getElementById('initial-loading');
+            if (initialLoading) {
+              initialLoading.remove();
+              observer.disconnect();
+            }
+          }
+        });
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

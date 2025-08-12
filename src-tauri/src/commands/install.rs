@@ -6,7 +6,7 @@ use std::sync::Arc;
 use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -17,8 +17,6 @@ use crate::utils::runner_from_runner_version;
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
-#[cfg(target_os = "linux")]
-use tauri::{Manager};
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -84,10 +82,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
 
         #[cfg(target_os = "linux")]
         {
-            let data_path = app.path().app_data_dir().unwrap();
-            let comppath = data_path.join("compatibility");
-            let wine = comppath.join("runners");
-            let dxvk = comppath.join("dxvk");
+            let wine = Path::new(gs.default_runner_path.as_str()).follow_symlink().unwrap();
+            let dxvk = Path::new(gs.default_dxvk_path.as_str()).follow_symlink().unwrap();
             let prefix_loc = Path::new(&runner_prefix).join(cuid.clone()).follow_symlink().unwrap();
 
             runner_prefix = prefix_loc.to_str().unwrap().to_string();
@@ -119,9 +115,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                 let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
                 let dxvkp = dv.get(0).unwrap().to_owned();
-                if fs::read_dir(dxvkpp.as_str().to_string()).unwrap().next().is_none() { 
-                    Compat::download_dxvk(dxvkp.url, dxvkpp.as_str().to_string(), true);
-                }
+                if fs::read_dir(dxvkpp.as_str().to_string()).unwrap().next().is_none() { Compat::download_dxvk(dxvkp.url, dxvkpp.as_str().to_string(), true); }
 
                 if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
                     let mut dlpayload = HashMap::new();
@@ -434,6 +428,19 @@ pub fn update_install_use_gamemode(app: AppHandle, id: String, enabled: bool) ->
     if manifest.is_some() {
         let m = manifest.unwrap();
         update_install_use_gamemode_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_mangohud(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        update_install_use_mangohud_by_id(&app, m.id, enabled);
         Some(true)
     } else {
         None
