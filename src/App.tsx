@@ -56,6 +56,11 @@ export default class App extends React.Component<any, any> {
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
+    this.preloadBackgrounds = this.preloadBackgrounds.bind(this);
+
+    // Track which backgrounds have been preloaded to avoid duplicate fetches
+    // @ts-ignore
+    this.preloadedBackgrounds = new Set();
 
         this.state = {
             openPopup: POPUPS.NONE,
@@ -63,6 +68,9 @@ export default class App extends React.Component<any, any> {
             currentInstall: "",
             displayName: "",
             gameBackground: "",
+            previousBackground: "",
+            transitioningBackground: false,
+            bgVersion: 0,
             gameIcon: "",
             gamesinfo: [],
             reposList: [],
@@ -98,7 +106,25 @@ export default class App extends React.Component<any, any> {
         return (
             <main className={`w-full h-screen flex flex-row bg-transparent overflow-x-hidden ${this.state.openPopup != POPUPS.NONE ? "popup-open" : ""}`}>
                 <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-                    <img id="app-bg" className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async" srcSet={undefined}/>
+                    {this.state.transitioningBackground && this.state.previousBackground && (
+                        <img
+                            key={`prev-${this.state.bgVersion}`}
+                            className={`w-full h-screen object-cover object-center absolute inset-0 transition-none animate-bg-fade-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`}
+                            alt={"previous background"}
+                            src={this.state.previousBackground}
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    )}
+                    <img
+                        id="app-bg"
+                        key={`curr-${this.state.bgVersion}`}
+                        className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.transitioningBackground ? "animate-bg-fade-in" : ""} ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`}
+                        alt={"?"}
+                        src={this.state.gameBackground}
+                        loading="lazy"
+                        decoding="async"
+                    />
                 </div>
                 {this.state.openPopup != POPUPS.NONE && (
                     <div className="pointer-events-none absolute top-0 bottom-0 left-16 right-0 z-10 animate-fadeIn">
@@ -256,6 +282,8 @@ export default class App extends React.Component<any, any> {
                 });
 
                 this.setState(() => ({gamesinfo: gi}), () => {
+                    // Preload all backgrounds once games are available
+                    this.preloadBackgrounds();
                     if (this.state.installs.length === 0) {
                         if (games.length > 0 && this.state.currentGame == "") {
                             this.setCurrentGame(games[0].filename.replace(".json", ""));
@@ -456,10 +484,53 @@ export default class App extends React.Component<any, any> {
     setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
     setCurrentGame(game: string) {this.setState({currentGame: game});}
     setDisplayName(name: string) {this.setState({displayName: name});}
-    setBackground(file: string) {this.setState({gameBackground: file});}
+    setBackground(file: string) {
+        if (!file || file === this.state.gameBackground) return; // nothing to do
+
+        // Preload image to avoid flash of old bg when new not ready
+        const img = new Image();
+        img.onload = () => {
+            this.setState((prev: any) => ({
+                previousBackground: prev.gameBackground || prev.previousBackground || "",
+                gameBackground: file,
+                transitioningBackground: prev.gameBackground !== "",
+                bgVersion: prev.bgVersion + 1
+            }), () => {
+                if (this.state.transitioningBackground) {
+                    setTimeout(() => {
+                        // After animation remove previous; keep if multiple rapid switches occurred
+                            this.setState({
+                                transitioningBackground: false,
+                                previousBackground: ""
+                            });
+                    }, 480); // match CSS duration
+                }
+            });
+        };
+        img.src = file;
+    }
     setGameIcon(file: string) {this.setState({gameIcon: file});}
     setReposList(reposList: any) {this.setState({reposList: reposList});}
     setCurrentInstall(game: string) {this.setState({currentInstall: game});}
+
+    // === PRELOAD BACKGROUNDS ===
+    preloadBackgrounds() {
+        // @ts-ignore
+        const cache: Set<string> = this.preloadedBackgrounds;
+        const list = this.state.gamesinfo || [];
+        if (!list.length) return;
+        list.forEach((g: any, idx: number) => {
+            const src = g?.assets?.game_background;
+            if (!src || cache.has(src)) return;
+            // Stagger slightly to avoid network burst
+            setTimeout(() => {
+                const img = new Image();
+                img.onload = () => { cache.add(src); };
+                img.onerror = () => { /* Ignore failures */ };
+                img.src = src;
+            }, idx * 40);
+        });
+    }
 }
 
 // === UTILITY ===

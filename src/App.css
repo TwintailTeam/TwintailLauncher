@@ -79,3 +79,23 @@
 @media (prefers-reduced-motion: reduce) {
     .animate-fadeIn, .popup-noise { animation: none; }
 }
+
+/* === Background crossfade when switching games === */
+@keyframes bgFadeIn {
+    0% { opacity: 0; transform: scale(1.015); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.animate-bg-fade-in { animation: bgFadeIn 420ms ease-out; }
+
+@keyframes bgFadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.animate-bg-fade-out { animation: bgFadeOut 420ms ease-out forwards; }
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+    .animate-bg-fade-in { animation: none; }
+}
