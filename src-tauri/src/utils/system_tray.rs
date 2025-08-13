@@ -9,6 +9,7 @@ pub fn init_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri::Error> {
 
     let _ = TrayIconBuilder::with_id("tray_1").tooltip(&app.config().product_name.clone().unwrap()).show_menu_on_left_click(true).menu(&menu1)
         .icon(app.default_window_icon().unwrap().clone())
+        .temp_dir_path(app.path().app_cache_dir().unwrap())
         .on_menu_event(move |app, event| match event.id().as_ref() {
             "toggle" => {
                 if let Some(window) = app.get_window("main") {

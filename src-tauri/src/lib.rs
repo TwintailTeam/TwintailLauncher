@@ -27,7 +27,7 @@ pub fn run() {
         #[cfg(target_os = "linux")]
         {
             // Temporary fix for nvidia GPU's "(protocol 71) failed dispatching to wayland display"
-            unsafe { std::env::set_var("__GL_THREADED_OPTIMIZATIONS", "0"); std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1"); }
+            unsafe { std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1"); std::env::set_var("__GL_THREADED_OPTIMIZATIONS", "0"); std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1"); }
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
