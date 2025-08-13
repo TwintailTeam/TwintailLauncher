@@ -203,7 +203,7 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool) -> Op
             let gexe = idp.join(gm.paths.exe_filename.clone());
 
             if wipe_prefix { if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); } }
-            if idp.exists() && gexe.exists() { fs::remove_dir_all(installdir.clone()).unwrap(); }
+            if idp.exists() && gexe.exists() { fs::remove_dir_all(installdir.clone()).unwrap(); } else { send_notification(&app, "Failed to remove game installation directory. Please remove the folder manually!", None); }
             delete_installation_by_id(&app, id.clone()).unwrap();
             Some(true)
         } else {
