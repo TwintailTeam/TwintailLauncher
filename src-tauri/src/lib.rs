@@ -26,9 +26,8 @@ pub fn run() {
     let builder = {
         #[cfg(target_os = "linux")]
         {
-            // Temporary fix rendering for nvidia GPU's
-            // Ref: https://github.com/tauri-apps/tauri/issues/10702
-            //unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); }
+            // Temporary fix for nvidia GPU's "(protocol 71) failed dispatching to wayland display"
+            unsafe { std::env::set_var("__GL_THREADED_OPTIMIZATIONS", "0"); std::env::set_var("__NV_DISABLE_EXPLICIT_SYNC", "1"); }
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})

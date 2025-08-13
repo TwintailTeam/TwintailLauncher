@@ -193,14 +193,17 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool) -> Op
 
         if install.is_some() {
             let i = install.unwrap();
+            let lm = get_manifest_info_by_id(&app, i.manifest_id.clone()).unwrap();
+            let gm = get_manifest(&app, lm.filename.clone()).unwrap();
+
             let installdir = i.directory;
             let prefixdir = i.runner_prefix;
+            let idp = Path::new(&installdir);
+            let pdp = Path::new(&prefixdir);
+            let gexe = idp.join(gm.paths.exe_filename.clone());
 
-            if wipe_prefix {
-                if fs::exists(prefixdir.clone()).unwrap() { fs::remove_dir_all(prefixdir.clone()).unwrap(); }
-            }
-
-            if fs::exists(installdir.clone()).unwrap() { fs::remove_dir_all(installdir.clone()).unwrap(); }
+            if wipe_prefix { if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); } }
+            if idp.exists() && gexe.exists() { fs::remove_dir_all(installdir.clone()).unwrap(); }
             delete_installation_by_id(&app, id.clone()).unwrap();
             Some(true)
         } else {
