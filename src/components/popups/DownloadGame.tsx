@@ -53,7 +53,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
     }, [skipGameDownload, disk]);
 
     return (
-        <div className="rounded-lg h-auto w-1/2 bg-black/70 border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
+        <div className="rounded-lg h-auto w-3/5 bg-black/70 border border-white/20 flex flex-col p-4 gap-8 overflow-scroll scrollbar-none">
             <div className="flex flex-row items-center justify-between">
                 <h1 className="text-white font-bold text-2xl">Download {displayName}</h1>
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
