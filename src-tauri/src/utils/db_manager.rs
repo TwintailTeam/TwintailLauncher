@@ -51,7 +51,7 @@ pub async fn init_db(app: &AppHandle) {
         Migration {
             version: 5,
             description: "populate_settings_table",
-            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id, hide_manifests) values (null, false, null, null, null, null, "exit", 1, false);"#,
+            sql: r#"INSERT INTO settings (default_game_path, third_party_repo_updates, xxmi_path, fps_unlock_path, jadeite_path, default_runner_prefix_path, launcher_action, id, hide_manifests) values (null, false, null, null, null, null, "keep", 1, false);"#,
             kind: MigrationKind::Up,
         },
         // Beginning of update migrations

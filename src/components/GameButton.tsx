@@ -25,7 +25,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                                 document.getElementById(`${currentInstall}`).focus();
                                 switch (globalSettings.launcher_action) {
                                     case "exit": {
-                                        setTimeout(() => { emit("launcher_action_exit", null).then(() => {}); }, 500);
+                                        setTimeout(() => { emit("launcher_action_exit", null).then(() => {}); }, 3000);
                                     }
                                     break;
                                     case "minimize": {
