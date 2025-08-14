@@ -3,7 +3,7 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 use std::sync::Arc;
-use fischl::utils::{prettify_bytes};
+use fischl::utils::{patch_aki, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
@@ -168,6 +168,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
             });
 
+            // Patch wuwa if existing install
+            if gm.biz == "wuwa_global" && skip_game_dl { let target = Path::new(&directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();patch_aki(target.to_str().unwrap().to_string()); }
             // Download and enable jadeite automatically for these games
             if gm.biz == "bh3_global" || gm.biz == "hkrpg_global" {
                 use_jadeite = true;
