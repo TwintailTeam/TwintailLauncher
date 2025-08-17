@@ -24,6 +24,8 @@ pub mod repo_manager;
 mod git_helpers;
 pub mod game_launch_manager;
 pub mod system_tray;
+#[cfg(target_os = "linux")]
+pub mod gpu;
 
 pub fn generate_cuid() -> String {
     cuid2::create_id()
