@@ -9,6 +9,7 @@ use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
 use crate::utils::{get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
+use fischl::utils::wait_for_process;
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
@@ -16,8 +17,6 @@ use std::os::unix::process::CommandExt;
 use crate::utils::runner_from_runner_version;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
-#[cfg(target_os = "linux")]
-use fischl::utils::wait_for_process;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -134,7 +133,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     Ok(None) => {
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
+                        load_fps_unlock(app, install, gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -200,7 +199,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     Ok(None) => {
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install, prefix, gs.fps_unlock_path, runner, wine64, exe.clone(), is_proton);
+                        load_fps_unlock(app, install, gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -251,13 +250,13 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, prefix: String, fpsunlock_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
+fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefix: String, fpsunlock_path: String, game_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_fps_unlock {
         wait_for_process(game.as_str(), 100,30, |found| {
             if found {
                 let fpsunlock_path = fpsunlock_path.clone();
                 let fpsv = install.fps_value.clone();
-                let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' {fpsv} 3000") };
+                let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 '{game_path}'") };
 
                 let mut cmd = Command::new("bash");
                 cmd.arg("-c");
@@ -326,6 +325,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
+    load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path, game.clone());
 
     let rslt = if install.launch_command.is_empty() {
         let args;
@@ -372,7 +372,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
                     Ok(None) => {
-                        load_fps_unlock(install, gs.fps_unlock_path);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -422,7 +421,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
                     Ok(None) => {
-                        load_fps_unlock(install, gs.fps_unlock_path);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -461,7 +459,37 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
 }
 
 #[cfg(target_os = "windows")]
-fn load_fps_unlock(_install: LauncherInstall, _fpsunlock_path: String) {}
+fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String, game: String) {
+    if install.use_fps_unlock {
+        wait_for_process(game.as_str(), 100,30, |found| {
+            if found {
+                let fpsunlock_path = fpsunlock_path.trim_matches('\\');
+                let loader_path = Path::new(fpsunlock_path).join("fpsunlock.exe");
+                let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
+                let fpsv = install.fps_value.clone();
+                let args = format!("run {} {} 3000 \"{}\"", biz, fpsv, game_path);
+                let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, args, fpsunlock_path);
+
+                let mut cmd = Command::new("powershell");
+                cmd.arg("-Command");
+                cmd.arg(&command);
+
+                cmd.stdout(Stdio::piped());
+                cmd.stderr(Stdio::piped());
+                cmd.current_dir(fpsunlock_path.clone());
+
+                let spawned = cmd.spawn();
+                if spawned.is_ok() {
+                    let process = spawned.unwrap();
+                    write_log(app, Path::new(&fpsunlock_path).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                }
+                true
+            } else {
+                false
+            }
+        });
+    }
+}
 
 fn write_log(app: &AppHandle, log_dir: PathBuf, child: Child, file: String) {
     let ld1 = Arc::new(Mutex::new(log_dir.clone()));

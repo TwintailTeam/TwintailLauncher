@@ -1,4 +1,4 @@
-import {Plus, X} from "lucide-react";
+import {X} from "lucide-react";
 import RepoManifestCombo from "./RepoManifestCombo.tsx";
 import {POPUPS} from "../POPUPS.ts";
 
@@ -10,10 +10,10 @@ export default function RepoManager({repos, setOpenPopup, fetchRepositories}: {r
                 <X className="text-white hover:text-gray-400 cursor-pointer" onClick={() => setOpenPopup(POPUPS.NONE)}/>
             </div>
             <div className="flex-row-reverse flex">
-                <button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {setOpenPopup(POPUPS.ADDREPO)}}>
+                {/*<button className="flex flex-row gap-2 items-center py-2 px-4 bg-purple-600 hover:bg-purple-700 rounded-lg" onClick={() => {setOpenPopup(POPUPS.ADDREPO)}}>
                     <Plus className="stroke-[3px]"/>
                     <span className="font-semibold">Add Repository</span>
-                </button>
+                </button>*/}
             </div>
             <div className="rounded-lg w-full overflow-y-auto overflow-scroll scrollbar-none">
                 {repos.map((repo:any, idx: number) => {

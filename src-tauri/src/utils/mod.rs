@@ -794,16 +794,11 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
 pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
-            });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
-            std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
-                if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
-            });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
         }
     }
 }
