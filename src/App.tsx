@@ -343,23 +343,6 @@ export default class App extends React.Component<any, any> {
         }, 20);
     }
 
-    animateLoadingProgress() {
-        const duration = 1800; // 1.8 seconds
-        const interval = 100; // Update every 100ms
-        const steps = duration / interval;
-        let currentStep = 0;
-
-        const progressInterval = setInterval(() => {
-            currentStep++;
-            // Use eased progress that starts fast then slows down
-            const rawProgress = currentStep / steps;
-            const easedProgress = 1 - Math.pow(1 - rawProgress, 3); // Ease-out cubic
-            const progress = Math.min(easedProgress * 90, 90); // Cap at 90% until data loads
-            this.setState({ loadingProgress: progress });
-            if (currentStep >= steps) {clearInterval(progressInterval);}
-        }, interval);
-    }
-
     completeInitialLoading() {
         // Finish the progress bar quickly
         this.setState({ loadingProgress: 100 });
