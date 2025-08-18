@@ -35,6 +35,8 @@ const EVENTS = [
 
 export default class App extends React.Component<any, any> {
     unlistenFns: (() => void)[] = [];
+    // Track which backgrounds have been preloaded to avoid duplicate fetches
+    preloadedBackgrounds: Set<string>;
     constructor(props: any) {
         super(props);
 
@@ -56,9 +58,7 @@ export default class App extends React.Component<any, any> {
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
-    this.preloadBackgrounds = this.preloadBackgrounds.bind(this);
 
-    // Track which backgrounds have been preloaded to avoid duplicate fetches
     // @ts-ignore
     this.preloadedBackgrounds = new Set();
 
@@ -110,7 +110,7 @@ export default class App extends React.Component<any, any> {
 
     render() {
         let buttonType = this.determineButtonType();
-        
+
         // Show loading screen while app is initializing
         if (this.state.isInitialLoading) {
             return (
@@ -126,18 +126,18 @@ export default class App extends React.Component<any, any> {
                             />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-xl"></div>
                         </div>
-                        
+
                         {/* App Name */}
                         <div className="text-center">
                             <h1 className="text-2xl font-bold text-white mb-2 animate-slideUp">TwintailLauncher</h1>
                             <p className="text-slate-400 text-sm animate-slideUp delay-100">{this.state.loadingMessage}</p>
                         </div>
-                        
+
                         {/* Loading Bar */}
                         <div className="w-64 h-1 bg-slate-700 rounded-full overflow-hidden animate-slideUp delay-200">
                             <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out animate-shimmer" style={{ width: `${this.state.loadingProgress}%` }}></div>
                         </div>
-                        
+
                         {/* Loading Dots */}
                         <div className="flex space-x-1 animate-slideUp delay-300">
                             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
@@ -293,42 +293,54 @@ export default class App extends React.Component<any, any> {
         )
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         // Set minimum loading time to account for startup
         const startTime = Date.now();
         const minimumLoadTime = 2800; // 2.8 seconds minimum
         // Start loading with progress animation
-        this.animateLoadingProgress();
-        
-        // Update loading messages with timing
-        setTimeout(() => this.setState({ loadingMessage: "Loading settings..." }), 900);
-        setTimeout(() => this.setState({ loadingMessage: "Connecting to repositories..." }), 1400);
-        setTimeout(() => this.setState({ loadingMessage: "Loading game data..." }), 1900);
-        
-        // Start fetching data
-        Promise.all([
-            this.fetchSettings(),
-            this.fetchRepositories()
-        ]).then(() => {
-            this.setState({ loadingMessage: "Almost ready..." });
-            
-            // Calculate remaining time needed
-            const elapsedTime = Date.now() - startTime;
-            const remainingTime = Math.max(0, minimumLoadTime - elapsedTime);
-            
-            // Complete loading after minimum time has passed
-            setTimeout(() => {
-                this.completeInitialLoading();
-            }, remainingTime);
-        }).catch((error) => {
-            console.error("Error during initialization:", error);
-            this.setState({ loadingMessage: "Finishing up..." });
-            // Still complete loading even if there are errors
-            setTimeout(() => {
-                this.completeInitialLoading();
-            }, 1000);
-        });
-        
+        this.setState({ loadingProgress: 0, loadingMessage: "Loading settings..." });
+
+        // Step 1: Load settings
+        try {
+            await this.fetchSettings();
+            this.setState({ loadingProgress: 25, loadingMessage: "Connecting to repositories..." });
+        } catch (e) {
+            console.error("Error loading settings:", e);
+            this.setState({ loadingMessage: "Error loading settings..." });
+        }
+
+        // Step 2: Load repositories
+        try {
+            await this.fetchRepositories();
+            this.setState({ loadingProgress: 50, loadingMessage: "Loading game data..." });
+        } catch (e) {
+            console.error("Error loading repositories:", e);
+            this.setState({ loadingMessage: "Error loading repositories..." });
+        }
+
+        // Step 3: Wait for gamesinfo to be populated
+        // Use a polling approach to wait for gamesinfo to be set by pushGamesInfo
+        const waitForGamesInfo = async () => {
+            let tries = 0;
+            while (this.state.gamesinfo.length === 0 && tries < 40) {
+                await new Promise(res => setTimeout(res, 50));
+                tries++;
+            }
+        };
+        await waitForGamesInfo();
+        this.setState({ loadingProgress: 75, loadingMessage: "Preloading images..." });
+
+        // Step 4: Preload all game backgrounds
+        await this.preloadBackgroundImages();
+        this.setState({ loadingProgress: 100, loadingMessage: "Almost ready..." });
+
+        // Calculate remaining time needed
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, minimumLoadTime - elapsedTime);
+        setTimeout(() => {
+            this.completeInitialLoading();
+        }, remainingTime);
+
         // Set up event listeners after a delay
         setTimeout(async () => {
             for (const eventType of EVENTS) {
@@ -442,16 +454,13 @@ export default class App extends React.Component<any, any> {
                 });
 
                 this.setState(() => ({gamesinfo: gi}), () => {
-                    // Preload all backgrounds once games are available
-                    this.preloadBackgrounds();
-                    
                     // Reset initial loading state after animations complete
                     if (this.state.manifestsInitialLoading && gi.length > 0) {
                         const maxDelay = (gi.length - 1) * 100 + 400; // Last item delay
                         const animationDuration = 600; // slideInLeft duration
                         setTimeout(() => {this.setState({ manifestsInitialLoading: false });}, maxDelay + animationDuration + 50);
                     }
-                    
+
                     if (this.state.installs.length === 0) {
                         if (games.length > 0 && this.state.currentGame == "") {
                             this.setCurrentGame(games[0].filename.replace(".json", ""));
@@ -692,21 +701,38 @@ export default class App extends React.Component<any, any> {
     setCurrentInstall(game: string) {this.setState({currentInstall: game});}
 
     // === PRELOAD BACKGROUNDS ===
-    preloadBackgrounds() {
-        // @ts-ignore
-        const cache: Set<string> = this.preloadedBackgrounds;
-        const list = this.state.gamesinfo || [];
-        if (!list.length) return;
-        list.forEach((g: any, idx: number) => {
-            const src = g?.assets?.game_background;
-            if (!src || cache.has(src)) return;
-            // Stagger slightly to avoid network burst
-            setTimeout(() => {
-                const img = new Image();
-                img.onload = () => { cache.add(src); };
-                img.onerror = () => { /* Ignore failures */ };
+    preloadBackgroundImages() {
+        return new Promise<void>((resolve) => {
+            const cache = this.preloadedBackgrounds;
+            const list = this.state.gamesinfo || [];
+            if (!list.length) return resolve();
+            let loaded = 0;
+            let total = 0;
+            const toLoad: string[] = [];
+            list.forEach((g: any) => {
+                const src = g?.assets?.game_background;
+                if (src && !cache.has(src)) {
+                    toLoad.push(src);
+                }
+            });
+            total = toLoad.length;
+            if (total === 0) return resolve();
+            toLoad.forEach((src) => {
+                const img = new window.Image();
+                img.onload = () => {
+                    cache.add(src);
+                    loaded++;
+                    // Update progress bar for image loading (between 75% and 100%)
+                    const progress = 75 + Math.round((loaded / total) * 25);
+                    this.setState({ loadingProgress: progress, loadingMessage: `Preloading images... (${loaded}/${total})` });
+                    if (loaded === total) resolve();
+                };
+                img.onerror = () => {
+                    loaded++;
+                    if (loaded === total) resolve();
+                };
                 img.src = src;
-            }, idx * 40);
+            });
         });
     }
 }
