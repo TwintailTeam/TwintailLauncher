@@ -21,6 +21,8 @@ import {emit, listen} from "@tauri-apps/api/event";
 import SidebarCommunity from "./components/SidebarCommunity.tsx";
 import { Events } from "./constants/events.ts";
 import { registerEvents } from "./utils/events.ts";
+import { preloadImages } from "./utils/imagePreloader";
+import AppLoadingScreen from "./components/AppLoadingScreen";
 
 
 export default class App extends React.Component<any, any> {
@@ -104,38 +106,7 @@ export default class App extends React.Component<any, any> {
         // Show loading screen while app is initializing
         if (this.state.isInitialLoading) {
             return (
-                <main className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 scrollbar-none">
-                    <div className="flex flex-col items-center space-y-6 animate-fadeIn">
-                        {/* App Logo/Icon */}
-                        <div className="relative w-16 h-16 rounded-xl animate-pulse shadow-2xl shadow-blue-500/20 overflow-hidden bg-slate-700/50">
-                            <img src="/launcher-icon.png" srcSet="/launcher-icon.png 1x, /launcher-icon-128.png 2x" alt="TwintailLauncher" className="w-full h-full object-cover rounded-xl"
-                                onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, rgb(59 130 246), rgb(147 51 234))';
-                                }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-xl"></div>
-                        </div>
-
-                        {/* App Name */}
-                        <div className="text-center">
-                            <h1 className="text-2xl font-bold text-white mb-2 animate-slideUp">TwintailLauncher</h1>
-                            <p className="text-slate-400 text-sm animate-slideUp delay-100">{this.state.loadingMessage}</p>
-                        </div>
-
-                        {/* Loading Bar */}
-                        <div className="w-64 h-1 bg-slate-700 rounded-full overflow-hidden animate-slideUp delay-200">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out animate-shimmer" style={{ width: `${this.state.loadingProgress}%` }}></div>
-                        </div>
-
-                        {/* Loading Dots */}
-                        <div className="flex space-x-1 animate-slideUp delay-300">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
-                            <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce delay-200"></div>
-                        </div>
-                    </div>
-                </main>
+                <AppLoadingScreen progress={this.state.loadingProgress} message={this.state.loadingMessage} />
             );
         }
         
@@ -321,7 +292,16 @@ export default class App extends React.Component<any, any> {
         this.setState({ loadingProgress: 75, loadingMessage: "Preloading images..." });
 
         // Step 4: Preload all game backgrounds
-        await this.preloadBackgroundImages();
+        const gameBackgrounds = (this.state.gamesinfo || []).map((g: any) => g?.assets?.game_background).filter(Boolean);
+        await preloadImages(
+            gameBackgrounds,
+            (loaded, total) => {
+                // Update progress bar for image loading (between 75% and 100%)
+                const progress = 75 + Math.round((loaded / total) * 25);
+                this.setState({ loadingProgress: progress, loadingMessage: `Preloading images... (${loaded}/${total})` });
+            },
+            this.preloadedBackgrounds
+        );
         this.setState({ loadingProgress: 100, loadingMessage: "Almost ready..." });
 
         // Calculate remaining time needed
@@ -634,7 +614,7 @@ export default class App extends React.Component<any, any> {
     setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
     setCurrentGame(game: string) {this.setState({currentGame: game});}
     setDisplayName(name: string) {this.setState({displayName: name});}
-    // Store the background transition timeout ID
+    // Store the background transition timeout
     bgTransitionTimeout?: number;
 
     setBackground(file: string) {
@@ -672,42 +652,4 @@ export default class App extends React.Component<any, any> {
     setGameIcon(file: string) {this.setState({gameIcon: file});}
     setReposList(reposList: any) {this.setState({reposList: reposList});}
     setCurrentInstall(game: string) {this.setState({currentInstall: game});}
-
-    // === PRELOAD BACKGROUNDS ===
-    preloadBackgroundImages() {
-        return new Promise<void>((resolve) => {
-            const cache = this.preloadedBackgrounds;
-            const list = this.state.gamesinfo || [];
-            if (!list.length) return resolve();
-            let loaded = 0;
-            let total = 0;
-            const toLoad: string[] = [];
-            list.forEach((g: any) => {
-                const src = g?.assets?.game_background;
-                if (src && !cache.has(src)) {
-                    toLoad.push(src);
-                }
-            });
-            total = toLoad.length;
-            if (total === 0) return resolve();
-            toLoad.forEach((src) => {
-                const img = new window.Image();
-                img.onload = () => {
-                    cache.add(src);
-                    loaded++;
-                    // Update progress bar for image loading (between 75% and 100%)
-                    const progress = 75 + Math.round((loaded / total) * 25);
-                    this.setState({ loadingProgress: progress, loadingMessage: `Preloading images... (${loaded}/${total})` });
-                    if (loaded === total) resolve();
-                };
-                img.onerror = () => {
-                    loaded++;
-                    if (loaded === total) resolve();
-                };
-                img.src = src;
-            });
-        });
-    }
 }
-
-
