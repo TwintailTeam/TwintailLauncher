@@ -19,19 +19,9 @@ import TooltipIcon from "./components/common/TooltipIcon.tsx";
 import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 import {emit, listen} from "@tauri-apps/api/event";
 import SidebarCommunity from "./components/SidebarCommunity.tsx";
+import { Events } from "./constants/events.ts";
+import { registerEvents } from "./utils/events.ts";
 
-const EVENTS = [
-    'download_progress',
-    'download_complete',
-    'update_progress',
-    'update_complete',
-    'repair_progress',
-    'repair_complete',
-    'preload_progress',
-    'preload_complete',
-    'move_progress',
-    'move_complete'
-];
 
 export default class App extends React.Component<any, any> {
     unlistenFns: (() => void)[] = [];
@@ -343,7 +333,7 @@ export default class App extends React.Component<any, any> {
 
         // Set up event listeners after a delay
         setTimeout(async () => {
-            for (const eventType of EVENTS) {
+            for (const eventType of Events) {
                 const unlisten = await listen<string>(eventType, (event) => {
                     const newState = registerEvents(eventType, event, this.pushInstalls);
                     if (newState !== undefined) this.setState(() => ({...newState}));
@@ -737,120 +727,4 @@ export default class App extends React.Component<any, any> {
     }
 }
 
-// === UTILITY ===
-function registerEvents(eventType: string, event: any, pushInstalls: () => void) {
-    switch (eventType) {
-        case "move_complete":
-        case 'download_complete':
-        case 'update_complete':
-        case 'repair_complete':
-        case 'preload_complete': {
-            pushInstalls();
-            return {
-                hideProgressBar: true,
-                disableInstallEdit: false,
-                disableRun: false,
-                disableUpdate: false,
-                disableDownload: false,
-                disablePreload: false,
-                disableResume: false,
-                progressName: `?`,
-                progressVal: 0,
-                progressPercent: `0%`,
-                progressPretty: 0,
-                progressPrettyTotal: 0
-            };
-        }
-        case 'move_progress': {
-            return {hideProgressBar: false,
-                disableInstallEdit: true,
-                disableRun: true,
-                disableUpdate: true,
-                disableDownload: true,
-                disablePreload: true,
-                disableResume: true,
-                progressName: `Moving "${event.payload.file}"`,
-                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-                progressPretty: `${formatBytes(event.payload.progress)}`,
-                progressPrettyTotal: `${formatBytes(event.payload.total)}`
-            };
-        }
-        case 'download_progress': {
-            return {hideProgressBar: false,
-                disableInstallEdit: true,
-                disableRun: true,
-                disableUpdate: true,
-                disableDownload: true,
-                disablePreload: true,
-                disableResume: true,
-                progressName: `Downloading "${event.payload.name}"`,
-                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-                progressPretty: `${formatBytes(event.payload.progress)}`,
-                progressPrettyTotal: `${formatBytes(event.payload.total)}`
-            };
-        }
-        case 'update_progress': {
-            return {hideProgressBar: false,
-                disableInstallEdit: true,
-                disableRun: true,
-                disableUpdate: true,
-                disableDownload: true,
-                disablePreload: true,
-                disableResume: true,
-                progressName: `Updating "${event.payload.name}"`,
-                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-                progressPretty: `${formatBytes(event.payload.progress)}`,
-                progressPrettyTotal: `${formatBytes(event.payload.total)}`
-            };
-        }
-        case 'repair_progress': {
-            return {hideProgressBar: false,
-                disableInstallEdit: true,
-                disableRun: true,
-                disableUpdate: true,
-                disableDownload: true,
-                disablePreload: true,
-                disableResume: true,
-                progressName: `Repairing "${event.payload.name}"`,
-                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-                progressPretty: `${formatBytes(event.payload.progress)}`,
-                progressPrettyTotal: `${formatBytes(event.payload.total)}`
-            };
-        }
-        case 'preload_progress': {
-            return {hideProgressBar: false,
-                disableInstallEdit: true,
-                disableRun: true,
-                disableUpdate: true,
-                disableDownload: true,
-                disablePreload: true,
-                disableResume: true,
-                progressName: `Predownloading "${event.payload.name}"`,
-                progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-                progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-                progressPretty: `${formatBytes(event.payload.progress)}`,
-                progressPrettyTotal: `${formatBytes(event.payload.total)}`
-            };
-        }
-    }
-}
 
-function toPercent(number: any, total: any) { return (parseInt(number) / parseInt(total)) * 100; }
-
-function formatBytes(bytes: any) {
-    const MiB = 1024 * 1024;
-    const GiB = 1024 * MiB;
-    let b =  parseInt(bytes);
-
-    if (b >= GiB) {
-        return (b / GiB).toFixed(2) + ' GiB';
-    } else if (b >= MiB) {
-        return (b / MiB).toFixed(2) + ' MiB';
-    } else {
-        return b + ' bytes';
-    }
-}
