@@ -692,6 +692,9 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         if runner_version.contains("proton-umu") {
             rslt = "proton_umu.json".to_string();
         }
+        if runner_version.contains("proton-vanilla") {
+            rslt = "proton_vanilla.json".to_string();
+        }
         Some(rslt)
     }
 }
