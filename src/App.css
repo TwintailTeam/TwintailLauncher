@@ -161,6 +161,27 @@ body {
     animation-fill-mode: both;
 }
 
+/* Sliding reveal/hide mask from left for floating panel */
+@keyframes revealMaskLeft {
+    from { clip-path: inset(0 100% 0 0); }
+    to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hideMaskLeft {
+    from { clip-path: inset(0 0 0 0); }
+    to   { clip-path: inset(0 100% 0 0); }
+}
+
+.animate-revealMaskLeft {
+    animation: revealMaskLeft 400ms ease-out;
+    animation-fill-mode: both;
+}
+
+.animate-hideMaskLeft {
+    animation: hideMaskLeft 250ms ease-in;
+    animation-fill-mode: both;
+}
+
 .animate-shimmer {
     position: relative;
     overflow: hidden;
@@ -244,6 +265,8 @@ body {
     .animate-shimmer,
     .animate-bg-fade-in, 
     .animate-bg-fade-out,
+    .animate-revealMaskLeft,
+    .animate-hideMaskLeft,
     .popup-noise { 
         animation: none; 
     }

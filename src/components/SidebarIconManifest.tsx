@@ -26,9 +26,11 @@ type SidebarIconProps = {
     setBackground: (file: string) => void,
     setCurrentInstall: (a: string) => void,
     setGameIcon: (a: string) => void,
+    sizeClass?: string,
+    variant?: "default" | "floating",
 }
 
-export default function SidebarIconManifest({icon, name, id, setGameIcon, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled}: SidebarIconProps) {
+export default function SidebarIconManifest({icon, name, id, setGameIcon, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, sizeClass = "w-12", variant = "default"}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -45,9 +47,15 @@ export default function SidebarIconManifest({icon, name, id, setGameIcon, setCur
     const hover = useHover(context, {move: false});
     const {getReferenceProps, getFloatingProps} = useInteractions([hover]);
 
+    const baseImgClass = `aspect-square ${sizeClass} rounded-lg cursor-pointer outline-none`;
+    const defaultDecor = `hover:border-2 hover:border-purple-600 focus:border-2 focus:border-purple-600`;
+    const floatingDecor = `p-1 bg-white/5 ring-1 ring-white/10 hover:ring-purple-500/50 focus:ring-2 focus:ring-purple-500/60 shadow-md hover:shadow-purple-500/20 transition-all duration-200`;
+
+    const composedClass = `${baseImgClass} ${variant === "floating" ? floatingDecor : defaultDecor}`;
+
     return (
         <React.Fragment>
-            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className="aspect-square w-12 rounded-lg cursor-pointer hover:border-2 hover:border-purple-600 focus:border-2 focus:border-purple-600 outline-none" srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className={composedClass} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
                 setCurrentGame(id)
                 setCurrentInstall("")

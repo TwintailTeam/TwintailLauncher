@@ -6,7 +6,7 @@ import AddRepo from "./components/popups/repomanager/AddRepo.tsx";
 import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/SidebarRepos.tsx";
-import {ChevronDown, DownloadIcon, Settings} from "lucide-react";
+import {DownloadIcon, Settings} from "lucide-react";
 import SidebarSettings from "./components/SidebarSettings.tsx";
 import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
 import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
@@ -16,19 +16,21 @@ import ProgressBar from "./components/common/ProgressBar.tsx";
 import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
 import GameButton from "./components/GameButton.tsx";
 import TooltipIcon from "./components/common/TooltipIcon.tsx";
-import CollapsableTooltip from "./components/common/CollapsableTooltip.tsx";
 import {emit, listen} from "@tauri-apps/api/event";
 import SidebarCommunity from "./components/SidebarCommunity.tsx";
 import { Events } from "./constants/events.ts";
 import { registerEvents } from "./utils/events.ts";
 import { preloadImages } from "./utils/imagePreloader";
 import AppLoadingScreen from "./components/AppLoadingScreen";
+import SidebarManifests from "./components/SidebarManifests.tsx";
 
 
 export default class App extends React.Component<any, any> {
     unlistenFns: (() => void)[] = [];
     // Track which backgrounds have been preloaded to avoid duplicate fetches
     preloadedBackgrounds: Set<string>;
+    // Ref to measure floating manifests panel width to prevent snap during close
+    manifestsPanelRef: React.RefObject<HTMLDivElement>;
     constructor(props: any) {
         super(props);
 
@@ -53,6 +55,7 @@ export default class App extends React.Component<any, any> {
 
     // @ts-ignore
     this.preloadedBackgrounds = new Set();
+    this.manifestsPanelRef = React.createRef<HTMLDivElement>();
 
         this.state = {
             isInitialLoading: true,
@@ -78,6 +81,12 @@ export default class App extends React.Component<any, any> {
             manifestsClosing: false,
             manifestsOpening: false,
             manifestsInitialLoading: true,
+            // lock width of manifests panel during closing to avoid shrinking to a dot
+            manifestsPanelWidth: null,
+            // intermediate fade of the container before collapsing height
+            manifestsFadingOut: false,
+            // visual open/closed state for reversible transitions
+            manifestsOpenVisual: true,
             runnerVersions: [],
             dxvkVersions: [],
             downloadSizes: {},
@@ -134,63 +143,75 @@ export default class App extends React.Component<any, any> {
                         <div className="absolute inset-0 backdrop-fallback-grid opacity-[0.04]"/>
                     </div>
                 )}
-                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-between animate-slideInLeft" style={{ animationDelay: '100ms' }}>
-                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
-                        <CollapsableTooltip text={this.state.globalSettings.hide_manifests ? "Show manifests" : "Hide manifests"} icon={<ChevronDown color="white" onClick={() => {
-                            // If we're about to hide manifests, trigger closing animation first
-                            if (!this.state.globalSettings.hide_manifests) {
-                                // Start closing animation
-                                this.setState({ manifestsClosing: true });
-                                // Calculate total animation time: base animation (200ms) + max stagger delay
-                                const maxStaggerDelay = (this.state.gamesinfo.length - 1) * 50;
-                                const totalAnimationTime = 200 + maxStaggerDelay + 100; // Add extra buffer
-                                // After all animations complete, hide manifests
-                                setTimeout(() => {
-                                    invoke("update_settings_manifests_hide", {enabled: true}).then(() => {});
-                                    this.setState((prevState: any) => ({
-                                        globalSettings: {
-                                            ...prevState.globalSettings,
-                                            hide_manifests: true
-                                        },
-                                        manifestsClosing: false
-                                    }));
-                                }, totalAnimationTime);
-                            } else {
-                                // Show manifests with opening animation
-                                this.setState({ manifestsOpening: true });
-                                invoke("update_settings_manifests_hide", {enabled: false}).then(() => {});
-                                this.setState((prevState: any) => ({
-                                    globalSettings: {
-                                        ...prevState.globalSettings,
-                                        hide_manifests: false
-                                    }
+                {/* Top floating manifest panel (slides out from left), toggled by the sidebar chevron */}
+                <div className="absolute top-0 left-16 right-0 z-20 pointer-events-none">
+                    <div className="pl-3 pt-3 pr-6">
+                        <div
+                            ref={this.manifestsPanelRef}
+                            className={"relative inline-flex rounded-2xl border border-white/10 bg-black/55 backdrop-blur-2xl shadow-2xl overflow-hidden pointer-events-auto origin-left"}
+                            style={{
+                                // Slide the panel backdrop using a reversible clip-path transition
+                                clipPath: this.state.manifestsOpenVisual ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
+                                transition: 'clip-path 400ms ease',
+                                // Y slide for the whole bar on hide via popup
+                                transform: (this.state.openPopup != POPUPS.NONE) ? 'translateY(-8px)' : 'translateY(0)',
+                                opacity: (this.state.openPopup != POPUPS.NONE) ? 0 : 1,
+                                willChange: 'clip-path, transform, opacity'
+                            }}
+                        >
+                            <div className="flex flex-row items-center gap-2 overflow-x-auto px-3 py-2 scrollbar-none">
+                                {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
+                                    const opening = this.state.manifestsOpenVisual;
+                                    const delayMs = this.state.manifestsInitialLoading
+                                        ? (index * 100 + 400)
+                                        : (opening ? (index * 60 + 50) : ((this.state.gamesinfo.length - index - 1) * 50));
+                                    return (
+                                        <div key={game.biz}
+                                             className={this.state.manifestsInitialLoading ? 'animate-slideInLeft' : ''}
+                                             style={{
+                                                 // Reversible item transitions for spam-safe toggling
+                                                 transition: 'transform 300ms ease, opacity 300ms ease',
+                                                 transform: opening ? 'translateX(0)' : 'translateX(-20px)',
+                                                 opacity: opening ? 1 : 0,
+                                                 transitionDelay: `${delayMs}ms`
+                                             }}>
+                                            <SidebarIconManifest variant="floating" sizeClass="w-12" popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            {/* Edge fades to hint horizontal scroll */}
+                            <div className="pointer-events-none absolute top-0 left-0 h-full w-10 bg-gradient-to-r from-black/50 to-transparent"/>
+                            <div className="pointer-events-none absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-black/50 to-transparent"/>
+                        </div>
+                    </div>
+                </div>
+                <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-start animate-slideInLeft" style={{ animationDelay: '100ms' }}>
+                    {/* Separate, centered section for the download/manifests toggle */}
+                    <div className="flex items-center justify-center pb-2 animate-slideInLeft" style={{ animationDelay: '150ms' }}>
+                        <SidebarManifests
+                            isOpen={this.state.manifestsOpenVisual}
+                            popup={this.state.openPopup}
+                            onToggle={() => {
+                                const nextOpen = !this.state.manifestsOpenVisual;
+                                // Instant visual flip for spam-safe reversible transitions
+                                this.setState((prev: any) => ({
+                                    manifestsOpenVisual: nextOpen,
+                                    globalSettings: { ...prev.globalSettings, hide_manifests: !nextOpen }
                                 }));
-                                // Reset opening state after all animations complete
-                                const maxDelay = (this.state.gamesinfo.length - 1) * 60 + 50; // Last item delay
-                                const animationDuration = 300; // slideInLeft duration
-                                setTimeout(() => {
-                                    this.setState({ manifestsOpening: false });
-                                }, maxDelay + animationDuration + 50); // Add small buffer
-                            }
-                        }} className={`h-5 w-14 align-middle border-transparent transition cursor-pointer duration-300 pb-0 mb-0 ${this.state.globalSettings.hide_manifests ? "rotate-00" : "rotate-180"}`}/>}/>
+                                // Persist setting asynchronously, no timeouts
+                                invoke("update_settings_manifests_hide", { enabled: !nextOpen }).then(() => {});
+                            }}
+                        />
+                    </div>
+                    {/* Scrollable section for installs and separators */}
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
                         <div className={"w-full transition-all duration-500 ease-in-out overflow-visible scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{
-                            maxHeight: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? "0px" : (this.state.gamesinfo.length * 120) + "px",
-                            opacity: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? 0 : 1,
-                            transform: (this.state.globalSettings.hide_manifests && !this.state.manifestsClosing) ? "translateY(-10px)" : "translateY(0px)"
+                            maxHeight: "0px",
+                            opacity: 0,
+                            transform: "translateY(-10px)"
                         }}>
-                            {this.state.currentGame != "" && (!this.state.globalSettings.hide_manifests || this.state.manifestsClosing) && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
-                                return (
-                                    <div key={game.biz} className={this.state.manifestsClosing ? "animate-slideOutLeft" :
-                                        (this.state.manifestsOpening ? "animate-slideInLeft" :
-                                        (this.state.manifestsInitialLoading ? "animate-slideInLeft" : ""))
-                                    } style={{animationDelay: this.state.manifestsClosing ? `${(this.state.gamesinfo.length - index - 1) * 50}ms` :
-                                                      (this.state.manifestsOpening ? `${index * 60 + 50}ms` : 
-                                                      (this.state.manifestsInitialLoading ? `${index * 100 + 400}ms` : "0ms"))
-                                    }}>
-                                        <SidebarIconManifest popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
-                                    </div>
-                                )
-                            })}
+                            {/* Manifests moved to the top bar */}
                         </div>
                         <hr className={`text-white/20 bg-white/20 p-0 transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : ''}`} style={{
                             borderColor: "rgb(255 255 255 / 0.2)",
@@ -210,7 +231,7 @@ export default class App extends React.Component<any, any> {
                             })}
                         </div>
                     </div>
-                    <div className="flex flex-col gap-4 flex-shrink overflow-visible scrollbar-none animate-slideInLeft" style={{ animationDelay: '900ms' }}>
+                    <div className="flex flex-col gap-4 flex-shrink overflow-visible scrollbar-none animate-slideInLeft mt-auto" style={{ animationDelay: '900ms' }}>
                         <hr className="text-white/20 bg-white/20 p-0 animate-slideInLeft" style={{borderColor: "rgb(255 255 255 / 0.2)", animationDelay: '950ms'}}/>
                         <div className="animate-slideInLeft" style={{ animationDelay: '1000ms' }}>
                             <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
@@ -462,7 +483,12 @@ export default class App extends React.Component<any, any> {
             if (data === null) {
                 console.error("Settings database table contains nothing, some serious fuck up happened!")
             } else {
-                this.setState(() => ({globalSettings: JSON.parse(data as string)}));
+                const gs = JSON.parse(data as string);
+                this.setState(() => ({
+                    globalSettings: gs,
+                    // Visual open matches current setting
+                    manifestsOpenVisual: !gs.hide_manifests
+                }));
             }
         });
     }
