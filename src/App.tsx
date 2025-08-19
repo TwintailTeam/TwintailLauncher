@@ -312,10 +312,16 @@ export default class App extends React.Component<any, any> {
         await waitForGamesInfo();
         this.setState({ loadingProgress: 75, loadingMessage: "Preloading images..." });
 
-        // Step 4: Preload all game backgrounds
-        const gameBackgrounds = (this.state.gamesinfo || []).map((g: any) => g?.assets?.game_background).filter(Boolean);
+        // Step 4: Preload all game backgrounds and manifest icons
+        const gameBackgrounds = (this.state.gamesinfo || [])
+            .map((g: any) => g?.assets?.game_background)
+            .filter(Boolean);
+        const gameIcons = (this.state.gamesinfo || [])
+            .map((g: any) => g?.assets?.game_icon)
+            .filter(Boolean);
+        const imagesToPreload = Array.from(new Set([ ...gameBackgrounds, ...gameIcons ]));
         await preloadImages(
-            gameBackgrounds,
+            imagesToPreload,
             (loaded, total) => {
                 // Update progress bar for image loading (between 75% and 100%)
                 const progress = 75 + Math.round((loaded / total) * 25);
