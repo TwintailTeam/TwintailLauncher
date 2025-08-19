@@ -601,9 +601,9 @@ dependencies = [
 
 [[package]]
 name = "cfg-if"
-version = "1.0.1"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9555578bc9e57714c812a1f84e4fc5b4d21fcb063490c624de019f7464c91268"
+checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "cfg_aliases"
@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#0ac9b8bba10c54f2369b4b3a734a8d228ee21243"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#329ef3cafd1d81a9498c0a5d97ba5ebe904741a3"
 dependencies = [
  "chksum-md5",
  "crossbeam-deque",
