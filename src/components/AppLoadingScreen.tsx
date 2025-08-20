@@ -3,11 +3,15 @@ import React from "react";
 interface AppLoadingScreenProps {
     progress: number;
     message: string;
+    // When true, the overlay will fade out (opacity 0) before unmounting
+    fadingOut?: boolean;
 }
 
-const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ progress, message }) => {
+const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ progress, message, fadingOut }) => {
     return (
-        <main className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 scrollbar-none">
+        <main
+            className={`fixed inset-0 z-50 w-full h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 scrollbar-none transition-opacity duration-500 ${fadingOut ? 'opacity-0' : 'opacity-100'}`}
+        >
             <div className="flex flex-col items-center space-y-6 animate-fadeIn">
                 {/* App Logo/Icon */}
                 <div className="relative w-16 h-16 rounded-xl animate-pulse shadow-2xl shadow-blue-500/20 overflow-hidden bg-slate-700/50">

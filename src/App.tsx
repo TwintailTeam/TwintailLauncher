@@ -1,32 +1,25 @@
 import "./App.css";
 import React from "react";
-import RepoManager from "./components/popups/repomanager/RepoManager.tsx";
 import {POPUPS} from "./components/popups/POPUPS.ts";
-import AddRepo from "./components/popups/repomanager/AddRepo.tsx";
-import SidebarIconManifest from "./components/SidebarIconManifest.tsx";
 import {invoke} from "@tauri-apps/api/core";
-import SidebarRepos from "./components/SidebarRepos.tsx";
-import {DownloadIcon, Settings} from "lucide-react";
-import SidebarSettings from "./components/SidebarSettings.tsx";
-import SettingsGlobal from "./components/popups/settings/SettingsGlobal.tsx";
-import SidebarIconInstall from "./components/SidebarIconInstall.tsx";
-import DownloadGame from "./components/popups/DownloadGame.tsx";
-import SettingsInstall from "./components/popups/settings/SettingsInstall.tsx";
-import ProgressBar from "./components/common/ProgressBar.tsx";
-import InstallDeleteConfirm from "./components/popups/settings/InstallDeleteConfirm.tsx";
-import GameButton from "./components/GameButton.tsx";
-import TooltipIcon from "./components/common/TooltipIcon.tsx";
-import {emit, listen} from "@tauri-apps/api/event";
-import SidebarCommunity from "./components/SidebarCommunity.tsx";
-import { Events } from "./constants/events.ts";
-import { registerEvents } from "./utils/events.ts";
+import SidebarRepos from "./components/sidebar/SidebarRepos.tsx";
+import SidebarSettings from "./components/sidebar/SidebarSettings.tsx";
+import SidebarIconInstall from "./components/sidebar/SidebarIconInstall.tsx";
+import SidebarCommunity from "./components/sidebar/SidebarCommunity.tsx";
 import { preloadImages } from "./utils/imagePreloader";
 import AppLoadingScreen from "./components/AppLoadingScreen";
-import SidebarManifests from "./components/SidebarManifests.tsx";
+import SidebarManifests from "./components/sidebar/SidebarManifests.tsx";
+import { determineButtonType } from "./utils/determineButtonType";
+import BackgroundLayer from "./components/layout/BackgroundLayer";
+import ManifestsPanel from "./components/layout/ManifestsPanel";
+import ActionBar from "./components/layout/ActionBar";
+import DownloadProgress from "./components/layout/DownloadProgress";
+import PopupOverlay from "./components/layout/PopupOverlay";
+import { startInitialLoad } from "./services/loader";
 
 
 export default class App extends React.Component<any, any> {
-    unlistenFns: (() => void)[] = [];
+    loaderController?: { cancel: () => void };
     // Track which backgrounds have been preloaded to avoid duplicate fetches
     preloadedBackgrounds: Set<string>;
     // Ref to measure floating manifests panel width to prevent snap during close
@@ -62,6 +55,9 @@ export default class App extends React.Component<any, any> {
             isContentLoaded: false,
             loadingProgress: 0,
             loadingMessage: "Initializing...",
+            // Overlay controls for a smoother cross-fade
+            showLoadingOverlay: true,
+            overlayFadingOut: false,
             openPopup: POPUPS.NONE,
             currentGame: "",
             currentInstall: "",
@@ -78,14 +74,13 @@ export default class App extends React.Component<any, any> {
             preloadAvailable: false,
             gameVersions: [],
             installSettings: {},
+            installGameSwitches: {},
+            installGameFps: [],
             manifestsClosing: false,
             manifestsOpening: false,
             manifestsInitialLoading: true,
-            // lock width of manifests panel during closing to avoid shrinking to a dot
             manifestsPanelWidth: null,
-            // intermediate fade of the container before collapsing height
             manifestsFadingOut: false,
-            // visual open/closed state for reversible transitions
             manifestsOpenVisual: true,
             runnerVersions: [],
             dxvkVersions: [],
@@ -110,32 +105,29 @@ export default class App extends React.Component<any, any> {
     }
 
     render() {
-        let buttonType = this.determineButtonType();
+        const buttonType = determineButtonType({
+            currentInstall: this.state.currentInstall,
+            installSettings: this.state.installSettings,
+            gameManifest: this.state.gameManifest,
+            preloadAvailable: this.state.preloadAvailable,
+            resumeStates: this.state.resumeStates,
+        });
 
-        // Show loading screen while app is initializing
-        if (this.state.isInitialLoading) {
-            return (
-                <AppLoadingScreen progress={this.state.loadingProgress} message={this.state.loadingMessage} />
-            );
-        }
-        
         return (
+            <>
             <main className={`w-full h-screen flex flex-row bg-transparent overflow-x-hidden transition-opacity duration-500 ${this.state.isContentLoaded ? 'opacity-100' : 'opacity-0'} ${this.state.openPopup != POPUPS.NONE ? "popup-open" : ""}`}>
-                <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-                    {this.state.transitioningBackground && this.state.previousBackground && (
-                        <img key={`prev-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center absolute inset-0 transition-none animate-bg-fade-out ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"previous background"} src={this.state.previousBackground} loading="lazy" decoding="async"/>
-                    )}
-                    <img id="app-bg" key={`curr-${this.state.bgVersion}`} className={`w-full h-screen object-cover object-center transition-all duration-300 ease-out ${this.state.transitioningBackground ? "animate-bg-fade-in" : ""} ${this.state.openPopup != POPUPS.NONE ? "scale-[1.03] brightness-[0.45] saturate-75" : ""}`} alt={"?"} src={this.state.gameBackground} loading="lazy" decoding="async"
-                        onLoad={() => {
-                            // Ensure content is marked as loaded when main background loads
-                            if (!this.state.isContentLoaded) {
-                                setTimeout(() => {
-                                    this.setState({ isContentLoaded: true });
-                                }, 100);
-                            }
-                        }}
-                    />
-                </div>
+                <BackgroundLayer
+                    currentSrc={this.state.gameBackground}
+                    previousSrc={this.state.previousBackground}
+                    transitioning={this.state.transitioningBackground}
+                    bgVersion={this.state.bgVersion}
+                    popupOpen={this.state.openPopup != POPUPS.NONE}
+                    onMainLoad={() => {
+                        if (!this.state.isContentLoaded) {
+                            setTimeout(() => { this.setState({ isContentLoaded: true }); }, 100);
+                        }
+                    }}
+                />
                 {this.state.openPopup != POPUPS.NONE && (
                     <div className="pointer-events-none absolute top-0 bottom-0 left-16 right-0 z-10 animate-fadeIn">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,10,15,0.55)_0%,rgba(5,5,10,0.70)_55%,rgba(0,0,0,0.82)_100%)]"/>
@@ -144,54 +136,26 @@ export default class App extends React.Component<any, any> {
                     </div>
                 )}
                 {/* Top floating manifest panel (slides out from left), toggled by the sidebar chevron */}
-                <div className="absolute top-0 left-16 right-0 z-20 pointer-events-none">
-                    <div className="pl-3 pt-3 pr-6">
-                        <div
-                            ref={this.manifestsPanelRef}
-                            className={"relative inline-flex rounded-2xl border border-white/10 bg-black/55 backdrop-blur-2xl shadow-2xl overflow-hidden pointer-events-auto origin-left"}
-                            style={{
-                                // Slide the panel backdrop using a reversible clip-path transition
-                                clipPath: this.state.manifestsOpenVisual ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
-                                transition: 'clip-path 400ms ease',
-                                // Y slide for the whole bar on hide via popup
-                                transform: (this.state.openPopup != POPUPS.NONE) ? 'translateY(-8px)' : 'translateY(0)',
-                                opacity: (this.state.openPopup != POPUPS.NONE) ? 0 : 1,
-                                willChange: 'clip-path, transform, opacity'
-                            }}
-                        >
-                            <div className="flex flex-row items-center gap-2 overflow-x-auto px-3 py-2 scrollbar-none">
-                                {this.state.currentGame != "" && this.state.gamesinfo.map((game: { manifest_enabled: boolean; assets: any; filename: string; icon: string; display_name: string; biz: string; }, index: number) => {
-                                    const opening = this.state.manifestsOpenVisual;
-                                    const delayMs = this.state.manifestsInitialLoading
-                                        ? (index * 100 + 400)
-                                        : (opening ? (index * 60 + 50) : ((this.state.gamesinfo.length - index - 1) * 50));
-                                    return (
-                                        <div key={game.biz}
-                                             className={this.state.manifestsInitialLoading ? 'animate-slideInLeft' : ''}
-                                             style={{
-                                                 // Reversible item transitions for spam-safe toggling
-                                                 transition: 'transform 300ms ease, opacity 300ms ease',
-                                                 transform: opening ? 'translateX(0)' : 'translateX(-20px)',
-                                                 opacity: opening ? 1 : 0,
-                                                 transitionDelay: `${delayMs}ms`
-                                             }}>
-                                            <SidebarIconManifest variant="floating" sizeClass="w-12" popup={this.state.openPopup} icon={game.assets.game_icon} background={game.assets.game_background} name={game.display_name} enabled={game.manifest_enabled} id={game.biz} setCurrentGame={this.setCurrentGame} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall} setGameIcon={this.setGameIcon} />
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                            {/* Edge fades to hint horizontal scroll */}
-                            <div className="pointer-events-none absolute top-0 left-0 h-full w-10 bg-gradient-to-r from-black/50 to-transparent"/>
-                            <div className="pointer-events-none absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-black/50 to-transparent"/>
-                        </div>
-                    </div>
-                </div>
+                <ManifestsPanel
+                    openPopup={this.state.openPopup}
+                    manifestsOpenVisual={this.state.manifestsOpenVisual}
+                    manifestsInitialLoading={this.state.manifestsInitialLoading}
+                    gamesinfo={this.state.currentGame !== "" ? this.state.gamesinfo : []}
+                    manifestsPanelRef={this.manifestsPanelRef}
+                    setCurrentGame={this.setCurrentGame}
+                    setOpenPopup={this.setOpenPopup}
+                    setDisplayName={this.setDisplayName}
+                    setBackground={this.setBackground}
+                    setCurrentInstall={this.setCurrentInstall}
+                    setGameIcon={this.setGameIcon}
+                />
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-start animate-slideInLeft" style={{ animationDelay: '100ms' }}>
                     {/* Separate, centered section for the download/manifests toggle */}
-                    <div className="flex items-center justify-center pb-2 animate-slideInLeft" style={{ animationDelay: '150ms' }}>
+                    <div className="flex items-center justify-center h-10 animate-slideInLeft" style={{ animationDelay: '150ms' }}>
                         <SidebarManifests
                             isOpen={this.state.manifestsOpenVisual}
                             popup={this.state.openPopup}
+                            hasInstalls={(this.state.installs?.length || 0) > 0}
                             onToggle={() => {
                                 const nextOpen = !this.state.manifestsOpenVisual;
                                 // Instant visual flip for spam-safe reversible transitions
@@ -222,10 +186,27 @@ export default class App extends React.Component<any, any> {
                             animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
                             '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
                         } as React.CSSProperties}>
-                            {this.state.installs.map((install: { game_background: string; game_icon: string; manifest_id: string; name: string; id: string; }, index: number) => {
+                            {this.state.installs.map((install: any, index: number) => {
+                                // Find corresponding game manifest info by manifest_id
+                                const game = (this.state.gamesinfo || []).find((g: any) => g.manifest_id === install.manifest_id);
+                                const latest = game?.latest_version ?? null;
+                                const hasUpdate = !!(latest && install?.version && latest !== install.version && !install?.ignore_updates);
                                 return (
                                     <div key={install.id} className="animate-slideInLeft" style={{ animationDelay: `${index * 100 + 600}ms` }}>
-                                        <SidebarIconInstall popup={this.state.openPopup} icon={install.game_icon} background={install.game_background} name={install.name} enabled={true} id={install.id} setCurrentInstall={this.setCurrentInstall} setOpenPopup={this.setOpenPopup} setDisplayName={this.setDisplayName} setBackground={this.setBackground} setGameIcon={this.setGameIcon} />
+                                        <SidebarIconInstall
+                                            popup={this.state.openPopup}
+                                            icon={install.game_icon}
+                                            background={install.game_background}
+                                            name={install.name}
+                                            enabled={true}
+                                            id={install.id}
+                                            hasUpdate={hasUpdate}
+                                            setCurrentInstall={this.setCurrentInstall}
+                                            setOpenPopup={this.setOpenPopup}
+                                            setDisplayName={this.setDisplayName}
+                                            setBackground={this.setBackground}
+                                            setGameIcon={this.setGameIcon}
+                                        />
                                     </div>
                                 )
                             })}
@@ -244,125 +225,105 @@ export default class App extends React.Component<any, any> {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-row absolute bottom-8 right-16 gap-4 animate-slideInRight" style={{ animationDelay: '900ms' }}>
-                    {(this.state.currentInstall !== "" && this.state.preloadAvailable) ? (<button disabled={this.state.disablePreload} onClick={() => {
-                        emit("start_game_preload", {install: this.state.currentInstall, biz: "", lang: ""}).then(() => {});
-                    }}><TooltipIcon side={"top"} text={"Predownload update"} icon={<DownloadIcon className="text-yellow-600 hover:text-yellow-700 w-8 h-8"/>}/>
-                    </button>): null}
-                    {(this.state.currentInstall !== "") ? <button id={`install_settings_btn`} disabled={this.state.disableInstallEdit} onClick={() => {
-                        // Delay for very unnoticeable time to prevent popup opening before state is synced
-                        setTimeout(() => {this.setState({openPopup: POPUPS.INSTALLSETTINGS});}, 20);
-                    }}><TooltipIcon side={"top"} text={"Install settings"} icon={<Settings fill={"white"} className="hover:stroke-neutral-500 stroke-black w-8 h-8"/>}/></button> : null}
-                    <GameButton resumeStates={this.state.resumeStates} disableResume={this.state.disableResume} disableDownload={this.state.disableDownload} disableRun={this.state.disableRun} disableUpdate={this.state.disableUpdate} currentInstall={this.state.currentInstall} globalSettings={this.state.globalSettings} refreshDownloadButtonInfo={this.refreshDownloadButtonInfo} buttonType={buttonType}/>
-                </div>
-                <div className={`absolute items-center justify-center bottom-0 left-96 right-72 p-8 z-20 [top:82%] ${this.state.hideProgressBar ? "hidden" : ""}`} id={"progress_bar"}>
-                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"} id={"progress_name"}>{this.state.progressName}</h4>
-                    <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>(<span id={"progress_percent"}>{this.state.progressPercent}</span> | <span id={"progress_pretty"}>{this.state.progressPretty} / {this.state.progressPrettyTotal}</span>)</h4>
-                    <ProgressBar id={"progress_value"} progress={this.state.progressVal} className={"transition-all duration-500 ease-out"}/>
-                </div>
-                <div className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${this.state.openPopup == POPUPS.NONE ? "hidden" : "flex bg-white/10"}`} onClick={(e) => {
-                    // Close popup when clicking on the overlay (but not on the popup content)
-                    if (e.target === e.currentTarget) {this.setOpenPopup(POPUPS.NONE);}
-                }}>
-                    {this.state.openPopup == POPUPS.REPOMANAGER && <RepoManager repos={this.state.reposList} setOpenPopup={this.setOpenPopup} fetchRepositories={this.fetchRepositories}/>}
-                    {this.state.openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={this.setOpenPopup}/>}
-                    {this.state.openPopup == POPUPS.SETTINGS && <SettingsGlobal fetchSettings={this.fetchSettings} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} />}
-                    {this.state.openPopup == POPUPS.DOWNLOADGAME && <DownloadGame fetchDownloadSizes={this.fetchDownloadSizes} disk={this.state.downloadSizes} runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} versions={this.state.gameVersions} icon={this.state.gameIcon} background={this.state.gameBackground} biz={this.state.currentGame} displayName={this.state.displayName} settings={this.state.globalSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setBackground={this.setBackground} setCurrentInstall={this.setCurrentInstall}/>}
-                    {this.state.openPopup == POPUPS.INSTALLSETTINGS && <SettingsInstall games={this.state.gamesinfo} runnerVersions={this.state.runnerVersions} dxvkVersions={this.state.dxvkVersions} installSettings={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setCurrentInstall={this.setCurrentInstall} setCurrentGame={this.setCurrentGame} setBackground={this.setBackground} fetchInstallSettings={this.fetchInstallSettings}/>}
-                    {this.state.openPopup == POPUPS.INSTALLDELETECONFIRMATION && <InstallDeleteConfirm installs={this.state.installs} games={this.state.gamesinfo} install={this.state.installSettings} setOpenPopup={this.setOpenPopup} pushInstalls={this.pushInstalls} setCurrentInstall={this.setCurrentInstall} setCurrentGame={this.setCurrentGame} setBackground={this.setBackground}/>}
-                </div>
+                <ActionBar
+                    currentInstall={this.state.currentInstall}
+                    preloadAvailable={this.state.preloadAvailable}
+                    disablePreload={this.state.disablePreload}
+                    disableInstallEdit={this.state.disableInstallEdit}
+                    disableResume={this.state.disableResume}
+                    disableDownload={this.state.disableDownload}
+                    disableRun={this.state.disableRun}
+                    disableUpdate={this.state.disableUpdate}
+                    resumeStates={this.state.resumeStates}
+                    globalSettings={this.state.globalSettings}
+                    buttonType={buttonType}
+                    refreshDownloadButtonInfo={this.refreshDownloadButtonInfo}
+                    onOpenInstallSettings={() => {
+                        this.setState({ disableInstallEdit: true }, async () => {
+                            await this.fetchInstallSettings(this.state.currentInstall);
+                            this.setState({ openPopup: POPUPS.INSTALLSETTINGS, disableInstallEdit: false });
+                        });
+                    }}
+                />
+                <DownloadProgress
+                    hidden={this.state.hideProgressBar}
+                    name={this.state.progressName}
+                    percentText={this.state.progressPercent}
+                    pretty={this.state.progressPretty}
+                    prettyTotal={this.state.progressPrettyTotal}
+                    progressVal={this.state.progressVal}
+                />
+                <PopupOverlay
+                    openPopup={this.state.openPopup}
+                    setOpenPopup={this.setOpenPopup}
+                    reposList={this.state.reposList}
+                    fetchRepositories={this.fetchRepositories}
+                    fetchSettings={this.fetchSettings}
+                    globalSettings={this.state.globalSettings}
+                    downloadSizes={this.state.downloadSizes}
+                    runnerVersions={this.state.runnerVersions}
+                    dxvkVersions={this.state.dxvkVersions}
+                    gameVersions={this.state.gameVersions}
+                    gameIcon={this.state.gameIcon}
+                    gameBackground={this.state.gameBackground}
+                    currentGame={this.state.currentGame}
+                    displayName={this.state.displayName}
+                    fetchDownloadSizes={this.fetchDownloadSizes}
+                    pushInstalls={this.pushInstalls}
+                    setBackground={this.setBackground}
+                    setCurrentInstall={this.setCurrentInstall}
+                    gamesinfo={this.state.gamesinfo}
+                    installSettings={this.state.installSettings}
+                    setCurrentGame={this.setCurrentGame}
+                    fetchInstallSettings={this.fetchInstallSettings}
+                    installGameSwitches={this.state.installGameSwitches}
+                    installGameFps={this.state.installGameFps}
+                    installs={this.state.installs}
+                />
             </main>
+            {this.state.showLoadingOverlay && (
+                <AppLoadingScreen
+                    progress={this.state.loadingProgress}
+                    message={this.state.loadingMessage}
+                    fadingOut={this.state.overlayFadingOut}
+                />
+            )}
+            </>
         )
     }
 
     async componentDidMount() {
-        // Set minimum loading time to account for startup
-        const startTime = Date.now();
-        const minimumLoadTime = 2800; // 2.8 seconds minimum
-        // Start loading with progress animation
-        this.setState({ loadingProgress: 0, loadingMessage: "Loading settings..." });
-
-        // Step 1: Load settings
-        try {
-            await this.fetchSettings();
-            this.setState({ loadingProgress: 25, loadingMessage: "Connecting to repositories..." });
-        } catch (e) {
-            console.error("Error loading settings:", e);
-            this.setState({ loadingMessage: "Error loading settings..." });
-        }
-
-        // Step 2: Load repositories
-        try {
-            await this.fetchRepositories();
-            this.setState({ loadingProgress: 50, loadingMessage: "Loading game data..." });
-        } catch (e) {
-            console.error("Error loading repositories:", e);
-            this.setState({ loadingMessage: "Error loading repositories..." });
-        }
-
-        // Step 3: Wait for gamesinfo to be populated
-        // Use a polling approach to wait for gamesinfo to be set by pushGamesInfo
-        const waitForGamesInfo = async () => {
-            let tries = 0;
-            while (this.state.gamesinfo.length === 0 && tries < 40) {
-                await new Promise(res => setTimeout(res, 50));
-                tries++;
-            }
-        };
-        await waitForGamesInfo();
-        this.setState({ loadingProgress: 75, loadingMessage: "Preloading images..." });
-
-        // Step 4: Preload all game backgrounds and manifest icons
-        const gameBackgrounds = (this.state.gamesinfo || [])
-            .map((g: any) => g?.assets?.game_background)
-            .filter(Boolean);
-        const gameIcons = (this.state.gamesinfo || [])
-            .map((g: any) => g?.assets?.game_icon)
-            .filter(Boolean);
-        const imagesToPreload = Array.from(new Set([ ...gameBackgrounds, ...gameIcons ]));
-        await preloadImages(
-            imagesToPreload,
-            (loaded, total) => {
-                // Update progress bar for image loading (between 75% and 100%)
-                const progress = 75 + Math.round((loaded / total) * 25);
-                this.setState({ loadingProgress: progress, loadingMessage: `Preloading images... (${loaded}/${total})` });
-            },
-            this.preloadedBackgrounds
-        );
-        this.setState({ loadingProgress: 100, loadingMessage: "Almost ready..." });
-
-        // Calculate remaining time needed
-        const elapsedTime = Date.now() - startTime;
-        const remainingTime = Math.max(0, minimumLoadTime - elapsedTime);
-        setTimeout(() => {
-            this.completeInitialLoading();
-        }, remainingTime);
-
-        // Set up event listeners after a delay
-        setTimeout(async () => {
-            for (const eventType of Events) {
-                const unlisten = await listen<string>(eventType, (event) => {
-                    const newState = registerEvents(eventType, event, this.pushInstalls);
-                    if (newState !== undefined) this.setState(() => ({...newState}));
-                });
-                this.unlistenFns.push(unlisten);
-            }
-        }, 20);
+        // Kick off background-style initial loading via service
+        this.loaderController = startInitialLoad({
+            fetchSettings: this.fetchSettings,
+            fetchRepositories: this.fetchRepositories,
+            getGamesInfo: () => this.state.gamesinfo,
+            preloadImages: (images, onProgress, preloaded) => preloadImages(images, onProgress, preloaded),
+            preloadedBackgrounds: this.preloadedBackgrounds,
+            setProgress: (progress, message) => this.setState({ loadingProgress: progress, loadingMessage: message }),
+            completeInitialLoading: () => this.completeInitialLoading(),
+            pushInstalls: this.pushInstalls,
+            applyEventState: (ns) => this.setState(() => ({ ...ns })),
+        });
     }
 
     completeInitialLoading() {
         // Finish the progress bar quickly
         this.setState({ loadingProgress: 100 });
-        // Wait a moment then hide loading screen with smooth transition
+        // Start cross-fade: reveal main content and fade out overlay
         setTimeout(() => {
-            this.setState({isInitialLoading: false});
-            // Mark content as loaded after a brief delay for smoother transition
-            setTimeout(() => {this.setState({ isContentLoaded: true });}, 200);
-        }, 300);
+            this.setState({ isContentLoaded: true, overlayFadingOut: true });
+            // After overlay fade duration, remove it and finalize initial state
+            setTimeout(() => {
+                this.setState({ showLoadingOverlay: false, isInitialLoading: false });
+            }, 520); // match overlay CSS duration (500ms) + small buffer
+        }, 150);
     }
 
     componentWillUnmount() {
-        this.unlistenFns.forEach((fn) => fn());
+        if (this.loaderController) {
+            this.loaderController.cancel();
+        }
     }
 
     componentDidUpdate(_prevProps: any, prevState: any) {
@@ -403,12 +364,12 @@ export default class App extends React.Component<any, any> {
                     console.error("Manifest database table contains nothing, some serious fuck up happened!")
                 } else {
                     let g = JSON.parse(m as string);
-                        this.pushGamesInfo(g);
-                        let entries: any[] = [];
-                        g.forEach((e: any) => entries.push(e));
-                        // @ts-ignore
-                        r["manifests"] = entries;
-                        this.setReposList(repos);
+                    this.pushGamesInfo(g);
+                    let entries: any[] = [];
+                    g.forEach((e: any) => entries.push(e));
+                    // @ts-ignore
+                    r["manifests"] = entries;
+                    this.setReposList(repos);
                 }
             }).catch(e => {
                 console.error("Error while listing database manifest information: " + e)
@@ -500,16 +461,19 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchInstallSettings(install: any) {
-        invoke("get_install_by_id", {id: install}).then(async data => {
+        return invoke("get_install_by_id", {id: install}).then(async data => {
             if (data === null) {
                 console.error("Failed to fetch install settings!");
-                this.setState(() => ({installSettings: null, gameManifest: null, preloadAvailable: false}));
+                this.setState(() => ({installSettings: null, gameManifest: null, preloadAvailable: false, installGameSwitches: {}, installGameFps: []}));
             } else {
                 let parsed = JSON.parse(data as string);
                 let md = await this.fetchManifestById(parsed.manifest_id);
                 // @ts-ignore
                 let isPreload = md.extra.preload['metadata'] !== null;
-                this.setState(() => ({installSettings: parsed, gameManifest: md, preloadAvailable: isPreload}));
+                // Prepare switches and fps list for SettingsInstall (keep newer fields if present)
+                const switches = md?.extra?.switches ?? {};
+                const fpsList = Array.isArray(md?.extra?.fps_unlock_options) ? md.extra.fps_unlock_options.map((e: any) => ({ value: `${e}`, name: `${e}` })) : [];
+                this.setState(() => ({installSettings: parsed, gameManifest: md, preloadAvailable: isPreload, installGameSwitches: switches, installGameFps: fpsList}));
             }
         });
     }
@@ -524,7 +488,7 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchCompatibilityVersions() {
-        invoke("list_compatibility_manifests").then(data => {
+        return invoke("list_compatibility_manifests").then(data => {
             if (data === null) {
                 console.error("Failed to get compatibility versions.");
             } else {
@@ -548,14 +512,17 @@ export default class App extends React.Component<any, any> {
             if (data === null) {
                 console.error("Could not get download sizes!");
             } else {
-                callback(JSON.parse(data as string));
-                this.setState({downloadSizes: JSON.parse(data as string)});
+                const parsed = JSON.parse(data as string);
+                callback(parsed);
+                this.setState({downloadSizes: parsed});
             }
         });
     }
 
     async fetchManifestById(install: any) {
-        let rslt: {latest_version: null, extra: {preload: {metadata: null}}};
+        // Use broad typing since manifest.extra may include optional fields like
+        // switches, fps_unlock_options, preload, etc.
+        let rslt: any;
         let data = await invoke("get_game_manifest_by_manifest_id", {id: install});
         if (data === null) {
             console.error("Failed to fetch game manifest info!");
@@ -578,70 +545,55 @@ export default class App extends React.Component<any, any> {
         });
     }
 
-    refreshDownloadButtonInfo() {
+    async refreshDownloadButtonInfo() {
+        // Ensure versions in state
         this.fetchGameVersions(this.state.currentGame);
-        this.fetchCompatibilityVersions();
+        await this.fetchCompatibilityVersions();
+        // Delay a tiny bit before opening to allow state sync
         setTimeout(() => {
-            this.fetchDownloadSizes(this.state.currentGame, this.state.gameVersions[0].value, "en-us", `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`, (disk) => {
-                // @ts-ignore
-                let btn = document.getElementById("game_dl_btn");
-                // @ts-ignore
-                let freedisk = document.getElementById("game_disk_free");
+            this.fetchDownloadSizes(
+                this.state.currentGame,
+                this.state.gameVersions[0]?.value,
+                "en-us",
+                `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`,
+                (disk) => {
+                    // @ts-ignore
+                    const btn = document.getElementById("game_dl_btn");
+                    // @ts-ignore
+                    const freedisk = document.getElementById("game_disk_free");
 
-                // Always enable button initially - the DownloadGame component will handle disabling based on checkbox state
-                // @ts-ignore
-                btn.removeAttribute("disabled");
+                    // Always enable button initially - DownloadGame handles checkbox disabling
+                    if (btn) {
+                        // @ts-ignore
+                        btn.removeAttribute("disabled");
+                    }
 
-                // Set disk space styling based on available space (but don't disable button)
-
-                if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
-                    // @ts-ignore
-                    freedisk.classList.add("text-red-600");
-                    // @ts-ignore
-                    freedisk.classList.remove("text-white");
-                    // @ts-ignore
-                    freedisk.classList.add("font-bold");
-                } else {
-                    // @ts-ignore
-                    freedisk.classList.remove("text-red-600");
-                    // @ts-ignore
-                    freedisk.classList.add("text-white");
-                    // @ts-ignore
-                    freedisk.classList.remove("font-bold");
+                    // Styling based on available space
+                    if (freedisk) {
+                        // Use legacy fields from backend
+                        // @ts-ignore
+                        if (disk.game_decompressed_size_raw > disk.free_disk_space_raw) {
+                            freedisk.classList.add("text-red-600");
+                            // @ts-ignore
+                            freedisk.classList.remove("text-white");
+                            // @ts-ignore
+                            freedisk.classList.add("font-bold");
+                        } else {
+                            // @ts-ignore
+                            freedisk.classList.remove("text-red-600");
+                            // @ts-ignore
+                            freedisk.classList.add("text-white");
+                            // @ts-ignore
+                            freedisk.classList.remove("font-bold");
+                        }
+                    }
                 }
-            });
-            this.setState({openPopup: POPUPS.DOWNLOADGAME});
+            );
+            this.setState({ openPopup: POPUPS.DOWNLOADGAME });
         }, 20);
     }
 
-    determineButtonType() {
-        let buttonType: "download" | "update" | "launch" | "resume";
-
-        if (!this.state.currentInstall || this.state.currentInstall === "") {
-            buttonType = "download";
-        } else if (this.state.installSettings.version !== this.state.gameManifest.latest_version && !this.state.preloadAvailable && !this.state.installSettings.ignore_updates) {
-            if (this.state.gameManifest.latest_version !== null) {
-                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
-                    buttonType = "resume";
-                } else {
-                    buttonType = "update";
-                }
-            } else {
-                if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
-                    buttonType = "resume";
-                } else {
-                    buttonType = "launch";
-                }
-            }
-        } else {
-            if (this.state.resumeStates.updating || this.state.resumeStates.downloading || this.state.resumeStates.preloading || this.state.resumeStates.repairing) {
-                buttonType = "resume";
-            } else {
-                buttonType = "launch";
-            }
-        }
-        return buttonType;
-    }
+    
 
     setOpenPopup(state: POPUPS) {this.setState({openPopup: state});}
     setCurrentGame(game: string) {this.setState({currentGame: game});}

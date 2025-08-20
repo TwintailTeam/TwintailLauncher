@@ -18,7 +18,10 @@ interface IProps {
     setCurrentInstall: (id: string) => void,
     setCurrentGame: (id: string) => void,
     setBackground: (id: string) => void,
-    fetchInstallSettings: (id: string) => void
+    fetchInstallSettings: (id: string) => void,
+    // Prefetched to avoid pop-in
+    prefetchedSwitches: any,
+    prefetchedFps: any
 }
 
 interface IState {
@@ -31,8 +34,9 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
         this.state = {
-            gameSwitches: {},
-            gameFps: [],
+            // Initialize from prefetched props to render immediately
+            gameSwitches: props.prefetchedSwitches || {},
+            gameFps: props.prefetchedFps || [],
             isClosing: false
         }
     }
@@ -43,12 +47,12 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
             this.props.setOpenPopup(POPUPS.NONE);
             // @ts-ignore
             document.getElementById(this.props.installSettings.id).focus();
-    }, 220);
+    }, 450);
     }
 
     render() {
         return (
-            <div className={`rounded-xl h-full w-3/5 bg-gradient-to-br from-black/80 via-black/70 to-black/60 backdrop-blur-xl border border-white/30 shadow-2xl shadow-cyan-500/20 flex flex-col p-6 overflow-hidden ${this.state.isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'} duration-100 ease-out`}>
+            <div className={`rounded-xl h-full w-3/5 bg-gradient-to-br from-black/80 via-black/70 to-black/60 backdrop-blur-xl border border-white/30 shadow-2xl shadow-cyan-500/20 flex flex-col p-6 overflow-hidden ${this.state.isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'}`}>
                 <div className="flex flex-row items-center justify-between mb-6">
                     <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">{this.props.installSettings.name}</h1>
                     <X className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-3 w-10 h-10 transition-all duration-200 cursor-pointer" onClick={this.handleClose}/>
@@ -106,17 +110,15 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
         )
     }
 
-    async componentDidMount() {
-        let r = await invoke("get_game_manifest_by_manifest_id", {id: this.props.installSettings.manifest_id});
-        if (r == null) {
-            console.error("Failed to fetch game info for installation settings!");
-            this.setState({gameSwitches: {xxmi: true, fps_unlocker: true, jadeite: true}, gameFps: [{value: "60", name: "60"}]});
-        } else {
-            let rr = JSON.parse(r as string);
-
-            let fpslist: any = [];
-            rr.extra.fps_unlock_options.forEach((e: any) => fpslist.push({value: `${e}`, name: `${e}`}));
-            this.setState({gameSwitches: rr.extra.switches, gameFps: fpslist});
+    componentDidUpdate(prevProps: IProps) {
+        // Keep state in sync if the active install changes or prefetched data updates
+        if (prevProps.installSettings?.id !== this.props.installSettings?.id ||
+            prevProps.prefetchedSwitches !== this.props.prefetchedSwitches ||
+            prevProps.prefetchedFps !== this.props.prefetchedFps) {
+            this.setState({
+                gameSwitches: this.props.prefetchedSwitches || {},
+                gameFps: this.props.prefetchedFps || []
+            });
         }
     }
 }

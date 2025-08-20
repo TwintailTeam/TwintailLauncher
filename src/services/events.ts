@@ -1,4 +1,4 @@
-import { toPercent, formatBytes } from './progress.ts';
+import { toPercent, formatBytes } from '../utils/progress.ts';
 
 export function registerEvents(eventType: string, event: any, pushInstalls: () => void) {
   switch (eventType) {

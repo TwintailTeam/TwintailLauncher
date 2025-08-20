@@ -1,21 +1,23 @@
 import React from "react";
-import { POPUPS } from "./popups/POPUPS.ts";
+import { POPUPS } from "../popups/POPUPS.ts";
 import { DownloadIcon, X } from "lucide-react";
 
 export default function SidebarManifests({
   isOpen,
   onToggle,
-  popup: _popup
+  popup: _popup,
+  hasInstalls
 }: {
   isOpen: boolean,
   onToggle: () => void,
-  popup: POPUPS
+  popup: POPUPS,
+  hasInstalls: boolean
 }) {
 
   return (
     <React.Fragment>
       <div
-        className="group text-white hover:text-white/55 w-8 h-10 mb-0 cursor-pointer flex-initial relative flex items-center justify-center"
+        className="group text-white hover:text-white/55 w-8 h-16 mb-0 cursor-pointer flex-initial relative flex items-center justify-center"
         onClick={onToggle}
         aria-label={isOpen ? 'Hide manifests' : 'Show manifests'}
         title={isOpen ? 'Hide manifests' : 'Show manifests'}
@@ -33,6 +35,16 @@ export default function SidebarManifests({
             aria-hidden="true"
           />
         </span>
+
+        {/* Purple shining dot over the Download icon when there are no installs and panel is closed */}
+        {!hasInstalls && !isOpen && (
+          <>
+            <span className="absolute top-4 right-0.5 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.9)]"></span>
+            </span>
+          </>
+        )}
       </div>
       
     </React.Fragment>
