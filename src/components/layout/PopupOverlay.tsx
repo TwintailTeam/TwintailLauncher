@@ -27,6 +27,7 @@ export type PopupOverlayProps = {
   gameBackground: string;
   currentGame: string;
   displayName: string;
+  openDownloadAsExisting: boolean;
   fetchDownloadSizes: (
     biz: any,
     version: any,
@@ -66,6 +67,7 @@ export default function PopupOverlay(props: PopupOverlayProps) {
     gameBackground,
     currentGame,
     displayName,
+    openDownloadAsExisting,
     fetchDownloadSizes,
     pushInstalls,
     setBackground,
@@ -121,6 +123,7 @@ export default function PopupOverlay(props: PopupOverlayProps) {
           pushInstalls={pushInstalls}
           setBackground={setBackground}
           setCurrentInstall={setCurrentInstall}
+          openAsExisting={openDownloadAsExisting}
         />
       )}
       {openPopup == POPUPS.INSTALLSETTINGS && (

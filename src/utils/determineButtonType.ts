@@ -27,7 +27,8 @@ export function determineButtonType({
 
   if (isUpdateNeeded) {
     if (gameManifest.latest_version !== null) {
-      return hasResume ? "resume" : "update";
+      // Only allow Resume to override Update if an update is actually in-progress.
+      return resumeStates?.updating ? "resume" : "update";
     } else {
       buttonType = hasResume ? "resume" : "launch";
     }

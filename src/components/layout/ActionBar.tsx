@@ -17,7 +17,7 @@ export type ActionBarProps = {
   resumeStates: any;
   globalSettings: any;
   buttonType: any;
-  refreshDownloadButtonInfo: () => void | Promise<void>;
+  refreshDownloadButtonInfo: (existingInstall?: boolean) => void | Promise<void>;
   onOpenInstallSettings: () => Promise<void> | void;
 };
 
@@ -43,55 +43,60 @@ export default function ActionBar(props: ActionBarProps) {
       className="flex flex-row absolute bottom-8 right-16 gap-4 animate-slideInRight"
       style={{ animationDelay: "900ms" }}
     >
-      {currentInstall !== "" && preloadAvailable ? (
-        <button
-          disabled={disablePreload}
-          onClick={() => {
-            emit("start_game_preload", {
-              install: currentInstall,
-              biz: "",
-              lang: "",
-            }).then(() => {});
-          }}
-        >
-          <TooltipIcon
-            side={"top"}
-            text={"Predownload update"}
-            icon={
-              <DownloadIcon className="text-yellow-600 hover:text-yellow-700 w-8 h-8" />
-            }
-          />
-        </button>
-      ) : null}
-      {currentInstall !== "" ? (
-        <button
-          id={`install_settings_btn`}
-          disabled={disableInstallEdit}
-          onClick={() => onOpenInstallSettings()}
-        >
-          <TooltipIcon
-            side={"top"}
-            text={"Install settings"}
-            icon={
-              <Settings
-                fill={"white"}
-                className="hover:stroke-neutral-500 stroke-black w-8 h-8"
-              />
-            }
-          />
-        </button>
-      ) : null}
-      <GameButton
-        resumeStates={resumeStates}
-        disableResume={disableResume}
-        disableDownload={disableDownload}
-        disableRun={disableRun}
-        disableUpdate={disableUpdate}
-        currentInstall={currentInstall}
-        globalSettings={globalSettings}
-        refreshDownloadButtonInfo={refreshDownloadButtonInfo}
-        buttonType={buttonType}
-      />
+        {currentInstall !== "" && preloadAvailable ? (
+          <button
+            className="p-2.5 rounded-full bg-purple-500/70 hover:bg-purple-500/80 border border-white/30 shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            disabled={disablePreload}
+            onClick={() => {
+              emit("start_game_preload", {
+                install: currentInstall,
+                biz: "",
+                lang: "",
+              }).then(() => {});
+            }}
+          >
+            <TooltipIcon
+              side={"top"}
+              text={"Predownload update"}
+              icon={
+                <DownloadIcon className="w-8 h-8 text-white/90" />
+              }
+            />
+          </button>
+        ) : null}
+        {currentInstall !== "" ? (
+          <button
+            id={`install_settings_btn`}
+            className={`p-2.5 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none 
+              ${buttonType === "update"
+                ? "bg-green-500/70 hover:bg-green-500/80 border border-white/30 shadow-green-900/20 focus:ring-2 focus:ring-green-400/60"
+                : buttonType === "resume"
+                ? "bg-amber-500/70 hover:bg-amber-500/80 border border-white/30 shadow-amber-900/20 focus:ring-2 focus:ring-amber-400/60"
+                : "bg-purple-500/70 hover:bg-purple-500/80 border border-white/30 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}
+            `}
+            disabled={disableInstallEdit}
+            onClick={() => onOpenInstallSettings()}
+          >
+            <TooltipIcon
+              side={"top"}
+              text={"Install settings"}
+              icon={
+                <Settings className="w-8 h-8 text-white/90" />
+              }
+            />
+          </button>
+        ) : null}
+        <GameButton
+          resumeStates={resumeStates}
+          disableResume={disableResume}
+          disableDownload={disableDownload}
+          disableRun={disableRun}
+          disableUpdate={disableUpdate}
+          currentInstall={currentInstall}
+          globalSettings={globalSettings}
+          refreshDownloadButtonInfo={refreshDownloadButtonInfo}
+          buttonType={buttonType}
+        />
     </div>
   );
 }

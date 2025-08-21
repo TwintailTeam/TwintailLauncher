@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import SidebarIconManifest from "../sidebar/SidebarIconManifest.tsx";
 import { POPUPS } from "../popups/POPUPS.ts";
 
@@ -23,6 +23,8 @@ interface ManifestsPanelProps {
   setBackground: (src: string) => void;
   setCurrentInstall: (id: string) => void;
   setGameIcon: (src: string) => void;
+  onAutoHide?: () => void;
+  autoHideMs?: number;
 }
 
 const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
@@ -37,13 +39,48 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
   setBackground,
   setCurrentInstall,
   setGameIcon,
+  onAutoHide,
+  autoHideMs = 5000,
 }) => {
+  // Local timer ref for inactivity-based auto-hide
+  const hideTimerRef = useRef<number | undefined>(undefined);
+
+  // Helper to clear any pending timer
+  const clearHideTimer = () => {
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = undefined;
+    }
+  };
+
+  // Schedule auto-hide only when panel is visible and no popup is open
+  const scheduleHide = () => {
+    clearHideTimer();
+    if (manifestsOpenVisual && openPopup === POPUPS.NONE && onAutoHide) {
+      hideTimerRef.current = window.setTimeout(() => {
+        // Double-check before firing
+        if (manifestsOpenVisual && openPopup === POPUPS.NONE) {
+          onAutoHide();
+        }
+      }, autoHideMs);
+    }
+  };
+
+  // React to visibility/popup state changes
+  useEffect(() => {
+    scheduleHide();
+    return () => clearHideTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manifestsOpenVisual, openPopup]);
+
   return (
     <div className="absolute top-0 left-16 right-0 z-20 pointer-events-none">
       <div className="pl-3 pt-2 pr-6">
         <div
           ref={manifestsPanelRef}
-          className={"relative inline-flex rounded-2xl border border-white/10 bg-black/55 backdrop-blur-2xl shadow-2xl overflow-hidden pointer-events-auto origin-left"}
+          onMouseEnter={clearHideTimer}
+          onMouseLeave={scheduleHide}
+          className={"relative inline-flex rounded-2xl border border-white/10 bg-black/50 shadow-2xl overflow-hidden pointer-events-auto origin-left"}
           style={{
             clipPath: manifestsOpenVisual ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
             transition: 'clip-path 400ms ease',

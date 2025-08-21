@@ -20,7 +20,6 @@ import { startInitialLoad } from "./services/loader";
 
 export default class App extends React.Component<any, any> {
     loaderController?: { cancel: () => void };
-    // Track which backgrounds have been preloaded to avoid duplicate fetches
     preloadedBackgrounds: Set<string>;
     // Ref to measure floating manifests panel width to prevent snap during close
     manifestsPanelRef: React.RefObject<HTMLDivElement>;
@@ -55,7 +54,6 @@ export default class App extends React.Component<any, any> {
             isContentLoaded: false,
             loadingProgress: 0,
             loadingMessage: "Initializing...",
-            // Overlay controls for a smoother cross-fade
             showLoadingOverlay: true,
             overlayFadingOut: false,
             openPopup: POPUPS.NONE,
@@ -76,12 +74,8 @@ export default class App extends React.Component<any, any> {
             installSettings: {},
             installGameSwitches: {},
             installGameFps: [],
-            manifestsClosing: false,
-            manifestsOpening: false,
             manifestsInitialLoading: true,
             manifestsPanelWidth: null,
-            manifestsFadingOut: false,
-            manifestsOpenVisual: true,
             runnerVersions: [],
             dxvkVersions: [],
             downloadSizes: {},
@@ -101,6 +95,7 @@ export default class App extends React.Component<any, any> {
             progressPretty: 0,
             progressPrettyTotal: 0,
             resumeStates: {}
+            , openDownloadAsExisting: false
         }
     }
 
@@ -148,10 +143,15 @@ export default class App extends React.Component<any, any> {
                     setBackground={this.setBackground}
                     setCurrentInstall={this.setCurrentInstall}
                     setGameIcon={this.setGameIcon}
+                    onAutoHide={() => {
+                        if (this.state.manifestsOpenVisual && this.state.openPopup === POPUPS.NONE) {
+                            this.setState({ manifestsOpenVisual: false });
+                        }
+                    }}
                 />
                 <div className="h-full w-16 p-2 bg-black/50 flex flex-col items-center justify-start animate-slideInLeft" style={{ animationDelay: '100ms' }}>
                     {/* Separate, centered section for the download/manifests toggle */}
-                    <div className="flex items-center justify-center h-10 animate-slideInLeft" style={{ animationDelay: '150ms' }}>
+                    <div className="flex items-center justify-center h-16 animate-slideInLeft" style={{ animationDelay: '150ms' }}>
                         <SidebarManifests
                             isOpen={this.state.manifestsOpenVisual}
                             popup={this.state.openPopup}
@@ -268,6 +268,7 @@ export default class App extends React.Component<any, any> {
                     gameBackground={this.state.gameBackground}
                     currentGame={this.state.currentGame}
                     displayName={this.state.displayName}
+                    openDownloadAsExisting={this.state.openDownloadAsExisting}
                     fetchDownloadSizes={this.fetchDownloadSizes}
                     pushInstalls={this.pushInstalls}
                     setBackground={this.setBackground}
@@ -308,7 +309,6 @@ export default class App extends React.Component<any, any> {
     }
 
     completeInitialLoading() {
-        // Finish the progress bar quickly
         this.setState({ loadingProgress: 100 });
         // Start cross-fade: reveal main content and fade out overlay
         setTimeout(() => {
@@ -334,11 +334,28 @@ export default class App extends React.Component<any, any> {
         }
         if (this.state.openPopup !== prevState.openPopup) {
             if (this.state.openPopup !== POPUPS.NONE) {
+                // Popup opened: disable page scroll and auto-close manifests panel
                 document.documentElement.classList.add("no-scroll");
                 document.body.classList.add("no-scroll");
+                if (prevState.openPopup === POPUPS.NONE) {
+                    this.setState({
+                        manifestsWasOpenBeforePopup: this.state.manifestsOpenVisual,
+                        manifestsOpenVisual: false,
+                    });
+                }
             } else {
+                // Popup closed: restore page scroll and manifests panel to prior state (or user setting)
                 document.documentElement.classList.remove("no-scroll");
                 document.body.classList.remove("no-scroll");
+                if (prevState.openPopup !== POPUPS.NONE) {
+                    const shouldReopen = (this.state.manifestsWasOpenBeforePopup !== null)
+                        ? this.state.manifestsWasOpenBeforePopup
+                        : !this.state.globalSettings.hide_manifests;
+                    this.setState({
+                        manifestsOpenVisual: shouldReopen,
+                        manifestsWasOpenBeforePopup: null,
+                    });
+                }
             }
         }
     }
@@ -545,7 +562,7 @@ export default class App extends React.Component<any, any> {
         });
     }
 
-    async refreshDownloadButtonInfo() {
+    async refreshDownloadButtonInfo(existingInstall: boolean = false) {
         // Ensure versions in state
         this.fetchGameVersions(this.state.currentGame);
         await this.fetchCompatibilityVersions();
@@ -589,7 +606,7 @@ export default class App extends React.Component<any, any> {
                     }
                 }
             );
-            this.setState({ openPopup: POPUPS.DOWNLOADGAME });
+            this.setState({ openPopup: POPUPS.DOWNLOADGAME, openDownloadAsExisting: !!existingInstall });
         }, 20);
     }
 
