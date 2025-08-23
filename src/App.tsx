@@ -75,6 +75,7 @@ export default class App extends React.Component<any, any> {
             installGameSwitches: {},
             installGameFps: [],
             manifestsInitialLoading: true,
+            manifestsOpenVisual: false,
             manifestsPanelWidth: null,
             runnerVersions: [],
             dxvkVersions: [],
@@ -468,9 +469,7 @@ export default class App extends React.Component<any, any> {
             } else {
                 const gs = JSON.parse(data as string);
                 this.setState(() => ({
-                    globalSettings: gs,
-                    // Visual open matches current setting
-                    manifestsOpenVisual: !gs.hide_manifests
+                    globalSettings: gs
                 }));
             }
         });
