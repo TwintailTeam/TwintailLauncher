@@ -254,11 +254,11 @@ export default class FolderInput extends React.Component<IProps, IState> {
 
     render() {
         return (
-            <div className="flex flex-row items-center justify-between w-full h-6">
-                <span className="text-white text-sm flex items-center gap-1">{this.props.name}
+            <div className="flex w-full items-center gap-4 max-sm:flex-col max-sm:items-stretch">
+                <span className="text-white text-sm flex items-center gap-1 w-56 shrink-0 max-sm:w-full">{this.props.name}
                     <HelpTooltip text={this.props.helpText}/>
                 </span>
-                <div className="overflow-ellipsis inline-flex flex-row items-center justify-center relative" ref={this.containerRef} onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
+                <div className="overflow-ellipsis inline-flex flex-row items-center justify-end relative ml-auto w-[320px]" ref={this.containerRef} onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
                         <TextInputPart value={this.state.value}
                                    id={this.props.id}
                                    isPicker={true}

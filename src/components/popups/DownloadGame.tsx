@@ -74,14 +74,14 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
 
     return (
         <div
-            className={`rounded-xl h-auto w-full max-w-2xl mx-auto bg-gradient-to-br from-black/80 via-black/70 to-black/60 backdrop-blur-xl border border-white/30 shadow-2xl ${skipGameDownload ? 'shadow-green-500/25' : 'shadow-purple-500/20'} flex flex-col p-6 overflow-hidden ${isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'} duration-100 ease-out`}
+            className={`rounded-xl h-auto w-full max-w-2xl mx-auto bg-black/50 border border-white/20 flex flex-col p-6 overflow-hidden ${isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'} duration-100 ease-out`}
         >
             <div className="flex flex-row items-center justify-between mb-6">
                 <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">{skipGameDownload ? "Add" : "Install"} {displayName}</h1>
                 <X className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-3 w-10 h-10 transition-all duration-200 cursor-pointer" onClick={handleClose}/>
             </div>
             <div className="w-full flex-1 overflow-y-auto overflow-scroll scrollbar-none pr-4 -mr-4">
-                <form className="bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-sm border border-white/20 rounded-xl p-6 flex flex-col gap-4 w-full max-w-xl mx-auto shadow-inner">
+                <form className="bg-black/40 border border-white/20 rounded-xl p-6 flex flex-col gap-4 w-full max-w-xl mx-auto shadow-inner">
                     {/* @ts-ignore */}
                     <div className="w-full"><FolderInput name={"Install location"} clearable={true} value={`${settings.default_game_path}/${biz}`} folder={true} id={"install_game_path"} biz={biz} fetchDownloadSizes={fetchDownloadSizes} version={() => selectedGameVersion} lang={() => selectedAudioLang} helpText={"Location where to download game files."} skipGameDownload={skipGameDownload}/></div>
                     {/* Existing install toggle is now internal; removed from UI */}
@@ -97,7 +97,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                 </form>
             </div>
             <div className="flex justify-center pt-6 mt-4 border-t border-white/10">
-                <button className={`flex flex-row gap-3 items-center py-3 px-8 rounded-xl disabled:bg-gray-500 disabled:from-gray-500 disabled:to-gray-600 shadow-lg transition-all duration-200 transform hover:scale-105 font-semibold text-white bg-gradient-to-r focus:outline-none focus-visible:ring-2 ${skipGameDownload ? 'from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 shadow-green-500/40 hover:shadow-green-500/60 focus-visible:ring-green-400' : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 shadow-purple-500/40 hover:shadow-purple-500/60 focus-visible:ring-purple-300'}`} id={"game_dl_btn"} onClick={() => {
+                <button className={`flex flex-row gap-3 items-center py-3 px-8 rounded-xl disabled:bg-gray-500 disabled:from-gray-500 disabled:to-gray-600 transition-all duration-200 transform hover:scale-105 font-semibold text-white bg-gradient-to-r focus:outline-none focus-visible:ring-2 ${skipGameDownload ? 'from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 focus-visible:ring-green-400' : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 focus-visible:ring-purple-300'}`} id={"game_dl_btn"} onClick={() => {
                     setIsClosing(true);
                     setTimeout(() => {
                         // ...existing code...

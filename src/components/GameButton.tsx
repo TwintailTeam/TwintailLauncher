@@ -18,14 +18,14 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
     const theme = (() => {
         switch (buttonType) {
             case "download":
-                return { bg: "bg-blue-600 hover:bg-blue-700", ring: "focus:ring-blue-400/60", shadow: "shadow-blue-900/30", id: "download_game_btn" };
+                return { bg: "bg-blue-600 hover:bg-blue-700", border: "border-blue-500", ring: "focus:ring-blue-400/60", shadow: "shadow-blue-900/30", id: "download_game_btn" };
             case "update":
-                return { bg: "bg-green-600 hover:bg-green-700", ring: "focus:ring-green-400/60", shadow: "shadow-green-900/30", id: "update_game_btn" };
+                return { bg: "bg-green-600 hover:bg-green-700", border: "border-green-500", ring: "focus:ring-green-400/60", shadow: "shadow-green-900/30", id: "update_game_btn" };
             case "resume":
-                return { bg: "bg-amber-600 hover:bg-amber-700", ring: "focus:ring-amber-400/60", shadow: "shadow-amber-900/30", id: "resume_btn" };
+                return { bg: "bg-amber-600 hover:bg-amber-700", border: "border-amber-500", ring: "focus:ring-amber-400/60", shadow: "shadow-amber-900/30", id: "resume_btn" };
             case "launch":
             default:
-                return { bg: "bg-purple-600 hover:bg-purple-700", ring: "focus:ring-purple-400/60", shadow: "shadow-purple-900/30", id: "launch_game_btn" };
+                return { bg: "bg-purple-600 hover:bg-purple-700", border: "border-purple-500", ring: "focus:ring-purple-400/60", shadow: "shadow-purple-900/30", id: "launch_game_btn" };
         }
     })();
 
@@ -104,7 +104,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                 id={theme.id}
                 disabled={disabled}
                 onClick={handleClick}
-                className={`flex flex-row gap-3 items-center justify-center w-56 md:w-64 py-3 px-7 md:px-8 rounded-full text-white border border-transparent disabled:bg-gray-500 disabled:cursor-not-allowed focus:outline-none focus:ring-2 ${theme.bg} ${theme.ring} shadow-lg ${theme.shadow} transition-[background-color,box-shadow,transform] duration-300 ease-out`}
+                className={`flex flex-row gap-3 items-center justify-center w-56 md:w-64 py-3 px-7 md:px-8 rounded-full text-white border ${theme.border} disabled:bg-gray-500 disabled:cursor-not-allowed focus:outline-none focus:ring-2 ${theme.bg} ${theme.ring} shadow-lg ${theme.shadow} transition-[background-color,box-shadow,transform] duration-300 ease-out`}
             >
                 <Icon className="w-5 h-5 md:w-6 md:h-6 text-white/90"/>
                 <span id={buttonType === "launch" ? "launch_game_txt" : undefined} className="font-semibold translate-y-px text-base md:text-lg text-white">{label}</span>

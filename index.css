@@ -63,3 +63,44 @@ body {
 .tw-text-shadow-custom-link-wide {
     text-shadow: -1px 1px 3px rgb(0 0 0), 0 0 8px rgb(0 0 0), 0 0 14px rgb(0 0 0);
 }
+
+/* Show scrollbar only on hover for scrollable containers */
+.hover-scrollbar {
+    /* Reserve space to avoid layout shift */
+    scrollbar-gutter: stable both-edges;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: transparent transparent; /* initially invisible */
+}
+.hover-scrollbar:hover {
+    /* thumb color, track color */
+    scrollbar-color: rgba(255,255,255,0.35) transparent; /* Firefox */
+}
+.hover-scrollbar::-webkit-scrollbar {
+    width: 8px; /* Chrome/Safari vertical reserved space */
+    height: 0;  /* never show horizontal */
+}
+.hover-scrollbar:hover::-webkit-scrollbar {
+    width: 8px; /* vertical only */
+    height: 0;  /* never show horizontal */
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.38), rgba(255,255,255,0.28));
+    border-radius: 9999px;
+    border: 2px solid rgba(0,0,0,0); /* optical padding */
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 0 1px rgba(0,0,0,0.7);
+}
+.hover-scrollbar::-webkit-scrollbar-thumb {
+    /* Invisible by default but keeps reserved space */
+    background: transparent;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.35));
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.65), rgba(255,255,255,0.45));
+}
+.hover-scrollbar:hover::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 9999px;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-corner { background: transparent; }

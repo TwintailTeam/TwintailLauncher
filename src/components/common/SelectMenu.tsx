@@ -183,15 +183,15 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
     }
 
     return (
-        <div className="flex flex-row items-center justify-between w-full h-6">
-            <span className="text-white text-sm flex items-center gap-1">{name}
+        <div className="flex w-full items-center gap-4 max-sm:flex-col max-sm:items-stretch">
+            <span className="text-white text-sm flex items-center gap-1 w-56 shrink-0 max-sm:w-full">{name}
                 <HelpTooltip text={helpText}/>
             </span>
-            <div ref={dropdownRef} className="inline-flex flex-col items-end justify-center relative w-full" style={{maxWidth: 320}}>
+            <div ref={dropdownRef} className="inline-flex flex-col items-end justify-end relative ml-auto w-[320px]">
                 <div style={{position: 'relative', width: '100%'}}>
                     <div
                         ref={triggerRef}
-                        className={`w-full h-8 bg-white/20 text-white px-2 pr-8 flex items-center cursor-pointer transition-all duration-200 border-none outline-none rounded-lg ${open ? '' : ''}`}
+                        className={`w-full h-10 bg-black/40 border border-white/20 text-white px-3 pr-10 flex items-center cursor-pointer transition-all duration-200 outline-none rounded-xl ${open ? '' : ''}`}
                         tabIndex={0}
                         style={{userSelect: "none", fontSize: "1rem", position: 'relative'}}
                         onClick={e => {
@@ -204,14 +204,13 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             if (!open) setOpen(true);
                         }}
                         onKeyDown={e => { if (!open && (e.key === "Enter" || e.key === "ArrowDown")) setOpen(true); }}
-                        onFocus={e => e.currentTarget.blur()}
                     >
                         {!open ? (
                             <span className="truncate">{selectedOption ? selectedOption.name : placeholder}</span>
                         ) : (
                             <input
                                 type="text"
-                                className="w-full h-8 bg-transparent text-white px-0 pr-8 flex items-center placeholder-white/50 outline-none border-none rounded-lg"
+                                className="w-full h-8 bg-transparent text-white px-0 pr-10 flex items-center placeholder-white/50 outline-none border-none rounded-lg"
                                 placeholder={placeholder}
                                 value={search}
                                 autoFocus
@@ -240,7 +239,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             const hide = animateOut;
                             return (
                                 <div
-                                    className={`bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${hide ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
+                                    className={`bg-black/80 border border-white/20 rounded-xl shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${hide ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
                                     style={{
                                         position: 'fixed',
                                         left: rect.left,
@@ -251,9 +250,9 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                                         transform: show ? 'scaleY(1)' : 'scaleY(0.95)',
                                     }}
                                 >
-                                    <div className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900">
+                                    <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-black/40">
                                         {filteredOptions.length === 0 ? (
-                                            <div className="px-2 py-2 text-white/60">No matches</div>
+                                            <div className="px-3 py-2 text-white/80">No matches</div>
                                         ) : (
                                             filteredOptions.map((option: any, idx: number) => {
                                                 let rounded = "";
@@ -264,7 +263,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                                                 return (
                                                     <div
                                                         key={option.value}
-                                                        className={`px-2 py-2 cursor-pointer ${highlighted === idx ? "bg-blue-600 text-white" : "hover:bg-zinc-800 text-white"}${rounded}`}
+                                                        className={`px-3 py-2 cursor-pointer ${highlighted === idx ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"}${rounded}`}
                                                         onMouseEnter={() => setHighlighted(idx)}
                                                         onMouseDown={e => { e.preventDefault(); handleSelect(option); }}
                                                     >

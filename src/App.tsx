@@ -126,7 +126,6 @@ export default class App extends React.Component<any, any> {
                 {this.state.openPopup != POPUPS.NONE && (
                     <div className="pointer-events-none absolute top-0 bottom-0 left-16 right-0 z-10 animate-fadeIn">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,10,15,0.55)_0%,rgba(5,5,10,0.70)_55%,rgba(0,0,0,0.82)_100%)]"/>
-                        <div className="absolute inset-0 popup-noise opacity-30 mix-blend-overlay"/>
                         <div className="absolute inset-0 backdrop-fallback-grid opacity-[0.04]"/>
                     </div>
                 )}

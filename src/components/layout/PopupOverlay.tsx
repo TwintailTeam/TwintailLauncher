@@ -1,4 +1,5 @@
 import { POPUPS } from "../popups/POPUPS";
+import { useEffect } from "react";
 import RepoManager from "../popups/repomanager/RepoManager";
 import AddRepo from "../popups/repomanager/AddRepo";
 import SettingsGlobal from "../popups/settings/SettingsGlobal";
@@ -81,8 +82,26 @@ export default function PopupOverlay(props: PopupOverlayProps) {
     installs,
   } = props;
 
+  // ESC to close and scroll lock while a popup is open
+  useEffect(() => {
+    if (openPopup !== POPUPS.NONE) {
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setOpenPopup(POPUPS.NONE);
+      };
+      document.addEventListener("keydown", onKey);
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.removeEventListener("keydown", onKey);
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [openPopup, setOpenPopup]);
+
   return (
     <div
+      role="dialog"
+      aria-modal={openPopup !== POPUPS.NONE}
       className={`absolute items-center justify-center top-0 bottom-0 left-16 right-0 p-8 z-20 ${
         openPopup == POPUPS.NONE ? "hidden" : "flex bg-white/10"
       }`}

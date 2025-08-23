@@ -203,31 +203,14 @@ body {
     animation: shimmer 2s infinite;
 }
 
-/* Delay classes for staggered animations */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 
-/* === Popup background enhancement (no GPU heavy blur) === */
 .popup-open #app-bg {
     will-change: transform, filter;
 }
 
-/* Subtle film grain / noise */
-.popup-noise {
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAc8AAtUBpJ1AAAAAAElFTkSuQmCC");
-    background-size: 100px 100px;
-    image-rendering: pixelated;
-    animation: noiseShift 1.2s steps(2,end) infinite;
-}
-
-@keyframes noiseShift {
-    0% { transform: translate(0,0); }
-    25% { transform: translate(-10%,5%); }
-    50% { transform: translate(5%,-10%); }
-    75% { transform: translate(10%,5%); }
-    100% { transform: translate(0,0); }
-}
 
 /* Light grid for structure */
 .backdrop-fallback-grid {
@@ -266,8 +249,7 @@ body {
     .animate-bg-fade-in, 
     .animate-bg-fade-out,
     .animate-revealMaskLeft,
-    .animate-hideMaskLeft,
-    .popup-noise { 
+    .animate-hideMaskLeft { 
         animation: none; 
     }
 }

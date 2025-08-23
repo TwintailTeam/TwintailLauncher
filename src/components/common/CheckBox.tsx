@@ -102,21 +102,23 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
     };
 
     return (
-        <div className="flex flex-row items-center justify-between w-full h-6">
-            <span className="text-white text-sm flex items-center gap-1">{name}
+        <div className="flex w-full items-center gap-4 max-sm:flex-col max-sm:items-stretch">
+            <span className="text-white text-sm flex items-center gap-1 w-56 shrink-0 max-sm:w-full">{name}
                 <HelpTooltip text={helpText}/>
             </span>
-            <div 
-                className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-white/10"} cursor-pointer`}
-                onClick={handleToggle}
-            >
-                <input 
-                    type="checkbox" 
-                    className={`focus:outline-none focus:ring-0 focus:ring-offset-0 h-full aspect-square rounded-full bg-white transition-all absolute appearance-none cursor-pointer pointer-events-none ${isEnabled ? 'translate-x-full' : 'translate-x-0'}`} 
-                    id={id} 
-                    checked={isEnabled} 
-                    readOnly
-                />
+            <div className={"inline-flex items-center justify-end ml-auto w-[320px]"}>
+                <div 
+                    className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-white/10"} cursor-pointer`}
+                    onClick={handleToggle}
+                >
+                    <input 
+                        type="checkbox" 
+                        className={`focus:outline-none focus:ring-0 focus:ring-offset-0 h-full aspect-square rounded-full bg-white transition-all absolute appearance-none cursor-pointer pointer-events-none ${isEnabled ? 'translate-x-full' : 'translate-x-0'}`} 
+                        id={id} 
+                        checked={isEnabled} 
+                        readOnly
+                    />
+                </div>
             </div>
         </div>
     )
