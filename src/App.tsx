@@ -96,8 +96,8 @@ export default class App extends React.Component<any, any> {
             progressPercent: "0%",
             progressPretty: 0,
             progressPrettyTotal: 0,
-            resumeStates: {}
-            , openDownloadAsExisting: false
+            resumeStates: {},
+            openDownloadAsExisting: false
         }
     }
 
@@ -602,7 +602,7 @@ export default class App extends React.Component<any, any> {
                     }
                 }
             );
-            this.setState({ openPopup: POPUPS.DOWNLOADGAME, openDownloadAsExisting: !!existingInstall });
+            this.setState({ openPopup: POPUPS.DOWNLOADGAME, openDownloadAsExisting: existingInstall });
         }, 20);
     }
 

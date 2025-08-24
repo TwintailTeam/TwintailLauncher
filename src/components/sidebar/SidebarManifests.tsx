@@ -19,10 +19,7 @@ export default function SidebarManifests({
       <div
         id="sidebar_manifests_toggle"
         className="group text-white hover:text-white/55 w-8 h-16 mb-0 cursor-pointer flex-initial relative flex items-center justify-center"
-        onClick={onToggle}
-        aria-label={isOpen ? 'Hide manifests' : 'Show manifests'}
-        title={isOpen ? 'Hide manifests' : 'Show manifests'}
-      >
+        onClick={onToggle}>
         {/* Animated icon swap: Download when closed -> X when open */}
         <span className="absolute inset-0 flex items-center justify-center">
           <DownloadIcon
