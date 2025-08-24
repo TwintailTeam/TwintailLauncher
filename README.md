@@ -24,6 +24,7 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 * Zenless Zone Zero
 * Wuthering Waves
 * Punishing: Gray Raven
+* AetherGazer
 
 ### Is TTL safe to use? Can I get banned?
 We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
