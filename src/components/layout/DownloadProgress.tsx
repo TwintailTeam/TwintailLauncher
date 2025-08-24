@@ -13,7 +13,7 @@ export default function DownloadProgress(props: DownloadProgressProps) {
   const { hidden, name, percentText, pretty, prettyTotal, progressVal } = props;
   return (
     <div
-      className={`absolute items-center justify-center bottom-8 left-96 right-96 p-8 z-20 pointer-events-none ${
+      className={`absolute items-center justify-center bottom-6 left-16 right-96 p-8 z-20 pointer-events-none ${
         hidden ? "hidden" : ""
       }`}
       id={"progress_bar"}
