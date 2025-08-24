@@ -26,14 +26,14 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
     };
 
     return (
-        <div className={`rounded-xl w-[90vw] max-w-xl max-h-[75vh] bg-black/50 border border-white/20 flex flex-col p-6 overflow-hidden ${isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'} duration-100 ease-out`}>
+        <div className={`rounded-xl w-[90vw] max-w-xl max-h-[75vh] bg-zinc-900 border border-white/20 flex flex-col p-6 overflow-hidden ${isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'} duration-100 ease-out`}>
             <div className="flex flex-row items-center justify-between">
-                <div className="flex flex-row items-center gap-4">
+                <div className="flex flex-row items-center gap-4 mb-6">
                     <ArrowLeft className="text-gray-400 hover:text-white hover:bg-white/10 rounded-lg p-3 w-12 h-12 transition-all duration-200 cursor-pointer" onClick={handleClose}/>
                     <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent">Confirm your action</h1>
                 </div>
             </div>
-            <div className="bg-black/40 border border-white/20 rounded-xl p-6 flex flex-col gap-5 shadow-inner">
+            <div className="bg-zinc-900/60 border border-white/20 rounded-xl p-6 flex flex-col gap-2 shadow-inner">
                 <p className={"text-white text-start"}>
                     Are you sure you want to uninstall and remove <span className={"text-purple-400 font-bold"}>{install.name}</span> installation?<br/>
                     <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>

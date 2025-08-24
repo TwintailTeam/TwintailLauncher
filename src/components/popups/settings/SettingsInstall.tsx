@@ -43,8 +43,8 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
 
     render() {
         return (
-            <div className={`rounded-xl w-[90vw] max-w-4xl max-h-[85vh] bg-black/50 border border-white/20 flex flex-col p-6 overflow-hidden ${this.state.isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'}`}>
-                <div className="flex flex-row items-center justify-between mb-6">
+            <div className={`rounded-xl w-[90vw] max-w-4xl max-h-[85vh] bg-zinc-900 border border-white/20 flex flex-col p-6 overflow-hidden ${this.state.isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'}`}>
+                <div className="flex flex-row items-center justify-between mb-2">
                     <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">{this.props.installSettings.name}</h1>
                     <X className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-3 w-12 h-12 transition-all duration-200 cursor-pointer" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
@@ -53,7 +53,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     }}/>
                 </div>
                 <div className="w-full overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 -mr-4 flex-1">
-                    <div className="p-6 flex flex-col gap-5">
+                    <div className="p-6 flex flex-col gap-2">
                         <FolderInput name={"Install location"} clearable={true} value={`${this.props.installSettings.directory}`} folder={true} id={"install_game_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={"Location where game is installed. Usually should be set where main game exe is located."}/>
                         <CheckBox enabled={this.props.installSettings.ignore_updates} name={"Skip version update check"} id={"skip_version_updates2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip checking for game updates."}/>
                         <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
@@ -74,7 +74,7 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"DXVK location"} clearable={true} value={`${this.props.installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location from which folder to pull DXVK for this installation. Should point to directory with "x32" and "x64" directories.`}/> : null}
                     </div>
                 </div>
-                <div className="flex justify-center gap-3 pt-6 mt-4 border-t border-white/10 flex-wrap">
+                <div className="flex justify-center gap-3 pt-5 mt-4 border-t border-white/10 flex-wrap">
                     <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore

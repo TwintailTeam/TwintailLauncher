@@ -62,7 +62,7 @@ export default function RepoManifestCombo({name, items, roundTop, roundBottom, f
                 }}
             >
                 <div
-                    className={`flex flex-col gap-4 p-4 transition-all duration-400 delay-75 ${isVisible ? "transform translate-y-0 opacity-100" : "transform -translate-y-4 opacity-0"}`}
+                    className={`flex flex-col gap-2 p-4 transition-all duration-400 delay-75 ${isVisible ? "transform translate-y-0 opacity-100" : "transform -translate-y-4 opacity-0"}`}
                     style={{
                         transition: "all 0.4s cubic-bezier(.4,0,.2,1)"
                     }}

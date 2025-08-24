@@ -191,7 +191,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                 <div style={{position: 'relative', width: '100%'}}>
                     <div
                         ref={triggerRef}
-                        className={`w-full h-10 bg-black/40 border border-white/20 text-white px-3 pr-10 flex items-center cursor-pointer transition-all duration-200 outline-none rounded-xl ${open ? '' : ''}`}
+                        className={`w-full h-10 bg-zinc-800/60 border border-white/30 text-white px-3 pr-10 flex items-center cursor-pointer transition-all duration-200 outline-none rounded-xl ${open ? '' : ''}`}
                         tabIndex={0}
                         style={{userSelect: "none", fontSize: "1rem", position: 'relative'}}
                         onClick={e => {
@@ -239,7 +239,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             const hide = animateOut;
                             return (
                                 <div
-                                    className={`bg-black/80 border border-white/20 rounded-xl shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${hide ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
+                                    className={`bg-zinc-800 border border-white/30 rounded-xl shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${hide ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
                                     style={{
                                         position: 'fixed',
                                         left: rect.left,
@@ -250,7 +250,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                                         transform: show ? 'scaleY(1)' : 'scaleY(0.95)',
                                     }}
                                 >
-                                    <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-black/40">
+                                    <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800/60">
                                         {filteredOptions.length === 0 ? (
                                             <div className="px-3 py-2 text-white/80">No matches</div>
                                         ) : (
@@ -263,7 +263,7 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                                                 return (
                                                     <div
                                                         key={option.value}
-                                                        className={`px-3 py-2 cursor-pointer ${highlighted === idx ? "bg-blue-600 text-white" : "hover:bg-white/10 text-white"}${rounded}`}
+                                                        className={`px-3 py-2 cursor-pointer ${highlighted === idx ? "bg-blue-600 text-white" : "hover:bg-white/15 text-white"}${rounded}`}
                                                         onMouseEnter={() => setHighlighted(idx)}
                                                         onMouseDown={e => { e.preventDefault(); handleSelect(option); }}
                                                     >

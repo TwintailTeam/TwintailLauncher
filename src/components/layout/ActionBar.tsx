@@ -68,10 +68,10 @@ export default function ActionBar(props: ActionBarProps) {
             id={`install_settings_btn`}
             className={`p-2.5 rounded-full shadow-lg disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 transition-colors focus:outline-none 
               ${buttonType === "update"
-                ? "bg-green-500/70 hover:bg-green-500/80 border border-white/30 shadow-green-900/20 focus:ring-2 focus:ring-green-400/60"
+                ? "bg-green-600 hover:bg-green-700 border border-white/30 shadow-green-900/20 focus:ring-2 focus:ring-green-400/60"
                 : buttonType === "resume"
-                ? "bg-amber-500/70 hover:bg-amber-500/80 border border-white/30 shadow-amber-900/20 focus:ring-2 focus:ring-amber-400/60"
-                : "bg-purple-500/70 hover:bg-purple-500/80 border border-white/30 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}
+                ? "bg-amber-600 hover:bg-amber-700 border border-white/30 shadow-amber-900/20 focus:ring-2 focus:ring-amber-400/60"
+                : "bg-purple-600 hover:bg-purple-700 border border-white/30 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}
             `}
             disabled={disableInstallEdit}
             onClick={() => onOpenInstallSettings()}
@@ -80,7 +80,7 @@ export default function ActionBar(props: ActionBarProps) {
               side={"top"}
               text={"Install settings"}
               icon={
-                <Settings className="w-8 h-8 text-white/90" />
+                <Settings className="w-8 h-8 text-white" />
               }
             />
           </button>

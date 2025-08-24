@@ -106,9 +106,9 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
             <span className="text-white text-sm flex items-center gap-1 w-56 shrink-0 max-sm:w-full">{name}
                 <HelpTooltip text={helpText}/>
             </span>
-            <div className={"inline-flex items-center justify-end ml-auto w-[320px]"}>
+            <div className={"inline-flex items-center justify-end ml-auto w-[320px] h-10"}>
                 <div 
-                    className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-white/10"} cursor-pointer`}
+                    className={`w-12 h-6 rounded-full relative transition-all ${isEnabled ? "bg-purple-600" : "bg-zinc-700/60"} cursor-pointer`}
                     onClick={handleToggle}
                 >
                     <input 
