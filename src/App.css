@@ -161,6 +161,27 @@ body {
     animation-fill-mode: both;
 }
 
+/* Sliding reveal/hide mask from left for floating panel */
+@keyframes revealMaskLeft {
+    from { clip-path: inset(0 100% 0 0); }
+    to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hideMaskLeft {
+    from { clip-path: inset(0 0 0 0); }
+    to   { clip-path: inset(0 100% 0 0); }
+}
+
+.animate-revealMaskLeft {
+    animation: revealMaskLeft 400ms ease-out;
+    animation-fill-mode: both;
+}
+
+.animate-hideMaskLeft {
+    animation: hideMaskLeft 250ms ease-in;
+    animation-fill-mode: both;
+}
+
 .animate-shimmer {
     position: relative;
     overflow: hidden;
@@ -182,31 +203,14 @@ body {
     animation: shimmer 2s infinite;
 }
 
-/* Delay classes for staggered animations */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
 
-/* === Popup background enhancement (no GPU heavy blur) === */
 .popup-open #app-bg {
     will-change: transform, filter;
 }
 
-/* Subtle film grain / noise */
-.popup-noise {
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAc8AAtUBpJ1AAAAAAElFTkSuQmCC");
-    background-size: 100px 100px;
-    image-rendering: pixelated;
-    animation: noiseShift 1.2s steps(2,end) infinite;
-}
-
-@keyframes noiseShift {
-    0% { transform: translate(0,0); }
-    25% { transform: translate(-10%,5%); }
-    50% { transform: translate(5%,-10%); }
-    75% { transform: translate(10%,5%); }
-    100% { transform: translate(0,0); }
-}
 
 /* Light grid for structure */
 .backdrop-fallback-grid {
@@ -223,14 +227,14 @@ body {
     100% { opacity: 1; transform: scale(1); }
 }
 
-.animate-bg-fade-in { animation: bgFadeIn 420ms ease-out; }
+.animate-bg-fade-in { animation: bgFadeIn 300ms ease-out; }
 
 @keyframes bgFadeOut {
     0% { opacity: 1; }
     100% { opacity: 0; }
 }
 
-.animate-bg-fade-out { animation: bgFadeOut 420ms ease-out forwards; }
+.animate-bg-fade-out { animation: bgFadeOut 300ms ease-out forwards; }
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -244,7 +248,8 @@ body {
     .animate-shimmer,
     .animate-bg-fade-in, 
     .animate-bg-fade-out,
-    .popup-noise { 
+    .animate-revealMaskLeft,
+    .animate-hideMaskLeft { 
         animation: none; 
     }
 }
