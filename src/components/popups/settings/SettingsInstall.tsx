@@ -41,21 +41,16 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
         }
     }
 
-    handleClose = () => {
-        this.setState({isClosing: true});
-        setTimeout(() => {
-            this.props.setOpenPopup(POPUPS.NONE);
-            // @ts-ignore
-            document.getElementById(this.props.installSettings.id).focus();
-    }, 450);
-    }
-
     render() {
         return (
             <div className={`rounded-xl w-[90vw] max-w-4xl max-h-[85vh] bg-black/50 border border-white/20 flex flex-col p-6 overflow-hidden ${this.state.isClosing ? 'animate-bg-fade-out' : 'animate-bg-fade-in'}`}>
                 <div className="flex flex-row items-center justify-between mb-6">
                     <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">{this.props.installSettings.name}</h1>
-                    <X className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-3 w-12 h-12 transition-all duration-200 cursor-pointer" onClick={this.handleClose}/>
+                    <X className="text-white/70 hover:text-white hover:bg-white/10 rounded-lg p-3 w-12 h-12 transition-all duration-200 cursor-pointer" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                    }}/>
                 </div>
                 <div className="w-full overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 -mr-4 flex-1">
                     <div className="p-6 flex flex-col gap-5">

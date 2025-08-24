@@ -1,9 +1,8 @@
-import React from "react";
+ 
 import { emit } from "@tauri-apps/api/event";
 import { DownloadIcon, Settings } from "lucide-react";
 import TooltipIcon from "../common/TooltipIcon";
 import GameButton from "../GameButton";
-import { POPUPS } from "../popups/POPUPS";
 
 export type ActionBarProps = {
   currentInstall: string;
@@ -45,7 +44,7 @@ export default function ActionBar(props: ActionBarProps) {
     >
         {currentInstall !== "" && preloadAvailable ? (
           <button
-            className="p-2.5 rounded-full bg-purple-500/70 hover:bg-purple-500/80 border border-white/30 shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2.5 rounded-full bg-purple-500/70 hover:bg-purple-500/80 border border-white/30 shadow-lg shadow-purple-900/20 disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 disabled:hover:bg-purple-500/70 transition-colors"
             disabled={disablePreload}
             onClick={() => {
               emit("start_game_preload", {
@@ -67,7 +66,7 @@ export default function ActionBar(props: ActionBarProps) {
         {currentInstall !== "" ? (
           <button
             id={`install_settings_btn`}
-            className={`p-2.5 rounded-full shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none 
+            className={`p-2.5 rounded-full shadow-lg disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 transition-colors focus:outline-none 
               ${buttonType === "update"
                 ? "bg-green-500/70 hover:bg-green-500/80 border border-white/30 shadow-green-900/20 focus:ring-2 focus:ring-green-400/60"
                 : buttonType === "resume"

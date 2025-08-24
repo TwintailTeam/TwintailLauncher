@@ -227,14 +227,14 @@ body {
     100% { opacity: 1; transform: scale(1); }
 }
 
-.animate-bg-fade-in { animation: bgFadeIn 420ms ease-out; }
+.animate-bg-fade-in { animation: bgFadeIn 300ms ease-out; }
 
 @keyframes bgFadeOut {
     0% { opacity: 1; }
     100% { opacity: 0; }
 }
 
-.animate-bg-fade-out { animation: bgFadeOut 420ms ease-out forwards; }
+.animate-bg-fade-out { animation: bgFadeOut 300ms ease-out forwards; }
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {

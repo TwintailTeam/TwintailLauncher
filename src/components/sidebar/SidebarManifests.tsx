@@ -17,6 +17,7 @@ export default function SidebarManifests({
   return (
     <React.Fragment>
       <div
+        id="sidebar_manifests_toggle"
         className="group text-white hover:text-white/55 w-8 h-16 mb-0 cursor-pointer flex-initial relative flex items-center justify-center"
         onClick={onToggle}
         aria-label={isOpen ? 'Hide manifests' : 'Show manifests'}

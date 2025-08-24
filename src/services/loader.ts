@@ -9,6 +9,7 @@ export interface LoaderOptions {
   fetchSettings: () => Promise<void>;
   fetchRepositories: () => Promise<void>;
   getGamesInfo: () => any[];
+  getInstalls: () => any[];
   preloadImages: (
     images: string[],
     onProgress: (loaded: number, total: number) => void,
@@ -64,11 +65,14 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       if (cancelled) return;
       opts.setProgress(75, "Preloading images...");
 
-      // Step 4: Preload images (backgrounds + icons)
+      // Step 4: Preload images (backgrounds + icons) including installed assets for older/different versions
       const games = opts.getGamesInfo() || [];
-      const backgrounds: string[] = games.map((g: any) => g?.assets?.game_background).filter(Boolean);
-      const icons: string[] = games.map((g: any) => g?.assets?.game_icon).filter(Boolean);
-      const images = Array.from(new Set([...(backgrounds as string[]), ...(icons as string[])]));
+      const installs = opts.getInstalls ? (opts.getInstalls() || []) : [];
+      const gameBackgrounds: string[] = games.map((g: any) => g?.assets?.game_background).filter(Boolean);
+      const gameIcons: string[] = games.map((g: any) => g?.assets?.game_icon).filter(Boolean);
+      const installBackgrounds: string[] = installs.map((i: any) => i?.game_background).filter(Boolean);
+      const installIcons: string[] = installs.map((i: any) => i?.game_icon).filter(Boolean);
+      const images = Array.from(new Set([...(gameBackgrounds as string[]), ...(gameIcons as string[]), ...(installBackgrounds as string[]), ...(installIcons as string[])]));
       await opts.preloadImages(
         images,
         (loaded, total) => {
@@ -111,6 +115,9 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       unlistenFns.forEach((fn) => {
         try { fn(); } catch {}
       });
+      
+      
+      
     },
   };
 }

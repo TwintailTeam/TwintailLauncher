@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import SidebarIconManifest from "../sidebar/SidebarIconManifest.tsx";
 import { POPUPS } from "../popups/POPUPS.ts";
 
@@ -23,8 +23,7 @@ interface ManifestsPanelProps {
   setBackground: (src: string) => void;
   setCurrentInstall: (id: string) => void;
   setGameIcon: (src: string) => void;
-  onAutoHide?: () => void;
-  autoHideMs?: number;
+  onRequestClose?: () => void;
 }
 
 const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
@@ -39,47 +38,29 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
   setBackground,
   setCurrentInstall,
   setGameIcon,
-  onAutoHide,
-  autoHideMs = 5000,
+  onRequestClose,
 }) => {
-  // Local timer ref for inactivity-based auto-hide
-  const hideTimerRef = useRef<number | undefined>(undefined);
-
-  // Helper to clear any pending timer
-  const clearHideTimer = () => {
-    if (hideTimerRef.current) {
-      window.clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = undefined;
-    }
-  };
-
-  // Schedule auto-hide only when panel is visible and no popup is open
-  const scheduleHide = () => {
-    clearHideTimer();
-    if (manifestsOpenVisual && openPopup === POPUPS.NONE && onAutoHide) {
-      hideTimerRef.current = window.setTimeout(() => {
-        // Double-check before firing
-        if (manifestsOpenVisual && openPopup === POPUPS.NONE) {
-          onAutoHide();
-        }
-      }, autoHideMs);
-    }
-  };
-
-  // React to visibility/popup state changes
+  // Close when clicking anywhere outside the manifests panel
   useEffect(() => {
-    scheduleHide();
-    return () => clearHideTimer();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manifestsOpenVisual, openPopup]);
-
+    const handleDocMouseDown = (e: MouseEvent) => {
+      if (!manifestsOpenVisual || openPopup !== POPUPS.NONE) return;
+      // Ignore clicks on the sidebar toggle to avoid conflicting state flips
+      const toggle = document.getElementById('sidebar_manifests_toggle');
+      if (toggle && toggle.contains(e.target as Node)) return;
+      const panel = manifestsPanelRef.current;
+      if (!panel) return;
+      if (!panel.contains(e.target as Node)) {
+        onRequestClose?.();
+      }
+    };
+    document.addEventListener('mousedown', handleDocMouseDown);
+    return () => document.removeEventListener('mousedown', handleDocMouseDown);
+  }, [manifestsOpenVisual, openPopup, manifestsPanelRef, onRequestClose]);
   return (
     <div className="absolute top-0 left-16 right-0 z-20 pointer-events-none">
       <div className="pl-3 pt-2 pr-6">
         <div
           ref={manifestsPanelRef}
-          onMouseEnter={clearHideTimer}
-          onMouseLeave={scheduleHide}
           className={"relative inline-flex rounded-2xl border border-white/10 bg-black/50 shadow-2xl overflow-hidden pointer-events-auto origin-left"}
           style={{
             clipPath: manifestsOpenVisual ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
@@ -89,7 +70,11 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
             willChange: 'clip-path, transform, opacity'
           }}
         >
-          <div className="flex flex-row items-center gap-2 overflow-x-auto px-3 py-2 scrollbar-none">
+          <div
+            className="flex flex-row items-center gap-2 overflow-x-auto px-3 py-2 scrollbar-none select-none"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+          >
             {gamesinfo.map((game, index) => {
               const opening = manifestsOpenVisual;
               const delayMs = manifestsInitialLoading

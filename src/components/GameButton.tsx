@@ -99,12 +99,12 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
     };
 
     return (
-        <div className="flex flex-col items-start gap-1">
+        <div className="flex flex-col items-center gap-1">
             <button
                 id={theme.id}
                 disabled={disabled}
                 onClick={handleClick}
-                className={`flex flex-row gap-3 items-center justify-center w-56 md:w-64 py-3 px-7 md:px-8 rounded-full text-white border ${theme.border} disabled:bg-gray-500 disabled:cursor-not-allowed focus:outline-none focus:ring-2 ${theme.bg} ${theme.ring} shadow-lg ${theme.shadow} transition-[background-color,box-shadow,transform] duration-300 ease-out`}
+                className={`flex flex-row gap-3 items-center justify-center w-56 md:w-64 py-3 px-7 md:px-8 rounded-full text-white border ${theme.border} disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 focus:outline-none focus:ring-2 ${theme.bg} ${theme.ring} shadow-lg ${theme.shadow} transition-[background-color,box-shadow,transform] duration-300 ease-out`}
             >
                 <Icon className="w-5 h-5 md:w-6 md:h-6 text-white/90"/>
                 <span id={buttonType === "launch" ? "launch_game_txt" : undefined} className="font-semibold translate-y-px text-base md:text-lg text-white">{label}</span>
@@ -112,7 +112,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
             {buttonType === "download" && (
                 <button
                     type="button"
-                    className="text-sm text-blue-300 cursor-pointer tw-text-shadow-custom-link-wide"
+                    className="w-56 md:w-64 text-center text-sm text-blue-300 cursor-pointer tw-text-shadow-custom-link-wide whitespace-nowrap"
                     onClick={() => refreshDownloadButtonInfo(true)}
                 >
                     Already installed? Use existing installation

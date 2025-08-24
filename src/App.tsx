@@ -63,6 +63,7 @@ export default class App extends React.Component<any, any> {
             gameBackground: "",
             previousBackground: "",
             transitioningBackground: false,
+            bgLoading: false,
             bgVersion: 0,
             gameIcon: "",
             gamesinfo: [],
@@ -118,10 +119,14 @@ export default class App extends React.Component<any, any> {
                     transitioning={this.state.transitioningBackground}
                     bgVersion={this.state.bgVersion}
                     popupOpen={this.state.openPopup != POPUPS.NONE}
+                    bgLoading={this.state.bgLoading}
                     onMainLoad={() => {
-                        if (!this.state.isContentLoaded) {
-                            setTimeout(() => { this.setState({ isContentLoaded: true }); }, 100);
-                        }
+                        // Background image has rendered; stop spinner and finish initial reveal if needed
+                        this.setState((prev: any) => ({ bgLoading: false, isContentLoaded: prev.isContentLoaded ? prev.isContentLoaded : prev.isContentLoaded }), () => {
+                            if (!this.state.isContentLoaded) {
+                                setTimeout(() => { this.setState({ isContentLoaded: true }); }, 100);
+                            }
+                        });
                     }}
                 />
                 {this.state.openPopup != POPUPS.NONE && (
@@ -143,7 +148,7 @@ export default class App extends React.Component<any, any> {
                     setBackground={this.setBackground}
                     setCurrentInstall={this.setCurrentInstall}
                     setGameIcon={this.setGameIcon}
-                    onAutoHide={() => {
+                    onRequestClose={() => {
                         if (this.state.manifestsOpenVisual && this.state.openPopup === POPUPS.NONE) {
                             this.setState({ manifestsOpenVisual: false });
                         }
@@ -169,7 +174,7 @@ export default class App extends React.Component<any, any> {
                         />
                     </div>
                     {/* Scrollable section for installs and separators */}
-                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
+                    <div className="flex flex-col pb-2 gap-2 flex-shrink overflow-scroll scrollbar-none select-none animate-slideInLeft" style={{ animationDelay: '200ms' }}>
                         <div className={"w-full transition-all duration-500 ease-in-out overflow-visible scrollbar-none gap-3 flex flex-col flex-shrink items-center"} style={{
                             maxHeight: "0px",
                             opacity: 0,
@@ -182,7 +187,7 @@ export default class App extends React.Component<any, any> {
                             animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
                             '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
                         } as React.CSSProperties}/>
-                        <div className={`gap-3 flex flex-col items-center scrollbar-none overflow-scroll transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : (this.state.globalSettings.hide_manifests ? '' : 'animate-slideDownToPosition')}`} style={{
+                        <div className={`gap-3 flex flex-col items-center scrollbar-none overflow-scroll select-none transition-all duration-500 ${this.state.manifestsClosing ? 'animate-slideUpToPosition' : (this.state.globalSettings.hide_manifests ? '' : 'animate-slideDownToPosition')}`} style={{
                             animationDelay: this.state.manifestsClosing ? "100ms" : "0ms",
                             '--target-y': this.state.manifestsClosing ? `-${(this.state.gamesinfo.length * 56) + 12}px` : '0px'
                         } as React.CSSProperties}>
@@ -299,6 +304,7 @@ export default class App extends React.Component<any, any> {
             fetchSettings: this.fetchSettings,
             fetchRepositories: this.fetchRepositories,
             getGamesInfo: () => this.state.gamesinfo,
+            getInstalls: () => this.state.installs,
             preloadImages: (images, onProgress, preloaded) => preloadImages(images, onProgress, preloaded),
             preloadedBackgrounds: this.preloadedBackgrounds,
             setProgress: (progress, message) => this.setState({ loadingProgress: progress, loadingMessage: message }),
@@ -331,32 +337,6 @@ export default class App extends React.Component<any, any> {
             this.fetchInstallSettings(this.state.currentInstall);
             this.fetchInstallResumeStates(this.state.currentInstall);
             this.fetchCompatibilityVersions();
-        }
-        if (this.state.openPopup !== prevState.openPopup) {
-            if (this.state.openPopup !== POPUPS.NONE) {
-                // Popup opened: disable page scroll and auto-close manifests panel
-                document.documentElement.classList.add("no-scroll");
-                document.body.classList.add("no-scroll");
-                if (prevState.openPopup === POPUPS.NONE) {
-                    this.setState({
-                        manifestsWasOpenBeforePopup: this.state.manifestsOpenVisual,
-                        manifestsOpenVisual: false,
-                    });
-                }
-            } else {
-                // Popup closed: restore page scroll and manifests panel to prior state (or user setting)
-                document.documentElement.classList.remove("no-scroll");
-                document.body.classList.remove("no-scroll");
-                if (prevState.openPopup !== POPUPS.NONE) {
-                    const shouldReopen = (this.state.manifestsWasOpenBeforePopup !== null)
-                        ? this.state.manifestsWasOpenBeforePopup
-                        : !this.state.globalSettings.hide_manifests;
-                    this.setState({
-                        manifestsOpenVisual: shouldReopen,
-                        manifestsWasOpenBeforePopup: null,
-                    });
-                }
-            }
         }
     }
 
@@ -455,7 +435,25 @@ export default class App extends React.Component<any, any> {
                 console.error("Installs fetch issue, some serious fuck up happened!")
             } else {
                 let gi = JSON.parse(m as string);
-                this.setState(() => ({installs: gi}));
+                this.setState(() => ({installs: gi}), () => {
+                    // Also preload installed-specific assets (older/different versions)
+                    try {
+                        const backgrounds: string[] = (this.state.installs || [])
+                            .map((i: any) => i?.game_background)
+                            .filter((s: any) => !!s);
+                        const icons: string[] = (this.state.installs || [])
+                            .map((i: any) => i?.game_icon)
+                            .filter((s: any) => !!s);
+                        const images = Array.from(new Set([...(backgrounds as string[]), ...(icons as string[])]));
+                        // Only preload ones we haven't already cached
+                        const notPreloaded = images.filter((u) => !this.preloadedBackgrounds.has(u));
+                        if (notPreloaded.length > 0) {
+                            preloadImages(notPreloaded, undefined, this.preloadedBackgrounds).then(() => {});
+                        }
+                    } catch (e) {
+                        console.warn("Install assets preload failed:", e);
+                    }
+                });
             }
         }).catch(e => {
             console.error("Error while listing installs information: " + e)
@@ -625,28 +623,25 @@ export default class App extends React.Component<any, any> {
             this.bgTransitionTimeout = undefined;
         }
 
-        // Preload image to avoid flash of old bg when new not ready
-        const img = new Image();
-        img.onload = () => {
-            this.setState((prev: any) => ({
-                previousBackground: prev.gameBackground || prev.previousBackground || "",
-                gameBackground: file,
-                transitioningBackground: prev.gameBackground !== "",
-                bgVersion: prev.bgVersion + 1
-            }), () => {
-                if (this.state.transitioningBackground) {
-                    this.bgTransitionTimeout = window.setTimeout(() => {
-                        // After animation remove previous; keep if multiple rapid switches occurred
-                        this.setState({
-                            transitioningBackground: false,
-                            previousBackground: ""
-                        });
-                        this.bgTransitionTimeout = undefined;
-                    }, 480); // match CSS duration
-                }
-            });
-        };
-        img.src = file;
+        // Start loading: show gradient on the new image while it loads
+        this.setState((prev: any) => ({
+            bgLoading: true,
+            previousBackground: prev.gameBackground || prev.previousBackground || "",
+            gameBackground: file,
+            transitioningBackground: prev.gameBackground !== "",
+            bgVersion: prev.bgVersion + 1
+        }), () => {
+            if (this.state.transitioningBackground) {
+                this.bgTransitionTimeout = window.setTimeout(() => {
+                    // After animation remove previous; keep if multiple rapid switches occurred
+                    this.setState({
+                        transitioningBackground: false,
+                        previousBackground: ""
+                    });
+                    this.bgTransitionTimeout = undefined;
+                }, 480); // match CSS duration
+            }
+        });
     }
     setGameIcon(file: string) {this.setState({gameIcon: file});}
     setReposList(reposList: any) {this.setState({reposList: reposList});}

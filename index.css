@@ -104,3 +104,12 @@ body {
     border-radius: 9999px;
 }
 .hover-scrollbar:hover::-webkit-scrollbar-corner { background: transparent; }
+
+/* Hide scrollbars cross-browser for elements using the Tailwind-like class 'scrollbar-none' */
+.scrollbar-none {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar { /* Chrome, Safari */
+    display: none;
+}
