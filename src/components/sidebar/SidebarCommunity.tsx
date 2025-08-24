@@ -10,7 +10,7 @@ import {
     useHover,
     useInteractions
 } from "@floating-ui/react";
-import {POPUPS} from "./popups/POPUPS.ts";
+import {POPUPS} from "../popups/POPUPS.ts";
 import {invoke} from "@tauri-apps/api/core";
 
 // Discord icon component

@@ -24,6 +24,8 @@ pub mod repo_manager;
 mod git_helpers;
 pub mod game_launch_manager;
 pub mod system_tray;
+#[cfg(target_os = "linux")]
+pub mod gpu;
 
 pub fn generate_cuid() -> String {
     cuid2::create_id()
@@ -148,7 +150,7 @@ pub fn register_listeners(app: &AppHandle) {
                 prevent_exit(&h4, true);
 
                 match picked.metadata.download_mode.as_str() {
-                    // Generic zipped mode, PS: Currently only hoyo for backwards compatibility
+                    // Generic zipped mode
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
@@ -296,7 +298,7 @@ pub fn register_listeners(app: &AppHandle) {
                 prevent_exit(&h5, true);
 
                 match picked.metadata.download_mode.as_str() {
-                    // Generic zipped mode, Variety per game can not account for every case yet
+                    // Generic zipped mode, Variety per game
                     "DOWNLOAD_MODE_FILE" => {
                         h5.emit("update_complete", ()).unwrap();
                         prevent_exit(&h5, false);
@@ -416,22 +418,27 @@ pub fn register_listeners(app: &AppHandle) {
                 match picked.metadata.download_mode.as_str() {
                     // General game repair, PS: Only hoyo games for backwards compatibility
                     "DOWNLOAD_MODE_FILE" => {
-                        let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, {
-                            let dlpayload = dlpayload.clone();
-                            move |current, total| {
-                                let mut dlp = dlpayload.lock().unwrap();
-                                dlp.insert("name", instn.to_string());
-                                dlp.insert("progress", current.to_string());
-                                dlp.insert("total", total.to_string());
-                                tmp.emit("repair_progress", dlp.clone()).unwrap();
-                                drop(dlp);
-                            }
-                        });
-                        if rslt {
+                        if gm.biz == "bh3_global" {
+                            let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, {
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", total.to_string());
+                                    tmp.emit("repair_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            });
+                            if rslt {
+                                h5.emit("repair_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                                send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
+                            };
+                        } else {
                             h5.emit("repair_complete", ()).unwrap();
                             prevent_exit(&h5, false);
-                            send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
-                        };
+                        }
                     }
                     // Sophon chunk repair, PS: Only hoyo games as it is their literal format
                     "DOWNLOAD_MODE_CHUNK" => {
@@ -690,6 +697,9 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         if runner_version.contains("proton-umu") {
             rslt = "proton_umu.json".to_string();
         }
+        if runner_version.contains("proton-vanilla") {
+            rslt = "proton_vanilla.json".to_string();
+        }
         Some(rslt)
     }
 }
@@ -792,16 +802,11 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
 pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
-            std::thread::spawn(move || {
-                Extras::download_fps_unlock("mkrsym1/fpsunlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
-            });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
-            std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
-                if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
-            });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
         }
     }
 }

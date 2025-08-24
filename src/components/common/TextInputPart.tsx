@@ -49,7 +49,7 @@ export default class TextInputPart extends React.Component<IProps, IState> {
                 <input id={this.props?.id}
                     readOnly={this.props.readOnly || false}
                     placeholder={this.props.placeholder || ''}
-                    className={`text-ellipsis w-full focus:outline-none h-8 rounded-lg bg-white/20 text-white px-2 placeholder-white/50 ${this.props.isPicker ? "cursor-pointer" : ""}`}
+                    className={`text-ellipsis w-full focus:outline-none h-10 rounded-xl bg-zinc-800/60 border border-white/30 text-white px-3 placeholder-white/50 focus:border-white/40 transition-colors ${this.props.isPicker ? "cursor-pointer" : ""}`}
                     value={this.state.value}
                        pattern={this.props.pattern || ""}
                     onChange={(e) => {

@@ -14,16 +14,16 @@ export default {
 				'border-bottom-left-radius': 'border-bottom-left-radius',
 			},
 			animation: {
-				'fadeIn': 'fadeInOpacity 600ms ease-out',
+				'fadeIn': 'fadeInOpacity 300ms ease-out',
 				'slideUp': 'slideUp 600ms ease-out',
 				'slideInLeft': 'slideInLeft 300ms ease-out',
-				'slideInRight': 'slideInRight 600ms ease-out',
+				'slideInRight': 'slideInRight 400ms ease-out',
 				'slideOutLeft': 'slideOutLeft 200ms ease-in',
 				'slideUpToPosition': 'slideUpToPosition 300ms ease-in',
 				'slideDownToPosition': 'slideDownToPosition 300ms ease-out',
 				'shimmer': 'shimmer 2s infinite',
-				'bg-fade-in': 'bgFadeIn 420ms ease-out',
-				'bg-fade-out': 'bgFadeOut 420ms ease-out forwards',
+				'bg-fade-in': 'bgFadeIn 300ms ease-out',
+				'bg-fade-out': 'bgFadeOut 300ms ease-out forwards',
 			},
 			keyframes: {
 				fadeInOpacity: {

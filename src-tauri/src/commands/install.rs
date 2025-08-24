@@ -3,7 +3,7 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 use std::sync::Arc;
-use fischl::utils::{prettify_bytes};
+use fischl::utils::{patch_aki, prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
@@ -168,6 +168,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
             });
 
+            // Patch wuwa if existing install
+            if gm.biz == "wuwa_global" && skip_game_dl { let target = Path::new(&directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();patch_aki(target.to_str().unwrap().to_string()); }
             // Download and enable jadeite automatically for these games
             if gm.biz == "bh3_global" || gm.biz == "hkrpg_global" {
                 use_jadeite = true;
@@ -193,14 +195,17 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool) -> Op
 
         if install.is_some() {
             let i = install.unwrap();
+            let lm = get_manifest_info_by_id(&app, i.manifest_id.clone()).unwrap();
+            let gm = get_manifest(&app, lm.filename.clone()).unwrap();
+
             let installdir = i.directory;
             let prefixdir = i.runner_prefix;
+            let idp = Path::new(&installdir);
+            let pdp = Path::new(&prefixdir);
+            let gexe = idp.join(gm.paths.exe_filename.clone());
 
-            if wipe_prefix {
-                if fs::exists(prefixdir.clone()).unwrap() { fs::remove_dir_all(prefixdir.clone()).unwrap(); }
-            }
-
-            if fs::exists(installdir.clone()).unwrap() { fs::remove_dir_all(installdir.clone()).unwrap(); }
+            if wipe_prefix { if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); } }
+            if idp.exists() && gexe.exists() { fs::remove_dir_all(installdir.clone()).unwrap(); } else { send_notification(&app, "Failed to remove game installation directory. Please remove the folder manually!", None); }
             delete_installation_by_id(&app, id.clone()).unwrap();
             Some(true)
         } else {

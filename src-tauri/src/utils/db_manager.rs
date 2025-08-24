@@ -79,6 +79,12 @@ pub async fn init_db(app: &AppHandle) {
             sql: r#"ALTER TABLE install ADD COLUMN use_mangohud bool DEFAULT false NOT NULL;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "alter_settings_table_109",
+            sql: r#"UPDATE settings SET launcher_action = 'keep' WHERE id = 1;"#,
+            kind: MigrationKind::Up,
+        }
     ];
 
     let mut migrations = add_migrations("db", migrationsl);

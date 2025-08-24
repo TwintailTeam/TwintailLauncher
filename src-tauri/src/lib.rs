@@ -26,9 +26,7 @@ pub fn run() {
     let builder = {
         #[cfg(target_os = "linux")]
         {
-            // Temporary fix rendering for nvidia GPU's
-            // Ref: https://github.com/tauri-apps/tauri/issues/10702
-            //unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1"); }
+            utils::gpu::fuck_nvidia();
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
