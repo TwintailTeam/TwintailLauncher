@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#430cd6388f0ee0ccc2debec9e3532fecb290815f"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#273fa3566d8069d44dc5687b24f63ce2060d211d"
 dependencies = [
  "chksum-md5",
  "crossbeam-deque",
