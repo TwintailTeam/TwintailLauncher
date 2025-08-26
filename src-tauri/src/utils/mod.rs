@@ -232,7 +232,7 @@ pub fn register_listeners(app: &AppHandle) {
                         prevent_exit(&h4, false);
                         send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
                     }
-                    // KuroGame only currently
+                    // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let manifest = urls.get(0).unwrap();
@@ -261,7 +261,7 @@ pub fn register_listeners(app: &AppHandle) {
                             }
                         }
                     }
-                    // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
+                    // Fallback mode
                     _ => {}
                 }
             } else {
@@ -378,7 +378,7 @@ pub fn register_listeners(app: &AppHandle) {
                             }
                         }
                     }
-                    // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
+                    // Fallback mode
                     _ => {}
                 }
             } else {
@@ -476,7 +476,6 @@ pub fn register_listeners(app: &AppHandle) {
                                 let dlpayload = dlpayload.clone();
                                 move |current, total| {
                                     let mut dlp = dlpayload.lock().unwrap();
-
                                     dlp.insert("name", instn.to_string());
                                     dlp.insert("progress", current.to_string());
                                     dlp.insert("total", total.to_string());
@@ -535,7 +534,7 @@ pub fn register_listeners(app: &AppHandle) {
                     prevent_exit(&h5, true);
 
                     match pmd.download_mode.as_str() {
-                        // Generic zipped mode, Variety per game can not account for every case yet
+                        // Generic zipped mode, Variety per game
                         "DOWNLOAD_MODE_FILE" => {
                             h5.emit("preload_complete", ()).unwrap();
                             prevent_exit(&h5, false);
@@ -611,7 +610,7 @@ pub fn register_listeners(app: &AppHandle) {
                                 }
                             }*/
                         }
-                        // Fallback mode... NOT IMPLEMENTED AS I DID NOT WRITE ANY IN THE LIBRARY
+                        // Fallback mode
                         _ => {}
                     }
                 }
@@ -785,14 +784,14 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap());
+                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
@@ -802,11 +801,11 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
 pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap()); });
+            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
         }
     }
 }
@@ -815,7 +814,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false, move |_current, _total| {});
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
@@ -849,11 +848,21 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                 let app = app.clone();
                 let mut dlpayload = HashMap::new();
                 dlpayload.insert("name", String::from("XXMI Modding tool"));
-                dlpayload.insert("progress", "80".to_string());
-                dlpayload.insert("total", "100".to_string());
+                dlpayload.insert("progress", "0".to_string());
+                dlpayload.insert("total", "1000".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true);
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
+                    let app = app.clone();
+                    let dlpayload = dlpayload.clone();
+                    move |current, total| {
+                        let mut dlpayload = dlpayload.clone();
+                        dlpayload.insert("name", "XXMI Modding tool".to_string());
+                        dlpayload.insert("progress", current.to_string());
+                        dlpayload.insert("total", total.to_string());
+                        app.emit("download_progress", dlpayload.clone()).unwrap();
+                    }
+                });
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");

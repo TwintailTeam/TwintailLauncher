@@ -255,9 +255,9 @@ pub fn load_manifests(app: &AppHandle) {
                                                                         let pp = Path::new(&np).follow_symlink().unwrap();
                                                                         if !pp.exists() {
                                                                             fs::create_dir_all(&pp).unwrap();
-                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
                                                                         } else {
-                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true);
+                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
                                                                         }
                                                                         update_install_runner_location_by_id(&app, i.id.clone(), np);
                                                                         update_install_runner_version_by_id(&app, i.id, first.version.clone());
