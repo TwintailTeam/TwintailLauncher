@@ -115,18 +115,29 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                 let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
                 let dxvkp = dv.get(0).unwrap().to_owned();
-                if fs::read_dir(dxvkpp.as_str().to_string()).unwrap().next().is_none() { Compat::download_dxvk(dxvkp.url, dxvkpp.as_str().to_string(), true); }
+                if fs::read_dir(dxvkpp.as_str().to_string()).unwrap().next().is_none() { Compat::download_dxvk(dxvkp.url, dxvkpp.as_str().to_string(), true, move |_current, _total| {}); }
 
                 if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
                     let mut dlpayload = HashMap::new();
 
                     dlpayload.insert("name", runv.to_string());
-                    dlpayload.insert("progress", "90".to_string());
-                    dlpayload.insert("total", "100".to_string());
+                    dlpayload.insert("progress", "0".to_string());
+                    dlpayload.insert("total", "1000".to_string());
                     //archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true);
+                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                        let archandle = archandle.clone();
+                        let dlpayload = dlpayload.clone();
+                        let runv = runv.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", runv.to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    });
                     if r0 {
                         let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();
@@ -569,12 +580,23 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     let mut dlpayload = HashMap::new();
 
                     dlpayload.insert("name", runv.to_string());
-                    dlpayload.insert("progress", "80".to_string());
-                    dlpayload.insert("total", "100".to_string());
+                    dlpayload.insert("progress", "0".to_string());
+                    dlpayload.insert("total", "1000".to_string());
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true);
+                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                        let archandle = archandle.clone();
+                        let dlpayload = dlpayload.clone();
+                        let runv = runv.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", runv.to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    });
                     if r0 {
                         let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();
@@ -644,12 +666,23 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
                     if is_proton { send_notification(&*archandle, "Skipping DXVK download because Proton ships with DXVK.", None); } else {
                         dlpayload.insert("name", runv.to_string());
-                        dlpayload.insert("progress", "80".to_string());
-                        dlpayload.insert("total", "100".to_string());
+                        dlpayload.insert("progress", "0".to_string());
+                        dlpayload.insert("total", "1000".to_string());
                         archandle.emit("download_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&*archandle, true);
 
-                        let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true);
+                        let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true, {
+                            let archandle = archandle.clone();
+                            let dlpayload = dlpayload.clone();
+                            let runv = runv.clone();
+                            move |current, total| {
+                                let mut dlpayload = dlpayload.clone();
+                                dlpayload.insert("name", runv.to_string());
+                                dlpayload.insert("progress", current.to_string());
+                                dlpayload.insert("total", total.to_string());
+                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                            }
+                        });
                         if r0 {
                             let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                             let winebin = rp.join(wine64).to_str().unwrap().to_string();

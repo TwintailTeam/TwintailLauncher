@@ -22,7 +22,7 @@ export default function DownloadProgress(props: DownloadProgressProps) {
         {name}
       </h4>
       <h4 className={"pl-4 pb-1 text-white text-stroke inline"}>
-        (<span id={"progress_percent"}>{percentText}</span> |
+        (<span id={"progress_percent"}>{percentText}</span> |&nbsp;
         <span id={"progress_pretty"}>
           {pretty} / {prettyTotal}
         </span>)
