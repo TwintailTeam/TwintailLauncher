@@ -32,6 +32,8 @@ pub fn run() {
         #[cfg(target_os = "linux")]
         {
             utils::gpu::fuck_nvidia();
+            // Raise file descriptor limit for the app so downloads go smoothly
+            utils::raise_fd_limit(50000);
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
@@ -52,8 +54,6 @@ pub fn run() {
         }
     }.setup(|app| {
             let handle = app.handle();
-            run_async_command(async { init_db(&handle).await; });
-
             #[cfg(target_arch = "aarch64")]
             {
                 use tauri_plugin_dialog::DialogExt;
@@ -61,16 +61,18 @@ pub fn run() {
                 handle.dialog().message("TwintailLauncher does not support arm based architectures. Flatpak required arm builds to be provided but they are not supported!").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
             }
 
+            run_async_command(async { init_db(handle).await; });
+
             #[cfg(target_arch = "x86_64")]
             {
-                load_manifests(&handle);
-                init_tray(&handle).unwrap();
+                load_manifests(handle);
+                init_tray(handle).unwrap();
                 // Initialize the listeners
-                register_listeners(&handle);
-                register_download_handler(&handle);
-                register_update_handler(&handle);
-                register_repair_handler(&handle);
-                register_preload_handler(&handle);
+                register_listeners(handle);
+                register_download_handler(handle);
+                register_update_handler(handle);
+                register_repair_handler(handle);
+                register_preload_handler(handle);
 
                 // Hide decorations on most common tiler WindowManagers on linux
                 #[cfg(target_os = "linux")]

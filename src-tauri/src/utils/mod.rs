@@ -14,6 +14,8 @@ use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settin
 use crate::utils::repo_manager::get_manifests;
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
+#[cfg(target_os = "linux")]
+use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -399,6 +401,16 @@ pub fn deprecate_jadeite(app: &AppHandle) {
             }
         }
     }
+}
+
+#[cfg(target_os = "linux")]
+pub fn raise_fd_limit(new_limit: i32) {
+    let mut cur = rlimit { rlim_cur: 0, rlim_max: 0 };
+    unsafe { getrlimit(RLIMIT_NOFILE, &mut cur); };
+
+    if cur.rlim_cur >= cur.rlim_max { return; }
+    let mut new = rlimit {rlim_cur: new_limit as rlim_t, rlim_max: cur.rlim_max };
+    unsafe { setrlimit(RLIMIT_NOFILE, &mut new); };
 }
 
 pub struct ActionBlocks {
