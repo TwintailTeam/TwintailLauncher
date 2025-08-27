@@ -5,8 +5,9 @@ use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification, DownloadGamePayload, PathResolve};
+use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
 use fischl::utils::patch_aki;

@@ -3,8 +3,9 @@ use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification, DownloadGamePayload};
+use crate::utils::{prevent_exit, run_async_command, send_notification};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile};
+use crate::downloading::DownloadGamePayload;
 
 pub fn register_preload_handler(app: &AppHandle) {
     let a = app.clone();

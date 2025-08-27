@@ -413,13 +413,6 @@ pub struct AddInstallRsp {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DownloadGamePayload {
-    pub install: String,
-    pub biz: String,
-    pub lang: String
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct DownloadSizesRsp {
     pub game_decompressed_size: String,
     pub free_disk_space: String,
