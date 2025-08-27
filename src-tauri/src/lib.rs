@@ -4,6 +4,10 @@ use crate::commands::install::{add_install, game_launch, get_download_sizes, get
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled, get_game_manifest_by_manifest_id, list_compatibility_manifests, get_compatibility_manifest_by_manifest_id};
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
 use crate::commands::settings::{block_telemetry_cmd, list_settings, open_folder, open_uri, update_extras, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
+use crate::downloading::download::register_download_handler;
+use crate::downloading::preload::register_preload_handler;
+use crate::downloading::repair::register_repair_handler;
+use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
 use crate::utils::{block_telemetry, deprecate_jadeite, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
@@ -14,6 +18,7 @@ use crate::utils::repo_manager::RunnerLoader;
 
 mod utils;
 mod commands;
+mod downloading;
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -60,7 +65,12 @@ pub fn run() {
             {
                 load_manifests(&handle);
                 init_tray(&handle).unwrap();
+                // Initialize the listeners
                 register_listeners(&handle);
+                register_download_handler(&handle);
+                register_update_handler(&handle);
+                register_repair_handler(&handle);
+                register_preload_handler(&handle);
 
                 // Hide decorations on most common tiler WindowManagers on linux
                 #[cfg(target_os = "linux")]

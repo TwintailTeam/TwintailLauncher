@@ -476,7 +476,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
-                cmd.current_dir(fpsunlock_path.clone());
+                cmd.current_dir(fpsunlock_path);
 
                 let spawned = cmd.spawn();
                 if spawned.is_ok() {
