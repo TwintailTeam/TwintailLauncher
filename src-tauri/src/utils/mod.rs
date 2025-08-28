@@ -409,7 +409,8 @@ pub fn raise_fd_limit(new_limit: i32) {
     unsafe { getrlimit(RLIMIT_NOFILE, &mut cur); };
 
     if cur.rlim_cur >= cur.rlim_max { return; }
-    let mut new = rlimit {rlim_cur: new_limit as rlim_t, rlim_max: cur.rlim_max };
+    let v = if new_limit == 999999 { cur.rlim_max } else { new_limit as rlim_t };
+    let mut new = rlimit {rlim_cur: v, rlim_max: cur.rlim_max };
     unsafe { setrlimit(RLIMIT_NOFILE, &mut new); };
 }
 

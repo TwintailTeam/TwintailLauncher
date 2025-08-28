@@ -32,7 +32,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
-        let command = format!("{pre_launch}"); //format!("'{runner}/{wine64}' '{pre_launch}'");
+        let command = format!("{pre_launch}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //format!("'{runner}/{wine64}' '{pre_launch}'");
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -146,11 +146,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = format!("{c}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
+        let mut command = format!("{c}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = format!("{c} {args}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
+            command = format!("{c} {args}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
         }
 
         let mut cmd = Command::new("bash");
