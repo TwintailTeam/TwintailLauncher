@@ -48,7 +48,8 @@
             "./resources/krpatchz.exe",
             "./resources/krpatchz",
             "./resources/7zr",
-            "./resources/7zr.exe"
+            "./resources/7zr.exe",
+            "./resources/mangohud_default.conf"
         ],
         "icon": [
             "icons/32x32.png",
