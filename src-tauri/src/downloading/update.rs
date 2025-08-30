@@ -45,7 +45,7 @@ pub fn register_update_handler(app: &AppHandle) {
                         h5.emit("update_complete", ()).unwrap();
                         prevent_exit(&h5, false);
                     }
-                    // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
+                    // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
 

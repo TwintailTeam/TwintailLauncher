@@ -95,7 +95,7 @@ pub fn register_download_handler(app: &AppHandle) {
                             }
                         }
                     }
-                    // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
+                    // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.full.clone();
                         for e in urls.clone() {

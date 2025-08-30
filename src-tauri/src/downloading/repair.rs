@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
+use fischl::download::game::{Game, Kuro, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification};
@@ -41,31 +41,12 @@ pub fn register_repair_handler(app: &AppHandle) {
                 prevent_exit(&h5, true);
 
                 match picked.metadata.download_mode.as_str() {
-                    // General game repair, PS: Only hoyo games for backwards compatibility
+                    // Generic zipped mode, Variety per game
                     "DOWNLOAD_MODE_FILE" => {
-                        if gm.biz == "bh3_global" {
-                            let rslt = <Game as Hoyo>::repair_game(picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check, {
-                                let dlpayload = dlpayload.clone();
-                                move |current, total| {
-                                    let mut dlp = dlpayload.lock().unwrap();
-                                    dlp.insert("name", instn.to_string());
-                                    dlp.insert("progress", current.to_string());
-                                    dlp.insert("total", total.to_string());
-                                    tmp.emit("repair_progress", dlp.clone()).unwrap();
-                                    drop(dlp);
-                                }
-                            });
-                            if rslt {
-                                h5.emit("repair_complete", ()).unwrap();
-                                prevent_exit(&h5, false);
-                                send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
-                            };
-                        } else {
-                            h5.emit("repair_complete", ()).unwrap();
-                            prevent_exit(&h5, false);
-                        }
+                        h5.emit("repair_complete", ()).unwrap();
+                        prevent_exit(&h5, false);
                     }
-                    // Sophon chunk repair, PS: Only hoyo games as it is their literal format
+                    // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.full.clone();
                         urls.into_iter().for_each(|e| {

@@ -41,7 +41,7 @@ pub fn register_preload_handler(app: &AppHandle) {
                             h5.emit("preload_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                         }
-                        // Sophon chunk mode, PS: Only hoyo supported as it is their literal format
+                        // HoYoverse sophon chunk mode
                         "DOWNLOAD_MODE_CHUNK" => {
                             let pg = picked.game.unwrap();
                             let urls = pg.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
