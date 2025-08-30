@@ -10,7 +10,7 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{block_telemetry, deprecate_jadeite, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
 use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
@@ -58,9 +58,10 @@ pub fn run() {
             {
                 use tauri_plugin_dialog::DialogExt;
                 let h = handle.clone();
-                handle.dialog().message("TwintailLauncher does not support arm based architectures. Flatpak required arm builds to be provided but they are not supported!").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
+                handle.dialog().message("TwintailLauncher does not support ARM based architectures. Flatpak required ARM builds to be provided but they are not supported!").kind(tauri_plugin_dialog::MessageDialogKind::Warning).title("Unsupported Architecture").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
             }
 
+            notify_update(handle);
             run_async_command(async { init_db(handle).await; });
 
             #[cfg(target_arch = "x86_64")]

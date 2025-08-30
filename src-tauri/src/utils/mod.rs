@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
-use fischl::utils::{extract_archive};
+use fischl::utils::{extract_archive, get_github_release};
 use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_mangohud_config_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
@@ -16,6 +16,7 @@ use crate::utils::repo_manager::get_manifests;
 use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -248,7 +249,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
                 if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
                 if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap(); update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
                 if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
-                if g.default_mangohud_config_path == "" { update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
+                if g.default_mangohud_config_path == "" { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
             }
         }
     } else {
@@ -264,7 +265,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
             let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
             let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
 
-            if !mangohudcfg.exists() { update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
+            if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
             if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
@@ -416,6 +417,26 @@ pub fn raise_fd_limit(new_limit: i32) {
     let v = if new_limit == 999999 { cur.rlim_max } else { new_limit as rlim_t };
     let mut new = rlimit {rlim_cur: v, rlim_max: cur.rlim_max };
     unsafe { setrlimit(RLIMIT_NOFILE, &mut new); };
+}
+
+pub fn notify_update(app: &AppHandle) {
+    let ttl = get_github_release("TwintailTeam/TwintailLauncher".to_string());
+    if ttl.is_some() {
+        let r = ttl.unwrap();
+        let v = r.tag_name.replace("ttl-v", "");
+        let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
+        if !suppressed.exists() {
+            let cfg = app.config();
+            if cfg.version.clone().unwrap() < v {
+                app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.").title("Update available")
+                    .kind(MessageDialogKind::Info)
+                    .buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
+                    .show(move |action| {
+                        if action {  } else { fs::File::create(&suppressed).unwrap(); }
+                    });
+            }
+        }
+    }
 }
 
 pub struct ActionBlocks {
