@@ -6,6 +6,8 @@ import SettingsGlobal from "../popups/settings/SettingsGlobal";
 import DownloadGame from "../popups/DownloadGame";
 import SettingsInstall from "../popups/settings/SettingsInstall";
 import InstallDeleteConfirm from "../popups/settings/InstallDeleteConfirm";
+import FpsUnlockSettings from "../popups/settings/FpsUnlockSettings.tsx";
+import MangoHudSettings from "../popups/settings/MangoHudSettings.tsx";
 
 export type PopupOverlayProps = {
   openPopup: POPUPS;
@@ -172,6 +174,12 @@ export default function PopupOverlay(props: PopupOverlayProps) {
           setCurrentGame={setCurrentGame}
           setBackground={setBackground}
         />
+      )}
+      {openPopup == POPUPS.FPSUNLOCKERSETTINGS && (
+          <FpsUnlockSettings install={installSettings} setOpenPopup={setOpenPopup} gameSwitches={installGameSwitches} gameFps={installGameFps} fetchInstallSettings={fetchInstallSettings}/>
+      )}
+      {openPopup == POPUPS.MANGOHUDSETTINGS && (
+          <MangoHudSettings install={installSettings} setOpenPopup={setOpenPopup} fetchInstallSettings={fetchInstallSettings} gameSwitches={installGameSwitches}/>
       )}
     </div>
   );

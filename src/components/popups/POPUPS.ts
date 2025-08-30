@@ -6,4 +6,6 @@ export enum POPUPS {
     DOWNLOADGAME = 'popups/downloadgame',
     INSTALLSETTINGS = 'popups/installationsettings',
     INSTALLDELETECONFIRMATION = 'popups/deleteinstall',
+    FPSUNLOCKERSETTINGS = 'popups/fpssettings',
+    MANGOHUDSETTINGS = 'popups/mangohudsettings'
 }

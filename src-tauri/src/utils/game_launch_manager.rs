@@ -100,7 +100,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
  //       cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
+        if install.use_mangohud {
+            cmd.env("MANGOHUD","1");
+            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+        }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -168,7 +171,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
+        if install.use_mangohud {
+            cmd.env("MANGOHUD","1");
+            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+        }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -199,7 +205,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     Ok(None) => {
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install, gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
+                        load_fps_unlock(app, install.clone(), gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
