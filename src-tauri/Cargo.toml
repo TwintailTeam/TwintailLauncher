@@ -26,6 +26,7 @@ git2 = "0.20"
 cuid2 = "0.1"
 linked-hash-map = "0.5.6"
 futures-core = "0.3"
+gumdrop = "0.8.1"
 # Main library to handle downloads and comaptibility
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 

@@ -23,6 +23,7 @@ pub mod repo_manager;
 mod git_helpers;
 pub mod game_launch_manager;
 pub mod system_tray;
+pub mod args;
 #[cfg(target_os = "linux")]
 pub mod gpu;
 
@@ -430,9 +431,10 @@ pub fn notify_update(app: &AppHandle) {
             if cfg.version.clone().unwrap() < v {
                 app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.").title("Update available")
                     .kind(MessageDialogKind::Info)
-                    .buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
-                    .show(move |action| {
-                        if action {  } else { fs::File::create(&suppressed).unwrap(); }
+                    .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
+                    //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
+                    .show(move |_action| {
+                        //if action {  } else { fs::File::create(&suppressed).unwrap(); }
                     });
             }
         }

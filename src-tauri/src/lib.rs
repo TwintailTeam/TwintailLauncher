@@ -10,7 +10,7 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{args, block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
 use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
@@ -74,6 +74,15 @@ pub fn run() {
                 register_update_handler(handle);
                 register_repair_handler(handle);
                 register_preload_handler(handle);
+                
+                if args::get_launch_install().is_some() {
+                    let id = args::get_launch_install().unwrap();
+                    game_launch(handle.clone(), id);
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    handle.cleanup_before_exit();
+                    handle.exit(0);
+                    std::process::exit(0);
+                }
 
                 // Hide decorations on most common tiler WindowManagers on linux
                 #[cfg(target_os = "linux")]
