@@ -3,10 +3,10 @@ use std::fs;
 use std::ops::Add;
 use std::path::Path;
 use std::sync::Arc;
-use fischl::utils::{patch_aki, prettify_bytes};
+use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
-use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
+use tauri::{AppHandle, Emitter, Manager};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -17,6 +17,12 @@ use crate::utils::runner_from_runner_version;
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
+#[cfg(target_os = "linux")]
+use fischl::utils::patch_aki;
+#[cfg(target_os = "linux")]
+use crate::utils::is_flatpak;
+#[cfg(target_os = "linux")]
+use std::io::Write;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -59,7 +65,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 
 #[allow(unused_mut, unused_variables)]
 #[tauri::command]
-pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
+pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -73,6 +79,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
+
+        // If wuwa is steam build auto ignore updates
+        if gm.biz == "wuwa_global" && skip_game_dl {
+            let steamdll = install_location.join("Client/Binaries/Win64/steam_api64.dll");
+            if steamdll.exists() { ignore_updates = true; }
+        }
 
         #[cfg(target_os = "windows")]
         {
@@ -188,7 +200,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 download_or_update_jadeite(jadeite, false);
             }
         }
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
         Some(AddInstallRsp {
             success: true,
             install_id: cuid.clone(),
@@ -457,6 +469,20 @@ pub fn update_install_use_mangohud(app: AppHandle, id: String, enabled: bool) ->
     if manifest.is_some() {
         let m = manifest.unwrap();
         update_install_use_mangohud_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_mangohud_config_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        let np = path.clone();
+        update_install_mangohud_config_location_by_id(&app, m.id, np);
         Some(true)
     } else {
         None
@@ -847,5 +873,40 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
         Some(stringified)
     } else {
         None
+    }
+}
+
+#[tauri::command]
+pub fn add_shortcut(app: AppHandle, install_id: String) {
+    let install = get_install_info_by_id(&app, install_id).unwrap();
+    #[cfg(target_os = "linux")]
+    {
+        let base = app.path().home_dir().unwrap().join(".local/share/applications");
+        let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
+        let mut writing = fs::File::create(file).unwrap();
+        let bin_name = if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" };
+        let icon = if is_flatpak() { "app.twintaillauncher.ttl" } else { "twintaillauncher" };
+
+        let content = format!(r#"[Desktop Entry]
+Categories=Game;
+Comment=Launch this game using TwintailLauncher
+Exec={} --install={}
+Icon={}
+Name={}
+Terminal=false
+Type=Application
+"#, bin_name, install.id.as_str(), icon, install.name.as_str());
+        let r = writing.write_all(content.as_bytes());
+        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. If you want to delete it please delete desktop file manually!", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        let base = app.path().desktop_dir().unwrap();
+        let bin_name = app.path().app_local_data_dir().unwrap().join("twintaillauncher.exe");
+        let file = base.join(format!("{}.lnk", install.name.as_str()));
+        let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
+        let r = sl.create_lnk(file.as_path());
+        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. Find it on your desktop.", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
     }
 }

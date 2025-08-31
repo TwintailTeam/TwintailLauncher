@@ -407,7 +407,8 @@ pub struct LauncherInstall {
     pub runner_prefix: String,
     pub launch_args: String,
     pub use_gamemode: bool,
-    pub use_mangohud: bool
+    pub use_mangohud: bool,
+    pub mangohud_config_path: String
 }
 
 // === MANIFESTS ===

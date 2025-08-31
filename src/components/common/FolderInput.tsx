@@ -149,6 +149,13 @@ export default class FolderInput extends React.Component<IProps, IState> {
                 }
             }
             break;
+            case 'default_mangohud_config_path': {
+                if (this.props.fetchSettings !== undefined) {
+                    invoke("update_settings_default_mangohud_config_path", {path: path}).then(() => {});
+                    this.props.fetchSettings();
+                }
+            }
+            break;
             case "install_game_path": {
                 if (this.props.fetchDownloadSizes !== undefined && this.props.version !== undefined && this.props.lang !== undefined) {
                     this.props.fetchDownloadSizes(this.props.biz, this.props.version(), this.props.lang(), path, (disk) => {
@@ -225,6 +232,13 @@ export default class FolderInput extends React.Component<IProps, IState> {
                     if (this.props.setOpenPopup !== undefined) {
                         this.props.setOpenPopup(POPUPS.NONE);
                     }
+                }
+            }
+            break;
+            case 'mangohud_config_path': {
+                if (this.props.fetchInstallSettings !== undefined) {
+                    invoke("update_install_mangohud_config_path", {id: this.props.install, path: path}).then(() => {});
+                    this.props.fetchInstallSettings(this.props.install as string);
                 }
             }
             break;

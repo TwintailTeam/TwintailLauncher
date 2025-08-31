@@ -33,7 +33,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     <h1 className="text-white font-bold text-3xl bg-gradient-to-r from-white to-red-200 bg-clip-text text-transparent">Confirm your action</h1>
                 </div>
             </div>
-            <div className="bg-zinc-900/60 border border-white/20 rounded-xl p-6 flex flex-col gap-2 shadow-inner">
+            <div className="bg-zinc-900/60 border border-white/20 rounded-xl p-6 flex flex-col gap-2 shadow-inner overflow-y-auto overflow-x-hidden hover-scrollbar">
                 <p className={"text-white text-start"}>
                     Are you sure you want to uninstall and remove <span className={"text-purple-400 font-bold"}>{install.name}</span> installation?<br/>
                     <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>

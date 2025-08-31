@@ -54,6 +54,7 @@ jobs:
   
           package() {
             install -Dm755 usr/bin/twintaillauncher -t "\$pkgdir/usr/bin"
+            install -Dm755 usr/lib/twintaillauncher/resources/mangohud_default.conf -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/7zr -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/krpatchz -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/hpatchz -t "\$pkgdir/usr/lib/twintaillauncher/resources"

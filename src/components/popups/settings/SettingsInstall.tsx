@@ -1,4 +1,4 @@
-import {FolderOpenIcon, Trash2Icon, WrenchIcon, X} from "lucide-react";
+import {FolderOpenIcon, PlusCircleIcon, Trash2Icon, WrenchIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import FolderInput from "../../common/FolderInput.tsx";
 import CheckBox from "../../common/CheckBox.tsx";
@@ -7,6 +7,7 @@ import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
 import React from "react";
 import {emit} from "@tauri-apps/api/event";
+import SubMenu from "../../common/SubMenu.tsx";
 
 interface IProps {
     games: any,
@@ -59,13 +60,12 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         <CheckBox enabled={this.props.installSettings.skip_hash_check} name={"Skip hash validation"} id={"skip_hash_validation2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Skip validating files during game repair process, this will speed up the repair process significantly."}/>
                         {(window.navigator.platform.includes("Linux") && this.state.gameSwitches.jadeite) ? <CheckBox enabled={this.props.installSettings.use_jadeite} name={"Launch with Jadeite"} id={"tweak_jadeite"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Launch game using Jadeite patch."}/> : null}
                         {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={this.props.installSettings.use_gamemode} name={"Launch with Gamemode"} id={"tweak_gamemode"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Launch game using gamemode by FeralInteractive. You need it installed on your system for this to work!"}/> : null}
-                        {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={this.props.installSettings.use_mangohud} name={"Show MangoHUD"} id={"tweak_mangohud"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Enable MangoHUD monitor. You need it installed on your system for this to work!"}/> : null}
                         {(this.state.gameSwitches.xxmi) ? <CheckBox enabled={this.props.installSettings.use_xxmi} name={"Inject XXMI"} id={"tweak_xxmi"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Enable and inject XXMI modding tool."}/> : null}
-                        {(this.state.gameSwitches.fps_unlocker) ? <CheckBox enabled={this.props.installSettings.use_fps_unlock} name={"Inject FPS Unlocker"} id={"tweak_fps_unlock"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Load and inject fps unlocking into the game. Pick FPS in the menu bellow."}/> : null}
-                        {(this.state.gameSwitches.fps_unlocker) ? <SelectMenu id={"install_fps_value"} name={"FPS value"} multiple={false} options={this.state.gameFps} selected={`${this.props.installSettings.fps_value}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Target FPS to unlock game to."} setOpenPopup={this.props.setOpenPopup}/> : null}
-                        <TextInput name={"Environment variables"} value={this.props.installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={"DXVK_HUD=fps;DXVK_LOG=none;"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={`Pass extra variables to Wine/Proton. Each entry is divided and list must end with ";"`}/>
-                        <TextInput name={"Pre launch command"} value={this.props.installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Command that will be ran before game launches. Running stuff under Wine/Proton requires you to call runner binary."}/>
-                        <TextInput name={"Launch command"} value={this.props.installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={"%command%"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Custom command to launch the game. On linux this will run whatever you enter here inside Wine/Proton."}/>
+                        {(window.navigator.platform.includes("Linux")) ? <SubMenu name={"MangoHUD settings"} page={POPUPS.MANGOHUDSETTINGS} setOpenPopup={this.props.setOpenPopup}/> : null}
+                        {(this.state.gameSwitches.fps_unlocker) ? <SubMenu name={"FPS Unlocker settings"} page={POPUPS.FPSUNLOCKERSETTINGS} setOpenPopup={this.props.setOpenPopup}/> : null }
+                        <TextInput name={"Environment variables"} value={this.props.installSettings.env_vars} readOnly={false} id={"install_env_vars"} placeholder={`DXVK_HUD="fps,devinfo";DXVK_LOG=none;`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={`Pass extra variables to Wine/Proton. Each entry is divided and list must end with ";"`}/>
+                        <TextInput name={"Pre launch command"} value={this.props.installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={`${window.navigator.platform.includes("Linux") ? '"/long path/linuxapp"' : "taskmgr.exe"}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Command that will be ran before game launches. Running stuff under Wine/Proton requires %runner% variable."}/>
+                        <TextInput name={"Launch command"} value={this.props.installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={`${window.navigator.platform.includes("Linux") ? '%runner% [run] "/path long/thing.exe"' : '"/path long/thing.exe"'}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Custom command to launch the game. On linux this will run whatever you enter here inside Wine/Proton."}/>
                         <TextInput name={"Launch arguments"} value={this.props.installSettings.launch_args} readOnly={false} id={"install_launch_args"} placeholder={"-dx11 -whatever -thisonetoo"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Additional arguments to pass to the game. Each entry is separated with space."}/>
                         {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} multiple={false} options={this.props.runnerVersions} selected={(this.props.installSettings.runner_version === "none" || this.props.installSettings.runner_version === "") ? this.props.runnerVersions[0].value : this.props.installSettings.runner_version} install={this.props.installSettings.id} fetchInstallSettings={this.props.fetchInstallSettings} helpText={"Wine/Proton version used by this installation."} setOpenPopup={this.props.setOpenPopup}/> : null}
                         {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner location"} clearable={true} value={`${this.props.installSettings.runner_path}`} folder={true} id={"install_runner_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location of the Wine/Proton runner. Usually points to directory containing "bin" or "files" directory.`}/> : null}
@@ -75,6 +75,13 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     </div>
                 </div>
                 <div className="flex justify-center gap-3 pt-5 mt-4 border-t border-white/10 flex-wrap">
+                    <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                        invoke("add_shortcut", {installId: this.props.installSettings.id}).then(() => {});
+                    }}><PlusCircleIcon/><span>Create shortcut</span>
+                    </button>
                     <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore

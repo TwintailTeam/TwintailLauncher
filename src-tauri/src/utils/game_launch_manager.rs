@@ -32,7 +32,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
-        let command = format!("{pre_launch}"); //format!("'{runner}/{wine64}' '{pre_launch}'");
+        let command = format!("{pre_launch}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //format!("'{runner}/{wine64}' '{pre_launch}'");
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -100,7 +100,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
  //       cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
+        if install.use_mangohud {
+            cmd.env("MANGOHUD","1");
+            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+        }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -146,11 +149,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let args;
-        let mut command = format!("{c}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
+        let mut command = format!("{c}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
 
         if !install.launch_args.is_empty() {
             args = &install.launch_args;
-            command = format!("{c} {args}"); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
+            command = format!("{c} {args}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
         }
 
         let mut cmd = Command::new("bash");
@@ -168,7 +171,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        if install.use_mangohud { cmd.env("MANGOHUD","1"); }
+        if install.use_mangohud {
+            cmd.env("MANGOHUD","1");
+            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+        }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
@@ -199,7 +205,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     Ok(None) => {
                         let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path, runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install, gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
+                        load_fps_unlock(app, install.clone(), gm.biz, prefix, gs.fps_unlock_path, dir.clone(), runner, wine64, exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -476,7 +482,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
-                cmd.current_dir(fpsunlock_path.clone());
+                cmd.current_dir(fpsunlock_path);
 
                 let spawned = cmd.spawn();
                 if spawned.is_ok() {
