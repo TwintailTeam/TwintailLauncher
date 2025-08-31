@@ -1,4 +1,4 @@
-import {FolderOpenIcon, Trash2Icon, WrenchIcon, X} from "lucide-react";
+import {FolderOpenIcon, PlusCircleIcon, Trash2Icon, WrenchIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import FolderInput from "../../common/FolderInput.tsx";
 import CheckBox from "../../common/CheckBox.tsx";
@@ -75,6 +75,13 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                     </div>
                 </div>
                 <div className="flex justify-center gap-3 pt-5 mt-4 border-t border-white/10 flex-wrap">
+                    <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
+                        this.props.setOpenPopup(POPUPS.NONE);
+                        // @ts-ignore
+                        document.getElementById(this.props.installSettings.id).focus();
+                        invoke("add_shortcut", {installId: this.props.installSettings.id}).then(() => {});
+                    }}><PlusCircleIcon/><span>Create shortcut</span>
+                    </button>
                     <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore

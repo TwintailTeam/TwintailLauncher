@@ -41,6 +41,9 @@ tauri-plugin-single-instance = "2.3.2"
 wgpu = { version = "26.0", default-features = true }
 libc = { version = "0.2.175" }
 
+[target."cfg(any(target_os = \"windows\"))".dependencies]
+shortcuts-rs = "1.1.1"
+
 [profile.release]
 panic = "abort" # Strip expensive panic clean-up logic
 codegen-units = 1 # Compile crates one after another so the compiler can optimize better

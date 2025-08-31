@@ -441,6 +441,9 @@ pub fn notify_update(app: &AppHandle) {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
+
 pub struct ActionBlocks {
     pub action_exit: bool,
 }

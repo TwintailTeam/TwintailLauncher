@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
@@ -19,6 +19,10 @@ use fischl::compat::Compat;
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use fischl::utils::patch_aki;
+#[cfg(target_os = "linux")]
+use crate::utils::is_flatpak;
+#[cfg(target_os = "linux")]
+use std::io::Write;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -869,5 +873,40 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
         Some(stringified)
     } else {
         None
+    }
+}
+
+#[tauri::command]
+pub fn add_shortcut(app: AppHandle, install_id: String) {
+    let install = get_install_info_by_id(&app, install_id).unwrap();
+    #[cfg(target_os = "linux")]
+    {
+        let base = app.path().home_dir().unwrap().join(".local/share/applications");
+        let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
+        let mut writing = fs::File::create(file).unwrap();
+        let bin_name = if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" };
+        let icon = if is_flatpak() { "app.twintaillauncher.ttl" } else { "twintaillauncher" };
+
+        let content = format!(r#"[Desktop Entry]
+Categories=Game;
+Comment=Launch this game using TwintailLauncher
+Exec={} --install={}
+Icon={}
+Name={}
+Terminal=false
+Type=Application
+"#, bin_name, install.id.as_str(), icon, install.name.as_str());
+        let r = writing.write_all(content.as_bytes());
+        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. If you want to delete it please delete desktop file manually!", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        let base = app.path().desktop_dir().unwrap();
+        let bin_name = app.path().app_local_data_dir().unwrap().join("twintaillauncher.exe");
+        let file = base.join(format!("{}.lnk", install.name.as_str()));
+        let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
+        let r = sl.create_lnk(file.as_path());
+        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. Find it on your desktop.", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
     }
 }
