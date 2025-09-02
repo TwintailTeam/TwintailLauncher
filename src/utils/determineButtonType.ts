@@ -12,6 +12,7 @@ export function determineButtonType({
   currentInstall,
   installSettings,
   gameManifest,
+  // @ts-ignore
   preloadAvailable,
   resumeStates,
 }: DetermineParams): ButtonType {
@@ -22,7 +23,7 @@ export function determineButtonType({
   if (!installSettings || !gameManifest) return hasResume ? "resume" : "launch";
 
   const isUpdateNeeded = (installSettings.version !== gameManifest.latest_version)
-    && !preloadAvailable
+    //&& !preloadAvailable
     && !installSettings.ignore_updates;
 
   if (isUpdateNeeded) {

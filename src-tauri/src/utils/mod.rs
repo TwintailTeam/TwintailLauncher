@@ -88,6 +88,9 @@ pub fn block_telemetry(app: &AppHandle) {
 
             if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
 
+            // For the time being just return if we are flatpak build will be fixed soon
+            if is_flatpak() { return; }
+
             let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers")
                 .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
 
