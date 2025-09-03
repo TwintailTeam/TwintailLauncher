@@ -30,6 +30,17 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
+    let mut gst_plugins = Vec::new();
+
+    for p in ["/usr/lib64/gstreamer-1.0", "/usr/lib/gstreamer-1.0", "/usr/lib32/gstreamer-1.0", "/app/lib32/gstreamer-1.0", "/app/lib/gstreamer-1.0", "/usr/lib/i386-linux-gnu/gstreamer-1.0", "/usr/lib/x86_64-linux-gnu/gstreamer-1.0", "/usr/lib/extensions/gstreamer-1.0"] {
+        let pp = Path::new(p);
+        if pp.exists() { gst_plugins.push(pp.to_str().unwrap().to_string()); }
+    }
+
+    for p in ["lib64/gstreamer-1.0", "lib/gstreamer-1.0", "lib32/gstreamer-1.0", "files/lib/x86_64-linux-gnu/gstreamer-1.0", "files/lib/i386-linux-gnu/gstreamer-1.0"] {
+        let lib = Path::new(&runner).join(p);
+        if lib.exists() { gst_plugins.push(lib.to_str().unwrap().to_string()); }
+    }
 
     if !pre_launch.is_empty() {
         let command = format!("{pre_launch}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //format!("'{runner}/{wine64}' '{pre_launch}'");
@@ -47,8 +58,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
+        cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -98,8 +109,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
- //       cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
+        cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
@@ -169,8 +180,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
+        cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
@@ -239,7 +250,6 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
         cmd.env("STEAM_COMPAT_APP_ID", "default");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-//        cmd.env("PROTONPATH", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
@@ -277,7 +287,6 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.env("STEAM_COMPAT_APP_ID", "default");
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-//                cmd.env("PROTONPATH", runner.clone());
                 cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
