@@ -79,8 +79,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     }
 
     let rslt = if install.launch_command.is_empty() {
-        let mut args = "";
-        if !install.launch_args.is_empty() { args = &install.launch_args; }
+        let mut args = String::new();
+        if !install.launch_args.is_empty() {
+            args = install.clone().launch_args;
+            if install.use_xxmi && gm.biz == "wuwa_global" { args += " -dx11" }
+        } else {
+            if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
+        }
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' run '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' run '{dir}/{game}' {args}") }
         } else {
@@ -159,12 +164,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
-        let args;
-        let mut command = format!("{c}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}'") } else { format!("'{runner}/{wine64}' '{c}'") };
+        let mut args = String::new();
+        let mut command = format!("{c}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str()));
 
         if !install.launch_args.is_empty() {
-            args = &install.launch_args;
-            command = format!("{c} {args}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") { format!("'{runner}/{wine64}' run '{c}' {args}") } else { format!("'{runner}/{wine64}' '{c}' {args}") };
+            args = install.clone().launch_args;
+            if install.use_xxmi && gm.biz == "wuwa_global" { args += " -dx11" }
+            command = format!("{c} {args}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str()));
+        } else {
+            if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
 
         let mut cmd = Command::new("bash");
