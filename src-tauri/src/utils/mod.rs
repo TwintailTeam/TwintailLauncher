@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
@@ -16,7 +17,8 @@ use crate::utils::repo_manager::get_manifests;
 use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+#[cfg(target_os = "linux")]
+use std::io::{BufRead, BufReader};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -229,7 +231,19 @@ fn dir_size(path: &Path) -> io::Result<u64> {
     Ok(size)
 }
 
-pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
+pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: bool) {
+    #[cfg(target_os = "linux")]
+    {
+        let os = get_os_release();
+        if os.is_some() {
+            let v = os.unwrap();
+            if v == "bazzite" || v == "kinoite" {
+                let tmp = path.to_str().unwrap().replace("/home", "/var/home");
+                path = PathBuf::from(tmp);
+            }
+        }
+    }
+
     let defgpath = path.join("games").follow_symlink().unwrap();
     let xxmipath = path.join("extras").join("xxmi").follow_symlink().unwrap();
     let fpsunlockpath = path.join("extras").join("fps_unlock").follow_symlink().unwrap();
@@ -449,6 +463,25 @@ pub fn notify_update(app: &AppHandle) {
 
 #[cfg(target_os = "linux")]
 pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
+
+#[cfg(target_os = "linux")]
+pub fn get_os_release() -> Option<String> {
+    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { "/usr/lib/os-release" } else { "/etc/os-release" } };
+    let pp = PathBuf::from(p);
+
+    if pp.exists() {
+        let file = fs::File::open(pp).unwrap();
+        let reader = BufReader::new(file);
+        let mut map = HashMap::new();
+
+        for line in reader.lines() {
+            let line = line.unwrap();
+            if let Some((key, value)) = line.split_once('=') { let value = value.trim_matches('"');map.insert(key.to_owned(), value.to_owned()); }
+        }
+        let vendor = map.get("VARIANT_ID").or_else(|| map.get("ID"));
+        if vendor.is_some() { Some(vendor.unwrap().to_lowercase().to_owned()) } else { None }
+    } else { None }
+}
 
 pub struct ActionBlocks {
     pub action_exit: bool,
