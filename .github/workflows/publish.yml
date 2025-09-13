@@ -83,14 +83,16 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - name: install frontend dependencies
         run: pnpm install
-      - uses: tauri-apps/tauri-action@v0
+      - name: "Build app (Linux)"
+        uses: tauri-apps/tauri-action@v0
         if: matrix.platform == 'ubuntu-22.04'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
-      - uses: tauri-apps/tauri-action@v0
+      - name: "Build app (Windows)"
+        uses: tauri-apps/tauri-action@v0
         if: matrix.platform == 'windows-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -108,6 +110,8 @@ jobs:
         if: matrix.platform == 'windows-latest'
         id: upload-unsigned-artifact
         uses: actions/upload-artifact@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path: ./src-tauri/target/release/bundle/nsis/${{ env.installer_name }}
       - name: sign-windows-build
@@ -126,6 +130,8 @@ jobs:
       - name: Upload signed installer
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}
