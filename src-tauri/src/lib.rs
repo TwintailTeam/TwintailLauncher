@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::{Mutex};
 use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 use crate::commands::install::{add_install, game_launch, get_download_sizes, get_resume_states, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install, update_install_dxvk_path, update_install_dxvk_version, update_install_env_vars, update_install_fps_value, update_install_game_path, update_install_launch_args, update_install_launch_cmd, update_install_pre_launch_cmd, update_install_prefix_path, update_install_runner_path, update_install_runner_version, update_install_skip_hash_valid, update_install_skip_version_updates, update_install_use_fps_unlock, update_install_use_jadeite, update_install_use_xxmi, update_install_use_gamemode, update_install_use_mangohud, update_install_mangohud_config_path, add_shortcut};
@@ -8,9 +9,9 @@ use crate::downloading::download::register_download_handler;
 use crate::downloading::preload::register_preload_handler;
 use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
-use crate::utils::db_manager::{init_db, DbInstances};
+use crate::utils::db_manager::{get_settings, init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{args, block_telemetry, deprecate_jadeite, download_or_update_fps_unlock, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
 use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
@@ -107,9 +108,13 @@ pub fn run() {
 
                 let res_dir = app.path().resource_dir().unwrap();
                 let data_dir = app.path().app_data_dir().unwrap();
+                let s = get_settings(handle).unwrap();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 deprecate_jadeite(handle);
+
+                let fpsu = Path::new(&s.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
+                download_or_update_fps_unlock(fpsu, true);
 
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }

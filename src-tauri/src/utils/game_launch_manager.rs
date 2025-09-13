@@ -32,15 +32,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
     let mut gst_plugins = Vec::new();
 
-    for p in ["/usr/lib64/gstreamer-1.0", "/usr/lib/gstreamer-1.0", "/usr/lib32/gstreamer-1.0", "/app/lib32/gstreamer-1.0", "/app/lib/gstreamer-1.0", "/usr/lib/i386-linux-gnu/gstreamer-1.0", "/usr/lib/x86_64-linux-gnu/gstreamer-1.0", "/usr/lib/extensions/gstreamer-1.0"] {
+    for p in ["/usr/lib64/gstreamer-1.0", "/usr/lib/gstreamer-1.0", "/usr/lib32/gstreamer-1.0", "/app/lib32/gstreamer-1.0", "/app/lib/gstreamer-1.0", "/usr/lib/i386-linux-gnu/gstreamer-1.0", "/usr/lib/x86_64-linux-gnu/gstreamer-1.0", "/usr/lib/extensions/gstreamer-1.0", "/usr/lib/extension/gstreamer-1.0"] {
         let pp = Path::new(p);
         if pp.exists() { gst_plugins.push(pp.to_str().unwrap().to_string()); }
     }
 
-    for p in ["lib64/gstreamer-1.0", "lib/gstreamer-1.0", "lib32/gstreamer-1.0", "files/lib/x86_64-linux-gnu/gstreamer-1.0", "files/lib/i386-linux-gnu/gstreamer-1.0"] {
+    /*for p in ["lib64/gstreamer-1.0", "lib/gstreamer-1.0", "lib32/gstreamer-1.0", "files/lib/x86_64-linux-gnu/gstreamer-1.0", "files/lib/i386-linux-gnu/gstreamer-1.0"] {
         let lib = Path::new(&runner).join(p);
         if lib.exists() { gst_plugins.push(lib.to_str().unwrap().to_string()); }
-    }
+    }*/
 
     if !pre_launch.is_empty() {
         let command = format!("{pre_launch}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())); //format!("'{runner}/{wine64}' '{pre_launch}'");
