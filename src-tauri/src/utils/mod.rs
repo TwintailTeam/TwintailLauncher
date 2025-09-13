@@ -335,7 +335,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false, move |_current, _total| {});
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, move |_current, _total| {});
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");

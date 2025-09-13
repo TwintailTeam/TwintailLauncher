@@ -157,7 +157,7 @@ pub fn block_telemetry_cmd(app: AppHandle) -> Option<bool> {
 }
 
 #[tauri::command]
-pub fn update_extras(app: AppHandle) -> bool {
+pub fn update_extras(app: AppHandle, show_notify: bool) -> bool {
     let settings = get_settings(&app);
     if settings.is_some() {
         let s = settings.unwrap();
@@ -168,7 +168,7 @@ pub fn update_extras(app: AppHandle) -> bool {
         download_or_update_jadeite(jadeite, true);
         download_or_update_fps_unlock(fpsu, true);
         download_or_update_xxmi(&app, xxmi, true);
-        send_notification(&app, "Successfully updated extras.", None);
+        if show_notify { send_notification(&app, "Successfully repaired extras.", None); }
         true
     } else {
         false
