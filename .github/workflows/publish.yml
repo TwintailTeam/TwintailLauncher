@@ -118,19 +118,12 @@ jobs:
           artifact-configuration-slug: 'auto_github'
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
-          output-artifact-directory: './src-tauri/target/release/bundle/nsis/'
-      - name: Extract signed artifact
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          Expand-Archive -Path './src-tauri/target/release/bundle/nsis/artifact.zip' -DestinationPath './src-tauri/target/release/bundle/nsis/signed'
-          $exe = Get-ChildItem -Path './src-tauri/target/release/bundle/nsis/signed/' -Filter *.exe | Select-Object -First 1
-          echo "signed_installer_name=$($exe.Name)" >> $env:GITHUB_ENV
+          output-artifact-directory: './src-tauri/target/release/bundle/nsis/signed'
       - name: Upload signed installer
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.signed_installer_name }}
-          asset_name: ${{ env.signed_installer_name }}
+          asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}
+          asset_name: ${{ env.installer_name }}
           asset_content_type: application/octet-stream
