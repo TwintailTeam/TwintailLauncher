@@ -231,6 +231,7 @@ fn dir_size(path: &Path) -> io::Result<u64> {
     Ok(size)
 }
 
+#[allow(unused_mut)]
 pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: bool) {
     #[cfg(target_os = "linux")]
     {
