@@ -19,8 +19,8 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ fromJSON(steps.create-release.outputs.result).data.id }}
-      upload_url: ${{ fromJSON(steps.create-release.outputs.result).data.upload_url }}
+      release_id: ${{ fromJSON(steps.create-release.outputs.result).release_id }}
+      upload_url: ${{ fromJSON(steps.create-release.outputs.result).upload_url }}
     steps:
       - uses: actions/checkout@v4
       - name: setup node
