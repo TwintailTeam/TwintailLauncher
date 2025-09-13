@@ -34,6 +34,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const core = require('@actions/core');
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -43,10 +44,8 @@ jobs:
               draft: true,
               prerelease: false
             })
-            return {
-              release_id: data.id,
-              upload_url: data.upload_url
-            }
+            core.setOutput('release_id', data.id);
+            core.setOutput('upload_url', data.upload_url);
   build-tauri:
     needs: create-release
     permissions:
