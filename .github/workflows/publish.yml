@@ -80,8 +80,48 @@ jobs:
       - name: install frontend dependencies
         run: pnpm install
       - uses: tauri-apps/tauri-action@v0
+        if: matrix.platform == 'ubuntu-22.04'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+      - uses: tauri-apps/tauri-action@v0
+        if: matrix.platform == 'windows-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+      # Required for the artifact to be available on the GitHub server for windows signing
+      - name: upload-unsigned-artifact
+        if: matrix.platform == 'windows-latest'
+        id: upload-unsigned-artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./src-tauri/target/release/bundle/nsis/*.exe
+      - name: sign-windows-build
+        id: sign-windows-build
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '5bcd459b-ba78-4556-b259-f7c3496d3497'
+          project-slug: 'TwintailLauncher'
+          signing-policy-slug: 'test-signing'
+          github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: './src-tauri/target/release/bundle/nsis/'
+      - name: Find installer filename
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        id: find_installer
+        run: |
+          $file = Get-ChildItem -Path './src-tauri/target/release/bundle/nsis/' -Filter *.exe | Select-Object -First 1
+          echo "installer_name=$($file.Name)" >> $env:GITHUB_ENV
+      - name: upload-signed-artifact
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/nsis/${{ env.installer_name }}
+          asset_name: ${{ env.installer_name }}
+          asset_content_type: application/octet-stream
