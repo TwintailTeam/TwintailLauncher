@@ -115,6 +115,7 @@ jobs:
           organization-id: '5bcd459b-ba78-4556-b259-f7c3496d3497'
           project-slug: 'TwintailLauncher'
           signing-policy-slug: 'test-signing'
+          artifact-configuration-slug: 'auto_github'
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: './src-tauri/target/release/bundle/nsis/'
