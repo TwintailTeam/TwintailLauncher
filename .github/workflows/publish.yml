@@ -19,7 +19,8 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
+      release_id: ${{ steps.create-release.outputs.release_id }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
       - name: setup node
@@ -42,7 +43,10 @@ jobs:
               draft: true,
               prerelease: false
             })
-            return data.id
+            return {
+              release_id: data.id,
+              upload_url: data.upload_url
+            }
   build-tauri:
     needs: create-release
     permissions:
@@ -123,7 +127,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}
           asset_name: ${{ env.installer_name }}
           asset_content_type: application/octet-stream
