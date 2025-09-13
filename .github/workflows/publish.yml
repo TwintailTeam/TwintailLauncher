@@ -100,6 +100,7 @@ jobs:
         with:
           path: ./src-tauri/target/release/bundle/nsis/*.exe
       - name: sign-windows-build
+        if: matrix.platform == 'windows-latest'
         id: sign-windows-build
         uses: signpath/github-action-submit-signing-request@v1
         with:
