@@ -77,7 +77,7 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
 #[cfg(target_os = "linux")]
 pub fn block_telemetry(app: &AppHandle) {
     // For the time being just return if we are flatpak build will be fixed soon
-    if is_flatpak() { return; }
+    if is_flatpak() { send_notification(&app, r#"Telemetry block is currently impossible inside flatpak sandbox! Team is working on the workaround fix."#, None); return; }
     let app1 = Arc::new(Mutex::new(app.clone()));
     std::thread::spawn(move || {
         let app = app1.lock().unwrap().clone();
