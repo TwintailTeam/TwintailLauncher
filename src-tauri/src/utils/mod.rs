@@ -76,38 +76,42 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
 
 #[cfg(target_os = "linux")]
 pub fn block_telemetry(app: &AppHandle) {
+    // For the time being just return if we are flatpak build will be fixed soon
+    if is_flatpak() { return; }
     let app1 = Arc::new(Mutex::new(app.clone()));
-        std::thread::spawn(move || {
-            let app = app1.lock().unwrap().clone();
-            let manifests = get_manifests(&app);
-            let mut allhosts = String::new();
+    std::thread::spawn(move || {
+        let app = app1.lock().unwrap().clone();
+        let manifests = get_manifests(&app);
+        let mut allhosts = String::new();
+        let mut unique = Vec::new();
 
-            manifests.values().for_each(|manifest| {
-                let hosts = manifest.telemetry_hosts.iter().map(|server| format!("echo '0.0.0.0 {server}' >> /etc/hosts")).collect::<Vec<String>>().join(" ; ");
+        manifests.values().for_each(|manifest| {
+            let hosts = manifest.telemetry_hosts.iter().map(|server| format!("echo '0.0.0.0 {server}' >> /etc/hosts")).filter(|entry| { if unique.contains(entry) { false } else { unique.push(entry.clone());true } }).collect::<Vec<String>>().join(" ; ");
+            if !hosts.is_empty() {
+                if !allhosts.is_empty() { allhosts.push_str(" ; "); }
                 allhosts.push_str(&hosts);
-                allhosts.push_str(" ; ");
-            });
-
-            if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
-
-            // For the time being just return if we are flatpak build will be fixed soon
-            if is_flatpak() { return; }
-
-            let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers")
-                .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
-
-            match output.and_then(|child| child.wait_with_output()) {
-                Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None);
-                } else {
-                    let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
-                    if !path.exists() {
-                        send_notification(&app, "Successfully blocked telemetry servers.", None);
-                        fs::write(&path, ".").unwrap();
-                    } else { send_notification(&app, "Telemetry servers already blocked.", None); }
-                }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
             }
         });
+
+        let remove_block_cmd = "sed -i '/# TwintailLauncher telemetry block start/,/# TwintailLauncher telemetry block end/d' /etc/hosts";
+        let shell_cmd = format!("{remove_block_cmd} ; \
+         echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; \
+         {allhosts} ; \
+         echo '# TwintailLauncher telemetry block end' >> /etc/hosts");
+
+        let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers").arg("bash").arg("-c").arg(shell_cmd).spawn();
+        match output.and_then(|child| child.wait_with_output()) {
+            Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None);
+            } else {
+                let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
+                if !path.exists() {
+                    send_notification(&app, "Successfully blocked telemetry servers.", None);
+                    fs::write(&path, ".").unwrap();
+                } else { send_notification(&app, "Telemetry servers already blocked.", None); }
+            }
+            Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
+        }
+    });
 }
 
 #[cfg(target_os = "windows")]

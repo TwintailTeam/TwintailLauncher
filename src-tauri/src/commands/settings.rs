@@ -151,7 +151,8 @@ pub fn block_telemetry_cmd(app: AppHandle) -> Option<bool> {
         block_telemetry(&app);
         Some(true)
     } else {
-        app.notification().builder().icon("dialog-information").title("TwintailLauncher").body("Telemetry servers already blocked.").show().unwrap();
+        block_telemetry(&app);
+        app.notification().builder().icon("dialog-information").title("TwintailLauncher").body("Updated and fixed telemetry server block.").show().unwrap();
         None
     }
 }
