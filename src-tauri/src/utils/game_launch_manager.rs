@@ -122,7 +122,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { cmd.env("UMU_ID", "default"); cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); }
+        if gm.biz == "hkrpg_global" { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -197,7 +197,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { cmd.env("UMU_ID", "default"); cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); }
+        if gm.biz == "hkrpg_global" { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
