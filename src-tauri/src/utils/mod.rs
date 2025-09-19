@@ -1,5 +1,6 @@
 use std::{fs, io};
 use std::collections::HashMap;
+use std::fs::copy;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -486,6 +487,16 @@ pub fn get_os_release() -> Option<String> {
         let vendor = map.get("VARIANT_ID").or_else(|| map.get("ID"));
         if vendor.is_some() { Some(vendor.unwrap().to_lowercase().to_owned()) } else { None }
     } else { None }
+}
+
+#[cfg(target_os = "linux")]
+pub fn patch_hkrpg(app: &AppHandle, dir: String) {
+    let dir = Path::new(&dir);
+    if dir.exists() {
+        let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
+        let target = dir.join("dbghelp.dll");
+        if patch.exists() { copy(&patch, &target).unwrap(); }
+    }
 }
 
 pub struct ActionBlocks {

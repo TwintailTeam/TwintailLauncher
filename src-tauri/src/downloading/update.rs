@@ -75,16 +75,8 @@ pub fn register_update_handler(app: &AppHandle) {
                                     }).await
                                 });
                             });
-                            // We finished the loop emit complete and ensure patch
+                            // We finished the loop emit complete
                             if is_preload { let p = Path::new(&install.directory).join("patching").follow_symlink().unwrap(); fs::remove_dir_all(p).unwrap(); }
-                            /*#[cfg(target_os = "linux")]
-                            {
-                                if gm.biz == "hk4e_global" || gm.biz == "hkrpg_global" || gm.biz == "nap_global" || gm.biz == "bh3_global" || gm.biz == "abc_global" {
-                                    let t = Path::new(&install.directory.clone()).join("HoYoKProtect.sys");
-                                    let tn = Path::new(&install.directory.clone()).join("HoYoKProtect.sys.dsbl");
-                                    if t.exists() { fs::rename(t.as_path(), tn.as_path()).unwrap(); }
-                                }
-                            }*/
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
                             send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
