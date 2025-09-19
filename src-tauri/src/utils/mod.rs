@@ -429,7 +429,8 @@ pub fn deprecate_jadeite(app: &AppHandle) {
             if im.is_some() {
                 let lm = im.unwrap();
                 // Shit validation but will work
-                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id, false); }
+                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
+                if lm.display_name.to_ascii_lowercase().contains("starrail") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
             }
         }
     }
