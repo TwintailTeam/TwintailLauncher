@@ -116,7 +116,15 @@ pub fn register_download_handler(app: &AppHandle) {
                                 }).await
                             });
                         }
-                        // We finished the loop emit complete
+                        // We finished the loop emit complete and ensure patch
+                        /*#[cfg(target_os = "linux")]
+                        {
+                            if gm.biz == "hk4e_global" || gm.biz == "hkrpg_global" || gm.biz == "nap_global" || gm.biz == "bh3_global" || gm.biz == "abc_global" {
+                                let t = Path::new(&install.directory.clone()).join("HoYoKProtect.sys");
+                                let tn = Path::new(&install.directory.clone()).join("HoYoKProtect.sys.dsbl");
+                                if t.exists() { fs::rename(t.as_path(), tn.as_path()).unwrap(); }
+                            }
+                        }*/
                         h4.emit("download_complete", install.name.clone()).unwrap();
                         prevent_exit(&h4, false);
                         send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);

@@ -68,7 +68,15 @@ pub fn register_repair_handler(app: &AppHandle) {
                                 }).await
                             });
                         });
-                        // We fnished the loop emit complete
+                        // We fnished the loop emit complete and ensure patch
+                        /*#[cfg(target_os = "linux")]
+                        {
+                            if gm.biz == "hk4e_global" || gm.biz == "hkrpg_global" || gm.biz == "nap_global" || gm.biz == "bh3_global" || gm.biz == "abc_global" {
+                                let t = Path::new(&i.directory.clone()).join("HoYoKProtect.sys");
+                                let tn = Path::new(&i.directory.clone()).join("HoYoKProtect.sys.dsbl");
+                                if t.exists() { fs::rename(t.as_path(), tn.as_path()).unwrap(); }
+                            }
+                        }*/
                         h5.emit("repair_complete", ()).unwrap();
                         prevent_exit(&h5, false);
                         send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);

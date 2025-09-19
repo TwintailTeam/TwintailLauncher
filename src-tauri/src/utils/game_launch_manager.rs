@@ -106,7 +106,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
         cmd.env("GAME_ID", "umu-default");
-        cmd.env("UMU_ID", "umu-default");
+        //cmd.env("UMU_ID", "umu-default");
         cmd.env("SteamAppId", "default");
         cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
@@ -123,6 +123,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
+        // Set override for hkrpg fix
+        if gm.biz == "hkrpg_global" { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -180,7 +182,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
         cmd.env("GAME_ID", "umu-default");
-        cmd.env("UMU_ID", "umu-default");
+        //cmd.env("UMU_ID", "umu-default");
         cmd.env("SteamAppId", "default");
         cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
@@ -197,6 +199,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
+        // Set override for hkrpg fix
+        if gm.biz == "hkrpg_global" { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -250,7 +254,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
         cmd.arg(&command);
 
         cmd.env("GAME_ID", "umu-default");
-        cmd.env("UMU_ID", "umu-default");
+        //cmd.env("UMU_ID", "umu-default");
         cmd.env("SteamAppId", "default");
         cmd.env("SteamGameId", "default");
         cmd.env("WINEARCH","win64");
@@ -287,7 +291,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.arg(&command);
 
                 cmd.env("GAME_ID", "umu-default");
-                cmd.env("UMU_ID", "umu-default");
+                //cmd.env("UMU_ID", "umu-default");
                 cmd.env("SteamAppId", "default");
                 cmd.env("SteamGameId", "default");
                 cmd.env("WINEARCH","win64");

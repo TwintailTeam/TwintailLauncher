@@ -191,6 +191,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
             });
 
+            // Make sure we disable this to ensure no issues
+            /*if gm.biz == "hk4e_global" || gm.biz == "hkrpg_global" || gm.biz == "nap_global" || gm.biz == "bh3_global" || gm.biz == "abc_global" && skip_game_dl {
+                let t = Path::new(&directory.clone()).join("HoYoKProtect.sys");
+                let tn = Path::new(&directory.clone()).join("HoYoKProtect.sys.dsbl");
+                if t.exists() { fs::rename(t.as_path(), tn.as_path()).unwrap();}
+            }*/
             // Patch wuwa if existing install
             if gm.biz == "wuwa_global" && skip_game_dl { let target = Path::new(&directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();patch_aki(target.to_str().unwrap().to_string()); }
             // Download and enable jadeite automatically for these games
