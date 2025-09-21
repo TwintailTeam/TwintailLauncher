@@ -43,7 +43,7 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>DXVK</span> used with this installation</li> : null}
                     <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Any tweaks</span> enabled for this installation</li>
                 </p>
-                {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={false} name={"Delete associated wine prefix"} id={"uninstall_prefix_delete"} helpText={"Enabling this will delete wine prefix associated with this game installation."}/> : null}
+                {(window.navigator.platform.includes("Linux")) ? <CheckBox enabled={false} name={"Delete associated runner prefix"} id={"uninstall_prefix_delete"} helpText={"Enabling this will delete runner prefix associated with this game installation."}/> : null}
             </div>
             <div className="flex justify-center pt-4 border-t border-white/10">
                 <button className="flex flex-row gap-3 items-center py-3 px-8 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {

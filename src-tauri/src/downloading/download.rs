@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use fischl::download::game::{Game, Hoyo, Kuro, Sophon};
+use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
@@ -43,7 +43,7 @@ pub fn register_download_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
-                        let rslt = <Game as Hoyo>::download(urls.clone(), install.directory.clone(), {
+                        let rslt = <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
                             let dlpayload = dlpayload.clone();
                             let h4 = h4.clone();
                             move |current, _| {
