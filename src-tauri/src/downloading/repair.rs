@@ -68,7 +68,7 @@ pub fn register_repair_handler(app: &AppHandle) {
                                 }).await
                             });
                         });
-                        // We fnished the loop emit complete
+                        // We finished the loop emit complete
                         h5.emit("repair_complete", ()).unwrap();
                         prevent_exit(&h5, false);
                         send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);

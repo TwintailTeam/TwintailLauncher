@@ -19,7 +19,8 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
+      release_id: ${{ fromJSON(steps.create-release.outputs.result).release_id }}
+      upload_url: ${{ fromJSON(steps.create-release.outputs.result).upload_url }}
     steps:
       - uses: actions/checkout@v4
       - name: setup node
@@ -42,7 +43,10 @@ jobs:
               draft: true,
               prerelease: false
             })
-            return data.id
+            return {
+              release_id: data.id,
+              upload_url: data.upload_url
+            }
   build-tauri:
     needs: create-release
     permissions:
@@ -79,9 +83,57 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - name: install frontend dependencies
         run: pnpm install
-      - uses: tauri-apps/tauri-action@v0
+      - name: "Build app (Linux)"
+        uses: tauri-apps/tauri-action@v0
+        if: matrix.platform == 'ubuntu-22.04'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+      - name: "Build app (Windows)"
+        uses: tauri-apps/tauri-action@v0
+        if: matrix.platform == 'windows-latest'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+      - name: Find installer filename
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        id: find_installer
+        run: |
+          $file = Get-ChildItem -Path './src-tauri/target/release/bundle/nsis/' -Filter *.exe | Select-Object -First 1
+          echo "installer_name=$($file.Name)" >> $env:GITHUB_ENV
+      # Required for the artifact to be available on the GitHub server for windows signing
+      - name: upload-unsigned-artifact
+        if: matrix.platform == 'windows-latest'
+        id: upload-unsigned-artifact
+        uses: actions/upload-artifact@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path: ./src-tauri/target/release/bundle/nsis/${{ env.installer_name }}
+      - name: sign-windows-build
+        if: matrix.platform == 'windows-latest'
+        id: sign-windows-build
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '5bcd459b-ba78-4556-b259-f7c3496d3497'
+          project-slug: 'TwintailLauncher'
+          signing-policy-slug: 'test-signing'
+          artifact-configuration-slug: 'auto_github'
+          github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: './src-tauri/target/release/bundle/nsis/signed'
+      - name: Upload signed installer
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}
+          asset_name: ${{ env.installer_name }}
+          asset_content_type: application/octet-stream

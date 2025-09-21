@@ -109,6 +109,7 @@ pub fn run() {
                 let data_dir = app.path().app_data_dir().unwrap();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
+                update_extras(handle.clone(), false);
                 deprecate_jadeite(handle);
 
                 let path = data_dir.join(".telemetry_blocked");

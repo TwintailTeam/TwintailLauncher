@@ -75,6 +75,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                     }).await
                                 });
                             });
+                            // We finished the loop emit complete
                             if is_preload { let p = Path::new(&install.directory).join("patching").follow_symlink().unwrap(); fs::remove_dir_all(p).unwrap(); }
                             h5.emit("update_complete", ()).unwrap();
                             prevent_exit(&h5, false);
@@ -90,12 +91,13 @@ pub fn register_update_handler(app: &AppHandle) {
                             prevent_exit(&h5, false);
                         } else {
                             let manifest = urls.get(0).unwrap();
+                            let is_preload = Path::new(&install.directory).join("patching").join(".preload").follow_symlink().unwrap().exists();
                             #[cfg(target_os = "linux")]
                             let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz");
                             #[cfg(target_os = "windows")]
                             let krpatchz = h5.path().app_data_dir().unwrap().join("krpatchz.exe");
                             let rslt = run_async_command(async {
-                                <Game as Kuro>::patch(manifest.file_url.to_owned(), install.version.clone(), manifest.file_hash.to_owned(), install.directory.clone(), krpatchz.to_str().unwrap().to_string(), false, {
+                                <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_hash.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), krpatchz.to_str().unwrap().to_string(), is_preload, {
                                     let dlpayload = dlpayload.clone();
                                     move |current: u64, total: u64| {
                                         let mut dlp = dlpayload.lock().unwrap();

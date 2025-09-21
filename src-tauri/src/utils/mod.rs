@@ -1,5 +1,6 @@
 use std::{fs, io};
 use std::collections::HashMap;
+use std::fs::copy;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -9,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
 use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
@@ -16,7 +18,8 @@ use crate::utils::repo_manager::get_manifests;
 use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+#[cfg(target_os = "linux")]
+use std::io::{BufRead, BufReader};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -74,38 +77,42 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
 
 #[cfg(target_os = "linux")]
 pub fn block_telemetry(app: &AppHandle) {
+    // For the time being just return if we are flatpak build will be fixed soon
+    if is_flatpak() { send_notification(&app, r#"Telemetry block is currently impossible inside flatpak sandbox! Team is working on the workaround fix."#, None); return; }
     let app1 = Arc::new(Mutex::new(app.clone()));
-        std::thread::spawn(move || {
-            let app = app1.lock().unwrap().clone();
-            let manifests = get_manifests(&app);
-            let mut allhosts = String::new();
+    std::thread::spawn(move || {
+        let app = app1.lock().unwrap().clone();
+        let manifests = get_manifests(&app);
+        let mut allhosts = String::new();
+        let mut unique = Vec::new();
 
-            manifests.values().for_each(|manifest| {
-                let hosts = manifest.telemetry_hosts.iter().map(|server| format!("echo '0.0.0.0 {server}' >> /etc/hosts")).collect::<Vec<String>>().join(" ; ");
+        manifests.values().for_each(|manifest| {
+            let hosts = manifest.telemetry_hosts.iter().map(|server| format!("echo '0.0.0.0 {server}' >> /etc/hosts")).filter(|entry| { if unique.contains(entry) { false } else { unique.push(entry.clone());true } }).collect::<Vec<String>>().join(" ; ");
+            if !hosts.is_empty() {
+                if !allhosts.is_empty() { allhosts.push_str(" ; "); }
                 allhosts.push_str(&hosts);
-                allhosts.push_str(" ; ");
-            });
-
-            if !allhosts.is_empty() { allhosts = allhosts.trim_end_matches(" ; ").to_string(); }
-
-            // For the time being just return if we are flatpak build will be fixed soon
-            if is_flatpak() { return; }
-
-            let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers")
-                .arg("bash").arg("-c").arg(format!("echo '' >> /etc/hosts ; echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; {allhosts} ; echo '# TwintailLauncher telemetry block end' >> /etc/hosts")).spawn();
-
-            match output.and_then(|child| child.wait_with_output()) {
-                Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None);
-                } else {
-                    let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
-                    if !path.exists() {
-                        send_notification(&app, "Successfully blocked telemetry servers.", None);
-                        fs::write(&path, ".").unwrap();
-                    } else { send_notification(&app, "Telemetry servers already blocked.", None); }
-                }
-                Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
             }
         });
+
+        let remove_block_cmd = "sed -i '/# TwintailLauncher telemetry block start/,/# TwintailLauncher telemetry block end/d' /etc/hosts";
+        let shell_cmd = format!("{remove_block_cmd} ; \
+         echo '# TwintailLauncher telemetry block start' >> /etc/hosts ; \
+         {allhosts} ; \
+         echo '# TwintailLauncher telemetry block end' >> /etc/hosts");
+
+        let output = std::process::Command::new("pkexec").env("PKEXEC_DESCRIPTION", "TwintailLauncher wants to block game telemetry servers").arg("bash").arg("-c").arg(shell_cmd).spawn();
+        match output.and_then(|child| child.wait_with_output()) {
+            Ok(output) => if !output.status.success() { send_notification(&app, r#"Failed to block telemetry servers, Please press "Block telemetry" in launcher settings!"#, None);
+            } else {
+                let path = app.path().app_data_dir().unwrap().join(".telemetry_blocked");
+                if !path.exists() {
+                    send_notification(&app, "Successfully blocked telemetry servers.", None);
+                    fs::write(&path, ".").unwrap();
+                } else { send_notification(&app, "Telemetry servers already blocked.", None); }
+            }
+            Err(_err) => { send_notification(&app, r#"Failed to block telemetry servers, something seriously failed or we are running under flatpak!"#, None); }
+        }
+    });
 }
 
 #[cfg(target_os = "windows")]
@@ -229,7 +236,20 @@ fn dir_size(path: &Path) -> io::Result<u64> {
     Ok(size)
 }
 
-pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
+#[allow(unused_mut)]
+pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: bool) {
+    #[cfg(target_os = "linux")]
+    {
+        let os = get_os_release();
+        if os.is_some() {
+            let v = os.unwrap();
+            if v == "bazzite" || v == "kinoite" {
+                let tmp = path.to_str().unwrap().replace("/home", "/var/home");
+                path = PathBuf::from(tmp);
+            }
+        }
+    }
+
     let defgpath = path.join("games").follow_symlink().unwrap();
     let xxmipath = path.join("extras").join("xxmi").follow_symlink().unwrap();
     let fpsunlockpath = path.join("extras").join("fps_unlock").follow_symlink().unwrap();
@@ -320,7 +340,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false, move |_current, _total| {});
+                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, move |_current, _total| {});
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
@@ -409,7 +429,8 @@ pub fn deprecate_jadeite(app: &AppHandle) {
             if im.is_some() {
                 let lm = im.unwrap();
                 // Shit validation but will work
-                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id, false); }
+                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
+                if lm.display_name.to_ascii_lowercase().contains("starrail") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
             }
         }
     }
@@ -449,6 +470,35 @@ pub fn notify_update(app: &AppHandle) {
 
 #[cfg(target_os = "linux")]
 pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
+
+#[cfg(target_os = "linux")]
+pub fn get_os_release() -> Option<String> {
+    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { "/usr/lib/os-release" } else { "/etc/os-release" } };
+    let pp = PathBuf::from(p);
+
+    if pp.exists() {
+        let file = fs::File::open(pp).unwrap();
+        let reader = BufReader::new(file);
+        let mut map = HashMap::new();
+
+        for line in reader.lines() {
+            let line = line.unwrap();
+            if let Some((key, value)) = line.split_once('=') { let value = value.trim_matches('"');map.insert(key.to_owned(), value.to_owned()); }
+        }
+        let vendor = map.get("VARIANT_ID").or_else(|| map.get("ID"));
+        if vendor.is_some() { Some(vendor.unwrap().to_lowercase().to_owned()) } else { None }
+    } else { None }
+}
+
+#[cfg(target_os = "linux")]
+pub fn patch_hkrpg(app: &AppHandle, dir: String) {
+    let dir = Path::new(&dir);
+    if dir.exists() {
+        let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
+        let target = dir.join("dbghelp.dll");
+        if patch.exists() { copy(&patch, &target).unwrap(); }
+    }
+}
 
 pub struct ActionBlocks {
     pub action_exit: bool,

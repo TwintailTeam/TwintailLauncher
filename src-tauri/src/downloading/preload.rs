@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use fischl::download::game::{Game, Sophon};
+use fischl::download::game::{Game, Kuro, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification};
@@ -77,40 +77,38 @@ pub fn register_preload_handler(app: &AppHandle) {
                         }
                         // KuroGame only
                         "DOWNLOAD_MODE_RAW" => {
-                            h5.emit("preload_complete", ()).unwrap();
-                            prevent_exit(&h5, false);
-                            /*let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
+                            let pg = picked.game.unwrap();
+                            let urls = pg.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
+                            let manifest = urls.get(0).unwrap();
 
-                            if urls.is_empty() {  } else {
-                                let manifest = urls.get(0).unwrap().file_url.clone();
-                                let totalsize = urls.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
-                                run_async_command(async {
-                                    <Game as Kuro>::patch(manifest.to_owned(), install.version.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
+                            if urls.is_empty() {
+                                h5.emit("preload_complete", ()).unwrap();
+                                prevent_exit(&h5, false);
+                            } else {
+                                let rslt = run_async_command(async {
+                                    <Game as Kuro>::preload(manifest.file_url.clone(), manifest.file_hash.clone(), pmd.res_list_url.clone(), install.directory.clone(), {
                                         let dlpayload = dlpayload.clone();
-                                        let tc = tracker.clone();
+                                        let tmp = tmp.clone();
+                                        let instn = instn.clone();
                                         move |current, total| {
                                             let mut dlp = dlpayload.lock().unwrap();
-                                            let mut tracker = tc.lock().unwrap();
-                                            *tracker += current;
+                                            let tmp = tmp.clone();
+                                            let instn = instn.clone();
 
                                             dlp.insert("name", instn.to_string());
                                             dlp.insert("progress", current.to_string());
                                             dlp.insert("total", total.to_string());
-                                            tmp.emit("update_progress", dlp.clone()).unwrap();
+                                            tmp.emit("preload_progress", dlp.clone()).unwrap();
                                             drop(dlp);
                                         }
-                                    }).await;
+                                    }).await
                                 });
-                                if *tracker.lock().unwrap() == totalsize {
-                                    h5.emit("update_complete", install.name.clone()).unwrap();
-
-                                    let nd = install.directory.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                    let np = install.runner_prefix.clone().replace(install.version.clone().as_str(), picked.metadata.version.as_str());
-                                    fs::rename(install.directory.clone(), nd.clone()).unwrap();
-                                    fs::rename(install.runner_prefix.clone(), np.clone()).unwrap();
-                                    update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone(), nd, np);
+                                if rslt {
+                                    h5.emit("preload_complete", ()).unwrap();
+                                    prevent_exit(&h5, false);
+                                    send_notification(&h5, format!("Predownload for {inn} complete.", inn = instn).as_str(), None);
                                 }
-                            }*/
+                            }
                         }
                         // Fallback mode
                         _ => {}
