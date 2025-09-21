@@ -151,14 +151,17 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
-                let mf = fs::File::open(&repo_path.join(&m.as_str())).unwrap();
-                let reader = BufReader::new(mf);
-                let mi: RunnerManifest = serde_json::from_reader(reader).unwrap();
-
-                let cuid = generate_cuid();
-                create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
+                let mf = fs::File::open(&repo_path.join(&m.as_str()));
+                match mf {
+                    Ok(mm) => {
+                        let reader = BufReader::new(mm);
+                        let mi: RunnerManifest = serde_json::from_reader(reader).unwrap();
+                        let cuid = generate_cuid();
+                        create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
+                    }
+                    Err(_) => {}
+                }
             }
-
             ()
         }
     } else {
