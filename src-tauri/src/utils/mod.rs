@@ -451,7 +451,7 @@ pub fn notify_update(app: &AppHandle) {
     let ttl = get_github_release("TwintailTeam/TwintailLauncher".to_string());
     if ttl.is_some() {
         let r = ttl.unwrap();
-        let v = r.tag_name.replace("ttl-v", "");
+        let v = r.tag_name.unwrap().replace("ttl-v", "");
         let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
         if !suppressed.exists() {
             let cfg = app.config();

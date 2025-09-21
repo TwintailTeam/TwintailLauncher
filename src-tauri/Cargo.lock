@@ -1343,7 +1343,7 @@ checksum = "1ced73b1dacfc750a6db6c0a0c3a3853c8b41997e2e2c563dc90804ae6867959"
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#b3b8e10816748f5d83e4dda70eb7882b8f0966f9"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#2590b0e53ac9524f2a9166ddf666fff420063bca"
 dependencies = [
  "chksum-md5",
  "crossbeam-deque",
