@@ -49,14 +49,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("GAME_ID", "umu-default");
-        cmd.env("SteamAppId", "default");
-        cmd.env("SteamGameId", "default");
+        //cmd.env("SteamAppId", "0");
+        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
-        cmd.env("STEAM_COMPAT_APP_ID", "default");
+        cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        //cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
 
@@ -104,14 +105,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("GAME_ID", "umu-default");
-        cmd.env("SteamAppId", "default");
-        cmd.env("SteamGameId", "default");
+        //cmd.env("SteamAppId", "0");
+        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
-        cmd.env("STEAM_COMPAT_APP_ID", "default");
+        cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        //cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
         if install.use_mangohud {
@@ -179,14 +181,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("GAME_ID", "umu-default");
-        cmd.env("SteamAppId", "default");
-        cmd.env("SteamGameId", "default");
+        //cmd.env("SteamAppId", "0");
+        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
-        cmd.env("STEAM_COMPAT_APP_ID", "default");
+        cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        //cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("GST_PLUGIN_PATH", gst_plugins.join(":"));
         if install.use_mangohud {
@@ -250,14 +253,15 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("GAME_ID", "umu-default");
-        cmd.env("SteamAppId", "default");
-        cmd.env("SteamGameId", "default");
+        //cmd.env("SteamAppId", "0");
+        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
-        cmd.env("STEAM_COMPAT_APP_ID", "default");
+        cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+        //cmd.env("STEAM_COMPAT_INSTALL_PATH", xxmi_path.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
 
         cmd.stdout(Stdio::piped());
@@ -286,14 +290,15 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.arg("-c");
                 cmd.arg(&command);
 
-                cmd.env("GAME_ID", "umu-default");
-                cmd.env("SteamAppId", "default");
-                cmd.env("SteamGameId", "default");
+                //cmd.env("SteamAppId", "0");
+                cmd.env("SteamGameId", "0");
                 cmd.env("WINEARCH","win64");
                 cmd.env("WINEPREFIX", prefix.clone());
-                cmd.env("STEAM_COMPAT_APP_ID", "default");
+                cmd.env("STEAM_COMPAT_APP_ID", "0");
                 cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
+                //cmd.env("STEAM_COMPAT_INSTALL_PATH", fpsunlock_path.clone());
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+                cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
                 cmd.env("PROTONFIXES_DISABLE", "1");
 
                 cmd.stdout(Stdio::piped());
