@@ -1343,12 +1343,11 @@ checksum = "1ced73b1dacfc750a6db6c0a0c3a3853c8b41997e2e2c563dc90804ae6867959"
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#609381db22a6457d2e2aa5da000ce2447c7edad0"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#bd6ed57e127a77b359e53e0e4dbe0b8a0d26248f"
 dependencies = [
  "chksum-md5",
  "crossbeam-deque",
  "flate2",
- "futures",
  "futures-util",
  "liblzma",
  "prost",
@@ -6427,7 +6426,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "twintaillauncher"
-version = "1.1.5"
+version = "1.1.6"
 dependencies = [
  "cuid2",
  "fischl",
