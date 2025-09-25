@@ -43,14 +43,11 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     }*/
 
     // Proton steam.exe stub jank! DO NOT TOUCH FFS
+    let tmphome = app.path().app_data_dir()?.join("tmp_home").follow_symlink()?.to_str().unwrap().to_string();
     let original_home = std::env::var("HOME").expect("$HOME is not set");
     let steampath = app.path().home_dir()?.join(".steam/").follow_symlink()?;
     let is_steam_installed = steampath.exists();
-
-    if !is_steam_installed {
-        let tmphome = app.path().app_data_dir()?.join("tmp_home").follow_symlink()?.to_str().unwrap().to_string();
-        unsafe { std::env::set_var("HOME", tmphome); }
-    }
+    if !is_steam_installed { unsafe { std::env::set_var("HOME", tmphome.clone()); } }
 
     if !pre_launch.is_empty() {
         let command = format!("{pre_launch}").replace("%prefix%", prefix.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
@@ -66,7 +63,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
-        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", tmphome.clone());
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
@@ -123,7 +120,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
-        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", tmphome.clone());
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
@@ -200,7 +197,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_APP_ID", "0");
         cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
         cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
-        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
+        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", tmphome.clone());
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
