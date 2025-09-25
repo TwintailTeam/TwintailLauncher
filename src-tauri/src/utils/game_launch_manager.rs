@@ -48,7 +48,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let is_steam_installed = steampath.exists();
 
     if !is_steam_installed {
-        let tmphome = app.path().app_data_dir()?.follow_symlink()?.to_str().unwrap().to_string();
+        let tmphome = app.path().app_data_dir()?.join("tmp_home").follow_symlink()?.to_str().unwrap().to_string();
         unsafe { std::env::set_var("HOME", tmphome); }
     }
 

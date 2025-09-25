@@ -123,7 +123,7 @@ pub fn run() {
                     } else {
                         // Proton jank
                         if rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") {
-                            let loc = data_dir.join(".steam/sdk64/steamclient.so");
+                            let loc = data_dir.join("tmp_home").join(".steam/sdk64/steamclient.so");
                             if !loc.exists() { std::fs::create_dir_all(loc.parent().unwrap()).unwrap(); std::fs::copy(rd.clone(), loc).unwrap(); }
                         }
                         if rd.exists() && !rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") { std::fs::copy(rd, fd).unwrap(); }
