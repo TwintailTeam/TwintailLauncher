@@ -115,13 +115,18 @@ pub fn run() {
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
 
-                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf"] {
+                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "libs/steamclient.so"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
                     if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") {
                         if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     } else {
-                        if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
+                        // Proton jank
+                        if rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") {
+                            let loc = data_dir.join(".steam/sdk64/steamclient.so");
+                            if !loc.exists() { std::fs::create_dir_all(loc.parent().unwrap()).unwrap(); std::fs::copy(rd.clone(), loc).unwrap(); }
+                        }
+                        if rd.exists() && !rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") { std::fs::copy(rd, fd).unwrap(); }
                     }
                 }
             }
