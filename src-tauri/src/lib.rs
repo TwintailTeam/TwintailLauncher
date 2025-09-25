@@ -99,6 +99,7 @@ pub fn run() {
                                 val.to_ascii_lowercase() == "qtile" ||
                                 val.to_ascii_lowercase() == "niri" {
                                 app.get_window("main").unwrap().set_decorations(false).unwrap();
+                                let _ = app.get_window("main").unwrap().set_min_size(None::<tauri::Size>);
                             } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
                         },
                         Err(_e) => {},
