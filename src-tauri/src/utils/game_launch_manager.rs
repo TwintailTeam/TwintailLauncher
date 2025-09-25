@@ -252,7 +252,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         true
     };
     // Reset home due to steam.exe stub
-    if !is_steam_installed { println!("HOME is reset"); unsafe { std::env::set_var("HOME", original_home); } }
+    if !is_steam_installed { unsafe { std::env::set_var("HOME", original_home); } }
     if rslt { Ok(true) } else { Ok(false) }
 }
 
