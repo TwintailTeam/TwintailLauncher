@@ -214,6 +214,36 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
                 };
             }
         },
+        "runner" => {
+            let install = get_install_info_by_id(&app, install_id);
+            if install.is_some() {
+                let i = install.unwrap();
+                let fp = Path::new(&i.runner_path).join("proton").follow_symlink().unwrap().to_path_buf();
+                if fp.exists() {
+                    match app.opener().reveal_item_in_dir(fp.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { send_notification(&app, "Directory opening failed, try again later!", None); }
+                    }
+                } else {
+                    send_notification(&app, "Can not open runner directory, Is runner downloaded properly?", None);
+                };
+            }
+        }
+        "runner_prefix" => {
+            let install = get_install_info_by_id(&app, install_id);
+            if install.is_some() {
+                let i = install.unwrap();
+                let fp = Path::new(&i.runner_prefix).join("version").follow_symlink().unwrap().to_path_buf();
+                if fp.exists() {
+                    match app.opener().reveal_item_in_dir(fp.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { send_notification(&app, "Directory opening failed, try again later!", None); }
+                    }
+                } else {
+                    send_notification(&app, "Can not open runner prefix directory, Is runner prefix initialized?", None);
+                };
+            }
+        }
         _ => {}
     }
 }
