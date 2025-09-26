@@ -12,6 +12,7 @@ import {
 } from "@floating-ui/react";
 import {POPUPS} from "../popups/POPUPS.ts";
 import {invoke} from "@tauri-apps/api/core";
+import {HeartIcon} from "lucide-react";
 
 // Discord icon component
 const DiscordIcon = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>((props, ref) => (
@@ -26,7 +27,7 @@ const DiscordIcon = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement
     </svg>
 ));
 
-export default function SidebarCommunity({uri, popup}: {uri: string, popup: POPUPS}) {
+export default function SidebarLink({uri, title, iconType, popup}: {uri: string, title: string, iconType: string, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -48,14 +49,20 @@ export default function SidebarCommunity({uri, popup}: {uri: string, popup: POPU
 
     return (
         <React.Fragment>
-            <DiscordIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
-                invoke('open_uri', {uri: uri}).then(() => {});
-            }} />
-
+            {iconType === "discord" && (
+                <DiscordIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 cursor-pointer flex-initial" onClick={() => {
+                    invoke('open_uri', {uri: uri}).then(() => {});
+                }} />
+            )}
+            {iconType === "donate" && (
+                <HeartIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
+                    invoke('open_uri', {uri: uri}).then(() => {});
+                }} />
+            )}
             {(isOpen && popup == POPUPS.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">Discord</span>
+                    <span className="text-white z-50">{title}</span>
                 </div>
             )}
         </React.Fragment>
