@@ -39,7 +39,7 @@ tauri-plugin-single-instance = "2.3.4"
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
 wgpu = { version = "26.0", default-features = true }
-libc = { version = "0.2.175" }
+libc = { version = "0.2.176" }
 
 [target."cfg(any(target_os = \"windows\"))".dependencies]
 shortcuts-rs = "1.1.1"

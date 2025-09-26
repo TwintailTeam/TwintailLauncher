@@ -135,7 +135,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "0".to_string());
                     dlpayload.insert("total", "1000".to_string());
-                    //archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
                     let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
