@@ -473,7 +473,7 @@ pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
 
 #[cfg(target_os = "linux")]
 pub fn get_os_release() -> Option<String> {
-    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { "/usr/lib/os-release" } else { "/etc/os-release" } };
+    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { if is_flatpak() { "/run/host/os-release" } else { "/usr/lib/os-release" } } else { if is_flatpak() { "/run/host/os-release" } else { "/etc/os-release" } } };
     let pp = PathBuf::from(p);
 
     if pp.exists() {
