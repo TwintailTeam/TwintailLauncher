@@ -99,6 +99,7 @@ pub fn run() {
                                 val.to_ascii_lowercase() == "qtile" ||
                                 val.to_ascii_lowercase() == "niri" {
                                 app.get_window("main").unwrap().set_decorations(false).unwrap();
+                                let _ = app.get_window("main").unwrap().set_min_size(None::<tauri::Size>);
                             } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
                         },
                         Err(_e) => {},
@@ -109,19 +110,24 @@ pub fn run() {
                 let data_dir = app.path().app_data_dir().unwrap();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
-                update_extras(handle.clone(), false);
+                //update_extras(handle.clone(), false);
                 deprecate_jadeite(handle);
 
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
 
-                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf"] {
+                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "libs/steamclient.so"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
                     if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") {
                         if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     } else {
-                        if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
+                        // Proton jank
+                        if rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") {
+                            let loc = data_dir.join("tmp_home").join(".steam/sdk64/steamclient.so");
+                            if !loc.exists() { std::fs::create_dir_all(loc.parent().unwrap()).unwrap(); std::fs::copy(rd.clone(), loc).unwrap(); }
+                        }
+                        if rd.exists() && !rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") { std::fs::copy(rd, fd).unwrap(); }
                     }
                 }
             }

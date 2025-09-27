@@ -5,7 +5,7 @@ import {invoke} from "@tauri-apps/api/core";
 import SidebarRepos from "./components/sidebar/SidebarRepos.tsx";
 import SidebarSettings from "./components/sidebar/SidebarSettings.tsx";
 import SidebarIconInstall from "./components/sidebar/SidebarIconInstall.tsx";
-import SidebarCommunity from "./components/sidebar/SidebarCommunity.tsx";
+import SidebarLink from "./components/sidebar/SidebarLink.tsx";
 import { preloadImages } from "./utils/imagePreloader";
 import AppLoadingScreen from "./components/AppLoadingScreen";
 import SidebarManifests from "./components/sidebar/SidebarManifests.tsx";
@@ -226,7 +226,10 @@ export default class App extends React.Component<any, any> {
                             <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                         </div>
                         <div className="animate-slideInLeft" style={{ animationDelay: '1200ms' }}>
-                            <SidebarCommunity popup={this.state.openPopup} uri={"https://discord.gg/nDMJDwuj7s"} />
+                            <SidebarLink popup={this.state.openPopup} title={"Discord"} iconType={"discord"} uri={"https://discord.gg/nDMJDwuj7s"} />
+                        </div>
+                        <div className="animate-slideInLeft" style={{ animationDelay: '1300ms' }}>
+                            <SidebarLink popup={this.state.openPopup} title={"Support the project"} iconType={"donate"} uri={"https://ko-fi.com/twintailteam"} />
                         </div>
                     </div>
                 </div>

@@ -67,7 +67,7 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
             payload.insert("progress", tracker.load(Ordering::SeqCst).to_string());
             payload.insert("total", totalsize.to_string());
 
-            fs::copy(ep.clone(), dst.as_ref().join(f))?;
+            copy(ep.clone(), dst.as_ref().join(f))?;
             app.emit("move_progress", &payload).unwrap();
             fs::remove_file(ep)?;
         }
@@ -243,7 +243,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
         let os = get_os_release();
         if os.is_some() {
             let v = os.unwrap();
-            if v == "bazzite" || v == "kinoite" {
+            if v.to_ascii_lowercase() == "bazzite".to_string() || v.to_ascii_lowercase() == "kinoite".to_string() {
                 let tmp = path.to_str().unwrap().replace("/home", "/var/home");
                 path = PathBuf::from(tmp);
             }
@@ -473,7 +473,7 @@ pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
 
 #[cfg(target_os = "linux")]
 pub fn get_os_release() -> Option<String> {
-    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { "/usr/lib/os-release" } else { "/etc/os-release" } };
+    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { if is_flatpak() { "/run/host/os-release" } else { "/usr/lib/os-release" } } else { if is_flatpak() { "/run/host/os-release" } else { "/etc/os-release" } } };
     let pp = PathBuf::from(p);
 
     if pp.exists() {
