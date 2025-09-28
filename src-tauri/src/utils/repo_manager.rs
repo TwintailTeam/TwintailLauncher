@@ -411,7 +411,9 @@ pub struct LauncherInstall {
     pub launch_args: String,
     pub use_gamemode: bool,
     pub use_mangohud: bool,
-    pub mangohud_config_path: String
+    pub mangohud_config_path: String,
+    pub shortcut_is_steam: bool,
+    pub shortcut_path: String,
 }
 
 // === MANIFESTS ===

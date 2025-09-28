@@ -97,6 +97,18 @@ pub async fn init_db(app: &AppHandle) {
             sql: r#"ALTER TABLE settings ADD COLUMN default_mangohud_config_path TEXT default null;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "alter_install_table_118_1",
+            sql: r#"ALTER TABLE install ADD COLUMN shortcut_is_steam bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 16,
+            description: "alter_install_table_118_2",
+            sql: r#"ALTER TABLE install ADD COLUMN shortcut_path TEXT default null;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -579,7 +591,9 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             launch_args: rslt.get(0).unwrap().get("launch_args"),
             use_gamemode: rslt.get(0).unwrap().get("use_gamemode"),
             use_mangohud: rslt.get(0).unwrap().get("use_mangohud"),
-            mangohud_config_path: rslt.get(0).unwrap().get("mangohud_config_path")
+            mangohud_config_path: rslt.get(0).unwrap().get("mangohud_config_path"),
+            shortcut_is_steam: rslt.get(0).unwrap().get("shortcut_is_steam"),
+            shortcut_path: rslt.get(0).unwrap().get("shortcut_path")
         };
 
         Some(rsltt)
@@ -627,7 +641,9 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 launch_args: r.get("launch_args"),
                 use_gamemode: r.get("use_gamemode"),
                 use_mangohud: r.get("use_mangohud"),
-                mangohud_config_path: r.get("mangohud_config_path")
+                mangohud_config_path: r.get("mangohud_config_path"),
+                shortcut_is_steam: r.get("shortcut_is_steam"),
+                shortcut_path: r.get("shortcut_path")
             })
         }
 
@@ -676,7 +692,9 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 launch_args: r.get("launch_args"),
                 use_gamemode: r.get("use_gamemode"),
                 use_mangohud: r.get("use_mangohud"),
-                mangohud_config_path: r.get("mangohud_config_path")
+                mangohud_config_path: r.get("mangohud_config_path"),
+                shortcut_is_steam: r.get("shortcut_is_steam"),
+                shortcut_path: r.get("shortcut_path")
             })
         }
 
@@ -871,6 +889,24 @@ pub fn update_install_mangohud_config_location_by_id(app: &AppHandle, id: String
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'mangohud_config_path' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_shortcut_location_by_id(app: &AppHandle, id: String, location: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'shortcut_path' = $1 WHERE id = $2").bind(location).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_steam: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'shortcut_is_steam' = $1 WHERE id = $2").bind(is_steam).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

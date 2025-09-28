@@ -6,7 +6,7 @@ use std::sync::Arc;
 use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_is_steam_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
@@ -877,17 +877,21 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn add_shortcut(app: AppHandle, install_id: String) {
+pub fn add_shortcut(app: AppHandle, install_id: String, shortcut_type: String) {
     let install = get_install_info_by_id(&app, install_id).unwrap();
     #[cfg(target_os = "linux")]
     {
-        let base = app.path().home_dir().unwrap().join(".local/share/applications");
-        let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
-        let mut writing = fs::File::create(file).unwrap();
-        let bin_name = if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" };
-        let icon = if is_flatpak() { "app.twintaillauncher.ttl" } else { "twintaillauncher" };
+        match shortcut_type.as_str() {
+            "desktop" => {
+                let base = app.path().home_dir().unwrap().join(".local/share/applications");
+                let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
+                let bin_name = if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" };
+                let icon = if is_flatpak() { "app.twintaillauncher.ttl" } else { "twintaillauncher" };
 
-        let content = format!(r#"[Desktop Entry]
+                let writing = fs::File::create(file.clone());
+                match writing {
+                    Ok(mut f) => {
+                        let content = format!(r#"[Desktop Entry]
 Categories=Game;
 Comment=Launch this game using TwintailLauncher
 Exec={} --install={}
@@ -896,8 +900,20 @@ Name={}
 Terminal=false
 Type=Application
 "#, bin_name, install.id.as_str(), icon, install.name.as_str());
-        let r = writing.write_all(content.as_bytes());
-        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. If you want to delete it please delete desktop file manually!", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
+                        f.write_all(content.as_bytes()).unwrap();
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                        update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
+                        send_notification(&app, "Successfully created desktop shortcut.", None);
+
+                    }
+                    Err(_) => { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please give permission to access ~/.local/share/applications", None); }
+                }
+            }
+            "steam" => {
+
+            }
+            _ => {}
+        }
     };
 
     #[cfg(target_os = "windows")]
@@ -909,4 +925,25 @@ Type=Application
         let r = sl.create_lnk(file.as_path());
         if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. Find it on your desktop.", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
     }
+}
+
+#[tauri::command]
+pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String) {
+    let install = get_install_info_by_id(&app, install_id).unwrap();
+    #[cfg(target_os = "linux")]
+    {
+        match shortcut_type.as_str() {
+            "desktop" => {
+                let base = app.path().home_dir().unwrap().join(".local/share/applications");
+                let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
+
+                if file.exists() { fs::remove_file(file.clone()).unwrap(); }
+                update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
+                send_notification(&app, "Successfully deleted desktop shortcut.", None);
+            }
+            "steam" => { send_notification(&app, "Steam shortcuts must be deleted from Steam client!", None); }
+            _ => {}
+        }
+    };
 }
