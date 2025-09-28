@@ -937,10 +937,12 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 let base = app.path().home_dir().unwrap().join(".local/share/applications");
                 let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
 
-                if file.exists() { fs::remove_file(file.clone()).unwrap(); }
-                update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
-                send_notification(&app, "Successfully deleted desktop shortcut.", None);
+                if file.exists() {
+                    fs::remove_file(file.clone()).unwrap();
+                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                    update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
+                    send_notification(&app, "Successfully deleted desktop shortcut.", None);
+                } else { send_notification(&app, "Desktop shortcut for this game does not exist!", None); }
             }
             "steam" => { send_notification(&app, "Steam shortcuts must be deleted from Steam client!", None); }
             _ => {}
