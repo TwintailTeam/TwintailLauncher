@@ -456,7 +456,7 @@ pub fn notify_update(app: &AppHandle) {
         if !suppressed.exists() {
             let cfg = app.config();
             if cfg.version.clone().unwrap() < v {
-                app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.").title("Update available")
+                app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("Update available")
                     .kind(MessageDialogKind::Info)
                     .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
                     //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))

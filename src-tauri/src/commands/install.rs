@@ -906,7 +906,7 @@ Type=Application
                         send_notification(&app, "Successfully created desktop shortcut.", None);
 
                     }
-                    Err(_) => { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please give permission to access ~/.local/share/applications", None); }
+                    Err(_) => { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", None); }
                 }
             }
             "steam" => {
