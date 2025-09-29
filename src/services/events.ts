@@ -1,6 +1,12 @@
 import { toPercent, formatBytes } from '../utils/progress.ts';
 
-export function registerEvents(eventType: string, event: any, pushInstalls: () => void) {
+export function registerEvents(
+  eventType: string, 
+  event: any, 
+  pushInstalls: () => void, 
+  getCurrentInstall: () => string, 
+  fetchInstallResumeStates: (install: string) => void
+) {
   switch (eventType) {
     case 'move_complete':
     case 'download_complete':
@@ -8,6 +14,13 @@ export function registerEvents(eventType: string, event: any, pushInstalls: () =
     case 'repair_complete':
     case 'preload_complete': {
       pushInstalls();
+      
+      // Refresh resume states for the current install after completion
+      const currentInstall = getCurrentInstall();
+      if (currentInstall) {
+        fetchInstallResumeStates(currentInstall);
+      }
+      
       return {
         hideProgressBar: true,
         disableInstallEdit: false,

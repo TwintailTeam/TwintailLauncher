@@ -40,6 +40,7 @@ export default class App extends React.Component<any, any> {
         this.fetchSettings = this.fetchSettings.bind(this);
         this.fetchRepositories = this.fetchRepositories.bind(this);
         this.fetchInstallSettings = this.fetchInstallSettings.bind(this);
+        this.fetchInstallResumeStates = this.fetchInstallResumeStates.bind(this);
         this.fetchDownloadSizes = this.fetchDownloadSizes.bind(this);
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
@@ -314,6 +315,8 @@ export default class App extends React.Component<any, any> {
             completeInitialLoading: () => this.completeInitialLoading(),
             pushInstalls: this.pushInstalls,
             applyEventState: (ns) => this.setState(() => ({ ...ns })),
+            getCurrentInstall: () => this.state.currentInstall,
+            fetchInstallResumeStates: this.fetchInstallResumeStates,
         });
     }
 
