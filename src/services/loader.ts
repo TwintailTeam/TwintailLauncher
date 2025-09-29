@@ -21,6 +21,8 @@ export interface LoaderOptions {
   // Event state wiring
   pushInstalls: () => void;
   applyEventState: (ns: Record<string, any>) => void;
+  getCurrentInstall: () => string;
+  fetchInstallResumeStates: (install: string) => void;
 }
 
 export interface LoaderController {
@@ -94,7 +96,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         for (const eventType of Events) {
           const unlisten = await listen(eventType, (event) => {
             if (cancelled) return;
-            const ns = registerEvents(eventType, event, opts.pushInstalls);
+            const ns = registerEvents(eventType, event, opts.pushInstalls, opts.getCurrentInstall, opts.fetchInstallResumeStates);
             if (ns !== undefined) opts.applyEventState(ns);
           });
           unlistenFns.push(unlisten);
