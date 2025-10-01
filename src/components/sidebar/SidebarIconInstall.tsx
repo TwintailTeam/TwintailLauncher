@@ -12,6 +12,7 @@ import {
     useInteractions
 } from "@floating-ui/react";
 import {POPUPS} from "../popups/POPUPS.ts";
+import InstallContextMenu from "../InstallContextMenu.tsx";
 
 type SidebarIconProps = {
     icon: string,
@@ -26,10 +27,15 @@ type SidebarIconProps = {
     setDisplayName: (name: string) => void,
     setBackground: (file: string) => void,
     setGameIcon: (a: string) => void,
+    installSettings?: any,
+    onOpenInstallSettings?: () => void,
+    onRefreshSettings?: () => void,
+    fetchInstallData?: (id: string) => Promise<any>,
 }
 
-export default function SidebarIconInstall({icon, name, id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, hasUpdate}: SidebarIconProps) {
+export default function SidebarIconInstall({icon, name, id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, hasUpdate, installSettings, onOpenInstallSettings, onRefreshSettings, fetchInstallData}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
     const arrowRef = useRef(null);
     const {refs, floatingStyles, context} = useFloating({
@@ -45,6 +51,12 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
     const hover = useHover(context, {move: false});
     const {getReferenceProps, getFloatingProps} = useInteractions([hover]);
 
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+    };
+
     return (
         <React.Fragment>
             {enabled ? (
@@ -59,6 +71,7 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
                         tabIndex={0}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
+                        onContextMenu={handleContextMenu}
                         onClick={() => {
                             let elem = document.getElementById(id);
                             // @ts-ignore
@@ -93,6 +106,18 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
                         window.document.body
                     )
                 ) : null}
+            {contextMenu && installSettings && onOpenInstallSettings && onRefreshSettings && (
+                <InstallContextMenu
+                    installId={id}
+                    installSettings={installSettings}
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    onOpenSettings={onOpenInstallSettings}
+                    onRefreshSettings={onRefreshSettings}
+                    fetchInstallData={fetchInstallData}
+                />
+            )}
         </React.Fragment>
     )
 }
