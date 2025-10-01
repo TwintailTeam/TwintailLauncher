@@ -29,6 +29,7 @@ pub mod system_tray;
 pub mod args;
 #[cfg(target_os = "linux")]
 pub mod gpu;
+pub mod shortcuts;
 
 pub fn generate_cuid() -> String {
     cuid2::create_id()

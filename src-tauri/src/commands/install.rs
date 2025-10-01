@@ -6,10 +6,11 @@ use std::sync::Arc;
 use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_is_steam_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::{copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
 use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::utils::shortcuts::{remove_desktop_shortcut};
 
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
@@ -22,7 +23,17 @@ use fischl::utils::patch_aki;
 #[cfg(target_os = "linux")]
 use crate::utils::is_flatpak;
 #[cfg(target_os = "linux")]
-use std::io::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(target_os = "linux")]
+use crate::utils::shortcuts::{add_steam_shortcut, remove_steam_shortcut};
+#[cfg(target_os = "linux")]
+use steam_shortcuts_util::app_id_generator::calculate_app_id;
+#[cfg(target_os = "linux")]
+use steam_shortcuts_util::Shortcut;
+#[cfg(target_os = "linux")]
+use crate::utils::db_manager::update_install_shortcut_is_steam_by_id;
+#[cfg(target_os = "linux")]
+use crate::utils::shortcuts::add_desktop_shortcut;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -888,10 +899,7 @@ pub fn add_shortcut(app: AppHandle, install_id: String, shortcut_type: String) {
                 let bin_name = if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" };
                 let icon = if is_flatpak() { "app.twintaillauncher.ttl" } else { "twintaillauncher" };
 
-                let writing = fs::File::create(file.clone());
-                match writing {
-                    Ok(mut f) => {
-                        let content = format!(r#"[Desktop Entry]
+                let content = format!(r#"[Desktop Entry]
 Categories=Game;
 Comment=Launch this game using TwintailLauncher
 Exec={} --install={}
@@ -900,17 +908,43 @@ Name={}
 Terminal=false
 Type=Application
 "#, bin_name, install.id.as_str(), icon, install.name.as_str());
-                        f.write_all(content.as_bytes()).unwrap();
-                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                        update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
-                        send_notification(&app, "Successfully created desktop shortcut.", None);
 
-                    }
-                    Err(_) => { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", None); }
-                }
+                let status = add_desktop_shortcut(file.clone(), content);
+                if status {
+                    update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
+                    send_notification(&app, "Successfully created desktop shortcut.", None);
+                } else { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", None); }
             }
             "steam" => {
+                let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
+                let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
+                let m = get_manifest(&app, manifest.filename).unwrap();
+                let launchargs = format!("--install={}", install.id.as_str());
 
+                let shortcut = Shortcut {
+                    order: "",
+                    app_id: calculate_app_id(m.paths.exe_filename.as_str(), install.name.as_str()),
+                    app_name: install.name.as_str(),
+                    exe: if is_flatpak() { "flatpak run app.twintaillauncher.ttl" } else { "twintaillauncher" },
+                    start_dir: install.directory.as_str(),
+                    icon: install.game_icon.as_str(),
+                    shortcut_path: "",
+                    launch_options: launchargs.as_str(),
+                    is_hidden: false,
+                    allow_desktop_config: true,
+                    allow_overlay: true,
+                    open_vr: 0,
+                    dev_kit: 0,
+                    dev_kit_game_id: "",
+                    dev_kit_overrite_app_id: 0,
+                    last_play_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32,
+                    tags: vec!["twintaillauncher", "ttl"],
+                };
+                let status = add_steam_shortcut(search_base_path, install.name.as_str(), shortcut);
+                if status {
+                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
+                    send_notification(&app, format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                } else { send_notification(&app, "Failed to add game to Steam!", None); }
             }
             _ => {}
         }
@@ -918,12 +952,21 @@ Type=Application
 
     #[cfg(target_os = "windows")]
     {
-        let base = app.path().desktop_dir().unwrap();
-        let bin_name = app.path().app_local_data_dir().unwrap().join("twintaillauncher.exe");
-        let file = base.join(format!("{}.lnk", install.name.as_str()));
-        let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
-        let r = sl.create_lnk(file.as_path());
-        if r.is_ok() { send_notification(&app, "Successfully created game launch shortcut. Find it on your desktop.", None); } else { send_notification(&app, "Failed to create launch shortcut!", None); }
+        match shortcut_type.as_str() {
+            "desktop" => {
+                let base = app.path().desktop_dir().unwrap();
+                let bin_name = app.path().app_local_data_dir().unwrap().join("twintaillauncher.exe");
+                let file = base.join(format!("{}.lnk", install.name.as_str()));
+                let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
+                let r = sl.create_lnk(file.as_path());
+                if r.is_ok() {
+                    update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
+                    send_notification(&app, "Successfully created desktop shortcut. Find it on your desktop.", None);
+                } else { send_notification(&app, "Failed to create launch shortcut!", None); }
+            }
+            "steam" => { send_notification(&app, "Steam shortcuts are currently not supported on Windows!", None); }
+            _ => {}
+        }
     }
 }
 
@@ -937,15 +980,44 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 let base = app.path().home_dir().unwrap().join(".local/share/applications");
                 let file = base.join(format!("{}.desktop", install.name.as_str())).follow_symlink().unwrap();
 
-                if file.exists() {
-                    fs::remove_file(file.clone()).unwrap();
-                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                let status = remove_desktop_shortcut(file.clone());
+                if status {
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
                     send_notification(&app, "Successfully deleted desktop shortcut.", None);
                 } else { send_notification(&app, "Desktop shortcut for this game does not exist!", None); }
             }
-            "steam" => { send_notification(&app, "Steam shortcuts must be deleted from Steam client!", None); }
+            "steam" => {
+                let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
+
+                let status = remove_steam_shortcut(search_base_path, install.name.as_str());
+                if status {
+                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                    send_notification(&app, format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                } else {
+                    // Incase user just deleted shortcut from steam client directly so we do not soft lock
+                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                    send_notification(&app, "Failed to remove game from Steam!", None);
+                }
+            }
             _ => {}
         }
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+      match shortcut_type.as_str() {
+          "desktop" => {
+              let base = app.path().desktop_dir().unwrap();
+              let file = base.join(format!("{}.lnk", install.name.as_str()));
+
+              let status = remove_desktop_shortcut(file.clone());
+              if status {
+                  update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
+                  send_notification(&app, "Successfully deleted desktop shortcut.", None);
+              } else { crate::utils::send_notification(&app, "Desktop shortcut for this game does not exist!", None); }
+          }
+          "steam" => { send_notification(&app, "Steam shortcuts are currently not supported on Windows!", None); }
+          _ => {}
+      }
     };
 }

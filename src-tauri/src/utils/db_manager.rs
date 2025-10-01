@@ -902,6 +902,7 @@ pub fn update_install_shortcut_location_by_id(app: &AppHandle, id: String, locat
     });
 }
 
+#[allow(dead_code)]
 pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_steam: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();

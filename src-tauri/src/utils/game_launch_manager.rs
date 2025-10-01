@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::process::{Child, Command, Stdio};
-use tauri::{AppHandle, Error, Manager};
+use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
 use crate::utils::{get_mi_path_from_game, send_notification};
@@ -17,6 +17,8 @@ use std::os::unix::process::CommandExt;
 use crate::utils::{runner_from_runner_version, patch_hkrpg};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
+#[cfg(target_os = "linux")]
+use tauri::Manager;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -38,10 +40,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if pp.exists() { gst_plugins.push(pp.to_str().unwrap().to_string()); }
     }
 
-    /*for p in ["lib64/gstreamer-1.0", "lib/gstreamer-1.0", "lib32/gstreamer-1.0", "files/lib/x86_64-linux-gnu/gstreamer-1.0", "files/lib/i386-linux-gnu/gstreamer-1.0"] {
+    for p in ["lib64/gstreamer-1.0", "lib/gstreamer-1.0", "lib32/gstreamer-1.0", "files/lib/x86_64-linux-gnu/gstreamer-1.0", "files/lib/i386-linux-gnu/gstreamer-1.0"] {
         let lib = Path::new(&runner).join(p);
         if lib.exists() { gst_plugins.push(lib.to_str().unwrap().to_string()); }
-    }*/
+    }
 
     // Proton steam.exe stub jank! DO NOT TOUCH FFS
     let tmphome = app.path().app_data_dir()?.join("tmp_home").follow_symlink()?.to_str().unwrap().to_string();
