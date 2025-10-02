@@ -912,8 +912,8 @@ Type=Application
                 let status = add_desktop_shortcut(file.clone(), content);
                 if status {
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
-                    send_notification(&app, "Successfully created desktop shortcut.", None);
-                } else { send_notification(&app, "Failed to create desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", None); }
+                    send_notification(&app, format!("Successfully created {} desktop shortcut.", install.name.as_str()).as_str(), None);
+                } else { send_notification(&app, format!("Failed to create {} desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", install.name.as_str()).as_str(), None); }
             }
             "steam" => {
                 let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
@@ -944,7 +944,7 @@ Type=Application
                 if status {
                     update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
                     send_notification(&app, format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
-                } else { send_notification(&app, "Failed to add game to Steam!", None); }
+                } else { send_notification(&app, format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None); }
             }
             _ => {}
         }
@@ -983,8 +983,8 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
-                    send_notification(&app, "Successfully deleted desktop shortcut.", None);
-                } else { send_notification(&app, "Desktop shortcut for this game does not exist!", None); }
+                    send_notification(&app, format!("Successfully deleted {} desktop shortcut.", install.name.as_str()).as_str(), None);
+                } else { send_notification(&app, format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None); }
             }
             "steam" => {
                 let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
@@ -994,9 +994,7 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                     update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                     send_notification(&app, format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
                 } else {
-                    // Incase user just deleted shortcut from steam client directly so we do not soft lock
-                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                    send_notification(&app, "Failed to remove game from Steam!", None);
+                    send_notification(&app, format!("Failed to remove {} from Steam!", install.name.as_str()).as_str(), None);
                 }
             }
             _ => {}

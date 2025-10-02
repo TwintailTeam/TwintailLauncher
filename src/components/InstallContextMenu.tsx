@@ -18,51 +18,26 @@ interface InstallContextMenuProps {
     onClose: () => void;
     onOpenSettings: () => void;
     onRefreshSettings: () => void;
-    fetchInstallData?: (id: string) => Promise<any>;
 }
 
 export default function InstallContextMenu({
     installId,
-    installSettings: initialSettings,
+    installSettings,
     x,
     y,
     onClose,
     onOpenSettings,
     onRefreshSettings,
-    fetchInstallData
 }: InstallContextMenuProps) {
     const menuRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState({ x, y });
-    const [installSettings, setInstallSettings] = useState(initialSettings);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Fetch fresh install settings when menu opens
     useEffect(() => {
-        const fetchSettings = async () => {
-            setIsLoading(true);
-            let settings;
-            try {
-                if (fetchInstallData) {
-                    settings = await fetchInstallData(installId);
-                } else {
-                    const data = await invoke("get_install_by_id", { id: installId });
-                    if (data === null) {
-                        console.error("Failed to fetch install settings!");
-                        setInstallSettings(initialSettings);
-                        return;
-                    }
-                    settings = JSON.parse(data as string);
-                }
-                setInstallSettings(settings);
-            } catch (error) {
-                console.error("Failed to fetch install settings:", error);
-                setInstallSettings(initialSettings);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchSettings();
-    }, [installId, initialSettings, fetchInstallData]);
+        onRefreshSettings();
+        setIsLoading(false);
+    }, [installId]);
 
     useEffect(() => {
         // Adjust position if menu would go off screen
@@ -205,14 +180,14 @@ export default function InstallContextMenu({
                         {installSettings?.shortcut_path !== "" ? (
                             <MenuItem
                                 icon={Trash2Icon}
-                                label="Delete Desktop Shortcut"
+                                label="Remove from Desktop"
                                 onClick={handleDeleteShortcut}
                                 variant="danger"
                             />
                         ) : (
                             <MenuItem
                                 icon={MonitorIcon}
-                                label="Create Desktop Shortcut"
+                                label="Add to Desktop"
                                 onClick={handleCreateShortcut}
                                 variant="primary"
                             />

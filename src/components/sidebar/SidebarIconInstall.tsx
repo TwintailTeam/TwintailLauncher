@@ -30,10 +30,9 @@ type SidebarIconProps = {
     installSettings?: any,
     onOpenInstallSettings?: () => void,
     onRefreshSettings?: () => void,
-    fetchInstallData?: (id: string) => Promise<any>,
 }
 
-export default function SidebarIconInstall({icon, name, id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, hasUpdate, installSettings, onOpenInstallSettings, onRefreshSettings, fetchInstallData}: SidebarIconProps) {
+export default function SidebarIconInstall({icon, name, id, setCurrentInstall, setGameIcon, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, hasUpdate, installSettings, onOpenInstallSettings, onRefreshSettings}: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
@@ -115,7 +114,6 @@ export default function SidebarIconInstall({icon, name, id, setCurrentInstall, s
                     onClose={() => setContextMenu(null)}
                     onOpenSettings={onOpenInstallSettings}
                     onRefreshSettings={onRefreshSettings}
-                    fetchInstallData={fetchInstallData}
                 />
             )}
         </React.Fragment>

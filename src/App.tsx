@@ -197,8 +197,6 @@ export default class App extends React.Component<any, any> {
                                 const game = (this.state.gamesinfo || []).find((g: any) => g.manifest_id === install.manifest_id);
                                 const latest = game?.latest_version ?? null;
                                 const hasUpdate = !!(latest && install?.version && latest !== install.version && !install?.ignore_updates);
-                                // Get install settings for this specific installation
-                                const installSettings = this.state.installSettings[install.id] || install;
                                 return (
                                     <div key={install.id} className="animate-slideInLeft" style={{ animationDelay: `${index * 100 + 600}ms` }}>
                                         <SidebarIconInstall
@@ -214,7 +212,7 @@ export default class App extends React.Component<any, any> {
                                             setDisplayName={this.setDisplayName}
                                             setBackground={this.setBackground}
                                             setGameIcon={this.setGameIcon}
-                                            installSettings={installSettings}
+                                            installSettings={this.state.installSettings}
                                             onOpenInstallSettings={() => {
                                                 this.setCurrentInstall(install.id);
                                                 this.setDisplayName(install.name);
@@ -223,10 +221,7 @@ export default class App extends React.Component<any, any> {
                                                 this.fetchInstallSettings(install.id);
                                                 this.setOpenPopup(POPUPS.INSTALLSETTINGS);
                                             }}
-                                            onRefreshSettings={() => {
-                                                this.fetchInstallSettings(install.id);
-                                            }}
-                                            fetchInstallData={this.fetchInstallData.bind(this)}
+                                            onRefreshSettings={() => {this.fetchInstallSettings(install.id);}}
                                         />
                                     </div>
                                 )
@@ -511,14 +506,6 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({installSettings: parsed, gameManifest: md, preloadAvailable: isPreload, installGameSwitches: switches, installGameFps: fpsList}));
             }
         });
-    }
-
-    async fetchInstallData(id: string): Promise<any> {
-        const data = await invoke("get_install_by_id", { id });
-        if (data === null) {
-            throw new Error("Failed to fetch install data");
-        }
-        return JSON.parse(data as string);
     }
 
     fetchGameVersions(biz: string) {
