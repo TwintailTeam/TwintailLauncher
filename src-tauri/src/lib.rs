@@ -12,7 +12,7 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{args, block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
 use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
@@ -119,6 +119,9 @@ pub fn run() {
                 // Fetch steamrt (for the first time only ever) jank
                 #[cfg(target_os = "linux")]
                 {
+                    // Cleanup tmphome steam.exe jank
+                    let tmphome = app.path().app_data_dir().unwrap().follow_symlink().unwrap().join("tmp_home/").follow_symlink().unwrap();
+                    if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
                     std::thread::spawn(move || {
                         let steamrtpath = ddc.join("compatibility/steamrt");
                         if std::fs::read_dir(&steamrtpath).unwrap().next().is_none() { download_steamrt(steamrtpath.clone(), steamrtpath.clone(), "sniper".to_string()); }
@@ -128,19 +131,13 @@ pub fn run() {
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
 
-                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "libs/steamclient.so"] {
+                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
                     if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") {
                         if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     } else {
-                        // Proton jank
-                        if rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") {
-                            let tmphome = data_dir.join("tmp_home");
-                            let loc = tmphome.join(".steam/sdk64/steamclient.so");
-                            if !loc.exists() { std::fs::create_dir_all(loc.parent().unwrap()).unwrap(); std::fs::copy(rd.clone(), loc).unwrap(); }
-                        }
-                        if rd.exists() && !rd.file_name().unwrap().to_str().unwrap().contains("steamclient.so") { std::fs::copy(rd, fd).unwrap(); }
+                        if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     }
                 }
             }
