@@ -273,6 +273,10 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
                 let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
                 let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
 
+                // steamrt setup
+                let steamrtpath = comppath.join("steamrt").follow_symlink().unwrap();
+                if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
+
                 if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
                 if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
                 if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap(); update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
@@ -293,12 +297,17 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
             let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
 
+            // steamrt setup
+            let steamrtpath = comppath.join("steamrt").follow_symlink().unwrap();
+            if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
+
             if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
             if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
                 fs::create_dir_all(&dxvk).unwrap();
                 fs::create_dir_all(&prefixes).unwrap();
+                fs::create_dir_all(&steamrtpath).unwrap();
                 update_settings_default_runner_location(app, wine.to_str().unwrap().to_string());
                 update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string());
                 update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string());

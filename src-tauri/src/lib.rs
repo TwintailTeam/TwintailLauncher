@@ -17,6 +17,8 @@ use crate::utils::system_tray::init_tray;
 
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::RunnerLoader;
+#[cfg(target_os = "linux")]
+use fischl::compat::download_steamrt;
 
 mod utils;
 mod commands;
@@ -109,10 +111,19 @@ pub fn run() {
 
                 let res_dir = app.path().resource_dir().unwrap();
                 let data_dir = app.path().app_data_dir().unwrap();
+                let ddc = data_dir.clone();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 //update_extras(handle.clone(), false);
                 deprecate_jadeite(handle);
+                // Fetch steamrt (for the first time only ever) jank
+                #[cfg(target_os = "linux")]
+                {
+                    std::thread::spawn(move || {
+                        let steamrtpath = ddc.join("compatibility/steamrt");
+                        if std::fs::read_dir(&steamrtpath).unwrap().next().is_none() { download_steamrt(steamrtpath.clone(), steamrtpath.clone(), "sniper".to_string()); }
+                    });
+                }
 
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
