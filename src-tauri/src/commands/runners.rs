@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_settings, update_installed_runner_is_installed_by_version};
+use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
 use crate::utils::{prevent_exit, send_notification, PathResolve};
 
 #[cfg(target_os = "linux")]
@@ -132,6 +132,24 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
             fs::remove_dir_all(runner_path.as_path()).unwrap();
             update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false);
             send_notification(&app, format!("Successfully removed {runn} runner.", runn = runner_version.as_str().to_string()).as_str(), None);
+
+            // Set installations using the removed runner to first available one as fallback
+            let installs = get_installs(&app);
+            if installs.is_some() {
+                let insts = installs.unwrap();
+                for i in insts {
+                    if i.runner_version == runner_version {
+                        let available_runners = get_installed_runners(&app);
+                        if available_runners.is_some() {
+                            let avr = available_runners.unwrap();
+                            let filtered_runners = avr.iter().filter(|r| r.is_installed).collect::<Vec<_>>();
+                            let first = filtered_runners.get(0).unwrap();
+                            update_install_runner_version_by_id(&app, i.id.clone(), first.version.clone());
+                            update_install_runner_location_by_id(&app, i.id, first.runner_path.clone());
+                        }
+                    }
+                }
+            }
             Some(true)
         } else {
             send_notification(&app, format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None);
