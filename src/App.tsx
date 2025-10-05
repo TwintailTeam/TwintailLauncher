@@ -2,7 +2,6 @@ import "./App.css";
 import React from "react";
 import {POPUPS} from "./components/popups/POPUPS.ts";
 import {invoke} from "@tauri-apps/api/core";
-import SidebarRepos from "./components/sidebar/SidebarRepos.tsx";
 import SidebarSettings from "./components/sidebar/SidebarSettings.tsx";
 import SidebarIconInstall from "./components/sidebar/SidebarIconInstall.tsx";
 import SidebarLink from "./components/sidebar/SidebarLink.tsx";
@@ -16,6 +15,7 @@ import ActionBar from "./components/layout/ActionBar";
 import DownloadProgress from "./components/layout/DownloadProgress";
 import PopupOverlay from "./components/layout/PopupOverlay";
 import { startInitialLoad } from "./services/loader";
+import SidebarRunners from "./components/sidebar/SidebarRunners.tsx";
 
 
 export default class App extends React.Component<any, any> {
@@ -45,6 +45,7 @@ export default class App extends React.Component<any, any> {
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
+        this.fetchInstalledRunners = this.fetchInstalledRunners.bind(this);
 
     // @ts-ignore
     this.preloadedBackgrounds = new Set();
@@ -81,6 +82,8 @@ export default class App extends React.Component<any, any> {
             manifestsPanelWidth: null,
             runnerVersions: [],
             dxvkVersions: [],
+            runners: [],
+            installedRunners: [],
             downloadSizes: {},
             downloadDir: "",
             downloadVersion: "",
@@ -230,9 +233,11 @@ export default class App extends React.Component<any, any> {
                     </div>
                     <div className="flex flex-col gap-4 flex-shrink overflow-visible scrollbar-none animate-slideInLeft mt-auto" style={{ animationDelay: '900ms' }}>
                         <hr className="text-white/20 bg-white/20 p-0 animate-slideInLeft" style={{borderColor: "rgb(255 255 255 / 0.2)", animationDelay: '950ms'}}/>
-                        <div className="animate-slideInLeft" style={{ animationDelay: '1000ms' }}>
-                            <SidebarRepos popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
-                        </div>
+                        {(window.navigator.platform.includes("Linux")) && (
+                            <div className="animate-slideInLeft" style={{ animationDelay: '1000ms' }}>
+                                <SidebarRunners popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
+                            </div>
+                        )}
                         <div className="animate-slideInLeft" style={{ animationDelay: '1100ms' }}>
                             <SidebarSettings popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} />
                         </div>
@@ -283,6 +288,9 @@ export default class App extends React.Component<any, any> {
                     runnerVersions={this.state.runnerVersions}
                     dxvkVersions={this.state.dxvkVersions}
                     gameVersions={this.state.gameVersions}
+                    runners={this.state.runners}
+                    installedRunners={this.state.installedRunners}
+                    fetchInstalledRunners={this.fetchInstalledRunners}
                     gameIcon={this.state.gameIcon}
                     gameBackground={this.state.gameBackground}
                     currentGame={this.state.currentGame}
@@ -353,6 +361,7 @@ export default class App extends React.Component<any, any> {
             this.fetchInstallSettings(this.state.currentInstall);
             this.fetchInstallResumeStates(this.state.currentInstall);
             this.fetchCompatibilityVersions();
+            this.fetchInstalledRunners();
         }
     }
 
@@ -532,7 +541,20 @@ export default class App extends React.Component<any, any> {
                 r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
                     e.versions.forEach((v: any) => wines.push({value: v.version, name: v.version}));
                 });
-                this.setState({runnerVersions: wines, dxvkVersions: dxvks});
+                this.setState({runnerVersions: wines, dxvkVersions: dxvks, runners: r});
+            }
+        })
+    }
+
+    fetchInstalledRunners() {
+        return invoke("list_installed_runners").then(data => {
+            if (data === null) {
+                console.error("Failed to get installed runners.");
+            } else {
+                let r = JSON.parse(data as string);
+                let installed: any[] = [];
+                r.filter((e: any) => e.is_installed).forEach((e: any) => {installed.push(e);});
+                this.setState({installedRunners: installed});
             }
         })
     }

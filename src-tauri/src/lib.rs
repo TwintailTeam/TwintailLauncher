@@ -12,13 +12,16 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, block_telemetry, deprecate_jadeite, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
+use crate::utils::{args, block_telemetry, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
 use crate::utils::system_tray::init_tray;
+use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 
+#[cfg(target_os = "linux")]
+use crate::utils::PathResolve;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::RunnerLoader;
 #[cfg(target_os = "linux")]
-use fischl::compat::download_steamrt;
+use crate::utils::{download_or_update_steamrt, deprecate_jadeite, sync_installed_runners};
 
 mod utils;
 mod commands;
@@ -107,25 +110,21 @@ pub fn run() {
                         },
                         Err(_e) => {},
                     }
+                    // cleanup steam.exe jank
+                    let tmphome = app.path().app_data_dir().unwrap().follow_symlink().unwrap().join("tmp_home/").follow_symlink().unwrap();
+                    if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
                 }
 
                 let res_dir = app.path().resource_dir().unwrap();
                 let data_dir = app.path().app_data_dir().unwrap();
-                let ddc = data_dir.clone();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 //update_extras(handle.clone(), false);
-                deprecate_jadeite(handle);
-                // Fetch steamrt (for the first time only ever) jank
                 #[cfg(target_os = "linux")]
                 {
-                    // Cleanup tmphome steam.exe jank
-                    let tmphome = app.path().app_data_dir().unwrap().follow_symlink().unwrap().join("tmp_home/").follow_symlink().unwrap();
-                    if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
-                    std::thread::spawn(move || {
-                        let steamrtpath = ddc.join("compatibility/steamrt");
-                        if std::fs::read_dir(&steamrtpath).unwrap().next().is_none() { download_steamrt(steamrtpath.clone(), steamrtpath.clone(), "sniper".to_string()); }
-                    });
+                    deprecate_jadeite(handle);
+                    sync_installed_runners(handle);
+                    download_or_update_steamrt(handle);
                 }
 
                 let path = data_dir.join(".telemetry_blocked");
@@ -149,7 +148,8 @@ pub fn run() {
             list_installs, list_installs_by_manifest_id, get_install_by_id, add_install, remove_install,
             update_install_game_path, update_install_runner_path, update_install_dxvk_path, update_install_skip_version_updates, update_install_skip_hash_valid, update_install_use_jadeite, update_install_use_xxmi, update_install_use_fps_unlock, update_install_fps_value, update_install_env_vars, update_install_pre_launch_cmd, update_install_launch_cmd, update_install_prefix_path, update_install_launch_args, update_install_dxvk_version, update_install_runner_version, update_install_use_gamemode, update_install_use_mangohud,
             list_compatibility_manifests, get_compatibility_manifest_by_manifest_id,
-            game_launch, get_download_sizes, get_resume_states, update_install_mangohud_config_path, update_settings_default_mangohud_config_path, add_shortcut, remove_shortcut])
+            game_launch, get_download_sizes, get_resume_states, update_install_mangohud_config_path, update_settings_default_mangohud_config_path, add_shortcut, remove_shortcut,
+            add_installed_runner, remove_installed_runner, get_installed_runner_by_version, get_installed_runner_by_id, list_installed_runners, update_installed_runner_install_status])
         .build(tauri::generate_context!())
         .expect("Error while running TwintailLauncher!");
 

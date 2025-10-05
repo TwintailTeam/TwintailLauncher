@@ -1,6 +1,5 @@
 use std::{fs, io};
 use std::collections::HashMap;
-use std::fs::copy;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -9,17 +8,19 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_use_jadeite_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 #[cfg(target_os = "linux")]
+use std::io::BufRead;
+#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
+use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_version, get_installs, get_manifest_info_by_id, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 #[cfg(target_os = "linux")]
-use std::io::{BufRead, BufReader};
+use fischl::compat::{download_steamrt, check_steamrt_update};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -68,7 +69,7 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
             payload.insert("progress", tracker.load(Ordering::SeqCst).to_string());
             payload.insert("total", totalsize.to_string());
 
-            copy(ep.clone(), dst.as_ref().join(f))?;
+            fs::copy(ep.clone(), dst.as_ref().join(f))?;
             app.emit("move_progress", &payload).unwrap();
             fs::remove_file(ep)?;
         }
@@ -274,7 +275,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
                 let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
 
                 // steamrt setup
-                let steamrtpath = comppath.join("steamrt").follow_symlink().unwrap();
+                let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
                 if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
 
                 if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
@@ -298,7 +299,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
 
             // steamrt setup
-            let steamrtpath = comppath.join("steamrt").follow_symlink().unwrap();
+            let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
             if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
 
             if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
@@ -365,12 +366,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() {
-                                    #[cfg(target_os = "linux")]
-                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
-                                    #[cfg(target_os = "windows")]
-                                    fs::copy(path.join(lib), linkedpath).unwrap();
-                                }
+                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
                             }
                         }
                     }
@@ -413,12 +409,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() {
-                                    #[cfg(target_os = "linux")]
-                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
-                                    #[cfg(target_os = "windows")]
-                                    fs::copy(path.join(lib), linkedpath).unwrap();
-                                }
+                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
                             }
                         }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
@@ -430,6 +421,29 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn sync_installed_runners(app: &AppHandle) {
+    let gs = get_settings(app);
+    if gs.is_some() {
+        let s = gs.unwrap();
+        let runners = Path::new(&s.default_runner_path).follow_symlink().unwrap();
+        if !runners.exists() { return; }
+
+        for e in fs::read_dir(runners).unwrap() {
+            let path = e.unwrap().path();
+            if path.is_dir() && path.exists() {
+                let dir_name = path.file_name().unwrap().to_str().unwrap();
+                let mut subdir_iter = fs::read_dir(&path).unwrap();
+                if subdir_iter.next().is_some() {
+                    let installed_runner = get_installed_runner_info_by_version(app, dir_name.to_string());
+                    if installed_runner.is_none() && dir_name != "steamrt" { create_installed_runner(app, dir_name.to_string(), true, path.to_str().unwrap().parse().unwrap()).unwrap(); }
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
 pub fn deprecate_jadeite(app: &AppHandle) {
     let installs = get_installs(app);
     if installs.is_some() {
@@ -441,6 +455,84 @@ pub fn deprecate_jadeite(app: &AppHandle) {
                 // Shit validation but will work
                 if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
                 if lm.display_name.to_ascii_lowercase().contains("starrail") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
+            }
+        }
+    }
+}
+
+
+#[cfg(target_os = "linux")]
+pub fn download_or_update_steamrt(app: &AppHandle) {
+    let gs = get_settings(app);
+
+    if gs.is_some() {
+        let s = gs.unwrap();
+        let rp = Path::new(&s.default_runner_path).follow_symlink().unwrap();
+        let steamrt = rp.join("steamrt");
+
+        if fs::read_dir(&steamrt).unwrap().next().is_none() {
+            let app = app.clone();
+            std::thread::spawn(move || {
+                let app = app.clone();
+                let mut dlpayload = HashMap::new();
+                dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                dlpayload.insert("progress", "0".to_string());
+                dlpayload.insert("total", "1000".to_string());
+                app.emit("download_progress", dlpayload.clone()).unwrap();
+                prevent_exit(&app, true);
+
+                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                    let app = app.clone();
+                    let dlpayload = dlpayload.clone();
+                    move |current, total| {
+                        let mut dlpayload = dlpayload.clone();
+                        dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                        dlpayload.insert("progress", current.to_string());
+                        dlpayload.insert("total", total.to_string());
+                        app.emit("download_progress", dlpayload.clone()).unwrap();
+                    }
+                });
+                if r {
+                    app.emit("download_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                    prevent_exit(&app, false);
+                }
+            });
+        } else {
+            let vp = steamrt.join("VERSIONS.txt");
+            let cur_ver = find_steamrt_version(vp).unwrap();
+            if cur_ver.is_empty() { return; }
+            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-stable".to_string());
+            if remote_ver.is_some() {
+                let rv = remote_ver.unwrap();
+                if compare_steamrt_versions(&rv, &cur_ver) {
+                    empty_dir(steamrt.as_path()).unwrap();
+                    let app = app.clone();
+                    std::thread::spawn(move || {
+                        let app = app.clone();
+                        let mut dlpayload = HashMap::new();
+                        dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                        dlpayload.insert("progress", "0".to_string());
+                        dlpayload.insert("total", "1000".to_string());
+                        app.emit("update_progress", dlpayload.clone()).unwrap();
+                        prevent_exit(&app, true);
+
+                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                            let app = app.clone();
+                            let dlpayload = dlpayload.clone();
+                            move |current, total| {
+                                let mut dlpayload = dlpayload.clone();
+                                dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                                dlpayload.insert("progress", current.to_string());
+                                dlpayload.insert("total", total.to_string());
+                                app.emit("update_progress", dlpayload.clone()).unwrap();
+                            }
+                        });
+                        if r {
+                            app.emit("update_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                            prevent_exit(&app, false);
+                        }
+                    });
+                } else { println!("SteamLinuxRuntime is up to date!"); }
             }
         }
     }
@@ -488,7 +580,7 @@ pub fn get_os_release() -> Option<String> {
 
     if pp.exists() {
         let file = fs::File::open(pp).unwrap();
-        let reader = BufReader::new(file);
+        let reader = io::BufReader::new(file);
         let mut map = HashMap::new();
 
         for line in reader.lines() {
@@ -506,8 +598,46 @@ pub fn patch_hkrpg(app: &AppHandle, dir: String) {
     if dir.exists() {
         let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
         let target = dir.join("dbghelp.dll");
-        if patch.exists() { copy(&patch, &target).unwrap(); }
+        if patch.exists() { fs::copy(&patch, &target).unwrap(); }
     }
+}
+
+#[cfg(target_os = "linux")]
+fn find_steamrt_version(file_path: PathBuf) -> io::Result<String> {
+    let file = fs::File::open(file_path);
+    match file {
+        Ok(file) => {
+            let reader = io::BufReader::new(file);
+            for line in reader.lines() {
+                let line = line?;
+                for token in line.split_whitespace() {
+                    if token.starts_with("3.") && token.matches('.').count() >= 3 && token.chars().all(|c| c.is_ascii_digit() || c == '.') { return Ok(token.to_string()); }
+                }
+            }
+        }
+        Err(_) => {eprintln!("Could not find VERSIONS.txt in steamrt directory!");}
+    }
+    Ok(String::new())
+}
+
+#[cfg(target_os = "linux")]
+fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
+    let parts1: Vec<u64> = v1.split('.').map(|v| v.parse().unwrap_or(0)).collect();
+    let parts2: Vec<u64> = v2.split('.').map(|v| v.parse().unwrap_or(0)).collect();
+    for (a, b) in parts1.iter().zip(parts2.iter()) {
+        if a > b { return true; } else if a < b { return false; }
+    }
+    parts1.len() > parts2.len()
+}
+
+#[allow(dead_code)]
+fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
+    for entry in fs::read_dir(dir.as_ref())? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+    }
+    Ok(())
 }
 
 pub struct ActionBlocks {

@@ -5,7 +5,7 @@ use sqlx::{query, Error, Executor, Pool, Row, Sqlite, error::BoxDynError, sqlite
 use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
 use crate::commands::settings::GlobalSettings;
-use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository};
+use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository, LauncherRunner};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
 
 pub async fn init_db(app: &AppHandle) {
@@ -109,6 +109,12 @@ pub async fn init_db(app: &AppHandle) {
             sql: r#"ALTER TABLE install ADD COLUMN shortcut_path TEXT default null;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 17,
+            description: "init_installed_runners_table_118",
+            sql: r#"CREATE TABLE IF NOT EXISTS installed_runners ("runner_path" TEXT default null, "is_installed" bool default 0 not null, "version" TEXT default null, id integer not null CONSTRAINT ir_pk primary key autoincrement);"#,
+            kind: MigrationKind::Up,
+        }
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -908,6 +914,125 @@ pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_st
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'shortcut_is_steam' = $1 WHERE id = $2").bind(is_steam).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+// === INSTALLED RUNNERS ===
+
+pub fn get_installed_runners(app: &AppHandle) -> Option<Vec<LauncherRunner>> {
+    let mut rslt = vec![];
+
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("SELECT * FROM installed_runners");
+        rslt = query.fetch_all(&db).await.unwrap();
+    });
+
+    if rslt.len() >= 1 {
+        let mut rsltt = Vec::<LauncherRunner>::new();
+        for r in rslt {
+            rsltt.push(LauncherRunner {
+                id: r.get("id"),
+                runner_path: r.get("runner_path"),
+                is_installed: r.get("is_installed"),
+                version: r.get("version"),
+                value: r.get("version"),
+                name: r.get("version"),
+            })
+        }
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub fn create_installed_runner(app: &AppHandle, version: String, is_installed: bool, runner_path: String) -> Result<bool, Error> {
+    let mut rslt = SqliteQueryResult::default();
+
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("INSERT INTO installed_runners(runner_path, is_installed, version, id) VALUES ($1, $2, $3, null)").bind(runner_path).bind(is_installed).bind(version);
+        rslt = query.execute(&db).await.unwrap();
+    });
+
+    if rslt.rows_affected() >= 1 {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+pub fn get_installed_runner_info_by_id(app: &AppHandle, id: String) -> Option<LauncherRunner> {
+    let mut rslt = vec![];
+
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("SELECT * FROM installed_runners WHERE id = $1").bind(id);
+        rslt = query.fetch_all(&db).await.unwrap();
+    });
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherRunner {
+            id: rslt.get(0).unwrap().get("id"),
+            runner_path: rslt.get(0).unwrap().get("runner_path"),
+            is_installed: rslt.get(0).unwrap().get("is_installed"),
+            version: rslt.get(0).unwrap().get("version"),
+            name:  rslt.get(0).unwrap().get("version"),
+            value:  rslt.get(0).unwrap().get("version"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub fn get_installed_runner_info_by_version(app: &AppHandle, version: String) -> Option<LauncherRunner> {
+    let mut rslt = vec![];
+
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("SELECT * FROM installed_runners WHERE version = $1").bind(version);
+        rslt = query.fetch_all(&db).await.unwrap();
+    });
+
+    if rslt.len() >= 1 {
+        let rsltt = LauncherRunner {
+            id: rslt.get(0).unwrap().get("id"),
+            runner_path: rslt.get(0).unwrap().get("runner_path"),
+            is_installed: rslt.get(0).unwrap().get("is_installed"),
+            version: rslt.get(0).unwrap().get("version"),
+            name:  rslt.get(0).unwrap().get("version"),
+            value:  rslt.get(0).unwrap().get("version"),
+        };
+
+        Some(rsltt)
+    } else {
+        None
+    }
+}
+
+pub fn update_installed_runner_is_installed_by_version(app: &AppHandle, version: String, is_installed: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE installed_runners SET 'is_installed' = $1 WHERE version = $2").bind(is_installed).bind(version);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+#[allow(dead_code)]
+pub fn update_installed_runner_path_by_version(app: &AppHandle, version: String, runner_path: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE installed_runners SET 'runner_path' = $1 WHERE version = $2").bind(runner_path).bind(version);
         query.execute(&db).await.unwrap();
     });
 }

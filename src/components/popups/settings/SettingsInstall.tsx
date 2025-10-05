@@ -11,8 +11,7 @@ import SubMenu from "../../common/SubMenu.tsx";
 
 interface IProps {
     games: any,
-    runnerVersions: any,
-    dxvkVersions: any,
+    installedRunners: any,
     installSettings: any,
     setOpenPopup: (popup: POPUPS) => void,
     pushInstalls: () => void,
@@ -67,11 +66,11 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         <TextInput name={"Pre launch command"} value={this.props.installSettings.pre_launch_command} readOnly={false} id={"install_pre_launch_cmd"} placeholder={`${window.navigator.platform.includes("Linux") ? '"/long path/linuxapp"' : "taskmgr.exe"}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Command that will be ran before game launches. Running stuff under Wine/Proton requires %runner% variable."}/>
                         <TextInput name={"Launch command"} value={this.props.installSettings.launch_command} readOnly={false} id={"install_launch_cmd"} placeholder={`${window.navigator.platform.includes("Linux") ? '%runner% [run] "/path long/thing.exe"' : '"/path long/thing.exe"'}`} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Custom command to launch the game. On linux this will run whatever you enter here inside Wine/Proton."}/>
                         <TextInput name={"Launch arguments"} value={this.props.installSettings.launch_args} readOnly={false} id={"install_launch_args"} placeholder={"-dx11 -whatever -thisonetoo"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} helpText={"Additional arguments to pass to the game. Each entry is separated with space."}/>
-                        {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} multiple={false} options={this.props.runnerVersions} selected={(this.props.installSettings.runner_version === "none" || this.props.installSettings.runner_version === "") ? this.props.runnerVersions[0].value : this.props.installSettings.runner_version} install={this.props.installSettings.id} fetchInstallSettings={this.props.fetchInstallSettings} helpText={"Wine/Proton version used by this installation."} setOpenPopup={this.props.setOpenPopup}/> : null}
+                        {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_runner_version"} name={"Runner version"} multiple={false} options={this.props.installedRunners} selected={(this.props.installSettings.runner_version === "none" || this.props.installSettings.runner_version === "") ? this.props.installedRunners[0].value : this.props.installSettings.runner_version} install={this.props.installSettings.id} fetchInstallSettings={this.props.fetchInstallSettings} helpText={"Wine/Proton version used by this installation."} setOpenPopup={this.props.setOpenPopup}/> : null}
                         {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner location"} clearable={true} value={`${this.props.installSettings.runner_path}`} folder={true} id={"install_runner_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location of the Wine/Proton runner. Usually points to directory containing "bin" or "files" directory.`}/> : null}
                         {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Runner prefix location"} clearable={true} value={`${this.props.installSettings.runner_prefix}`} folder={true} id={"install_prefix_path2"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location where Wine/Proton prefix is stored. Should point to directory where "system.reg" is stored.`}/> : null}
-                        {(window.navigator.platform.includes("Linux")) ? <SelectMenu id={"install_dxvk_version"} name={"DXVK version"} multiple={false} options={this.props.dxvkVersions} selected={(this.props.installSettings.dxvk_version === "none" || this.props.installSettings.dxvk_version === "") ? this.props.dxvkVersions[0].value : this.props.installSettings.dxvk_version} install={this.props.installSettings.id} fetchInstallSettings={this.props.fetchInstallSettings} helpText={"DXVK version used by this installation."} setOpenPopup={this.props.setOpenPopup}/> : null}
-                        {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"DXVK location"} clearable={true} value={`${this.props.installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location from which folder to pull DXVK for this installation. Should point to directory with "x32" and "x64" directories.`}/> : null}
+                        {(window.navigator.platform.includes("Linux")) ? null/*<SelectMenu id={"install_dxvk_version"} name={"DXVK version"} multiple={false} options={this.props.dxvkVersions} selected={(this.props.installSettings.dxvk_version === "none" || this.props.installSettings.dxvk_version === "") ? this.props.dxvkVersions[0].value : this.props.installSettings.dxvk_version} install={this.props.installSettings.id} fetchInstallSettings={this.props.fetchInstallSettings} helpText={"DXVK version used by this installation."} setOpenPopup={this.props.setOpenPopup}/>*/ : null}
+                        {(window.navigator.platform.includes("Linux")) ? null/*<FolderInput name={"DXVK location"} clearable={true} value={`${this.props.installSettings.dxvk_path}`} folder={true} id={"install_dxvk_path"} fetchInstallSettings={this.props.fetchInstallSettings} install={this.props.installSettings.id} setOpenPopup={this.props.setOpenPopup} helpText={`Location from which folder to pull DXVK for this installation. Should point to directory with "x32" and "x64" directories.`}/>*/ : null}
                     </div>
                 </div>
                 <div className="flex justify-center gap-3 pt-5 mt-4 border-t border-white/10 flex-wrap">
@@ -79,28 +78,28 @@ export default class SettingsInstall extends React.Component<IProps, IState> {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
-                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "install"}).then(() => {});
+                        invoke("open_folder", {runnerVersion: "", manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "install"}).then(() => {});
                     }}><FolderOpenIcon/><span>Open game folder</span>
                     </button>
                     {this.props.installSettings.use_xxmi ? <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
-                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "mods"}).then(() => {});
+                        invoke("open_folder", {runnerVersion: "", manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "mods"}).then(() => {});
                     }}><FolderOpenIcon/><span>Open mods folder</span>
                     </button>: null}
                     {(window.navigator.platform.includes("Linux")) ? <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
-                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "runner"}).then(() => {});
+                        invoke("open_folder", {runnerVersion: "", manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "runner"}).then(() => {});
                     }}><FolderOpenIcon/><span>Open runner folder</span>
                     </button>: null}
                     {(window.navigator.platform.includes("Linux")) ? <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         this.props.setOpenPopup(POPUPS.NONE);
                         // @ts-ignore
                         document.getElementById(this.props.installSettings.id).focus();
-                        invoke("open_folder", {manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "runner_prefix"}).then(() => {});
+                        invoke("open_folder", {runnerVersion: "", manifestId: this.props.installSettings.manifest_id, installId: this.props.installSettings.id, pathType: "runner_prefix"}).then(() => {});
                     }}><FolderOpenIcon/><span>Open prefix folder</span>
                     </button>: null}
                     <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {

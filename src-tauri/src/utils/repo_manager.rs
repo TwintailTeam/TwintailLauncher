@@ -416,6 +416,16 @@ pub struct LauncherInstall {
     pub shortcut_path: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LauncherRunner {
+    pub id: i64,
+    pub runner_path: String,
+    pub is_installed: bool,
+    pub version: String,
+    pub value: String,
+    pub name: String
+}
+
 // === MANIFESTS ===
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

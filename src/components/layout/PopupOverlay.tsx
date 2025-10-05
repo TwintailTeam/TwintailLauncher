@@ -8,6 +8,7 @@ import SettingsInstall from "../popups/settings/SettingsInstall";
 import InstallDeleteConfirm from "../popups/settings/InstallDeleteConfirm";
 import FpsUnlockSettings from "../popups/settings/FpsUnlockSettings.tsx";
 import MangoHudSettings from "../popups/settings/MangoHudSettings.tsx";
+import RunnerManager from "../popups/runnermanager/RunnerManager.tsx";
 
 export type PopupOverlayProps = {
   openPopup: POPUPS;
@@ -26,6 +27,9 @@ export type PopupOverlayProps = {
   runnerVersions: any[];
   dxvkVersions: any[];
   gameVersions: any[];
+  runners: any[];
+  installedRunners: any[];
+  fetchInstalledRunners: () => any;
   gameIcon: string;
   gameBackground: string;
   currentGame: string;
@@ -66,6 +70,9 @@ export default function PopupOverlay(props: PopupOverlayProps) {
     runnerVersions,
     dxvkVersions,
     gameVersions,
+    runners,
+    installedRunners,
+    fetchInstalledRunners,
     gameIcon,
     gameBackground,
     currentGame,
@@ -120,6 +127,14 @@ export default function PopupOverlay(props: PopupOverlayProps) {
           fetchRepositories={fetchRepositories}
         />
       )}
+      {openPopup == POPUPS.RUNNERMANAGER && (
+          <RunnerManager
+              runners={runners}
+              fetchInstalledRunners={fetchInstalledRunners}
+              installedRunners={installedRunners}
+              setOpenPopup={setOpenPopup}
+          />
+      )}
       {openPopup == POPUPS.ADDREPO && <AddRepo setOpenPopup={setOpenPopup} />}
       {openPopup == POPUPS.SETTINGS && (
         <SettingsGlobal
@@ -150,8 +165,7 @@ export default function PopupOverlay(props: PopupOverlayProps) {
       {openPopup == POPUPS.INSTALLSETTINGS && (
         <SettingsInstall
           games={gamesinfo}
-          runnerVersions={runnerVersions}
-          dxvkVersions={dxvkVersions}
+          installedRunners={installedRunners}
           installSettings={installSettings}
           setOpenPopup={setOpenPopup}
           pushInstalls={pushInstalls}
