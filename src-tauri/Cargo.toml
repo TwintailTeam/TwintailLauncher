@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "1.1.7"
+version = "1.1.8"
 description = "A multi-platform launcher for your anime games"
 authors = ["TukanDev"]
 edition = "2024"
@@ -29,6 +29,7 @@ futures-core = "0.3"
 gumdrop = "0.8.1"
 # Main library to handle downloads and comaptibility
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
+steam_shortcuts_util = "1.1.8"
 
 # tauri plugins
 tauri-plugin-dialog = "2"

@@ -64,25 +64,14 @@ export default function ActionBar(props: ActionBarProps) {
           </button>
         ) : null}
         {currentInstall !== "" ? (
-          <button
-            id={`install_settings_btn`}
-            className={`p-2.5 rounded-full shadow-lg disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 transition-colors focus:outline-none 
+          <button id={`install_settings_btn`} className={`p-2.5 rounded-full shadow-lg disabled:cursor-not-allowed disabled:brightness-75 disabled:saturate-100 transition-colors focus:outline-none 
               ${buttonType === "update"
                 ? "bg-green-600 hover:bg-green-700 border border-white/30 shadow-green-900/20 focus:ring-2 focus:ring-green-400/60"
                 : buttonType === "resume"
                 ? "bg-amber-600 hover:bg-amber-700 border border-white/30 shadow-amber-900/20 focus:ring-2 focus:ring-amber-400/60"
                 : "bg-purple-600 hover:bg-purple-700 border border-white/30 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}
-            `}
-            disabled={disableInstallEdit}
-            onClick={() => onOpenInstallSettings()}
-          >
-            <TooltipIcon
-              side={"top"}
-              text={"Install settings"}
-              icon={
-                <Settings className="w-8 h-8 text-white" />
-              }
-            />
+            `} disabled={disableInstallEdit} onClick={() => onOpenInstallSettings()}>
+            <TooltipIcon side={"top"} text={"Install settings"} icon={<Settings className="w-8 h-8 text-white" />}/>
           </button>
         ) : null}
         <GameButton

@@ -62,18 +62,34 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     invoke("remove_install", {id: install.id, wipePrefix: wpd}).then(r => {
                         if (r) {
                             pushInstalls();
-                            if (installs.length === 0) {
+                            // Defensive: check installs and games length before accessing
+                            if (installs.length === 1) { // after removal, will be 0
                                 setCurrentInstall("");
-                                setCurrentGame(games[0].biz);
-                                setBackground(games[0].assets.game_background);
-                                // @ts-ignore
-                                document.getElementById(games[0].biz).focus();
-                            } else {
+                                if (games.length > 0) {
+                                    setCurrentGame(games[0].biz);
+                                    setBackground(games[0].assets.game_background);
+                                    // @ts-ignore
+                                    const el = document.getElementById(games[0].biz);
+                                    if (el) el.focus();
+                                } else {
+                                    setCurrentGame("");
+                                    setBackground("");
+                                }
+                            } else if (installs.length > 1) {
                                 setCurrentInstall(installs[0].id);
-                                setCurrentGame(games[0].biz);
+                                if (games.length > 0) {
+                                    setCurrentGame(games[0].biz);
+                                } else {
+                                    setCurrentGame("");
+                                }
                                 setBackground(installs[0].game_background);
                                 // @ts-ignore
-                                document.getElementById(installs[0].id).focus();
+                                const el = document.getElementById(installs[0].id);
+                                if (el) el.focus();
+                            } else {
+                                setCurrentInstall("");
+                                setCurrentGame("");
+                                setBackground("");
                             }
                         } else {
                             console.error("Uninstall error!");

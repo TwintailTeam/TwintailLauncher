@@ -30,8 +30,10 @@ interface IProps {
 export default function DownloadGame({disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, setBackground, fetchDownloadSizes, openAsExisting}: IProps) {
     const [skipGameDownload] = useState<boolean>(!!openAsExisting);
     const [selectedGameVersion, setSelectedGameVersion] = useState(versions?.[0]?.value || "");
+    // @ts-ignore
     const [selectedAudioLang, setSelectedAudioLang] = useState("en-us");
     const [selectedRunnerVersion, setSelectedRunnerVersion] = useState(runnerVersions?.[0]?.value || "");
+    // @ts-ignore
     const [selectedDxvkVersion, setSelectedDxvkVersion] = useState(dxvkVersions?.[0]?.value || "");
 
     // Animation state
@@ -83,9 +85,9 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     <div className="w-full"><TextDisplay id={"game_disk_free"} name={"Available disk space"} value={`${disk.free_disk_space}`} style={"text-white px-3 w-full"}/></div>
                     <div className="w-full"><TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3 w-full"}/></div>
                     <div className="w-full"><SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={selectedGameVersion} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={() => selectedAudioLang} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload} onSelect={setSelectedGameVersion}/></div>
-                    <div className="w-full"><SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={selectedAudioLang} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={() => selectedGameVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload} onSelect={setSelectedAudioLang}/></div>
+                    {/*<div className="w-full"><SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={selectedAudioLang} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={() => selectedGameVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload} onSelect={setSelectedAudioLang}/></div>*/}
                     {(window.navigator.platform.includes("Linux")) ? <div className="w-full"><SelectMenu id={"runner_version"} name={"Runner version"} multiple={false} options={runnerVersions} selected={selectedRunnerVersion} helpText={"Wine/Proton version to use for this installation."} setOpenPopup={setOpenPopup} onSelect={setSelectedRunnerVersion}/></div> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <div className="w-full"><SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={selectedDxvkVersion} helpText={"What DXVK version to use for this installation."} setOpenPopup={setOpenPopup} onSelect={setSelectedDxvkVersion}/></div> : null}
+                    {(window.navigator.platform.includes("Linux")) ? null/*<div className="w-full"><SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={selectedDxvkVersion} helpText={"What DXVK version to use for this installation."} setOpenPopup={setOpenPopup} onSelect={setSelectedDxvkVersion}/></div>*/ : null}
                     {(window.navigator.platform.includes("Linux")) ? <div className="w-full"><FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"} helpText={"Location where to store Wine/Proton prefix."}/></div>: null}
                 </div>
             </div>

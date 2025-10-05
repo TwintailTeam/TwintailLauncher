@@ -70,7 +70,7 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
                                     lb.removeAttribute("disabled");
                                     // @ts-ignore
                                     lt.innerText = `Play!`;
-                                }, 50000);
+                                }, 20000);
                             } break;
                         }
                     } else {

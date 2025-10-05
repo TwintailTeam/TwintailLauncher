@@ -411,7 +411,19 @@ pub struct LauncherInstall {
     pub launch_args: String,
     pub use_gamemode: bool,
     pub use_mangohud: bool,
-    pub mangohud_config_path: String
+    pub mangohud_config_path: String,
+    pub shortcut_is_steam: bool,
+    pub shortcut_path: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LauncherRunner {
+    pub id: i64,
+    pub runner_path: String,
+    pub is_installed: bool,
+    pub version: String,
+    pub value: String,
+    pub name: String
 }
 
 // === MANIFESTS ===

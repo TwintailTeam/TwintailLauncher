@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 use crate::utils::{block_telemetry, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, get_mi_path_from_game, send_notification, PathResolve};
-use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
+use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
 use tauri_plugin_notification::NotificationExt;
 
@@ -177,7 +177,7 @@ pub fn update_extras(app: AppHandle, show_notify: bool) -> bool {
 }
 
 #[tauri::command]
-pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path_type: String) {
+pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
     match path_type.as_str() {
         "mods" => {
             let settings = get_settings(&app);
@@ -227,6 +227,21 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, path
                 } else {
                     send_notification(&app, "Can not open runner directory, Is runner downloaded properly?", None);
                 };
+            }
+        }
+        "runner_global" => {
+            let runner = get_installed_runner_info_by_version(&app, runner_version);
+            if runner.is_some() {
+                let i = runner.unwrap();
+                let fp = Path::new(&i.runner_path).join("proton").follow_symlink().unwrap().to_path_buf();
+                if fp.exists() {
+                    match app.opener().reveal_item_in_dir(fp.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { send_notification(&app, "Directory opening failed, try again later!", None); }
+                    }
+                } else {
+                    send_notification(&app, "Can not open runner directory, Is runner downloaded properly?", None);
+                }
             }
         }
         "runner_prefix" => {
