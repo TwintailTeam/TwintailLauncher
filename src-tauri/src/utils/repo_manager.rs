@@ -256,13 +256,13 @@ pub fn load_manifests(app: &AppHandle) {
                                                                         let first = ri.versions.first().unwrap();
                                                                         let np = i.runner_path.replace(i.runner_version.as_str(), first.version.as_str());
                                                                         let pp = Path::new(&np).follow_symlink().unwrap();
-                                                                        let installedr = get_installed_runner_info_by_version(&app, first.version);
-                                                                        if installedr.is_none() { create_installed_runner(&app, first.version, true, np).unwrap(); } else { update_installed_runner_is_installed_by_version(&app, first.version, true); }
+                                                                        let installedr = get_installed_runner_info_by_version(&app, first.version.clone());
+                                                                        if installedr.is_none() { create_installed_runner(&app, first.version.clone(), true, np.clone()).unwrap(); } else { update_installed_runner_is_installed_by_version(&app, first.version.clone(), true); }
                                                                         if !pp.exists() {
                                                                             fs::create_dir_all(&pp).unwrap();
                                                                             Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
                                                                         } else { Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {}); }
-                                                                        update_install_runner_location_by_id(&app, i.id.clone(), np);
+                                                                        update_install_runner_location_by_id(&app, i.id.clone(), np.clone());
                                                                         update_install_runner_version_by_id(&app, i.id, first.version.clone());
                                                                     }
                                                                     #[cfg(target_os = "windows")]
