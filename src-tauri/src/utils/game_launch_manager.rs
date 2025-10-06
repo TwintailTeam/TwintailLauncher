@@ -17,6 +17,8 @@ use crate::utils::{runner_from_runner_version, patch_hkrpg};
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
 use tauri::Manager;
+#[cfg(target_os = "linux")]
+use std::os::unix::process::CommandExt;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -51,11 +53,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d"); // steam.exe assert failure fix
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
         cmd.current_dir(dir.clone());
+        cmd.process_group(0);
 
         match cmd.spawn() {
             Ok(mut child) => {
@@ -109,20 +112,21 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d"); // steam.exe assert failure fix
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d");
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
+        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
         cmd.current_dir(dir.clone());
+        cmd.process_group(0);
 
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
@@ -182,20 +186,21 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d"); // steam.exe assert failure fix
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d");
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
 
         // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); cmd.env("WINEDLLOVERRIDES", "KRSDKExternal.exe=d"); }
+        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
         cmd.current_dir(dir.clone());
+        cmd.process_group(0);
 
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
@@ -252,11 +257,12 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d"); // steam.exe assert failure fix
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
         cmd.current_dir(xxmi_path.clone());
+        cmd.process_group(0);
 
         let spawn = cmd.spawn();
         if spawn.is_ok() {
@@ -289,11 +295,12 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
                 cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
                 cmd.env("PROTONFIXES_DISABLE", "1");
-                cmd.env("WINEDLLOVERRIDES", "lsteamclient=d"); // steam.exe assert failure fix
+                cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
                 cmd.current_dir(fpsunlock_path.clone());
+                cmd.process_group(0);
 
                 let spawn = cmd.spawn();
                 if spawn.is_ok() {

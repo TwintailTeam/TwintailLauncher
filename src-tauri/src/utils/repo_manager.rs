@@ -6,7 +6,7 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
+use crate::utils::db_manager::{create_installed_runner, create_manifest, create_repository, delete_manifest_by_id, get_installed_runner_info_by_version, get_manifest_info_by_filename, get_repository_info_by_github_id, update_installed_runner_is_installed_by_version};
 use crate::utils::{generate_cuid};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -256,13 +256,13 @@ pub fn load_manifests(app: &AppHandle) {
                                                                         let first = ri.versions.first().unwrap();
                                                                         let np = i.runner_path.replace(i.runner_version.as_str(), first.version.as_str());
                                                                         let pp = Path::new(&np).follow_symlink().unwrap();
+                                                                        let installedr = get_installed_runner_info_by_version(&app, first.version.clone());
+                                                                        if installedr.is_none() { create_installed_runner(&app, first.version.clone(), true, np.clone()).unwrap(); } else { update_installed_runner_is_installed_by_version(&app, first.version.clone(), true); }
                                                                         if !pp.exists() {
                                                                             fs::create_dir_all(&pp).unwrap();
                                                                             Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
-                                                                        } else {
-                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
-                                                                        }
-                                                                        update_install_runner_location_by_id(&app, i.id.clone(), np);
+                                                                        } else { Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {}); }
+                                                                        update_install_runner_location_by_id(&app, i.id.clone(), np.clone());
                                                                         update_install_runner_version_by_id(&app, i.id, first.version.clone());
                                                                     }
                                                                     #[cfg(target_os = "windows")]
