@@ -921,7 +921,9 @@ Type=Application
                 } else { send_notification(&app, format!("Failed to create {} desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", install.name.as_str()).as_str(), None); }
             }
             "steam" => {
-                let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
+                let flatpak_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
+                let normal_steam = app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata");
+
                 let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
                 let m = get_manifest(&app, manifest.filename).unwrap();
                 let launchargs = format!("--install={}", install.id.as_str());
@@ -945,11 +947,22 @@ Type=Application
                     last_play_time: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32,
                     tags: vec!["twintaillauncher", "ttl"],
                 };
-                let status = add_steam_shortcut(search_base_path, install.name.as_str(), shortcut);
-                if status {
-                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
-                    send_notification(&app, format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
-                } else { send_notification(&app, format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None); }
+
+                if flatpak_steam.exists() {
+                    let status = add_steam_shortcut(flatpak_steam, install.name.as_str(), shortcut.clone());
+                    if status {
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
+                        send_notification(&app, format!("Successfully added {} to Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                    } else { send_notification(&app, format!("Failed to add {} to Steam (Flatpak)!", install.name.as_str()).as_str(), None); }
+                }
+
+                if normal_steam.exists() {
+                    let status = add_steam_shortcut(normal_steam, install.name.as_str(), shortcut);
+                    if status {
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
+                        send_notification(&app, format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                    } else { send_notification(&app, format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None); }
+                }
             }
             _ => {}
         }
@@ -992,14 +1005,27 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 } else { send_notification(&app, format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None); }
             }
             "steam" => {
-                let search_base_path = if is_flatpak() { app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata") } else { app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata") };
+                let flatpak_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
+                let normal_steam = app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata");
 
-                let status = remove_steam_shortcut(search_base_path, install.name.as_str());
-                if status {
-                    update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                    send_notification(&app, format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
-                } else {
-                    send_notification(&app, format!("Failed to remove {} from Steam!", install.name.as_str()).as_str(), None);
+                if flatpak_steam.exists() {
+                    let status = remove_steam_shortcut(flatpak_steam, install.name.as_str());
+                    if status {
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                        send_notification(&app, format!("Successfully removed {} from Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                    } else {
+                        send_notification(&app, format!("Failed to remove {} from Steam (Flatpak)!", install.name.as_str()).as_str(), None);
+                    }
+                }
+
+                if normal_steam.exists() {
+                    let status = remove_steam_shortcut(normal_steam, install.name.as_str());
+                    if status {
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                        send_notification(&app, format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
+                    } else {
+                        send_notification(&app, format!("Failed to remove {} from Steam!", install.name.as_str()).as_str(), None);
+                    }
                 }
             }
             _ => {}
