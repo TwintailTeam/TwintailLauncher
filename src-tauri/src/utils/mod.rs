@@ -366,7 +366,12 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                     }
@@ -409,7 +414,12 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
