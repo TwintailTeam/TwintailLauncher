@@ -479,6 +479,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
         let s = gs.unwrap();
         let rp = Path::new(&s.default_runner_path).follow_symlink().unwrap();
         let steamrt = rp.join("steamrt");
+        if !steamrt.exists() { fs::create_dir_all(&steamrt).unwrap(); }
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             let app = app.clone();
@@ -509,6 +510,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             });
         } else {
             let vp = steamrt.join("VERSIONS.txt");
+            if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
             let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-stable".to_string());
