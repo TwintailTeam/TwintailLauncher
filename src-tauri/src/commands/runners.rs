@@ -17,7 +17,7 @@ pub fn list_installed_runners(app: AppHandle) -> Option<String> {
 
     if repos.is_some() {
         let repository = repos.unwrap();
-        let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk") && !r.version.to_ascii_lowercase().contains("wine")).collect::<_>();
+        let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect::<_>();
         let stringified = serde_json::to_string(&d).unwrap();
         Some(stringified)
     } else {
