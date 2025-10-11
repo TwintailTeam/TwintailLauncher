@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, is_flatpak, send_notification};
+use crate::utils::{get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -19,6 +19,8 @@ use crate::utils::repo_manager::{get_compatibility};
 use tauri::Manager;
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
+#[cfg(target_os = "linux")]
+use crate::utils::is_flatpak;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
