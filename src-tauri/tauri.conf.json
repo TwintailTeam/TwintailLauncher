@@ -1,7 +1,7 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
     "productName": "twintaillauncher",
-    "version": "1.1.9",
+    "version": "1.1.10",
     "identifier": "twintaillauncher",
     "build": {
         "beforeDevCommand": "pnpm dev",
@@ -50,7 +50,8 @@
             "./resources/7zr",
             "./resources/7zr.exe",
             "./resources/mangohud_default.conf",
-            "./resources/hkrpg_patch.dll"
+            "./resources/hkrpg_patch.dll",
+            "./resources/reaper"
         ],
         "icon": [
             "icons/32x32.png",

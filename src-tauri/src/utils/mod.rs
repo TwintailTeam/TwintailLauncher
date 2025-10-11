@@ -366,7 +366,12 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                     }
@@ -409,7 +414,12 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
-                                if !linkedpath.exists() { fs::copy(path.join(lib), linkedpath).unwrap(); }
+                                if !linkedpath.exists() {
+                                    #[cfg(target_os = "linux")]
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
+                                    #[cfg(target_os = "windows")]
+                                    fs::copy(path.join(lib), linkedpath).unwrap();
+                                }
                             }
                         }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
@@ -469,6 +479,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
         let s = gs.unwrap();
         let rp = Path::new(&s.default_runner_path).follow_symlink().unwrap();
         let steamrt = rp.join("steamrt");
+        if !steamrt.exists() { fs::create_dir_all(&steamrt).unwrap(); }
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             let app = app.clone();
@@ -499,6 +510,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             });
         } else {
             let vp = steamrt.join("VERSIONS.txt");
+            if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
             let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-stable".to_string());

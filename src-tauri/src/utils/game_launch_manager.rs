@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{get_mi_path_from_game, is_flatpak, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -30,7 +30,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let runner = Path::new(install.runner_path.as_str()).follow_symlink()?.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
-    let steamrt = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/run").follow_symlink()?.to_str().unwrap().to_string();
+    let steamrt = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
+    //let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -42,8 +43,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -53,7 +52,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;dbghelp=n,b");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -81,7 +80,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-            let steamrt_run = format!("'{steamrt}' -- '{runner}/{wine64}' run '{dir}/{game}' {args}");
+            let steamrt_run = if is_flatpak() {
+                //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+            } else {
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+            };
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
@@ -90,19 +94,31 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
             command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-                let steamrt_run = format!("'{steamrt}' -- '{runner}/{wine64}' run '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}");
+                let steamrt_run = if is_flatpak() {
+                    //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                } else {
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                };
                 if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
             } else {
                 if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") }
             };
         }
 
+        let mut cmds = String::new();
+        if install.use_xxmi {
+            let xxmi_path = gs.xxmi_path.clone();
+            let mi = get_mi_path_from_game(exe.clone());
+            let mi_path = Path::new(&gs.xxmi_path.clone()).join(mi.unwrap()).to_str().unwrap().to_string();
+            cmds += format!("{prefix}/pfx/drive_c/windows/system32/cmd.exe /c 'z:\\{xxmi_path}/3dmloader.exe' 'z:\\{mi_path}'").as_str();
+        }
+
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+       if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -112,7 +128,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d");
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
@@ -121,7 +137,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -147,7 +163,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
                     Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        //load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
                         load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
@@ -171,12 +187,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
 
+        let mut cmds = String::new();
+        if install.use_xxmi {
+            let xxmi_path = gs.xxmi_path.clone();
+            let mi = get_mi_path_from_game(exe.clone());
+            let mi_path = Path::new(&gs.xxmi_path.clone()).join(mi.unwrap()).to_str().unwrap().to_string();
+            cmds += format!("{prefix}/pfx/drive_c/windows/system32/cmd.exe /c 'z:\\{xxmi_path}/3dmloader.exe' 'z:\\{mi_path}'").as_str();
+        }
+
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+        if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -186,7 +209,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d");
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
@@ -195,7 +218,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // Make it more convenient for wuwa players because we can not load protonfixes
         if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;dbghelp=n,b"); patch_hkrpg(app, dir.clone()); } }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -221,7 +244,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
                     Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        //load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
                         load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
@@ -236,6 +259,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
         if biz == "hk4e_global" { std::thread::sleep(std::time::Duration::from_millis(3000)); } else { std::thread::sleep(std::time::Duration::from_millis(300)); }
@@ -247,8 +271,6 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -257,7 +279,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
+        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;dbghelp=n,b");
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -285,8 +307,6 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.arg("-c");
                 cmd.arg(&command);
 
-                cmd.env("SteamAppId", "0");
-                cmd.env("SteamGameId", "0");
                 cmd.env("WINEARCH","win64");
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -295,7 +315,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
                 cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
                 cmd.env("PROTONFIXES_DISABLE", "1");
-                cmd.env("WINEDLLOVERRIDES", "lsteamclient=d,KRSDKExternal.exe=d,dbghelp=n,b");
+                cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;dbghelp=n,b");
 
                 cmd.stdout(Stdio::piped());
                 cmd.stderr(Stdio::piped());
