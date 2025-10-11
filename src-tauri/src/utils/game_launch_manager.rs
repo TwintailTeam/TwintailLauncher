@@ -31,7 +31,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
     let steamrt = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
-    let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
+    //let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -83,8 +83,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
             let steamrt_run = if is_flatpak() {
-                let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(0) >> 32;
-                format!("'{steamrt}' --verb=waitforexitandrun -- {reaper} SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+                //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             } else {
                 format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             };
@@ -97,8 +97,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             let jadeite_path = gs.jadeite_path.clone();
             command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
                 let steamrt_run = if is_flatpak() {
-                    let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(0) >> 32;
-                    format!("'{steamrt}' --verb=waitforexitandrun -- {reaper} SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                    //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 } else {
                     format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 };
