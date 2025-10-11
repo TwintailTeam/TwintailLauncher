@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{get_mi_path_from_game, is_flatpak, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -31,6 +31,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
     let steamrt = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
+    let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -42,8 +43,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "55555555555555");
-        cmd.env("SteamGameId", "55555555555555");
+        /*cmd.env("SteamAppId", "55555555555555");
+        cmd.env("SteamGameId", "55555555555555");*/
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -81,7 +82,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-            let steamrt_run = format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}");
+            let steamrt_run = if is_flatpak() {
+                let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(0) >> 32;
+                format!("'{steamrt}' --verb=waitforexitandrun -- {reaper} SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+            } else {
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+            };
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
@@ -90,7 +96,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
             command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
-                let steamrt_run = format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}");
+                let steamrt_run = if is_flatpak() {
+                    let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(0) >> 32;
+                    format!("'{steamrt}' --verb=waitforexitandrun -- {reaper} SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                } else {
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                };
                 if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
             } else {
                 if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") }
@@ -110,8 +121,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
        if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
-        cmd.env("SteamAppId", "400000000000");
-        cmd.env("SteamGameId", "400000000000");
+        /*cmd.env("SteamAppId", "400000000000");
+        cmd.env("SteamGameId", "400000000000");*/
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -193,8 +204,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
         if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
-        cmd.env("SteamAppId", "400000000000");
-        cmd.env("SteamGameId", "400000000000");
+        /*cmd.env("SteamAppId", "400000000000");
+        cmd.env("SteamGameId", "400000000000");*/
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -266,8 +277,8 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "500000000000");
-        cmd.env("SteamGameId", "500000000000");
+        /*cmd.env("SteamAppId", "500000000000");
+        cmd.env("SteamGameId", "500000000000");*/
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -304,8 +315,8 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.arg("-c");
                 cmd.arg(&command);
 
-                cmd.env("SteamAppId", "600000000000");
-                cmd.env("SteamGameId", "600000000000");
+                /*cmd.env("SteamAppId", "600000000000");
+                cmd.env("SteamGameId", "600000000000");*/
                 cmd.env("WINEARCH","win64");
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_APP_ID", "0");

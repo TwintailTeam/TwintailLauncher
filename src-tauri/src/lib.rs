@@ -130,10 +130,10 @@ pub fn run() {
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
 
-                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf"] {
+                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "reaper"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
-                    if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") {
+                    if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") || rd.file_name().unwrap().to_str().unwrap().contains("reaper") {
                         if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     } else {
                         if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
