@@ -9,6 +9,7 @@ use crate::utils::{prevent_exit, send_notification, PathResolve};
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use std::sync::Arc;
+use crate::utils::repo_manager::LauncherRunner;
 
 #[tauri::command]
 pub fn list_installed_runners(app: AppHandle) -> Option<String> {
@@ -16,7 +17,8 @@ pub fn list_installed_runners(app: AppHandle) -> Option<String> {
 
     if repos.is_some() {
         let repository = repos.unwrap();
-        let stringified = serde_json::to_string(&repository).unwrap();
+        let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk") && !r.version.to_ascii_lowercase().contains("wine")).collect::<_>();
+        let stringified = serde_json::to_string(&d).unwrap();
         Some(stringified)
     } else {
         None

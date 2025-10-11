@@ -42,8 +42,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+        cmd.env("SteamAppId", "55555555555555");
+        cmd.env("SteamGameId", "55555555555555");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -110,8 +110,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
        if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+        cmd.env("SteamAppId", "400000000000");
+        cmd.env("SteamGameId", "400000000000");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -193,8 +193,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg(&command);
 
         if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+        cmd.env("SteamAppId", "400000000000");
+        cmd.env("SteamGameId", "400000000000");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -254,6 +254,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
         if biz == "hk4e_global" { std::thread::sleep(std::time::Duration::from_millis(3000)); } else { std::thread::sleep(std::time::Duration::from_millis(300)); }
@@ -265,8 +266,8 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamAppId", "0");
-        cmd.env("SteamGameId", "0");
+        cmd.env("SteamAppId", "500000000000");
+        cmd.env("SteamGameId", "500000000000");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -303,8 +304,8 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                 cmd.arg("-c");
                 cmd.arg(&command);
 
-                cmd.env("SteamAppId", "0");
-                cmd.env("SteamGameId", "0");
+                cmd.env("SteamAppId", "600000000000");
+                cmd.env("SteamGameId", "600000000000");
                 cmd.env("WINEARCH","win64");
                 cmd.env("WINEPREFIX", prefix.clone());
                 cmd.env("STEAM_COMPAT_APP_ID", "0");
