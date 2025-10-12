@@ -440,19 +440,24 @@ pub fn sync_installed_runners(app: &AppHandle) {
         if !runners.exists() { return; }
 
         for e in fs::read_dir(runners).unwrap() {
-            let path = e.unwrap().path();
-            if path.is_dir() && path.exists() {
-                let dir_name = path.file_name().unwrap().to_str().unwrap();
-                let subdir_iter = fs::read_dir(&path);
-                match subdir_iter {
-                    Ok(mut subdir) => {
-                        if subdir.next().is_some() {
-                            let installed_runner = get_installed_runner_info_by_version(app, dir_name.to_string());
-                            if installed_runner.is_none() && dir_name != "steamrt" { create_installed_runner(app, dir_name.to_string(), true, path.to_str().unwrap().parse().unwrap()).unwrap(); }
+            match e {
+                Ok(d) => {
+                    let path = d.path();
+                    if path.is_dir() && path.exists() {
+                        let dir_name = path.file_name().unwrap().to_str().unwrap();
+                        let subdir_iter = fs::read_dir(&path);
+                        match subdir_iter {
+                            Ok(mut subdir) => {
+                                if subdir.next().is_some() {
+                                    let installed_runner = get_installed_runner_info_by_version(app, dir_name.to_string());
+                                    if installed_runner.is_none() && dir_name != "steamrt" { create_installed_runner(app, dir_name.to_string(), true, path.to_str().unwrap().parse().unwrap()).unwrap(); }
+                                }
+                            },
+                            Err(_) => {}
                         }
-                    },
-                    Err(_) => {}
-                }
+                    }
+                },
+                Err(_) => {}
             }
         }
     }
