@@ -619,7 +619,9 @@ pub fn patch_hkrpg(app: &AppHandle, dir: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
         let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
-        let target = dir.join("dbghelp.dll");
+        let target_old = dir.join("dbghelp.dll");
+        if target_old.exists() { fs::remove_file(&target_old).unwrap(); }
+        let target = dir.join("jsproxy.dll");
         if patch.exists() { fs::copy(&patch, &target).unwrap(); }
     }
 }
