@@ -109,19 +109,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             };
         }
 
-        /*let mut cmds = String::new();
-        if install.use_xxmi {
-            let xxmi_path = gs.xxmi_path.clone();
-            let mi = get_mi_path_from_game(exe.clone());
-            let mi_path = Path::new(&gs.xxmi_path.clone()).join(mi.unwrap()).to_str().unwrap().to_string();
-            cmds += format!("{prefix}/pfx/drive_c/windows/system32/cmd.exe /c 'z:\\{xxmi_path}/3dmloader.exe' 'z:\\{mi_path}'").as_str();
-        }*/
-
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
         cmd.arg(&command);
 
-       //if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -190,19 +181,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
 
-        /*let mut cmds = String::new();
-        if install.use_xxmi {
-            let xxmi_path = gs.xxmi_path.clone();
-            let mi = get_mi_path_from_game(exe.clone());
-            let mi_path = Path::new(&gs.xxmi_path.clone()).join(mi.unwrap()).to_str().unwrap().to_string();
-            cmds += format!("{prefix}/pfx/drive_c/windows/system32/cmd.exe /c 'z:\\{xxmi_path}/3dmloader.exe' 'z:\\{mi_path}'").as_str();
-        }*/
-
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
         cmd.arg(&command);
 
-        //if !cmds.is_empty() { cmd.env("PROTON_REMOTE_DEBUG_CMD", cmds); }
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone());
         cmd.env("STEAM_COMPAT_APP_ID", "0");
