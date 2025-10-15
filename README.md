@@ -9,7 +9,7 @@
   * [Developers & Compiling](#developers--compiling)
     * [Prerequisites](#prerequisites)
     * [Building](#building)
-  * [Special thanks](#special-thanks)
+  * [Sponsors](#sponsors)
   * [Thanks to our contributors](#thanks-to-our-contributors)
   * [Issues and contributions](#issues-and-contributions)
 <!-- TOC -->
