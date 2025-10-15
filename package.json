@@ -1,7 +1,7 @@
 {
     "name": "twintaillauncher",
     "private": true,
-    "version": "1.1.10",
+    "version": "1.1.11",
     "type": "module",
     "scripts": {
         "dev": "vite --mode master",
