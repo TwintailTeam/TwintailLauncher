@@ -34,7 +34,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
     let steamrt_path = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/").follow_symlink()?.to_str().unwrap().to_string();
     let steamrt = app.path().app_data_dir()?.follow_symlink()?.join("compatibility/runners/steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
-    //let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
+    let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -84,8 +84,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
             let steamrt_run = if is_flatpak() {
-                //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
-                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+                let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             } else {
                 format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             };
@@ -98,8 +98,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             let jadeite_path = gs.jadeite_path.clone();
             command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
                 let steamrt_run = if is_flatpak() {
-                    //let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
-                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                    let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 } else {
                     format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 };
@@ -247,35 +247,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 #[allow(dead_code)]
 fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
-        /*if biz == "hk4e_global" { std::thread::sleep(std::time::Duration::from_millis(1000)); } else { std::thread::sleep(std::time::Duration::from_millis(300)); }
-        let xxmi_path = xxmi_path.clone();
-        let mipath = get_mi_path_from_game(game.clone()).unwrap();
-        let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
-
-        let mut cmd = Command::new("bash");
-        cmd.arg("-c");
-        cmd.arg(&command);
-
-        cmd.env("WINEARCH","win64");
-        cmd.env("WINEPREFIX", prefix.clone());
-        cmd.env("STEAM_COMPAT_APP_ID", "0");
-        cmd.env("STEAM_COMPAT_DATA_PATH", prefix.clone());
-        cmd.env("STEAM_COMPAT_INSTALL_PATH", xxmi_path.clone());
-        cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
-        cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
-        cmd.env("PROTONFIXES_DISABLE", "1");
-        cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-
-        cmd.stdout(Stdio::piped());
-        cmd.stderr(Stdio::piped());
-        cmd.current_dir(xxmi_path.clone());
-        cmd.process_group(0);
-
-        let spawn = cmd.spawn();
-        if spawn.is_ok() {
-            let process = spawn.unwrap();
-            write_log(app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
-        }*/
         wait_for_process(game.as_str(), 300, 30, |found| {
             if found {
                 let xxmi_path = xxmi_path.clone();
