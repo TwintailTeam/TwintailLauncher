@@ -9,7 +9,7 @@
   * [Developers & Compiling](#developers--compiling)
     * [Prerequisites](#prerequisites)
     * [Building](#building)
-  * [Special thanks](#special-thanks)
+  * [Sponsors](#sponsors)
   * [Thanks to our contributors](#thanks-to-our-contributors)
   * [Issues and contributions](#issues-and-contributions)
 <!-- TOC -->
@@ -99,8 +99,11 @@ pnpm build:windows
 ```
 You can find built binaries in `target/release` for current os, `target/x86_64-unknown-linux-gnu` for linux cross compile and `target/x86_64-pc-windows-msvc` for windows cross compile.
 
-## Special thanks
-- [SignPath Foundation](https://signpath.org/about) for windows code signing
+## Sponsors
+
+| Link                                              | Description          |
+|---------------------------------------------------|----------------------|
+| [SignPath Foundation](https://signpath.org/about) | Windows code signing |
 
 ## Thanks to our contributors
 

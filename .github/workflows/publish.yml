@@ -120,9 +120,9 @@ jobs:
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: '5bcd459b-ba78-4556-b259-f7c3496d3497'
-          project-slug: 'TwintailLauncher'
-          signing-policy-slug: 'test-signing'
+          organization-id: '${{ secrets.SIGNPATH_ORG_ID }}'
+          project-slug: '${{ secrets.SIGNPATH_PROJECT_SLUG }}'
+          signing-policy-slug: 'release-signing'
           artifact-configuration-slug: 'auto_github'
           github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
           wait-for-completion: true
