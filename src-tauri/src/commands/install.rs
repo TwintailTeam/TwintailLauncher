@@ -928,7 +928,7 @@ Type=Application
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
-                let normal_steam = app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata");
+                let normal_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".local/share/Steam/userdata");
 
                 let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
                 let m = get_manifest(&app, manifest.filename).unwrap();
