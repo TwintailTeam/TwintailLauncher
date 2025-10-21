@@ -85,7 +85,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
             let steamrt_run = if is_flatpak() {
                 let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
-                format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+                format!("'{reaper}' SteamLaunch AppId={appid} -- '{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             } else {
                 format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
             };
@@ -99,7 +99,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
                 let steamrt_run = if is_flatpak() {
                     let appid = std::env::var("SteamGameId").ok().and_then(|s| s.parse::<i64>().ok()).unwrap_or(1) >> 32;
-                    format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                    format!("'{reaper}' SteamLaunch AppId={appid} -- '{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 } else {
                     format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 };
