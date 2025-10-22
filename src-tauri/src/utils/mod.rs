@@ -699,7 +699,7 @@ pub fn get_steam_appid() -> i32 {
             }
         }
     }
-    if let Ok(id_str) = std::env::var("UMU_STEAM_GAME_ID") {
+    if let Ok(id_str) = std::env::var("SteamGameId") {
         if let Ok(id) = id_str.parse::<i64>() { return (id >> 32) as i32; }
     }
     steam_appid
