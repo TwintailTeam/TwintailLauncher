@@ -80,12 +80,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         } else {
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
-        let mut command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
+        let mut command = if is_proton {
             let steamrt_run = if is_flatpak() {
                 let appid = get_steam_appid();
-                format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}")
             } else {
-                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{dir}/{game}' {args}")
+                format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}")
             };
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
@@ -94,12 +94,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         if install.use_jadeite {
             let jadeite_path = gs.jadeite_path.clone();
-            command = if rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine") {
+            command = if is_proton {
                 let steamrt_run = if is_flatpak() {
                     let appid = get_steam_appid();
-                    format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 } else {
-                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
+                    format!("'{steamrt}' --verb=waitforexitandrun -- '{runner}/{wine64}' waitforexitandrun 'z:\\{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}")
                 };
                 if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
             } else {

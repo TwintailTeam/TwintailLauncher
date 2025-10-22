@@ -489,7 +489,13 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
         let s = gs.unwrap();
         let rp = Path::new(&s.default_runner_path).follow_symlink().unwrap();
         let steamrt = rp.join("steamrt");
-        if !steamrt.exists() { fs::create_dir_all(&steamrt).unwrap(); }
+        if !steamrt.exists() {
+            let r = fs::create_dir_all(&steamrt);
+            match r {
+                Ok(_) => {},
+                Err(e) => { send_notification(&app, format!("Failed to prepare SteamLinuxRuntime directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None); return; }
+            }
+        }
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             let app = app.clone();
@@ -666,7 +672,7 @@ fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
 
 #[cfg(target_os = "linux")]
 pub fn get_steam_appid() -> i32 {
-    let mut steam_appid: i32 = 0;
+    let steam_appid: i32 = 0;
 
     if let Ok(path) = std::env::var("STEAM_COMPAT_TRANSCODED_MEDIA_PATH") {
         if let Some(last) = Path::new(&path).components().last() {
