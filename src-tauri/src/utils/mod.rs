@@ -590,9 +590,7 @@ pub fn notify_update(app: &AppHandle) {
                     .kind(MessageDialogKind::Info)
                     .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
                     //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
-                    .show(move |_action| {
-                        //if action {  } else { fs::File::create(&suppressed).unwrap(); }
-                    });
+                    .show(move |_action| { /*if action {  } else { fs::File::create(&suppressed).unwrap(); }*/ });
             }
         }
     }
