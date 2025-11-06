@@ -600,6 +600,7 @@ pub fn notify_update(app: &AppHandle) {
 pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
 
 #[cfg(target_os = "linux")]
+#[allow(dead_code)]
 pub fn is_gamescope() -> bool { std::env::var("XDG_SESSION_DESKTOP").unwrap().to_ascii_lowercase() == "gamescope" }
 
 #[cfg(target_os = "linux")]

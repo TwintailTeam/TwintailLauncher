@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, is_gamescope, send_notification};
+use crate::utils::{get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -42,15 +42,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     if !pre_launch.is_empty() {
         let command = format!("{pre_launch}").replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
-        let mut cmd = if is_gamescope() {
-            let mut c = Command::new(&reaper);
-            c.arg("SteamLaunch").arg(format!("AppId={appid}")).arg("--");
-            c
-        } else {
-            let mut c = Command::new("bash");
-            c.arg("-c");
-            c
-        };
+        let mut cmd = Command::new("bash");
+        cmd.arg("-c");
         cmd.arg(&command);
 
         cmd.env("WINEARCH","win64");
@@ -106,17 +99,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             };
         }
 
-        let mut cmd = if is_gamescope() {
-            let mut c = Command::new(&reaper);
-            c.arg("SteamLaunch").arg(format!("AppId={appid}")).arg("--");
-            c
-        } else {
-            let mut c = Command::new("bash");
-            c.arg("-c");
-            c
-        };
+        let mut cmd = Command::new("bash");
+        cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamGameId", format!("{appid}").as_str());
+        cmd.env("SteamOverlayGameId", format!("{appid}").as_str());
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -185,15 +173,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
 
-        let mut cmd = if is_gamescope() {
-            let mut c = Command::new(&reaper);
-            c.arg("SteamLaunch").arg(format!("AppId={appid}")).arg("--");
-            c
-        } else {
-            let mut c = Command::new("bash");
-            c.arg("-c");
-            c
-        };
+        let mut cmd = Command::new("bash");
+        cmd.arg("-c");
         cmd.arg(&command);
 
         cmd.env("WINEARCH","win64");
