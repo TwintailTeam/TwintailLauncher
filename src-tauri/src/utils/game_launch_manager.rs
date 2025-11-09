@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{get_mi_path_from_game, is_flatpak, is_gamescope, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -83,7 +83,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
         let mut command = if is_proton {
-            let steamrt_run = format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}");
+            // Temporary do not use steamrt for gamescope session when flatpak app cuz steamdeck gaming mode still does not work with reaper only???
+            let steamrt_run = if is_gamescope() && is_flatpak() { format!("'{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}") } else { format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}") };
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
@@ -103,8 +104,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamGameId", format!("{appid}").as_str());
-        cmd.env("SteamOverlayGameId", format!("{appid}").as_str());
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
