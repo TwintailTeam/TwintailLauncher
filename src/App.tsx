@@ -261,9 +261,7 @@ export default class App extends React.Component<any, any> {
                     resumeStates={this.state.resumeStates}
                     globalSettings={this.state.globalSettings}
                     buttonType={buttonType}
-                    installSettings={this.state.installSettings}
                     refreshDownloadButtonInfo={this.refreshDownloadButtonInfo}
-                    onRefreshSettings={() => {this.fetchInstallSettings(this.state.currentInstall);}}
                     onOpenInstallSettings={() => {
                         this.setState({ disableInstallEdit: true }, async () => {
                             await this.fetchInstallSettings(this.state.currentInstall);
