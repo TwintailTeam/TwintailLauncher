@@ -84,7 +84,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
         let mut command = if is_proton {
             // Temporary do not use steamrt for gamescope session when flatpak app cuz steamdeck gaming mode still does not work with reaper only???
-            let steamrt_run = if is_gamescope() && is_flatpak() { format!("'{reaper}' SteamLaunch AppId={appid} -- '{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}")/*format!("'{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}")*/ } else { format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}") };
+            let steamrt_run = if is_gamescope() && is_flatpak() { format!("'{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}") } else { format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}") };
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
