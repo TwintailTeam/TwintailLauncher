@@ -103,8 +103,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
-        cmd.env("SteamGameId", format!("{appid}").as_str());
-        cmd.env("SteamOverlayGameId", format!("{appid}").as_str());
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
