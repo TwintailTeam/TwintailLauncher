@@ -34,7 +34,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let steamrt_path = runnerp.join("steamrt/").follow_symlink()?.to_str().unwrap().to_string();
     let steamrt = runnerp.join("steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
     let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
-    let launch_wrapper = app.path().app_data_dir()?.follow_symlink()?.join("steam-launch-wrapper").follow_symlink()?.to_str().unwrap().to_string();
     let appid = get_steam_appid();
 
     let pre_launch = install.pre_launch_command.clone();
@@ -84,7 +83,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
         let mut command = if is_proton {
-            let steamrt_run = format!("'{launch_wrapper}' -- '{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}");
+            let steamrt_run = format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun 'z:\\{dir}/{game}' {args}");
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
         } else {
             if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
