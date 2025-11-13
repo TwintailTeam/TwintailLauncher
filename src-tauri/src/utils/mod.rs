@@ -502,25 +502,25 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             std::thread::spawn(move || {
                 let app = app.clone();
                 let mut dlpayload = HashMap::new();
-                dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                dlpayload.insert("name", String::from("SteamLinuxRuntime 3"));
                 dlpayload.insert("progress", "0".to_string());
                 dlpayload.insert("total", "1000".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
 
-                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
                     let app = app.clone();
                     let dlpayload = dlpayload.clone();
                     move |current, total| {
                         let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                        dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
                         dlpayload.insert("progress", current.to_string());
                         dlpayload.insert("total", total.to_string());
                         app.emit("download_progress", dlpayload.clone()).unwrap();
                     }
                 });
                 if r {
-                    app.emit("download_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                    app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                     prevent_exit(&app, false);
                 }
             });
@@ -529,7 +529,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-stable".to_string());
+            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-beta".to_string());
             if remote_ver.is_some() {
                 let rv = remote_ver.unwrap();
                 if compare_steamrt_versions(&rv, &cur_ver) {
@@ -538,25 +538,25 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                     std::thread::spawn(move || {
                         let app = app.clone();
                         let mut dlpayload = HashMap::new();
-                        dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                        dlpayload.insert("name", String::from("SteamLinuxRuntime 3"));
                         dlpayload.insert("progress", "0".to_string());
                         dlpayload.insert("total", "1000".to_string());
                         app.emit("update_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&app, true);
 
-                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
                             let app = app.clone();
                             let dlpayload = dlpayload.clone();
                             move |current, total| {
                                 let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                                dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
                                 dlpayload.insert("progress", current.to_string());
                                 dlpayload.insert("total", total.to_string());
                                 app.emit("update_progress", dlpayload.clone()).unwrap();
                             }
                         });
                         if r {
-                            app.emit("update_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                            app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                             prevent_exit(&app, false);
                         }
                     });
