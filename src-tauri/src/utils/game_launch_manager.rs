@@ -39,8 +39,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let pre_launch = install.pre_launch_command.clone();
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
+    let mut file = fs::OpenOptions::new().create(true).append(true).open("./envvars")?;
+
     for (k, v) in std::env::vars() {
-        fs::write("./envvars", format!("{}={}", k, v).as_str())?
+        writeln!(file, "{}={}", k, v)?;
     }
 
     if !pre_launch.is_empty() {
