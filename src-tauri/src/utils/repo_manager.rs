@@ -7,7 +7,7 @@ use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_installed_runner, create_manifest, create_repository, delete_manifest_by_id, get_installed_runner_info_by_version, get_manifest_info_by_filename, get_repository_info_by_github_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{generate_cuid};
+use crate::utils::{generate_cuid, send_notification};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
@@ -56,7 +56,11 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     } else {
         #[cfg(debug_assertions)]
         { println!("Official game repository is already cloned!"); }
-        update_repositories(&repo_path).unwrap();
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for manifests and repositories! {}", e.to_string()).as_str(), None); }
+        }
     }
 }
 
