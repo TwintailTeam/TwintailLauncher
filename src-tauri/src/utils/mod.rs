@@ -673,13 +673,13 @@ fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn get_steam_appid() -> i32 {
-    let steam_appid: i32 = 0;
+pub fn get_steam_appid() -> u32 {
+    let steam_appid: u32 = 0;
 
     if let Ok(path) = std::env::var("STEAM_COMPAT_TRANSCODED_MEDIA_PATH") {
         if let Some(last) = Path::new(&path).components().last() {
             if let Some(val) = last.as_os_str().to_str() {
-                if let Ok(id) = val.parse::<i32>() { return id; }
+                if let Ok(id) = val.parse::<u32>() { return id; }
             }
         }
     }
@@ -687,7 +687,7 @@ pub fn get_steam_appid() -> i32 {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 2 {
             if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<i32>() { return id; }
+                if let Ok(id) = val.parse::<u32>() { return id; }
             }
         }
     }
@@ -695,7 +695,7 @@ pub fn get_steam_appid() -> i32 {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 3 {
             if let Some(val) = parts[parts.len() - 3].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<i32>() { return id; }
+                if let Ok(id) = val.parse::<u32>() { return id; }
             }
         }
     }
@@ -703,12 +703,12 @@ pub fn get_steam_appid() -> i32 {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 2 {
             if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<i32>() { return id; }
+                if let Ok(id) = val.parse::<u32>() { return id; }
             }
         }
     }
     if let Ok(id_str) = std::env::var("SteamGameId") {
-        if let Ok(id) = id_str.parse::<i64>() { return (id >> 32) as i32; }
+        if let Ok(id) = id_str.parse::<u64>() { return (id >> 32) as u32; }
     }
     steam_appid
 }
