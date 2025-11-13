@@ -710,7 +710,36 @@ pub fn get_steam_appid() -> i32 {
     if let Ok(id_str) = std::env::var("SteamGameId") {
         if let Ok(id) = id_str.parse::<i64>() { return (id >> 32) as i32; }
     }
+    if is_gamescope() && is_flatpak() {
+        if let Some(id) = find_reaper_appid() { return id; }
+    }
     steam_appid
+}
+
+#[cfg(target_os = "linux")]
+fn find_reaper_appid() -> Option<i32> {
+    let proc_path = "/proc";
+
+    for entry in fs::read_dir(proc_path).ok()? {
+        let entry = entry.ok()?;
+        let file_name = entry.file_name();
+        let pid_str = file_name.to_string_lossy();
+        if !pid_str.chars().all(|c| c.is_ascii_digit()) { continue; }
+
+        let cmdline_path = format!("{}/cmdline", entry.path().display());
+        let data = fs::read(&cmdline_path).ok()?;
+        if data.is_empty() { continue; }
+
+        let parts: Vec<&str> = data.split(|&b| b == 0).filter_map(|slice| std::str::from_utf8(slice).ok()).collect();
+        if parts.iter().any(|&arg| arg.contains("reaper")) {
+            for arg in parts {
+                if let Some(id_str) = arg.strip_prefix("AppId=") {
+                    if let Ok(id) = id_str.parse::<i32>() { return Some(id); }
+                }
+            }
+        }
+    }
+    None
 }
 
 pub struct ActionBlocks {
