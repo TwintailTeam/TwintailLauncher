@@ -674,8 +674,6 @@ fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
 
 #[cfg(target_os = "linux")]
 pub fn get_steam_appid() -> u32 {
-    let steam_appid: u32 = 0;
-
     if let Ok(path) = std::env::var("STEAM_COMPAT_TRANSCODED_MEDIA_PATH") {
         if let Some(last) = Path::new(&path).components().last() {
             if let Some(val) = last.as_os_str().to_str() {
@@ -710,7 +708,7 @@ pub fn get_steam_appid() -> u32 {
     if let Ok(id_str) = std::env::var("SteamGameId") {
         if let Ok(id) = id_str.parse::<u64>() { return (id >> 32) as u32; }
     }
-    steam_appid
+    0
 }
 
 pub struct ActionBlocks {
