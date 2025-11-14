@@ -166,7 +166,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url } else { urls.aarch64 }; }
                     }
                     let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
@@ -657,7 +657,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url } else { urls.aarch64 }; }
                     }
 
                     let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
@@ -751,7 +751,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                             #[cfg(target_arch = "x86_64")]
                             { dl_url = urls.x86_64; }
                             #[cfg(target_arch = "aarch64")]
-                            { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
+                            { dl_url = if urls.aarch64.is_empty() { dxp.url } else { urls.aarch64 }; }
                         }
 
                         let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
