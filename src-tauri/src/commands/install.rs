@@ -87,7 +87,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
+        let mut install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
 
@@ -121,17 +121,27 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             if !prefix_loc.exists() { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
             
             let archandle = Arc::new(app.clone());
-            let runv = Arc::new(runner_version.clone());
+            let mut runv = Arc::new(runner_version.clone());
             let runpp = Arc::new(runner_path.clone());
             let rpp = Arc::new(runner_prefix.clone());
             //let dxvkpp = Arc::new(dxvk_path.clone());
             //let dxvkv = Arc::new(dxvk_version.clone());
+
+            // Apply compatibility overrides if they exist and if any are enabled
+            if let Some(co) = gm.extra.compat_overrides {
+                if co.install_to_prefix { install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap(); }
+                if co.override_runner.linux.enabled {
+                    runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
+                    runv = Arc::new(co.override_runner.linux.runner_version.clone());
+                }
+            }
 
             std::thread::spawn(move || {
                 let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                 let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                 let runnerp = rv.get(0).unwrap().to_owned();
                 let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                 // Download selected DXVK | Deprecated | Reason: Proton ships their own and this is pointless if wine is deprecated
                 /*let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
@@ -163,7 +173,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     if r0 {
                         /*let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();*/
-                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                         if is_proton {
                             archandle.emit("download_complete", ()).unwrap();
@@ -188,11 +197,10 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 } else {
                     //let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                     //let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                    if is_proton {  } else {
+                    /*if is_proton {  } else {
                         // Wine is deprecated | Reason: same as stated in many comments around this function
-                        /*let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
+                        let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
                         if r1.is_ok() {
                             let r = r1.unwrap();
                             let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
@@ -202,8 +210,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                                     Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                                 }
                             }
-                        }*/
-                    }
+                        }
+                    }*/
                 }
             });
 

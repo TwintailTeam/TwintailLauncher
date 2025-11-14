@@ -579,8 +579,27 @@ pub struct GameTweakSwitches {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompatRunnerOverrides {
+    pub enabled: bool,
+    pub runner_version: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompatPlatformOverrides {
+    pub linux: CompatRunnerOverrides,
+    pub macos: CompatRunnerOverrides
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GameCompatOverrides {
+    pub install_to_prefix: bool,
+    pub override_runner: CompatPlatformOverrides
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameExtras {
     pub preload: Option<GamePreload>,
     pub switches: GameTweakSwitches,
+    pub compat_overrides: Option<GameCompatOverrides>,
     pub fps_unlock_options: Vec<String>,
 }
