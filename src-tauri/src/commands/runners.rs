@@ -94,12 +94,12 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let runpc = runner_path.clone();
 
                 std::thread::spawn(move || {
-                    let mut dl_url = runnerp.url; // Always x86_64
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
                     if let Some(urls) = runnerp.urls {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = if urls.aarch64.is_empty() { runnerp.url } else { urls.aarch64 }; }
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                     }
 
                     let r0 = Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {

@@ -161,12 +161,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let mut dl_url = runnerp.url; // Always x86_64
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
                     if let Some(urls) = runnerp.urls {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = if urls.aarch64.is_empty() { runnerp.url } else { urls.aarch64 }; }
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                     }
                     let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
@@ -652,12 +652,12 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let mut dl_url = runnerp.url; // Always x86_64
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
                     if let Some(urls) = runnerp.urls {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = if urls.aarch64.is_empty() { runnerp.url } else { urls.aarch64 }; }
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                     }
 
                     let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
@@ -746,12 +746,12 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                         archandle.emit("download_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&*archandle, true);
 
-                        let mut dl_url = dxp.url; // Always x86_64
+                        let mut dl_url = dxp.url.clone(); // Always x86_64
                         if let Some(urls) = dxp.urls {
                             #[cfg(target_arch = "x86_64")]
                             { dl_url = urls.x86_64; }
                             #[cfg(target_arch = "aarch64")]
-                            { dl_url = if urls.aarch64.is_empty() { dxp.url } else { urls.aarch64 }; }
+                            { dl_url = if urls.aarch64.is_empty() { dxp.url.clone() } else { urls.aarch64 }; }
                         }
 
                         let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
