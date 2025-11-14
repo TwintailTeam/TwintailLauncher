@@ -94,7 +94,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let runpc = runner_path.clone();
 
                 std::thread::spawn(move || {
-                    let mut dl_url = runner_url; // Always x86_64
+                    let mut dl_url = runnerp.url; // Always x86_64
                     if let Some(urls) = runnerp.urls {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
