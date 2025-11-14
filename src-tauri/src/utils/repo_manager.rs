@@ -441,9 +441,16 @@ pub struct RunnerManifest {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunnerPlatformUrls {
+    pub x86_64: String,
+    pub aarch64: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RunnerVersion {
     pub version: String,
     pub url: String,
+    pub urls: Option<RunnerPlatformUrls>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

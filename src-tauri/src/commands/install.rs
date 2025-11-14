@@ -88,7 +88,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
         let mut install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
-        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         directory = install_location.to_str().unwrap().to_string();
 
         // If wuwa is steam build auto ignore updates
@@ -129,7 +128,11 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
 
             // Apply compatibility overrides if they exist and if any are enabled
             if let Some(co) = gm.extra.compat_overrides {
-                if co.install_to_prefix { install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap(); }
+                if co.install_to_prefix {
+                    install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap();
+                    if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
+                    directory = install_location.to_str().unwrap().to_string();
+                }
                 if co.override_runner.linux.enabled {
                     runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
                     runv = Arc::new(co.override_runner.linux.runner_version.clone());
@@ -158,7 +161,14 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                    let mut dl_url = runnerp.url; // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = urls.aarch64; }
+                    }
+                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
                         let dlpayload = dlpayload.clone();
                         let runv = runv.clone();
@@ -224,6 +234,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 download_or_update_jadeite(jadeite, false);
             }
         }
+        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
         Some(AddInstallRsp {
             success: true,

@@ -3,13 +3,13 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{prevent_exit, send_notification, PathResolve};
+use crate::utils::{prevent_exit, runner_from_runner_version, send_notification, PathResolve};
 
 #[cfg(target_os = "linux")]
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use std::sync::Arc;
-use crate::utils::repo_manager::LauncherRunner;
+use crate::utils::repo_manager::{get_compatibility, LauncherRunner};
 
 #[tauri::command]
 pub fn list_installed_runners(app: AppHandle) -> Option<String> {
@@ -70,9 +70,11 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
         None
     } else {
         let gs = get_settings(&app).unwrap();
+        let rm = get_compatibility(&app, &runner_from_runner_version(runner_version.as_str().to_string()).unwrap()).unwrap();
+        let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
+        let runnerp = rv.get(0).unwrap().to_owned();
         let runner_path = Path::new(&gs.default_runner_path).follow_symlink().unwrap().join(runner_version.clone()).follow_symlink().unwrap();
         if !runner_path.exists() { fs::create_dir_all(&runner_path).unwrap(); }
-
         let ir = get_installed_runner_info_by_version(&app, runner_version.clone());
 
         // Empty folder download
@@ -92,7 +94,15 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let runpc = runner_path.clone();
 
                 std::thread::spawn(move || {
-                    let r0 = Compat::download_runner(runner_url, runpc.to_str().unwrap().to_string(), true, {
+                    let mut dl_url = runner_url; // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = urls.aarch64; }
+                    }
+
+                    let r0 = Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
                         let archandle = archandle.clone();
                         let dlpayload = dlpayload.clone();
                         let runv = runvc.clone();
