@@ -59,7 +59,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for manifests and repositories! {}", e.to_string()).as_str(), None); }
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for game manifest repository! {}", e.to_string()).as_str(), None); }
         }
     }
 }
@@ -105,8 +105,11 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
     } else {
         #[cfg(debug_assertions)]
         { println!("Target repository already exists!"); }
-        update_repositories(&repo_path)?;
-
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for one or multiple 3rd party repositories! {}", e.to_string()).as_str(), None); }
+        }
         Ok(false)
     }
 }
@@ -171,7 +174,11 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
     } else {
         #[cfg(debug_assertions)]
         { println!("Official compatibility repository is already cloned!"); }
-        update_repositories(&repo_path).unwrap();
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for compatibility repository! {}", e.to_string()).as_str(), None); }
+        }
     }
 }
 
