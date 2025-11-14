@@ -166,7 +166,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64; }
                         #[cfg(target_arch = "aarch64")]
-                        { dl_url = urls.aarch64; }
+                        { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
                     }
                     let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
@@ -652,7 +652,15 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                    let mut dl_url = runnerp.url; // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
+                    }
+
+                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
                         let dlpayload = dlpayload.clone();
                         let runv = runv.clone();
@@ -731,14 +739,22 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                    if is_proton { send_notification(&*archandle, "Skipping DXVK download because Proton ships with DXVK.", None); } else {
+                    if is_proton { } else {
                         dlpayload.insert("name", runv.to_string());
                         dlpayload.insert("progress", "0".to_string());
                         dlpayload.insert("total", "1000".to_string());
                         archandle.emit("download_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&*archandle, true);
 
-                        let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true, {
+                        let mut dl_url = dxp.url; // Always x86_64
+                        if let Some(urls) = dxp.urls {
+                            #[cfg(target_arch = "x86_64")]
+                            { dl_url = urls.x86_64; }
+                            #[cfg(target_arch = "aarch64")]
+                            { dl_url = if (urls.aarch64.is_wmpty()) { runnerp.url } else { urls.aarch64 }; }
+                        }
+
+                        let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
                             let archandle = archandle.clone();
                             let dlpayload = dlpayload.clone();
                             let runv = runv.clone();
