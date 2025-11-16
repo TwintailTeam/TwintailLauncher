@@ -16,14 +16,21 @@ use crate::utils::runner_from_runner_version;
 
 #[tauri::command]
 pub fn list_installed_runners(app: AppHandle) -> Option<String> {
-    let repos = get_installed_runners(&app);
+    #[cfg(target_os = "linux")]
+    {
+        let repos = get_installed_runners(&app);
 
-    if repos.is_some() {
-        let repository = repos.unwrap();
-        let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect::<_>();
-        let stringified = serde_json::to_string(&d).unwrap();
-        Some(stringified)
-    } else {
+        if repos.is_some() {
+            let repository = repos.unwrap();
+            let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect::<_>();
+            let stringified = serde_json::to_string(&d).unwrap();
+            Some(stringified)
+        } else {
+            None
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
         None
     }
 }
@@ -56,13 +63,20 @@ pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -
 
 #[tauri::command]
 pub fn update_installed_runner_install_status(app: AppHandle, version: String, is_installed: bool) -> Option<bool> {
-    let manifest = get_installed_runner_info_by_version(&app, version.clone());
+    #[cfg(target_os = "linux")]
+    {
+        let manifest = get_installed_runner_info_by_version(&app, version.clone());
 
-    if manifest.is_some() {
-        let m = manifest.unwrap();
-        update_installed_runner_is_installed_by_version(&app, m.version, is_installed);
-        Some(true)
-    } else {
+        if manifest.is_some() {
+            let m = manifest.unwrap();
+            update_installed_runner_is_installed_by_version(&app, m.version, is_installed);
+            Some(true)
+        } else {
+            None
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
         None
     }
 }
@@ -72,64 +86,71 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
     if runner_url.is_empty() || runner_version.is_empty() {
         None
     } else {
-        let gs = get_settings(&app).unwrap();
-        let rm = get_compatibility(&app, &runner_from_runner_version(runner_version.as_str().to_string()).unwrap()).unwrap();
-        let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
-        let runnerp = rv.get(0).unwrap().to_owned();
-        let runner_path = Path::new(&gs.default_runner_path).follow_symlink().unwrap().join(runner_version.clone()).follow_symlink().unwrap();
-        if !runner_path.exists() { fs::create_dir_all(&runner_path).unwrap(); }
-        let ir = get_installed_runner_info_by_version(&app, runner_version.clone());
+        #[cfg(target_os = "linux")]
+        {
+            let gs = get_settings(&app).unwrap();
+            let rm = get_compatibility(&app, &runner_from_runner_version(runner_version.as_str().to_string()).unwrap()).unwrap();
+            let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
+            let runnerp = rv.get(0).unwrap().to_owned();
+            let runner_path = Path::new(&gs.default_runner_path).follow_symlink().unwrap().join(runner_version.clone()).follow_symlink().unwrap();
+            if !runner_path.exists() { fs::create_dir_all(&runner_path).unwrap(); }
+            let ir = get_installed_runner_info_by_version(&app, runner_version.clone());
 
-        // Empty folder download
-        if fs::read_dir(runner_path.as_path()).unwrap().next().is_none() {
-            let mut dlpayload = HashMap::new();
+            // Empty folder download
+            if fs::read_dir(runner_path.as_path()).unwrap().next().is_none() {
+                let mut dlpayload = HashMap::new();
 
-            dlpayload.insert("name", runner_version.to_string());
-            dlpayload.insert("progress", "0".to_string());
-            dlpayload.insert("total", "1000".to_string());
-            app.emit("download_progress", dlpayload.clone()).unwrap();
-            prevent_exit(&app, true);
+                dlpayload.insert("name", runner_version.to_string());
+                dlpayload.insert("progress", "0".to_string());
+                dlpayload.insert("total", "1000".to_string());
+                app.emit("download_progress", dlpayload.clone()).unwrap();
+                prevent_exit(&app, true);
 
-            #[cfg(target_os = "linux")]
-            {
-                let archandle = Arc::new(app.clone());
-                let runvc = runner_version.clone();
-                let runpc = runner_path.clone();
+                #[cfg(target_os = "linux")]
+                {
+                    let archandle = Arc::new(app.clone());
+                    let runvc = runner_version.clone();
+                    let runpc = runner_path.clone();
 
-                std::thread::spawn(move || {
-                    let mut dl_url = runnerp.url.clone(); // Always x86_64
-                    if let Some(urls) = runnerp.urls {
-                        #[cfg(target_arch = "x86_64")]
-                        { dl_url = urls.x86_64; }
-                        #[cfg(target_arch = "aarch64")]
-                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
-                    }
-
-                    let r0 = Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
-                        let archandle = archandle.clone();
-                        let dlpayload = dlpayload.clone();
-                        let runv = runvc.clone();
-                        move |current, total| {
-                            let mut dlpayload = dlpayload.clone();
-                            dlpayload.insert("name", runv.to_string());
-                            dlpayload.insert("progress", current.to_string());
-                            dlpayload.insert("total", total.to_string());
-                            archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                    std::thread::spawn(move || {
+                        let mut dl_url = runnerp.url.clone(); // Always x86_64
+                        if let Some(urls) = runnerp.urls {
+                            #[cfg(target_arch = "x86_64")]
+                            { dl_url = urls.x86_64; }
+                            #[cfg(target_arch = "aarch64")]
+                            { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                         }
+
+                        let r0 = Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
+                            let archandle = archandle.clone();
+                            let dlpayload = dlpayload.clone();
+                            let runv = runvc.clone();
+                            move |current, total| {
+                                let mut dlpayload = dlpayload.clone();
+                                dlpayload.insert("name", runv.to_string());
+                                dlpayload.insert("progress", current.to_string());
+                                dlpayload.insert("total", total.to_string());
+                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                            }
+                        });
+                        if r0 {
+                            archandle.emit("download_complete", ()).unwrap();
+                            prevent_exit(&*archandle, false);
+                            send_notification(&*archandle, format!("Download of {runn} complete.", runn = runvc.clone().as_str().to_string()).as_str(), None);
+                            true
+                        } else { false }
                     });
-                    if r0 {
-                        archandle.emit("download_complete", ()).unwrap();
-                        prevent_exit(&*archandle, false);
-                        send_notification(&*archandle, format!("Download of {runn} complete.", runn = runvc.clone().as_str().to_string()).as_str(), None);
-                        true
-                    } else { false }
-                });
+                }
+                if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), true); } else { create_installed_runner(&app, runner_version.clone(), true, runner_path.to_str().unwrap().to_string()).unwrap(); }
+                Some(true)
+            } else {
+                send_notification(&app, format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None);
+                Some(false)
             }
-            if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), true); } else { create_installed_runner(&app, runner_version.clone(), true, runner_path.to_str().unwrap().to_string()).unwrap(); }
+        }
+        #[cfg(target_os = "windows")]
+        {
             Some(true)
-        } else {
-            send_notification(&app, format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None);
-            Some(false)
         }
     }
 }
