@@ -38,8 +38,8 @@ export default function InstallDeleteConfirm({setOpenPopup, install, games, inst
                     Are you sure you want to uninstall and remove <span className={"text-purple-400 font-bold"}>{install.name}</span> installation?<br/>
                     <span className={"text-red-500 font-extrabold"}>This is irreversible action ENTIRE installation will be wiped and can not be undone!</span><br/>
                     This action will <span className={"text-red-500 font-bold"}>NOT</span> remove:
-                    {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Wine prefix</span> associated with this installation (Can be deleted with checkbox below)</li> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Wine runner</span> used with this installation</li> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Prefix</span> associated with this installation (Can be deleted with checkbox below)</li> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Runner</span> used with this installation</li> : null}
                     {(window.navigator.platform.includes("Linux")) ? <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>DXVK</span> used with this installation</li> : null}
                     <li className={"list-none ml-4"}>- <span className={"text-purple-400"}>Any tweaks</span> enabled for this installation</li>
                 </p>

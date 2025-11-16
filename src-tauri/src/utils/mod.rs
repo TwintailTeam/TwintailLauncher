@@ -247,7 +247,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let v = os.unwrap();
             if v.to_ascii_lowercase() == "bazzite".to_string() || v.to_ascii_lowercase() == "kinoite".to_string() {
                 let tmp = path.to_str().unwrap().replace("/home", "/var/home");
-                path = PathBuf::from(tmp);
+                path = PathBuf::from(tmp).follow_symlink().unwrap();
             }
         }
     }
@@ -489,32 +489,38 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
         let s = gs.unwrap();
         let rp = Path::new(&s.default_runner_path).follow_symlink().unwrap();
         let steamrt = rp.join("steamrt");
-        if !steamrt.exists() { fs::create_dir_all(&steamrt).unwrap(); }
+        if !steamrt.exists() {
+            let r = fs::create_dir_all(&steamrt);
+            match r {
+                Ok(_) => {},
+                Err(e) => { send_notification(&app, format!("Failed to prepare SteamLinuxRuntime directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None); return; }
+            }
+        }
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             let app = app.clone();
             std::thread::spawn(move || {
                 let app = app.clone();
                 let mut dlpayload = HashMap::new();
-                dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                dlpayload.insert("name", String::from("SteamLinuxRuntime 3"));
                 dlpayload.insert("progress", "0".to_string());
                 dlpayload.insert("total", "1000".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
 
-                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
                     let app = app.clone();
                     let dlpayload = dlpayload.clone();
                     move |current, total| {
                         let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                        dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
                         dlpayload.insert("progress", current.to_string());
                         dlpayload.insert("total", total.to_string());
                         app.emit("download_progress", dlpayload.clone()).unwrap();
                     }
                 });
                 if r {
-                    app.emit("download_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                    app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                     prevent_exit(&app, false);
                 }
             });
@@ -523,7 +529,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-stable".to_string());
+            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-beta".to_string());
             if remote_ver.is_some() {
                 let rv = remote_ver.unwrap();
                 if compare_steamrt_versions(&rv, &cur_ver) {
@@ -532,25 +538,25 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                     std::thread::spawn(move || {
                         let app = app.clone();
                         let mut dlpayload = HashMap::new();
-                        dlpayload.insert("name", String::from("SteamLinuxRuntime 3.0 (sniper)"));
+                        dlpayload.insert("name", String::from("SteamLinuxRuntime 3"));
                         dlpayload.insert("progress", "0".to_string());
                         dlpayload.insert("total", "1000".to_string());
                         app.emit("update_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&app, true);
 
-                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-stable".to_string(), {
+                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
                             let app = app.clone();
                             let dlpayload = dlpayload.clone();
                             move |current, total| {
                                 let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", "SteamLinuxRuntime 3.0 (sniper)".to_string());
+                                dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
                                 dlpayload.insert("progress", current.to_string());
                                 dlpayload.insert("total", total.to_string());
                                 app.emit("update_progress", dlpayload.clone()).unwrap();
                             }
                         });
                         if r {
-                            app.emit("update_complete", String::from("SteamLinuxRuntime 3.0 (sniper)")).unwrap();
+                            app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                             prevent_exit(&app, false);
                         }
                     });
@@ -584,9 +590,7 @@ pub fn notify_update(app: &AppHandle) {
                     .kind(MessageDialogKind::Info)
                     .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
                     //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
-                    .show(move |_action| {
-                        //if action {  } else { fs::File::create(&suppressed).unwrap(); }
-                    });
+                    .show(move |_action| { /*if action {  } else { fs::File::create(&suppressed).unwrap(); }*/ });
             }
         }
     }
@@ -594,6 +598,10 @@ pub fn notify_update(app: &AppHandle) {
 
 #[cfg(target_os = "linux")]
 pub fn is_flatpak() -> bool { std::env::var("FLATPAK_ID").is_ok() }
+
+#[cfg(target_os = "linux")]
+#[allow(dead_code)]
+pub fn is_gamescope() -> bool { std::env::var("XDG_SESSION_DESKTOP").unwrap().to_ascii_lowercase() == "gamescope" }
 
 #[cfg(target_os = "linux")]
 pub fn get_os_release() -> Option<String> {
@@ -662,6 +670,45 @@ fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
         if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
     }
     Ok(())
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_steam_appid() -> u32 {
+    if let Ok(path) = std::env::var("STEAM_COMPAT_TRANSCODED_MEDIA_PATH") {
+        if let Some(last) = Path::new(&path).components().last() {
+            if let Some(val) = last.as_os_str().to_str() {
+                if let Ok(id) = val.parse::<u32>() { return id; }
+            }
+        }
+    }
+    if let Ok(path) = std::env::var("STEAM_COMPAT_MEDIA_PATH") {
+        let parts: Vec<_> = Path::new(&path).components().collect();
+        if parts.len() >= 2 {
+            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
+                if let Ok(id) = val.parse::<u32>() { return id; }
+            }
+        }
+    }
+    if let Ok(path) = std::env::var("STEAM_FOSSILIZE_DUMP_PATH") {
+        let parts: Vec<_> = Path::new(&path).components().collect();
+        if parts.len() >= 3 {
+            if let Some(val) = parts[parts.len() - 3].as_os_str().to_str() {
+                if let Ok(id) = val.parse::<u32>() { return id; }
+            }
+        }
+    }
+    if let Ok(path) = std::env::var("DXVK_STATE_CACHE_PATH") {
+        let parts: Vec<_> = Path::new(&path).components().collect();
+        if parts.len() >= 2 {
+            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
+                if let Ok(id) = val.parse::<u32>() { return id; }
+            }
+        }
+    }
+    if let Ok(id_str) = std::env::var("SteamGameId") {
+        if let Ok(id) = id_str.parse::<u64>() { return (id >> 32) as u32; }
+    }
+    0
 }
 
 pub struct ActionBlocks {

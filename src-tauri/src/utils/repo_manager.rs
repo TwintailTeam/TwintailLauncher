@@ -7,7 +7,7 @@ use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_installed_runner, create_manifest, create_repository, delete_manifest_by_id, get_installed_runner_info_by_version, get_manifest_info_by_filename, get_repository_info_by_github_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{generate_cuid};
+use crate::utils::{generate_cuid, send_notification};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
@@ -56,7 +56,11 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     } else {
         #[cfg(debug_assertions)]
         { println!("Official game repository is already cloned!"); }
-        update_repositories(&repo_path).unwrap();
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for game manifest repository! {}", e.to_string()).as_str(), None); }
+        }
     }
 }
 
@@ -101,8 +105,11 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
     } else {
         #[cfg(debug_assertions)]
         { println!("Target repository already exists!"); }
-        update_repositories(&repo_path)?;
-
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for one or multiple 3rd party repositories! {}", e.to_string()).as_str(), None); }
+        }
         Ok(false)
     }
 }
@@ -167,7 +174,11 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
     } else {
         #[cfg(debug_assertions)]
         { println!("Official compatibility repository is already cloned!"); }
-        update_repositories(&repo_path).unwrap();
+        let r = update_repositories(&repo_path);
+        match r {
+            Ok(_) => {}
+            Err(e) => { send_notification(app, format!("Failed to fetch update(s) for compatibility repository! {}", e.to_string()).as_str(), None); }
+        }
     }
 }
 
@@ -437,9 +448,16 @@ pub struct RunnerManifest {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RunnerPlatformUrls {
+    pub x86_64: String,
+    pub aarch64: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RunnerVersion {
     pub version: String,
     pub url: String,
+    pub urls: Option<RunnerPlatformUrls>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -575,8 +593,27 @@ pub struct GameTweakSwitches {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompatRunnerOverrides {
+    pub enabled: bool,
+    pub runner_version: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CompatPlatformOverrides {
+    pub linux: CompatRunnerOverrides,
+    pub macos: CompatRunnerOverrides
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GameCompatOverrides {
+    pub install_to_prefix: bool,
+    pub override_runner: CompatPlatformOverrides
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameExtras {
     pub preload: Option<GamePreload>,
     pub switches: GameTweakSwitches,
+    pub compat_overrides: Option<GameCompatOverrides>,
     pub fps_unlock_options: Vec<String>,
 }

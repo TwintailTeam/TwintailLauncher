@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "1.1.11"
+version = "1.1.12"
 description = "A multi-platform launcher for your anime games"
 authors = ["TukanDev"]
 edition = "2024"
@@ -39,15 +39,19 @@ tauri-plugin-single-instance = "2.3.4"
 
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
-wgpu = { version = "26.0", default-features = true }
+wgpu = { version = "27.0", default-features = true }
 libc = { version = "0.2.176" }
 
 [target."cfg(any(target_os = \"windows\"))".dependencies]
 shortcuts-rs = "1.1.1"
 
+[profile.dev]
+overflow-checks = false
+
 [profile.release]
-panic = "abort" # Strip expensive panic clean-up logic
-codegen-units = 1 # Compile crates one after another so the compiler can optimize better
-lto = true # Enables link to optimizations
-opt-level = "s" # Optimize for binary size
-strip = true # Remove debug symbols
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+overflow-checks = false

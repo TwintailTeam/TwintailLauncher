@@ -87,8 +87,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gm = get_manifest(&app, m.clone()).unwrap();
         let g = gm.game_versions.iter().find(|e| e.metadata.version == version).unwrap();
 
-        let install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
-        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
+        let mut install_location = if skip_game_dl { Path::new(directory.as_str()).follow_symlink().unwrap().to_path_buf() } else { Path::new(directory.as_str()).join(cuid.clone()).follow_symlink().unwrap().to_path_buf() };
         directory = install_location.to_str().unwrap().to_string();
 
         // If wuwa is steam build auto ignore updates
@@ -121,17 +120,31 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             if !prefix_loc.exists() { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
             
             let archandle = Arc::new(app.clone());
-            let runv = Arc::new(runner_version.clone());
+            let mut runv = Arc::new(runner_version.clone());
             let runpp = Arc::new(runner_path.clone());
             let rpp = Arc::new(runner_prefix.clone());
             //let dxvkpp = Arc::new(dxvk_path.clone());
             //let dxvkv = Arc::new(dxvk_version.clone());
+
+            // Apply compatibility overrides if they exist and if any are enabled
+            if let Some(co) = gm.extra.compat_overrides {
+                if co.install_to_prefix {
+                    install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap();
+                    if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
+                    directory = install_location.to_str().unwrap().to_string();
+                }
+                if co.override_runner.linux.enabled {
+                    runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
+                    runv = Arc::new(co.override_runner.linux.runner_version.clone());
+                }
+            }
 
             std::thread::spawn(move || {
                 let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
                 let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                 let runnerp = rv.get(0).unwrap().to_owned();
                 let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                 // Download selected DXVK | Deprecated | Reason: Proton ships their own and this is pointless if wine is deprecated
                 /*let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
@@ -148,7 +161,14 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                    }
+                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
                         let dlpayload = dlpayload.clone();
                         let runv = runv.clone();
@@ -163,7 +183,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     if r0 {
                         /*let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();*/
-                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                         if is_proton {
                             archandle.emit("download_complete", ()).unwrap();
@@ -188,11 +207,10 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 } else {
                     //let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                     //let winebin = rp.join(wine64).to_str().unwrap().to_string();
-                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                    if is_proton {  } else {
+                    /*if is_proton {  } else {
                         // Wine is deprecated | Reason: same as stated in many comments around this function
-                        /*let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
+                        let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
                         if r1.is_ok() {
                             let r = r1.unwrap();
                             let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
@@ -202,8 +220,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                                     Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
                                 }
                             }
-                        }*/
-                    }
+                        }
+                    }*/
                 }
             });
 
@@ -216,6 +234,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 download_or_update_jadeite(jadeite, false);
             }
         }
+        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
         Some(AddInstallRsp {
             success: true,
@@ -244,7 +263,13 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool) -> Op
             let gexe = idp.join(gm.paths.exe_filename.clone());
 
             if wipe_prefix { if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); } }
-            if idp.exists() && gexe.exists() { fs::remove_dir_all(installdir.clone()).unwrap(); } else { send_notification(&app, "Failed to remove game installation directory. Please remove the folder manually!", None); }
+            if idp.exists() && gexe.exists() {
+                let r = fs::remove_dir_all(installdir.clone());
+                match r {
+                    Ok(_) => {},
+                    Err(e) => { send_notification(&app, format!("Failed to remove game installation directory. {} - Please remove the folder manually!", e.to_string()).as_str(), None) }
+                }
+            } else { send_notification(&app, "Failed to remove game installation directory. Please remove the folder manually!", None); }
             delete_installation_by_id(&app, id.clone()).unwrap();
             Some(true)
         } else {
@@ -627,7 +652,15 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     archandle.emit("download_progress", dlpayload.clone()).unwrap();
                     prevent_exit(&*archandle, true);
 
-                    let r0 = Compat::download_runner(runnerp.url, runpp.as_str().to_string(), true, {
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                    }
+
+                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
                         let archandle = archandle.clone();
                         let dlpayload = dlpayload.clone();
                         let runv = runv.clone();
@@ -706,14 +739,22 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-                    if is_proton { send_notification(&*archandle, "Skipping DXVK download because Proton ships with DXVK.", None); } else {
+                    if is_proton { } else {
                         dlpayload.insert("name", runv.to_string());
                         dlpayload.insert("progress", "0".to_string());
                         dlpayload.insert("total", "1000".to_string());
                         archandle.emit("download_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&*archandle, true);
 
-                        let r0 = Compat::download_dxvk(dxp.url, dxpp.to_str().unwrap().to_string(), true, {
+                        let mut dl_url = dxp.url.clone(); // Always x86_64
+                        if let Some(urls) = dxp.urls {
+                            #[cfg(target_arch = "x86_64")]
+                            { dl_url = urls.x86_64; }
+                            #[cfg(target_arch = "aarch64")]
+                            { dl_url = if urls.aarch64.is_empty() { dxp.url.clone() } else { urls.aarch64 }; }
+                        }
+
+                        let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
                             let archandle = archandle.clone();
                             let dlpayload = dlpayload.clone();
                             let runv = runv.clone();
@@ -922,7 +963,7 @@ Type=Application
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
-                let normal_steam = app.path().data_dir().unwrap().follow_symlink().unwrap().join("Steam/userdata");
+                let normal_steam = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".local/share/Steam/userdata");
 
                 let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
                 let m = get_manifest(&app, manifest.filename).unwrap();

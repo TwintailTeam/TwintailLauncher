@@ -85,7 +85,7 @@ pub fn run() {
                 if args::get_launch_install().is_some() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
-                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    std::thread::sleep(std::time::Duration::from_secs(5));
                     handle.cleanup_before_exit();
                     handle.exit(0);
                     std::process::exit(0);
@@ -115,8 +115,8 @@ pub fn run() {
                     if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
                 }
 
-                let res_dir = app.path().resource_dir().unwrap();
-                let data_dir = app.path().app_data_dir().unwrap();
+                let res_dir = app.path().resource_dir().unwrap().follow_symlink().unwrap();
+                let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 //update_extras(handle.clone(), false);
@@ -130,7 +130,7 @@ pub fn run() {
                 let path = data_dir.join(".telemetry_blocked");
                 if !path.exists() { block_telemetry(&handle); }
 
-                for r in ["hpatchz", "hpatchz.exe", "krpatchz", "krpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "reaper"] {
+                for r in ["hpatchz", "hpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "reaper"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
                     if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") || rd.file_name().unwrap().to_str().unwrap().contains("reaper") {

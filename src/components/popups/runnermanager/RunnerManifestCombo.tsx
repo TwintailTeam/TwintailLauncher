@@ -24,7 +24,7 @@ export default function RunnerManifestCombo({name, items, roundTop, roundBottom,
                 transition: "box-shadow 0.4s cubic-bezier(.4,0,.2,1)",
                 background: "linear-gradient(to bottom right, #23272aCC 0%, #2c2f33B3 100%)"
             }}>
-            <div className={`w-full h-14 flex flex-row items-center justify-between p-4 transition-all duration-400 ease-in-out ${roundTop ? "rounded-t-xl" : ""}`}
+            <div onClick={() => setIsFolded(!isFolded)} className={`cursor-pointer hover:bg-white/20 w-full h-14 flex flex-row items-center justify-between p-4 transition-all duration-400 ease-in-out ${roundTop ? "rounded-t-xl" : ""}`}
                 style={{
                     borderBottomLeftRadius: (!isFolded && roundBottom) ? "0" : roundBottom ? "0.75rem" : undefined,
                     borderBottomRightRadius: (!isFolded && roundBottom) ? "0" : roundBottom ? "0.75rem" : undefined,
@@ -32,12 +32,10 @@ export default function RunnerManifestCombo({name, items, roundTop, roundBottom,
                     borderTopRightRadius: roundTop ? "0.75rem" : undefined,
                     border: "1px solid rgba(255,255,255,0.07)",
                     borderBottom: "1px solid rgba(255,255,255,0.10)",
-                    background: "transparent",
                     transition: "border-radius 0.5s cubic-bezier(.4,0,.2,1), border-bottom 0.4s cubic-bezier(.4,0,.2,1)"
                 }}>
                 <span className="text-white">{name}</span>
-                <span className="h-10 w-10 flex items-center justify-center hover:bg-white/20 border-x-4 border-y-5 border-transparent transition rounded-xl cursor-pointer duration-400"
-                    onClick={() => setIsFolded(!isFolded)}>
+                <span className="h-10 w-10 flex items-center justify-center border-x-4 border-y-5 border-transparent transition rounded-xl cursor-pointer duration-400">
                     <ChevronDown color="white" className={`transition-transform duration-400 ${isFolded ? "rotate-0" : "rotate-180"}`}/>
                 </span>
             </div>

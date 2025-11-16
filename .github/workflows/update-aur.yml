@@ -43,7 +43,7 @@ jobs:
           arch=('x86_64')
           url="https://github.com/TwintailTeam/TwintailLauncher"
           license=('GPL-3.0-only')
-          depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator')
+          depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator' 'libvpx')
           options=('!debug')
           source=("\${_pkgname}-\${pkgver}.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_amd64.deb")
           sha256sums=('$x86_64_sum')
@@ -56,7 +56,6 @@ jobs:
             install -Dm755 usr/bin/twintaillauncher -t "\$pkgdir/usr/bin"
             install -Dm755 usr/lib/twintaillauncher/resources/mangohud_default.conf -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/7zr -t "\$pkgdir/usr/lib/twintaillauncher/resources"
-            install -Dm755 usr/lib/twintaillauncher/resources/krpatchz -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/hpatchz -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/reaper -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm644 usr/lib/twintaillauncher/resources/hkrpg_patch.dll -t "\$pkgdir/usr/lib/twintaillauncher/resources"
@@ -64,6 +63,7 @@ jobs:
             install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$_pkgname.png"
             install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$_pkgname.png"
             install -Dm644 usr/share/applications/twintaillauncher.desktop -t "\$pkgdir/usr/share/applications"
+            ln -sf /usr/lib/"$(readlink -f /usr/lib/libvpx.so | grep -Eo 'libvpx.so' | head -n1)" /usr/lib/libvpx.so.6
           }
           EOF
       - name: Test PKGBUILD
