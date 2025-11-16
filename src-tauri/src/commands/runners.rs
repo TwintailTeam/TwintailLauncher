@@ -3,13 +3,16 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{prevent_exit, runner_from_runner_version, send_notification, PathResolve};
+use crate::utils::{prevent_exit, send_notification, PathResolve};
 
 #[cfg(target_os = "linux")]
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use std::sync::Arc;
+#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, LauncherRunner};
+#[cfg(target_os = "linux")]
+use crate::utils::runner_from_runner_version;
 
 #[tauri::command]
 pub fn list_installed_runners(app: AppHandle) -> Option<String> {
