@@ -12,12 +12,10 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, block_telemetry, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks};
+use crate::utils::{args, block_telemetry, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
 use crate::utils::system_tray::init_tray;
 use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 
-#[cfg(target_os = "linux")]
-use crate::utils::PathResolve;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::RunnerLoader;
 #[cfg(target_os = "linux")]
