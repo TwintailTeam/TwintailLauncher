@@ -247,7 +247,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let v = os.unwrap();
             if v.to_ascii_lowercase() == "bazzite".to_string() || v.to_ascii_lowercase() == "kinoite".to_string() {
                 let tmp = path.to_str().unwrap().replace("/home", "/var/home");
-                path = PathBuf::from(tmp);
+                path = PathBuf::from(tmp).follow_symlink().unwrap();
             }
         }
     }
