@@ -63,7 +63,6 @@ jobs:
             install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$_pkgname.png"
             install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$_pkgname.png"
             install -Dm644 usr/share/applications/twintaillauncher.desktop -t "\$pkgdir/usr/share/applications"
-            ln -sf /usr/lib/"$(readlink -f /usr/lib/libvpx.so | grep -Eo 'libvpx.so' | head -n1)" /usr/lib/libvpx.so.6
           }
           EOF
       - name: Test PKGBUILD
