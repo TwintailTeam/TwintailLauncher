@@ -115,8 +115,8 @@ pub fn run() {
                     if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
                 }
 
-                let res_dir = app.path().resource_dir().unwrap();
-                let data_dir = app.path().app_data_dir().unwrap();
+                let res_dir = app.path().resource_dir().unwrap().follow_symlink().unwrap();
+                let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
 
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 //update_extras(handle.clone(), false);
