@@ -607,6 +607,7 @@ pub struct CompatPlatformOverrides {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameCompatOverrides {
     pub install_to_prefix: bool,
+    pub disable_protonfixes: Option<bool>,
     pub override_runner: CompatPlatformOverrides
 }
 

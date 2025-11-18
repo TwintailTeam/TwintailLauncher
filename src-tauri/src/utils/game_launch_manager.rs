@@ -54,8 +54,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+        }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -103,6 +107,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamOS", "1");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -111,15 +116,16 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+        }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-
-        // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
 
@@ -161,7 +167,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let mut args = String::new();
-        let mut command = format!("{c}").replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let mut command = format!("{c}").replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         if !install.launch_args.is_empty() {
             args = install.clone().launch_args;
@@ -175,6 +181,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamOS", "1");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -183,15 +190,16 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+        }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-
-        // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
 
