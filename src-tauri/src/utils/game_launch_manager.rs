@@ -59,6 +59,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if let Some(dpf) = cpo.disable_protonfixes {
                 if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
             }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
+            }
         }
 
         cmd.stdout(Stdio::piped());
@@ -120,6 +126,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if let Some(cpo) = gm.extra.compat_overrides.clone() {
             if let Some(dpf) = cpo.disable_protonfixes {
                 if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
             }
         }
         if install.use_mangohud {
@@ -194,6 +206,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if let Some(cpo) = gm.extra.compat_overrides.clone() {
             if let Some(dpf) = cpo.disable_protonfixes {
                 if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
             }
         }
         if install.use_mangohud {

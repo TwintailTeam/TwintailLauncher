@@ -608,6 +608,8 @@ pub struct CompatPlatformOverrides {
 pub struct GameCompatOverrides {
     pub install_to_prefix: bool,
     pub disable_protonfixes: Option<bool>,
+    pub protonfixes_id: Option<String>,
+    pub protonfixes_store: Option<String>,
     pub override_runner: CompatPlatformOverrides
 }
 
