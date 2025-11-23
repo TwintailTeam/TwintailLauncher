@@ -521,7 +521,8 @@ pub struct DiffUrls {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VersionAssets {
     pub game_icon: String,
-    pub game_background: String
+    pub game_background: String,
+    pub game_live_background: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

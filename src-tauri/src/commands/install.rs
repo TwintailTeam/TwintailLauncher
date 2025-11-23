@@ -234,12 +234,16 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 download_or_update_jadeite(jadeite, false);
             }
         }
+        let gbg = if g.assets.game_live_background.is_some() {
+            let lbg = g.assets.game_live_background.clone().unwrap();
+            if lbg.is_empty() { g.assets.game_background.clone() } else { lbg }
+        } else { g.assets.game_background.clone() };
         if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
         Some(AddInstallRsp {
             success: true,
             install_id: cuid.clone(),
-            background: g.assets.game_background.clone()
+            background: gbg
         })
     }
 }
