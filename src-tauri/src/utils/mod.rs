@@ -44,19 +44,26 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
     fs::create_dir_all(&dst)?;
     let totalsize = dir_size(src.as_ref())?;
     let tracker = Arc::new(AtomicU64::new(0));
+    let mut files_to_remove = Vec::new();
 
     prevent_exit(app, true);
     for entry in fs::read_dir(src.as_ref())? {
         let entry = entry?;
-        let ty = entry.file_type()?;
         let f = entry.file_name();
         let ep = entry.path();
-
         if ep == dst.as_ref() { continue; }
 
-        if ty.is_dir() {
+        let meta = fs::symlink_metadata(ep.clone())?;
+        if meta.file_type().is_symlink() {
+            let target_path = fs::read_link(&ep)?;
+            #[cfg(target_os = "linux")]
+            std::os::unix::fs::symlink(target_path, dst.as_ref().join(&f))?;
+            #[cfg(target_os = "windows")]
+            if target_path.is_dir() { std::os::windows::fs::symlink_dir(target_path, dst.as_ref())?; } else { std::os::windows::fs::symlink_file(target_path, dst.as_ref().join(&f))?; }
+            files_to_remove.push(ep.clone());
+        } else if meta.is_dir() {
             copy_dir_all(&app, ep.clone(), dst.as_ref().join(f), install.clone(), install_name.clone(), install_type.clone())?;
-            fs::remove_dir_all(ep)?;
+            files_to_remove.push(ep.clone());
         } else {
             let size = entry.metadata()?.len();
             tracker.fetch_add(size, Ordering::SeqCst);
@@ -69,9 +76,16 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
             payload.insert("progress", tracker.load(Ordering::SeqCst).to_string());
             payload.insert("total", totalsize.to_string());
 
-            fs::copy(ep.clone(), dst.as_ref().join(f))?;
+            if let Err(e) = fs::copy(ep.clone(), dst.as_ref().join(f)) { eprintln!("Failed to copy {}: {}", ep.clone().display(), e); }
             app.emit("move_progress", &payload).unwrap();
-            fs::remove_file(ep)?;
+            files_to_remove.push(ep.clone());
+        }
+    }
+    for file_path in files_to_remove {
+        if file_path.is_file() || file_path.is_symlink() {
+            if let Err(e) = fs::remove_file(file_path) { eprintln!("Failed to remove file: {}", e); }
+        } else {
+            if let Err(e) = fs::remove_dir_all(file_path) { eprintln!("Failed to remove directory: {}", e); }
         }
     }
     Ok(())
