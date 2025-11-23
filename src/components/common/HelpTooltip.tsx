@@ -19,8 +19,8 @@ export default function HelpTooltip({text}: {text: string}) {
             <CircleHelpIcon className="w-4 h-4 text-gray-400 hover:cursor-pointer hover:text-purple-600"/>
         </span>
         {open && (
-            <div ref={refs.setFloating} style={floatingStyles} className="z-50 bg-black/75 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg">
-                {text}
+            <div ref={refs.setFloating} style={floatingStyles} className="z-50 bg-black/75 text-white text-xs rounded py-1 px-2 whitespace-pre-wrap shadow-lg">
+                <p>{text}</p>
                 <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
             </div>
             )}
