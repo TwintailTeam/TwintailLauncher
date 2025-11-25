@@ -4,7 +4,7 @@ use fischl::download::game::{Game, Kuro, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification};
-use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::utils::repo_manager::{get_manifest, FullGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
@@ -48,7 +48,7 @@ pub fn register_repair_handler(app: &AppHandle) {
                     }
                     // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
-                        let urls = picked.game.full.clone();
+                        let urls = if payload.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone().unwrap() == payload.region).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone()};
                         urls.into_iter().for_each(|e| {
                             run_async_command(async {
                                 <Game as Sophon>::repair_game(e.file_url.clone(), e.file_path.clone(), i.directory.clone(), false, {

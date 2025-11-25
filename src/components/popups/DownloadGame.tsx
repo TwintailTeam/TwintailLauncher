@@ -32,6 +32,9 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
     const [selectedGameVersion, setSelectedGameVersion] = useState(versions?.[0]?.value || "");
     // @ts-ignore
     const [selectedAudioLang, setSelectedAudioLang] = useState("en-us");
+    // @ts-ignore
+    const [selectedRegionCode, setSelectedRegionCode] = useState("glb_official");
+
     const [selectedRunnerVersion, setSelectedRunnerVersion] = useState(runnerVersions?.[0]?.value || "");
     // @ts-ignore
     const [selectedDxvkVersion, setSelectedDxvkVersion] = useState(dxvkVersions?.[0]?.value || "");
@@ -86,6 +89,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                     <div className="w-full"><TextDisplay id={"game_disk_need"} name={"Required disk space (unpacked)"} value={`${disk.game_decompressed_size}`} style={"text-white px-3 w-full"}/></div>
                     <div className="w-full"><SelectMenu id={"game_version"} name={"Game version"} options={versions} multiple={false} selected={selectedGameVersion} biz={biz} dir={formatDir} fetchDownloadSizes={fetchDownloadSizes} lang={() => selectedAudioLang} helpText={"Version of the game to install."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload} onSelect={setSelectedGameVersion}/></div>
                     {/*<div className="w-full"><SelectMenu id={"game_audio_langs"} name={"Voice pack"} options={[{name: "English (US)", value: "en-us"}, {name: "Japanese", value: "ja-jp"}, {name: "Korean", value: "ko-kr"}, {name: "Chinese", value: "zh-cn"}]} multiple={false} selected={selectedAudioLang} biz={biz} fetchDownloadSizes={fetchDownloadSizes} dir={formatDir} version={() => selectedGameVersion} helpText={"What audio package to install for the game."} setOpenPopup={setOpenPopup} skipGameDownload={skipGameDownload} onSelect={setSelectedAudioLang}/></div>*/}
+                    {(biz === "bh3_global") ? <div className="w-full"><SelectMenu id={"game_region_code"} name={"Game region"} multiple={false} options={[{name: "Europe & America", value: "glb_official"}, {name: "Japan", value: "jp_official"}, {name: "Korea", value: "kr_official"}, {name: "SEA", value: "overseas_official"}, {name: "Traditional Chinese", value: "asia_official"}]} selected={selectedRegionCode} helpText={"Region you want downloaded."} setOpenPopup={setOpenPopup} onSelect={setSelectedRegionCode}/></div> : null}
                     {(window.navigator.platform.includes("Linux")) ? <div className="w-full"><SelectMenu id={"runner_version"} name={"Runner version"} multiple={false} options={runnerVersions} selected={selectedRunnerVersion} helpText={"Wine/Proton version to use for this installation."} setOpenPopup={setOpenPopup} onSelect={setSelectedRunnerVersion}/></div> : null}
                     {(window.navigator.platform.includes("Linux")) ? null/*<div className="w-full"><SelectMenu id={"dxvk_version"} name={"DXVK version"} multiple={false} options={dxvkVersions} selected={selectedDxvkVersion} helpText={"What DXVK version to use for this installation."} setOpenPopup={setOpenPopup} onSelect={setSelectedDxvkVersion}/></div>*/ : null}
                     {(window.navigator.platform.includes("Linux")) ? <div className="w-full"><FolderInput name={"Runner prefix location"} clearable={true} value={`${settings.default_runner_prefix_path}/${biz}`} folder={true} id={"install_prefix_path"} helpText={"Location where to store Wine/Proton prefix."}/></div>: null}
@@ -95,7 +99,6 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                 <button className={`flex flex-row gap-3 items-center py-3 px-8 rounded-xl disabled:cursor-not-allowed disabled:brightness-90 disabled:saturate-100 transition-all duration-200 transform hover:scale-105 font-semibold text-white bg-gradient-to-r focus:outline-none focus-visible:ring-2 ${skipGameDownload ? 'from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 focus-visible:ring-green-400' : 'from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 focus-visible:ring-purple-300'}`} id={"game_dl_btn"} onClick={() => {
                     setIsClosing(true);
                     setTimeout(() => {
-                        // ...existing code...
                         // @ts-ignore
                         let hash_skip = document.getElementById("skip_hash_validation").checked;
                         // @ts-ignore
@@ -136,7 +139,8 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                             fpsValue: "60",
                             runnerPrefix: rpp,
                             launchArgs: "",
-                            skipGameDl: skipdl
+                            skipGameDl: skipdl,
+                            regionCode: selectedRegionCode
                         }).then((r: any) => {
                             if (r.success) {
                                 pushInstalls();
@@ -146,7 +150,7 @@ export default function DownloadGame({disk, setOpenPopup, displayName, settings,
                                     let installui = document.getElementById(r.install_id);
                                     if (installui) installui.focus();
                                     if (!skipdl) {
-                                        emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp}).then(() => {});
+                                        emit("start_game_download", {install: r.install_id, biz: biz, lang: vpp, region: selectedRegionCode}).then(() => {});
                                     }
                                 }, 20);
                             } else {

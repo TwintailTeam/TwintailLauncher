@@ -114,7 +114,13 @@ pub async fn init_db(app: &AppHandle) {
             description: "init_installed_runners_table_118",
             sql: r#"CREATE TABLE IF NOT EXISTS installed_runners ("runner_path" TEXT default null, "is_installed" bool default 0 not null, "version" TEXT default null, id integer not null CONSTRAINT ir_pk primary key autoincrement);"#,
             kind: MigrationKind::Up,
-        }
+        },
+        Migration {
+            version: 18,
+            description: "alter_install_table_1113",
+            sql: r#"ALTER TABLE install ADD COLUMN region_code TEXT DEFAULT 'glb_official' NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -526,13 +532,13 @@ pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool)
 
 // === INSTALLS ===
 
-pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, audio_langs: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String, launch_args: String, use_gamemode: bool, use_mangohud: bool, mangohud_config_path: String) -> Result<bool, Error> {
+pub fn create_installation(app: &AppHandle, id: String, manifest_id: String, version: String, audio_langs: String, name: String, directory: String, runner_path: String, dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, ignore_updates: bool, skip_hash_check: bool, use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, runner_prefix_path: String, launch_args: String, use_gamemode: bool, use_mangohud: bool, mangohud_config_path: String, region_code: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path, region_code) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path).bind(region_code);
         rslt = query.execute(&db).await.unwrap();
     });
 
@@ -599,7 +605,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             use_mangohud: rslt.get(0).unwrap().get("use_mangohud"),
             mangohud_config_path: rslt.get(0).unwrap().get("mangohud_config_path"),
             shortcut_is_steam: rslt.get(0).unwrap().get("shortcut_is_steam"),
-            shortcut_path: rslt.get(0).unwrap().get("shortcut_path")
+            shortcut_path: rslt.get(0).unwrap().get("shortcut_path"),
+            region_code: rslt.get(0).unwrap().get("region_code")
         };
 
         Some(rsltt)
@@ -649,7 +656,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 use_mangohud: r.get("use_mangohud"),
                 mangohud_config_path: r.get("mangohud_config_path"),
                 shortcut_is_steam: r.get("shortcut_is_steam"),
-                shortcut_path: r.get("shortcut_path")
+                shortcut_path: r.get("shortcut_path"),
+                region_code: r.get("region_code")
             })
         }
 
@@ -700,7 +708,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 use_mangohud: r.get("use_mangohud"),
                 mangohud_config_path: r.get("mangohud_config_path"),
                 shortcut_is_steam: r.get("shortcut_is_steam"),
-                shortcut_path: r.get("shortcut_path")
+                shortcut_path: r.get("shortcut_path"),
+                region_code: r.get("region_code")
             })
         }
 

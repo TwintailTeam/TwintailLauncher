@@ -6,7 +6,7 @@ use fischl::utils::{assemble_multipart_archive, extract_archive};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
-use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::utils::repo_manager::{get_manifest, FullGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
@@ -97,7 +97,7 @@ pub fn register_download_handler(app: &AppHandle) {
                     }
                     // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
-                        let urls = picked.game.full.clone();
+                        let urls = if payload.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone().unwrap() == payload.region).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone()};
                         for e in urls.clone() {
                             let h4 = h4.clone();
                             run_async_command(async {

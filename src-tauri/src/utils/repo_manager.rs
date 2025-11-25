@@ -425,6 +425,7 @@ pub struct LauncherInstall {
     pub mangohud_config_path: String,
     pub shortcut_is_steam: bool,
     pub shortcut_path: String,
+    pub region_code: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -537,7 +538,8 @@ pub struct FullGameFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
-    pub file_path: String
+    pub file_path: String,
+    pub region_code: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -563,7 +565,8 @@ pub struct FullAudioFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
-    pub language: String
+    pub language: String,
+    pub region_code: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
