@@ -140,6 +140,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
         // Set override for hkrpg fix
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
+        if gm.biz == "wuwa_global" { cmd.env("PROTON_USE_XALIA", "0"); cmd.env("WINE_DISABLE_VULKAN_OPWR", "1"); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -220,6 +223,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
         // Set override for hkrpg fix
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
+        if gm.biz == "wuwa_global" { cmd.env("PROTON_USE_XALIA", "0"); cmd.env("WINE_DISABLE_VULKAN_OPWR", "1"); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());

@@ -260,6 +260,7 @@ export default class App extends React.Component<any, any> {
                     disableUpdate={this.state.disableUpdate}
                     resumeStates={this.state.resumeStates}
                     globalSettings={this.state.globalSettings}
+                    installSettings={this.state.installSettings}
                     buttonType={buttonType}
                     refreshDownloadButtonInfo={this.refreshDownloadButtonInfo}
                     onOpenInstallSettings={() => {

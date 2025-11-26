@@ -11,9 +11,10 @@ interface IProps {
     disableUpdate: boolean,
     disableDownload: boolean,
     disableResume: boolean,
-    resumeStates: any
+    resumeStates: any,
+    installSettings: any
 }
-export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload, disableResume, resumeStates}: IProps) {
+export default function GameButton({currentInstall, globalSettings, buttonType, refreshDownloadButtonInfo, disableUpdate, disableRun, disableDownload, disableResume, resumeStates, installSettings}: IProps) {
     // Compute theme classes and behavior by buttonType
     const theme = (() => {
         switch (buttonType) {
@@ -81,19 +82,19 @@ export default function GameButton({currentInstall, globalSettings, buttonType, 
         } else if (buttonType === "download") {
             refreshDownloadButtonInfo();
         } else if (buttonType === "update") {
-            emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+            emit("start_game_update", {install: currentInstall, biz: "", lang: "", region: ""}).then(() => {});
         } else if (buttonType === "resume") {
             if (resumeStates.downloading) {
-                emit("start_game_download", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                emit("start_game_download", {install: currentInstall, biz: "", lang: "", region: installSettings.region_code}).then(() => {});
             }
             if (resumeStates.updating) {
-                emit("start_game_update", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                emit("start_game_update", {install: currentInstall, biz: "", lang: "", region: ""}).then(() => {});
             }
             if (resumeStates.preloading) {
-                emit("start_game_preload", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                emit("start_game_preload", {install: currentInstall, biz: "", lang: "", region: ""}).then(() => {});
             }
             if (resumeStates.repairing) {
-                emit("start_game_repair", {install: currentInstall, biz: "", lang: ""}).then(() => {});
+                emit("start_game_repair", {install: currentInstall, biz: "", lang: "", region: installSettings.region_code}).then(() => {});
             }
         }
     };
