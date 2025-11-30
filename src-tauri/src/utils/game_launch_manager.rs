@@ -7,7 +7,7 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
@@ -25,7 +25,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
-    let dir = Path::new(install.directory.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let dirp = Path::new(install.directory.as_str()).follow_symlink()?;
+    let dir = dirp.to_str().unwrap().to_string();
     let prefix = Path::new(install.runner_prefix.as_str()).follow_symlink()?.to_str().unwrap().to_string();
     let runnerp = Path::new(gs.default_runner_path.as_str()).follow_symlink()?;
     let runner = Path::new(install.runner_path.as_str()).follow_symlink()?.to_str().unwrap().to_string();
@@ -142,7 +143,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
         // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
         // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
-        if gm.biz == "wuwa_global" { cmd.env("PROTON_USE_XALIA", "0"); cmd.env("WINE_DISABLE_VULKAN_OPWR", "1"); }
+        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+        if gm.biz == "wuwa_global" {
+            cmd.env("PROTON_USE_XALIA", "0");
+            cmd.env("WINE_DISABLE_VULKAN_OPWR", "1");
+            if install.use_xxmi {
+                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+            }
+        }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -225,7 +234,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
         // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
         // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
-        if gm.biz == "wuwa_global" { cmd.env("PROTON_USE_XALIA", "0"); cmd.env("WINE_DISABLE_VULKAN_OPWR", "1"); }
+        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+        if gm.biz == "wuwa_global" {
+            cmd.env("PROTON_USE_XALIA", "0");
+            cmd.env("WINE_DISABLE_VULKAN_OPWR", "1");
+            if install.use_xxmi {
+                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+            }
+        }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -359,7 +376,8 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
 
 #[cfg(target_os = "windows")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
-    let dir = install.directory.clone();
+    let dirp = Path::new(&install.directory.clone()).follow_symlink()?;
+    let dir = dirp.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
@@ -388,6 +406,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
     }
 
+    // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+    if gm.biz == "wuwa_global" {
+        if install.use_xxmi {
+            let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+            edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+        }
+    }
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
     load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path, game.clone());
