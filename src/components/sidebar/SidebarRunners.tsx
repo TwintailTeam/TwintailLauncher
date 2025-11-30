@@ -11,7 +11,7 @@ import {
     useInteractions
 } from "@floating-ui/react";
 import {POPUPS} from "../popups/POPUPS.ts";
-import {JoystickIcon} from "lucide-react";
+import {AtomIcon} from "lucide-react";
 
 export default function SidebarRunners({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
@@ -35,7 +35,7 @@ export default function SidebarRunners({setOpenPopup, popup}: {setOpenPopup: (a:
 
     return (
         <React.Fragment>
-            <JoystickIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-0 cursor-pointer flex-initial" onClick={() => {
+            <AtomIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-0 cursor-pointer flex-initial" onClick={() => {
                 setOpenPopup(popup == POPUPS.NONE ? POPUPS.RUNNERMANAGER : POPUPS.NONE);
             }} />
 
