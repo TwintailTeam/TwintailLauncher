@@ -53,6 +53,7 @@ export default function ActionBar(props: ActionBarProps) {
                 install: currentInstall,
                 biz: "",
                 lang: "",
+                region: ""
               }).then(() => {});
             }}
           >
