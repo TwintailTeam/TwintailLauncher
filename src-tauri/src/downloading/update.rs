@@ -66,7 +66,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                 let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz.exe");
                                 urls.into_iter().for_each(|e| {
                                     run_async_command(async {
-                                        <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, false, {
+                                        <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, {
                                             let dlpayload = dlpayload.clone();
                                             let tmp = tmp.clone();
                                             let instn = instn.clone();
