@@ -522,20 +522,26 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
 
-                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
-                    let app = app.clone();
-                    let dlpayload = dlpayload.clone();
-                    move |current, total| {
-                        let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
-                        dlpayload.insert("progress", current.to_string());
-                        dlpayload.insert("total", total.to_string());
-                        app.emit("download_progress", dlpayload.clone()).unwrap();
-                    }
+                let r = run_async_command(async {
+                    download_steamrt(steamrt.clone(), steamrt.clone(), "steamrt3".to_string(), "latest-public-beta".to_string(), {
+                        let app = app.clone();
+                        let dlpayload = dlpayload.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            app.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    }).await
                 });
                 if r {
                     app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                     prevent_exit(&app, false);
+                } else {
+                    app.dialog().message("Error occurred while trying to download SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
+                        .kind(MessageDialogKind::Warning)
+                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string())).show(move |_action| { prevent_exit(&app, false); app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap(); });
                 }
             });
         } else {
@@ -543,7 +549,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-beta".to_string());
+            let remote_ver = check_steamrt_update("steamrt3".to_string(), "latest-public-beta".to_string());
             if remote_ver.is_some() {
                 let rv = remote_ver.unwrap();
                 if compare_steamrt_versions(&rv, &cur_ver) {
@@ -558,20 +564,26 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                         app.emit("update_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&app, true);
 
-                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
-                            let app = app.clone();
-                            let dlpayload = dlpayload.clone();
-                            move |current, total| {
-                                let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
-                                dlpayload.insert("progress", current.to_string());
-                                dlpayload.insert("total", total.to_string());
-                                app.emit("update_progress", dlpayload.clone()).unwrap();
-                            }
+                        let r = run_async_command(async {
+                            download_steamrt(steamrt.clone(), steamrt.clone(), "steamrt3".to_string(), "latest-public-beta".to_string(), {
+                                let app = app.clone();
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlpayload = dlpayload.clone();
+                                    dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
+                                    dlpayload.insert("progress", current.to_string());
+                                    dlpayload.insert("total", total.to_string());
+                                    app.emit("update_progress", dlpayload.clone()).unwrap();
+                                }
+                            }).await
                         });
                         if r {
                             app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                             prevent_exit(&app, false);
+                        } else {
+                            app.dialog().message("Error occurred while trying to update SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string())).show(move |_action| { prevent_exit(&app, false); app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap(); });
                         }
                     });
                 } else { println!("SteamLinuxRuntime is up to date!"); }
