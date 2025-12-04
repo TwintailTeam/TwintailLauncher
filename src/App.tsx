@@ -359,10 +359,10 @@ export default class App extends React.Component<any, any> {
 
     componentDidUpdate(_prevProps: any, prevState: any) {
         if (this.state.currentInstall && this.state.currentInstall !== prevState.currentInstall) {
-            this.fetchInstallSettings(this.state.currentInstall);
+            this.fetchInstallSettings(this.state.currentInstall).then(() => {});
             this.fetchInstallResumeStates(this.state.currentInstall);
-            this.fetchCompatibilityVersions();
-            this.fetchInstalledRunners();
+            this.fetchCompatibilityVersions().then(() => {});
+            this.fetchInstalledRunners().then(() => {});
         }
     }
 
