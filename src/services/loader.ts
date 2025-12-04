@@ -3,7 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { Events } from "../constants/events.ts";
 import { registerEvents } from "./events.ts";
 
-const IMAGE_PRELOAD_TIMEOUT_MS = 50000;
+const IMAGE_PRELOAD_TIMEOUT_MS = 20000;
 export type SetProgressFn = (progress: number, message: string) => void;
 
 export interface LoaderOptions {
