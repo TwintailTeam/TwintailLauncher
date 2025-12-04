@@ -290,7 +290,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300, 200, |found| {
+            wait_for_process(p, 400, 200, |found| {
                 if found {
                     let xxmi_path = xxmi_path.clone();
                     let mipath = get_mi_path_from_game(game.clone()).unwrap();
@@ -322,7 +322,6 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
                     }
                     true
                 } else {
-                    send_notification(&app, "Failed to find game process on time, XXMI will not be loaded.", None);
                     false
                 }
             });
@@ -338,7 +337,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300, 200, |found| {
+            wait_for_process(p, 400, 200, |found| {
                 if found {
                     let fpsunlock_path = fpsunlock_path.clone();
                     let fpsv = install.fps_value.clone();
@@ -370,7 +369,6 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                     }
                     true
                 } else {
-                    send_notification(&app, "Failed to find game process on time, FPS unlocker will not be loaded.", None);
                     false
                 }
             });
