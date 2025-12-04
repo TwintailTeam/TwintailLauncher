@@ -177,8 +177,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
                     Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        /*load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);*/
                         write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
                     }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
@@ -186,6 +186,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             }
             Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
+        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
         true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
