@@ -172,22 +172,20 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
+        // Load before we spawn the game
+        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+
         match cmd.spawn() {
             Ok(mut child) => {
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
-                    Ok(None) => {
-                        /*load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);*/
-                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
-                    }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap()); }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
                 }
             }
             Err(_) => { send_notification(&app, "Failed to run launch command! Something serious is wrong.", None); }
         }
-        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
         true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
@@ -265,15 +263,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
+        // Load before we spawn the game
+        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+
         match cmd.spawn() {
             Ok(mut child) => {
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
-                    Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
-                    }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap()); }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
                 }
             }
@@ -292,7 +290,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300, 100, |found| {
+            wait_for_process(p, 300, 200, |found| {
                 if found {
                     let xxmi_path = xxmi_path.clone();
                     let mipath = get_mi_path_from_game(game.clone()).unwrap();
@@ -337,7 +335,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300, 100, |found| {
+            wait_for_process(p, 300, 200, |found| {
                 if found {
                     let fpsunlock_path = fpsunlock_path.clone();
                     let fpsv = install.fps_value.clone();
