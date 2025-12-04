@@ -321,7 +321,10 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
                         write_log(&app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
                     }
                     true
-                } else { false }
+                } else {
+                    send_notification(&app, "Failed to find game process on time, XXMI will not be loaded.", None);
+                    false
+                }
             });
         });
     }
@@ -367,6 +370,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                     }
                     true
                 } else {
+                    send_notification(&app, "Failed to find game process on time, FPS unlocker will not be loaded.", None);
                     false
                 }
             });
