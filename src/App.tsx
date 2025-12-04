@@ -326,6 +326,8 @@ export default class App extends React.Component<any, any> {
         this.loaderController = startInitialLoad({
             fetchSettings: this.fetchSettings,
             fetchRepositories: this.fetchRepositories,
+            fetchCompatibilityVersions: this.fetchCompatibilityVersions,
+            fetchInstalledRunners: this.fetchInstalledRunners,
             getGamesInfo: () => this.state.gamesinfo,
             getInstalls: () => this.state.installs,
             preloadImages: (images, onProgress, preloaded) => preloadImages(images, onProgress, preloaded),

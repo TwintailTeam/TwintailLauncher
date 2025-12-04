@@ -9,6 +9,8 @@ export type SetProgressFn = (progress: number, message: string) => void;
 export interface LoaderOptions {
   fetchSettings: () => Promise<void>;
   fetchRepositories: () => Promise<void>;
+  fetchCompatibilityVersions: () => Promise<void>;
+  fetchInstalledRunners: () => Promise<void>;
   getGamesInfo: () => any[];
   getInstalls: () => any[];
   preloadImages: (
@@ -52,6 +54,11 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       // Step 2: Repositories
       try {
         await opts.fetchRepositories();
+        // Load runners if application is running on Linux
+        if (window.navigator.platform.includes("Linux")) {
+          await opts.fetchCompatibilityVersions();
+          await opts.fetchInstalledRunners();
+        }
         if (cancelled) return;
         opts.setProgress(50, "Loading game data...");
       } catch (e) {
