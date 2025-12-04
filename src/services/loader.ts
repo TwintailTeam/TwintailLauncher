@@ -71,11 +71,11 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       const games = opts.getGamesInfo() || [];
       const installs = opts.getInstalls ? (opts.getInstalls() || []) : [];
       const gameBackgrounds: string[] = games.map((g: any) => g?.assets?.game_background).filter(Boolean);
-      const gameLiveBackgrounds: string[] = games.map((g: any) => g?.assets?.game_live_background).filter(Boolean);
+      //const gameLiveBackgrounds: string[] = games.map((g: any) => g?.assets?.game_live_background).filter(Boolean);
       const gameIcons: string[] = games.map((g: any) => g?.assets?.game_icon).filter(Boolean);
       const installBackgrounds: string[] = installs.map((i: any) => i?.game_background).filter(Boolean);
       const installIcons: string[] = installs.map((i: any) => i?.game_icon).filter(Boolean);
-      const images = Array.from(new Set([...(gameLiveBackgrounds as string[]), ...(gameBackgrounds as string[]), ...(gameIcons as string[]), ...(installBackgrounds as string[]), ...(installIcons as string[])]));
+      const images = Array.from(new Set([/*...(gameLiveBackgrounds as string[]), */...(gameBackgrounds as string[]), ...(gameIcons as string[]), ...(installBackgrounds as string[]), ...(installIcons as string[])]));
       await opts.preloadImages(
         images,
         (loaded, total) => {

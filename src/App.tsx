@@ -427,7 +427,7 @@ export default class App extends React.Component<any, any> {
 
                     if (this.state.installs.length === 0) {
                         if (games.length > 0 && this.state.currentGame == "") {
-                            let bg = (gi[0].assets.game_live_background !== "") ? gi[0].assets.game_live_background : gi[0].assets.game_background;
+                            let bg = (gi[0].assets.game_live_background !== "") ? gi[0].assets.game_background : gi[0].assets.game_background;
                             this.setCurrentGame(games[0].filename.replace(".json", ""));
                             this.setDisplayName(games[0].display_name);
                             this.setBackground(bg);

@@ -76,7 +76,7 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
             onDragStart={(e) => e.preventDefault()}
           >
             {gamesinfo.map((game, index) => {
-              let bg = (game.assets.game_live_background !== "") ? game.assets.game_live_background : game.assets.game_background;
+              let bg = (game.assets.game_live_background !== "") ? game.assets.game_background : game.assets.game_background;
               const opening = manifestsOpenVisual;
               const delayMs = manifestsInitialLoading
                 ? (index * 100 + 400)
