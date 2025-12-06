@@ -541,7 +541,12 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                 } else {
                     app.dialog().message("Error occurred while trying to download SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
                         .kind(MessageDialogKind::Warning)
-                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string())).show(move |_action| { prevent_exit(&app, false); app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap(); });
+                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                        .show(move |_action| {
+                            prevent_exit(&app, false);
+                            app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
+                            empty_dir(steamrt.as_path()).unwrap();
+                        });
                 }
             });
         } else {
@@ -583,7 +588,12 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                         } else {
                             app.dialog().message("Error occurred while trying to update SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
                                 .kind(MessageDialogKind::Warning)
-                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string())).show(move |_action| { prevent_exit(&app, false); app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap(); });
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    prevent_exit(&app, false);
+                                    app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
+                                    empty_dir(steamrt.as_path()).unwrap();
+                                });
                         }
                     });
                 } else { println!("SteamLinuxRuntime is up to date!"); }
@@ -746,10 +756,12 @@ fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
 
 #[allow(dead_code)]
 fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    for entry in fs::read_dir(dir.as_ref())? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+    if dir.as_ref().exists() {
+        for entry in fs::read_dir(dir.as_ref())? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+        }
     }
     Ok(())
 }
