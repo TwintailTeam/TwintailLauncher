@@ -3,12 +3,11 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Emitter};
 use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{prevent_exit, send_notification, PathResolve};
+use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
 
 #[cfg(target_os = "linux")]
 use fischl::compat::Compat;
-#[cfg(target_os = "linux")]
-use std::sync::Arc;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, LauncherRunner};
 #[cfg(target_os = "linux")]
@@ -98,49 +97,61 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 
             // Empty folder download
             if fs::read_dir(runner_path.as_path()).unwrap().next().is_none() {
-                let mut dlpayload = HashMap::new();
+                let appc = app.clone();
+                let runvc = runner_version.clone();
+                let runpc = runner_path.clone();
+                std::thread::spawn(move || {
+                    let app = appc.clone();
+                    let runnerp = runnerp.clone();
+                    let runv = runvc.clone();
+                    let runpc = runpc.clone();
 
-                dlpayload.insert("name", runner_version.to_string());
-                dlpayload.insert("progress", "0".to_string());
-                dlpayload.insert("total", "1000".to_string());
-                app.emit("download_progress", dlpayload.clone()).unwrap();
-                prevent_exit(&app, true);
+                    let mut dlp = HashMap::new();
+                    dlp.insert("name", runv.to_string());
+                    dlp.insert("progress", "0".to_string());
+                    dlp.insert("total", "1000".to_string());
+                    app.emit("download_progress", dlp.clone()).unwrap();
+                    prevent_exit(&app, true);
 
-                #[cfg(target_os = "linux")]
-                {
-                    let archandle = Arc::new(app.clone());
-                    let runvc = runner_version.clone();
-                    let runpc = runner_path.clone();
+                    let mut dl_url = runnerp.url.clone(); // Always x86_64
+                    if let Some(urls) = runnerp.urls {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_url = urls.x86_64; }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                    }
 
-                    std::thread::spawn(move || {
-                        let mut dl_url = runnerp.url.clone(); // Always x86_64
-                        if let Some(urls) = runnerp.urls {
-                            #[cfg(target_arch = "x86_64")]
-                            { dl_url = urls.x86_64; }
-                            #[cfg(target_arch = "aarch64")]
-                            { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
-                        }
-
-                        let r0 = Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
-                            let archandle = archandle.clone();
-                            let dlpayload = dlpayload.clone();
-                            let runv = runvc.clone();
+                    let r0 = run_async_command(async {
+                        Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
+                            let archandle = app.clone();
+                            let dlpayload = dlp.clone();
+                            let runv = runv.clone();
                             move |current, total| {
-                                let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", runv.to_string());
-                                dlpayload.insert("progress", current.to_string());
-                                dlpayload.insert("total", total.to_string());
-                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                                let mut dlp = dlpayload.clone();
+                                dlp.insert("name", runv.to_string());
+                                dlp.insert("progress", current.to_string());
+                                dlp.insert("total", total.to_string());
+                                archandle.emit("download_progress", dlp.clone()).unwrap();
                             }
-                        });
-                        if r0 {
-                            archandle.emit("download_complete", ()).unwrap();
-                            prevent_exit(&*archandle, false);
-                            send_notification(&*archandle, format!("Download of {runn} complete.", runn = runvc.clone().as_str().to_string()).as_str(), None);
-                            true
-                        } else { false }
+                        }).await
                     });
-                }
+                    if r0 {
+                        app.emit("download_complete", ()).unwrap();
+                        prevent_exit(&app, false);
+                        send_notification(&app, format!("Download of {runn} complete.", runn = runv.clone().as_str().to_string()).as_str(), None);
+                        true
+                    } else {
+                        app.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
+                            .kind(MessageDialogKind::Warning)
+                            .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                            .show(move |_action| {
+                                prevent_exit(&app, false);
+                                app.emit("download_complete", ()).unwrap();
+                                if runpc.exists() { fs::remove_dir_all(&runpc).unwrap(); }
+                            });
+                        false
+                    }
+                });
                 if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), true); } else { create_installed_runner(&app, runner_version.clone(), true, runner_path.to_str().unwrap().to_string()).unwrap(); }
                 Some(true)
             } else {
