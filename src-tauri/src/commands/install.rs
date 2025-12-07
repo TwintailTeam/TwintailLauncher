@@ -753,7 +753,6 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     let rp = Path::new(runp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let mut dlpayload = HashMap::new();
-
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                     if is_proton { } else {
@@ -771,17 +770,19 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                             { dl_url = if urls.aarch64.is_empty() { dxp.url.clone() } else { urls.aarch64 }; }
                         }
 
-                        let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
-                            let archandle = archandle.clone();
-                            let dlpayload = dlpayload.clone();
-                            let runv = runv.clone();
-                            move |current, total| {
-                                let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", runv.to_string());
-                                dlpayload.insert("progress", current.to_string());
-                                dlpayload.insert("total", total.to_string());
-                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                            }
+                        let r0 = run_async_command(async {
+                            Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
+                                let archandle = archandle.clone();
+                                let dlpayload = dlpayload.clone();
+                                let runv = runv.clone();
+                                move |current, total| {
+                                    let mut dlpayload = dlpayload.clone();
+                                    dlpayload.insert("name", runv.to_string());
+                                    dlpayload.insert("progress", current.to_string());
+                                    dlpayload.insert("total", total.to_string());
+                                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                                }
+                            }).await
                         });
                         if r0 {
                             let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -794,6 +795,15 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                                 prevent_exit(&*archandle, false);
                                 send_notification(&*archandle, format!("Download of {dxvn} complete.", dxvn = dxvkv.as_str().to_string()).as_str(), None);
                             }
+                        } else {
+                            archandle.dialog().message(format!("Error occurred while trying to download {dxvn} DXVK! Please retry later.", dxvn = dxvkv.as_str().to_string()).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    prevent_exit(&*archandle, false);
+                                    archandle.emit("download_complete", ()).unwrap();
+                                    if dxpp.exists() { fs::remove_dir_all(&dxpp).unwrap(); }
+                                });
                         }
                     }
                 });

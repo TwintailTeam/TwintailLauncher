@@ -43,17 +43,19 @@ pub fn register_download_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
-                        let rslt = <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
-                            let dlpayload = dlpayload.clone();
-                            let h4 = h4.clone();
-                            move |current, _| {
-                                let mut dlp = dlpayload.lock().unwrap();
-                                dlp.insert("name", instn.to_string());
-                                dlp.insert("progress", current.to_string());
-                                dlp.insert("total", totalsize.to_string());
-                                h4.emit("download_progress", dlp.clone()).unwrap();
-                                drop(dlp);
-                            }
+                        let rslt = run_async_command(async {
+                            <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
+                                let dlpayload = dlpayload.clone();
+                                let h4 = h4.clone();
+                                move |current, _| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", totalsize.to_string());
+                                    h4.emit("download_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            }).await
                         });
                         if rslt {
                             // Get first entry in the list, and start extraction

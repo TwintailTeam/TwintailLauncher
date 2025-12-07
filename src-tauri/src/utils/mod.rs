@@ -335,14 +335,19 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
+                empty_dir(&path).unwrap();
+                let dl = run_async_command(async {
+                    Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
+                let dl = run_async_command(async {
+                    Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
@@ -352,11 +357,20 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
 pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
+            std::thread::spawn(move || {
+                empty_dir(&path).unwrap();
+                run_async_command(async {
+                    Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
+            });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
+            std::thread::spawn(move || {
+                run_async_command(async {
+                    Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
+            });
         }
     }
 }
@@ -365,7 +379,11 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, move |_current, _total| {});
+                let dl = run_async_command(async {
+                    Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
+                        move |_current, _total| {}
+                    }).await
+                });
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
@@ -374,7 +392,9 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
                     let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    let dl1 = run_async_command(async {
+                        Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap()).await
+                    });
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
@@ -403,16 +423,18 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                 dlpayload.insert("total", "1000".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
-                    let app = app.clone();
-                    let dlpayload = dlpayload.clone();
-                    move |current, total| {
-                        let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "XXMI Modding tool".to_string());
-                        dlpayload.insert("progress", current.to_string());
-                        dlpayload.insert("total", total.to_string());
-                        app.emit("download_progress", dlpayload.clone()).unwrap();
-                    }
+                let dl = run_async_command(async {
+                    Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
+                        let app = app.clone();
+                        let dlpayload = dlpayload.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", "XXMI Modding tool".to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            app.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    }).await
                 });
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
@@ -422,7 +444,9 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
                     let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    let dl1 = run_async_command(async {
+                        Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap()).await
+                    });
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
@@ -439,6 +463,15 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
                         prevent_exit(&app, false);
                     }
+                } else {
+                    app.dialog().message("Error occurred while trying to download XXMI Modding tool! Please retry later by re-enabling the \"Inject XXMI\" in Install Settings.").title("TwintailLauncher")
+                        .kind(MessageDialogKind::Warning)
+                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                        .show(move |_action| {
+                            prevent_exit(&app, false);
+                            app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
+                            empty_dir(&path).unwrap();
+                        });
                 }
             });
         }
