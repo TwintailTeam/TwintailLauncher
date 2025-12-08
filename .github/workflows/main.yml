@@ -1,0 +1,74 @@
+name: 'Build and Release'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        # NOTE: Using ubuntu and windows since the project doesn't officially support macOS.
+        platform: [ubuntu-latest, windows-latest] 
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Setup Node.js Environment
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' 
+
+      # 2. Install pnpm (Crucial Step!)
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 
+          run_install: false 
+
+      # 3. Get pnpm store directory for caching
+      - name: Get pnpm store path
+        shell: bash
+        id: pnpm-cache
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      # 4. Restore/Cache pnpm modules
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # 5. Install Dependencies using pnpm
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 6. Build the Tauri application
+      - name: Build Tauri App
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # You MUST configure these in GitHub Secrets for a successful build
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }} 
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          packageManager: pnpm
+          buildCommand: 'pnpm run build'
+          root: 'src-tauri' 
+
+      # 7. Upload the build artifacts
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-app-${{ matrix.platform }}
+          path: src-tauri/target/release
