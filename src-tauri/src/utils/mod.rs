@@ -788,7 +788,7 @@ fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
 }
 
 #[allow(dead_code)]
-fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
+pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     if dir.as_ref().exists() {
         for entry in fs::read_dir(dir.as_ref())? {
             let entry = entry?;

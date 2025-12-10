@@ -23,14 +23,14 @@ pub fn register_download_handler(app: &AppHandle) {
 
             let mm = get_manifest(&h4, gid.filename);
             if let Some(gm) = mm {
-                let version = gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>();
+                let version = if payload.is_latest.is_some() { gm.game_versions.iter().filter(|e| e.metadata.version == gm.latest_version).collect::<Vec<&GameVersion>>() } else { gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>() };
                 let picked = version.get(0).unwrap();
 
-                let instn = Arc::new(install.name.clone());
+                let instn = if payload.is_latest.is_some() { Arc::new(picked.metadata.versioned_name.clone()) } else { Arc::new(install.name.clone()) };
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
-                dlp.insert("name", install.name.clone());
+                dlp.insert("name", instn.to_string());
                 dlp.insert("progress", "0".to_string());
                 dlp.insert("total", "1000".to_string());
 
