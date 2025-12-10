@@ -51,7 +51,7 @@ pub fn register_update_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                         if urls.is_empty() {
-                            h5.dialog().message("Could not find update for currently installed version!\nRedownload latest version by pressing \"Redownload\" button.").title("TwintailLauncher")
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
                                 .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
                                 .show(move |action| {
@@ -80,7 +80,7 @@ pub fn register_update_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                         if urls.is_empty() {
-                            h5.dialog().message("Could not find update for currently installed version!\nRedownload latest version by pressing \"Redownload\" button.").title("TwintailLauncher")
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
                                 .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
                                 .show(move |action| {
@@ -144,7 +144,7 @@ pub fn register_update_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                         if urls.is_empty() {
-                            h5.dialog().message("Could not find update for currently installed version!\nRedownload latest version by pressing \"Redownload\" button.").title("TwintailLauncher")
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
                                 .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
                                 .show(move |action| {
