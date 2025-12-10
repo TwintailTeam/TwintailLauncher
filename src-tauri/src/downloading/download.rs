@@ -27,10 +27,11 @@ pub fn register_download_handler(app: &AppHandle) {
                 let picked = version.get(0).unwrap();
 
                 let instn = if payload.is_latest.is_some() { Arc::new(picked.metadata.versioned_name.clone()) } else { Arc::new(install.name.clone()) };
+                let inna = instn.clone();
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
-                dlp.insert("name", instn.to_string());
+                dlp.insert("name", instn.clone().to_string());
                 dlp.insert("progress", "0".to_string());
                 dlp.insert("total", "1000".to_string());
 
@@ -49,7 +50,7 @@ pub fn register_download_handler(app: &AppHandle) {
                                 let h4 = h4.clone();
                                 move |current, _| {
                                     let mut dlp = dlpayload.lock().unwrap();
-                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("name", instn.clone().to_string());
                                     dlp.insert("progress", current.to_string());
                                     dlp.insert("total", totalsize.to_string());
                                     h4.emit("download_progress", dlp.clone()).unwrap();
@@ -77,9 +78,9 @@ pub fn register_download_handler(app: &AppHandle) {
                                     let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
                                     let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                     if ext {
-                                        h4.emit("download_complete", install.name.clone()).unwrap();
+                                        h4.emit("download_complete", ()).unwrap();
                                         prevent_exit(&h4, false);
-                                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                                        send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                                     }
                                 }
                             } else {
@@ -90,9 +91,9 @@ pub fn register_download_handler(app: &AppHandle) {
                                 let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
                                 let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                 if ext {
-                                    h4.emit("download_complete", install.name.clone()).unwrap();
+                                    h4.emit("download_complete", ()).unwrap();
                                     prevent_exit(&h4, false);
-                                    send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                                    send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                                 }
                             }
                         }
@@ -119,9 +120,9 @@ pub fn register_download_handler(app: &AppHandle) {
                             });
                         }
                         // We finished the loop emit complete
-                        h4.emit("download_complete", install.name.clone()).unwrap();
+                        h4.emit("download_complete", ()).unwrap();
                         prevent_exit(&h4, false);
-                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                        send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                     }
                     // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
@@ -144,7 +145,7 @@ pub fn register_download_handler(app: &AppHandle) {
                         if rslt {
                             h4.emit("download_complete", ()).unwrap();
                             prevent_exit(&h4, false);
-                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();

@@ -33,6 +33,7 @@ pub fn register_update_handler(app: &AppHandle) {
                 let vc = picked.metadata.version.clone();
                 let ig = picked.assets.game_icon.clone();
                 let gb = picked.assets.game_background.clone();
+                let gbiz = gm.biz.clone();
 
                 let instn = Arc::new(install.name.clone());
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
@@ -60,7 +61,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                         empty_dir(&ip).unwrap();
                                         let mut data = HashMap::new();
                                         data.insert("install", install.id.clone());
-                                        data.insert("biz", payload.biz);
+                                        data.insert("biz", gbiz);
                                         data.insert("lang", payload.lang);
                                         data.insert("region", install.region_code);
                                         data.insert("is_latest", "1".to_string());
@@ -89,7 +90,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                         empty_dir(&ip).unwrap();
                                         let mut data = HashMap::new();
                                         data.insert("install", install.id.clone());
-                                        data.insert("biz", payload.biz);
+                                        data.insert("biz", gbiz);
                                         data.insert("lang", payload.lang);
                                         data.insert("region", install.region_code);
                                         data.insert("is_latest", "1".to_string());
@@ -153,7 +154,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                         empty_dir(&ip).unwrap();
                                         let mut data = HashMap::new();
                                         data.insert("install", install.id.clone());
-                                        data.insert("biz", payload.biz);
+                                        data.insert("biz", gbiz);
                                         data.insert("lang", payload.lang);
                                         data.insert("region", install.region_code);
                                         data.insert("is_latest", "1".to_string());
