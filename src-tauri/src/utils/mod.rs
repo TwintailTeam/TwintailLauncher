@@ -692,6 +692,56 @@ pub fn get_os_release() -> Option<String> {
 }
 
 #[cfg(target_os = "linux")]
+pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
+    let existing = std::env::var("STEAM_COMPAT_CONFIG").unwrap_or_default();
+    let mut compat_flags: Vec<String> = Vec::new();
+    let mut cmdline_appends: Vec<String> = Vec::new();
+
+    let mut config = existing.as_str();
+    while !config.is_empty() {
+        let (cur, remainder) = match config.split_once(',') {
+            Some((c, r)) => (c, r),
+            None => (config, ""),
+        };
+
+        if cur.starts_with("cmdlineappend:") {
+            let mut full_arg = cur.to_string();
+            let mut remaining = remainder;
+
+            while full_arg.ends_with('\\') && !remaining.is_empty() {
+                let (next_part, new_remainder) = match remaining.split_once(',') {
+                    Some((n, r)) => (n, r),
+                    None => (remaining, ""),
+                };
+                full_arg = format!("{}{}", &full_arg[..full_arg.len()-1], next_part);
+                remaining = new_remainder;
+            }
+
+            let arg = full_arg[14..].replace("\\\\", "\\");
+            cmdline_appends.push(arg);
+        } else if !cur.trim().is_empty() {
+            compat_flags.push(cur.to_string());
+        }
+        config = remainder;
+    }
+
+    for item in append_items.iter() {
+        if item.starts_with("cmdlineappend:") {
+            let arg = item[14..].replace("\\\\", "\\");cmdline_appends.push(arg); } else { compat_flags.push(item.to_string()); }
+    }
+
+    let mut new_parts: Vec<String> = Vec::new();
+    for flag in &compat_flags { new_parts.push(flag.clone()); }
+    for append_arg in &cmdline_appends {
+        let mut escaped_arg = append_arg.replace('\\', "\\\\");
+        escaped_arg = escaped_arg.replace(',', "\\,");
+        new_parts.push(format!("cmdlineappend:{}", escaped_arg));
+    }
+    let new_config = new_parts.join(",");
+    new_config
+}
+
+#[cfg(target_os = "linux")]
 pub fn patch_hkrpg(app: &AppHandle, dir: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
