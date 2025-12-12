@@ -83,7 +83,7 @@ pub fn run() {
                 if args::get_launch_install().is_some() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
-                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    std::thread::sleep(std::time::Duration::from_secs(10));
                     handle.cleanup_before_exit();
                     handle.exit(0);
                     std::process::exit(0);
