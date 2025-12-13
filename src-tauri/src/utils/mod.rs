@@ -286,7 +286,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
                 let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
                 let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
                 let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
-                let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
+                let mangohudcfg = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".config/MangoHud/MangoHud.conf");
 
                 // steamrt setup
                 let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
@@ -310,13 +310,13 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
             let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
             let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
-            let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
+            let mangohudcfg = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".config/MangoHud/MangoHud.conf");
 
             // steamrt setup
             let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
             if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
 
-            if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
+            if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); } else { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
             if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();

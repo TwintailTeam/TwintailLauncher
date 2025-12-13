@@ -7,12 +7,12 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification, update_steam_compat_config};
+use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, patch_hkrpg, get_steam_appid};
+use crate::utils::{runner_from_runner_version, patch_hkrpg, get_steam_appid, update_steam_compat_config};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]

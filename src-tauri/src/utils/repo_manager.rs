@@ -6,18 +6,18 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_installed_runner, create_manifest, create_repository, delete_manifest_by_id, get_installed_runner_info_by_version, get_manifest_info_by_filename, get_repository_info_by_github_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{generate_cuid, run_async_command, send_notification};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
+use crate::utils::{generate_cuid, send_notification};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, PathResolve};
+use crate::utils::{run_async_command, runner_from_runner_version, PathResolve};
 #[cfg(target_os = "linux")]
 use std::path::Path;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_install_runner_location_by_id, update_install_runner_version_by_id, get_installs};
+use crate::utils::db_manager::{create_installed_runner, update_install_runner_location_by_id, update_install_runner_version_by_id, get_installs, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let url = "https://github.com/TwintailTeam/game-manifests.git";

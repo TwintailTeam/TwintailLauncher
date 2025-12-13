@@ -958,6 +958,7 @@ pub fn get_installed_runners(app: &AppHandle) -> Option<Vec<LauncherRunner>> {
     }
 }
 
+#[allow(dead_code)]
 pub fn create_installed_runner(app: &AppHandle, version: String, is_installed: bool, runner_path: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 

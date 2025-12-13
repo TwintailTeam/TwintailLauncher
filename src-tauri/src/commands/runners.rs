@@ -1,18 +1,25 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle, Emitter};
-use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
+use tauri::{AppHandle};
+use crate::utils::db_manager::{get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
+use crate::utils::{send_notification, PathResolve};
 
 #[cfg(target_os = "linux")]
+use tauri::Emitter;
+#[cfg(target_os = "linux")]
+use std::collections::HashMap;
+#[cfg(target_os = "linux")]
 use fischl::compat::Compat;
+#[cfg(target_os = "linux")]
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, LauncherRunner};
 #[cfg(target_os = "linux")]
-use crate::utils::runner_from_runner_version;
+use crate::utils::{runner_from_runner_version, prevent_exit, run_async_command};
+#[cfg(target_os = "linux")]
+use crate::utils::db_manager::{create_installed_runner};
 
+#[allow(unused_variables)]
 #[tauri::command]
 pub fn list_installed_runners(app: AppHandle) -> Option<String> {
     #[cfg(target_os = "linux")]
@@ -60,6 +67,7 @@ pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -
     }
 }
 
+#[allow(unused_variables)]
 #[tauri::command]
 pub fn update_installed_runner_install_status(app: AppHandle, version: String, is_installed: bool) -> Option<bool> {
     #[cfg(target_os = "linux")]
@@ -80,6 +88,7 @@ pub fn update_installed_runner_install_status(app: AppHandle, version: String, i
     }
 }
 
+#[allow(unused_variables)]
 #[tauri::command]
 pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: String) -> Option<bool> {
     if runner_url.is_empty() || runner_version.is_empty() {
