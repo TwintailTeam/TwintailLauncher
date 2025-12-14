@@ -324,10 +324,15 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
                     cmd.current_dir(xxmi_path.clone());
                     cmd.process_group(0);
 
-                    let spawn = cmd.spawn();
-                    if spawn.is_ok() {
-                        let process = spawn.unwrap();
-                        write_log(&app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
+                    match cmd.spawn() {
+                        Ok(mut child) => {
+                            match child.try_wait() {
+                                Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None); } }
+                                Ok(None) => { write_log(&app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), child, "xxmi.log".parse().unwrap()); }
+                                Err(_) => { send_notification(&app, "Failed to run XXMI! Please try again later!", None); }
+                            }
+                        }
+                        Err(_) => { send_notification(&app, "Failed to run XXMI! Something serious is wrong.", None); }
                     }
                     true
                 } else {
@@ -371,10 +376,15 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                     cmd.current_dir(fpsunlock_path.clone());
                     cmd.process_group(0);
 
-                    let spawn = cmd.spawn();
-                    if spawn.is_ok() {
-                        let process = spawn.unwrap();
-                        write_log(&app, Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                    match cmd.spawn() {
+                        Ok(mut child) => {
+                            match child.try_wait() {
+                                Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None); } }
+                                Ok(None) => { write_log(&app, Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), child, "fps_unlocker.log".parse().unwrap()); }
+                                Err(_) => { send_notification(&app, "Failed to run FPS Unlocker! Please try again later!", None); }
+                            }
+                        }
+                        Err(_) => { send_notification(&app, "Failed to run FPS Unlocker! Something serious is wrong.", None); }
                     }
                     true
                 } else {
