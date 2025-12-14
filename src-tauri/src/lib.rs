@@ -12,14 +12,14 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, block_telemetry, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
+use crate::utils::{args, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
 use crate::utils::system_tray::init_tray;
 use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::RunnerLoader;
 #[cfg(target_os = "linux")]
-use crate::utils::{download_or_update_steamrt, deprecate_jadeite, sync_installed_runners};
+use crate::utils::{download_or_update_steamrt, deprecate_jadeite, sync_installed_runners, is_flatpak, block_telemetry};
 
 mod utils;
 mod commands;
@@ -83,7 +83,7 @@ pub fn run() {
                 if args::get_launch_install().is_some() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
-                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    std::thread::sleep(std::time::Duration::from_secs(10));
                     handle.cleanup_before_exit();
                     handle.exit(0);
                     std::process::exit(0);
@@ -123,15 +123,21 @@ pub fn run() {
                     deprecate_jadeite(handle);
                     sync_installed_runners(handle);
                     download_or_update_steamrt(handle);
+
+                    let path = data_dir.join(".telemetry_blocked");
+                    if !path.exists() && !is_flatpak() {
+                        use tauri_plugin_dialog::DialogExt;
+                        let h = handle.clone();
+                        h.dialog().message(format!("Hey! Before you start enjoying your games on Linux we are asking you to let application block game telemetry servers to ensure game companies do not collect information about your Linux gaming journey.\nPlease press \"Block telemetry\" and be prompted with password to allow us to write to your /etc/hosts file.").as_str())
+                            .buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancelCustom("Block telemetry".to_string(), "Do not show again".to_string()))
+                            .kind(tauri_plugin_dialog::MessageDialogKind::Info).title("TwintailLauncher").show(move |action| { if action { block_telemetry(&h); } else { std::fs::write(&path, ".").unwrap(); } });
+                    }
                 }
 
-                let path = data_dir.join(".telemetry_blocked");
-                if !path.exists() { block_telemetry(&handle); }
-
-                for r in ["hpatchz", "hpatchz.exe", "7zr", "7zr.exe", "mangohud_default.conf", "reaper"] {
+                for r in ["hpatchz", "hpatchz.exe", "7zr", "7zr.exe", "reaper"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
-                    if rd.file_name().unwrap().to_str().unwrap().contains("mangohud_default.conf") || rd.file_name().unwrap().to_str().unwrap().contains("reaper") {
+                    if rd.file_name().unwrap().to_str().unwrap().contains("reaper") {
                         if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
                     } else {
                         if rd.exists() { std::fs::copy(rd, fd).unwrap(); }

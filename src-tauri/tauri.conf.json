@@ -1,7 +1,7 @@
 {
     "$schema": "https://schema.tauri.app/config/2",
     "productName": "twintaillauncher",
-    "version": "1.1.12",
+    "version": "1.1.13",
     "identifier": "twintaillauncher",
     "build": {
         "beforeDevCommand": "pnpm dev",
@@ -22,7 +22,8 @@
                 "resizable": true,
                 "dragDropEnabled": false,
                 "incognito": true,
-                "backgroundColor": "#0f172a"
+                "backgroundColor": "#0f172a",
+                "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
             }
         ],
         "security": {
@@ -47,7 +48,6 @@
             "./resources/hpatchz",
             "./resources/7zr",
             "./resources/7zr.exe",
-            "./resources/mangohud_default.conf",
             "./resources/hkrpg_patch.dll",
             "./resources/reaper"
         ],

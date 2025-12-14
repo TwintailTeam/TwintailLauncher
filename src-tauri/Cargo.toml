@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "1.1.12"
+version = "1.1.13"
 description = "A multi-platform launcher for your anime games"
 authors = ["TukanDev"]
 edition = "2024"
@@ -30,6 +30,7 @@ gumdrop = "0.8.1"
 # Main library to handle downloads and comaptibility
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 steam_shortcuts_util = "1.1.8"
+configparser = "3.1.0"
 
 # tauri plugins
 tauri-plugin-dialog = "2"
@@ -40,7 +41,7 @@ tauri-plugin-single-instance = "2.3.4"
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
 wgpu = { version = "27.0", default-features = true }
-libc = { version = "0.2.176" }
+libc = { version = "0.2.177" }
 
 [target."cfg(any(target_os = \"windows\"))".dependencies]
 shortcuts-rs = "1.1.1"

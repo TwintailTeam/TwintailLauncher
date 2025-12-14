@@ -7,12 +7,12 @@ use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
 use crate::commands::settings::GlobalSettings;
 use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{get_mi_path_from_game, send_notification};
+use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification};
 use crate::utils::{PathResolve};
 use fischl::utils::wait_for_process;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, patch_hkrpg, get_steam_appid};
+use crate::utils::{runner_from_runner_version, patch_hkrpg, get_steam_appid, update_steam_compat_config};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
@@ -24,8 +24,10 @@ use std::os::unix::process::CommandExt;
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+    let mut compat_config = update_steam_compat_config(vec![]);
 
-    let dir = Path::new(install.directory.as_str()).follow_symlink()?.to_str().unwrap().to_string();
+    let dirp = Path::new(install.directory.as_str()).follow_symlink()?;
+    let dir = dirp.to_str().unwrap().to_string();
     let prefix = Path::new(install.runner_prefix.as_str()).follow_symlink()?.to_str().unwrap().to_string();
     let runnerp = Path::new(gs.default_runner_path.as_str()).follow_symlink()?;
     let runner = Path::new(install.runner_path.as_str()).follow_symlink()?.to_str().unwrap().to_string();
@@ -40,7 +42,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
 
     if !pre_launch.is_empty() {
-        let command = format!("{pre_launch}").replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let command = format!("{pre_launch}").replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -54,8 +56,18 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
+            }
+        }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -103,6 +115,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamOS", "1");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -110,18 +123,40 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
+        cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
+            }
+        }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-
-        // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { cmd.env("STUB_WINTRUST", "1"); cmd.env("BLOCK_FIRST_REQ", "1"); cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
+        // https://github.com/Open-Wine-Components/umu-protonfixes/blob/master/gamefixes-umu/umu-zenlesszonezero.py#L7
+        // Can not use protonfixes here due to backwards compatibility with steam.exe
+        if gm.biz == "nap_global" { compat_config = update_steam_compat_config(vec!["gamedrive"]); }
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
+        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+        if gm.biz == "wuwa_global" {
+            compat_config = update_steam_compat_config(vec!["noopwr", "noxalia"]);
+            if install.use_xxmi {
+                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+            }
+        }
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config); // Set updated config
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -142,15 +177,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
+        // Load before we spawn the game
+        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+
         match cmd.spawn() {
             Ok(mut child) => {
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
-                    Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
-                    }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap()); }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
                 }
             }
@@ -161,12 +196,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let mut args = String::new();
-        let mut command = format!("{c}").replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let mut command = format!("{c}").replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         if !install.launch_args.is_empty() {
             args = install.clone().launch_args;
             if install.use_xxmi && gm.biz == "wuwa_global" { args += " -dx11" }
-            command = format!("{c} {args}").replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+            command = format!("{c} {args}").replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
         } else {
             if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
         }
@@ -175,6 +210,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamOS", "1");
         cmd.env("WINEARCH","win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
         cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -182,18 +218,40 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_INSTALL_PATH", dir.clone());
         cmd.env("STEAM_COMPAT_CLIENT_INSTALL_PATH", "");
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
+        cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
-        cmd.env("PROTONFIXES_DISABLE", "1");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
+        if let Some(cpo) = gm.extra.compat_overrides.clone() {
+            if let Some(dpf) = cpo.disable_protonfixes {
+                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
+            }
+            if let Some(st) = cpo.protonfixes_store {
+                if !st.is_empty() { cmd.env("STORE", st); }
+            }
+            if let Some(id) = cpo.protonfixes_id {
+                if !id.is_empty() { cmd.env("UMU_ID", id); }
+            }
+        }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-
-        // Make it more convenient for wuwa players because we can not load protonfixes
-        if gm.biz == "wuwa_global" { cmd.env("SteamOS","1"); }
         // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { if !install.use_jadeite { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); } }
+        if gm.biz == "hkrpg_global" { cmd.env("STUB_WINTRUST", "1"); cmd.env("BLOCK_FIRST_REQ", "1"); cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
+        // https://github.com/Open-Wine-Components/umu-protonfixes/blob/master/gamefixes-umu/umu-zenlesszonezero.py#L7
+        // Can not use protonfixes here due to backwards compatibility with steam.exe
+        if gm.biz == "nap_global" { compat_config = update_steam_compat_config(vec!["gamedrive"]); }
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
+        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
+        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+        if gm.biz == "wuwa_global" {
+            compat_config = update_steam_compat_config(vec!["noopwr", "noxalia"]);
+            if install.use_xxmi {
+                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+            }
+        }
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config); // Set updated config
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -214,15 +272,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
+        // Load before we spawn the game
+        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
+
         match cmd.spawn() {
             Ok(mut child) => {
                 match child.try_wait() {
                     Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run launch command! Please try again or check install settings.", None); } }
-                    Ok(None) => {
-                        load_xxmi(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-                        write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap());
-                    }
+                    Ok(None) => { write_log(app, Path::new(&dir).follow_symlink()?.to_path_buf(), child, "game.log".parse().unwrap()); }
                     Err(_) => { send_notification(&app, "Failed to run launch command! Please try again or check the command correctness.", None); }
                 }
             }
@@ -241,7 +299,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300, 30, |found| {
+            wait_for_process(p, 400, 200, |found| {
                 if found {
                     let xxmi_path = xxmi_path.clone();
                     let mipath = get_mi_path_from_game(game.clone()).unwrap();
@@ -266,13 +324,20 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, biz: String, prefix: Str
                     cmd.current_dir(xxmi_path.clone());
                     cmd.process_group(0);
 
-                    let spawn = cmd.spawn();
-                    if spawn.is_ok() {
-                        let process = spawn.unwrap();
-                        write_log(&app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), process, "xxmi.log".parse().unwrap());
+                    match cmd.spawn() {
+                        Ok(mut child) => {
+                            match child.try_wait() {
+                                Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None); } }
+                                Ok(None) => { write_log(&app, Path::new(&xxmi_path).follow_symlink().unwrap().to_path_buf(), child, "xxmi.log".parse().unwrap()); }
+                                Err(_) => { send_notification(&app, "Failed to run XXMI! Please try again later!", None); }
+                            }
+                        }
+                        Err(_) => { send_notification(&app, "Failed to run XXMI! Something serious is wrong.", None); }
                     }
                     true
-                } else { false }
+                } else {
+                    false
+                }
             });
         });
     }
@@ -286,7 +351,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
         std::thread::spawn(move || {
             let app = appc.clone();
             let p = if biz == "wuwa_global" { "Client-W" } else { game.as_str() };
-            wait_for_process(p, 300,30, |found| {
+            wait_for_process(p, 400, 200, |found| {
                 if found {
                     let fpsunlock_path = fpsunlock_path.clone();
                     let fpsv = install.fps_value.clone();
@@ -311,10 +376,15 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
                     cmd.current_dir(fpsunlock_path.clone());
                     cmd.process_group(0);
 
-                    let spawn = cmd.spawn();
-                    if spawn.is_ok() {
-                        let process = spawn.unwrap();
-                        write_log(&app, Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+                    match cmd.spawn() {
+                        Ok(mut child) => {
+                            match child.try_wait() {
+                                Ok(Some(status)) => { if !status.success() { send_notification(&app, "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None); } }
+                                Ok(None) => { write_log(&app, Path::new(&fpsunlock_path.clone()).follow_symlink().unwrap().to_path_buf(), child, "fps_unlocker.log".parse().unwrap()); }
+                                Err(_) => { send_notification(&app, "Failed to run FPS Unlocker! Please try again later!", None); }
+                            }
+                        }
+                        Err(_) => { send_notification(&app, "Failed to run FPS Unlocker! Something serious is wrong.", None); }
                     }
                     true
                 } else {
@@ -327,7 +397,8 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
 
 #[cfg(target_os = "windows")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
-    let dir = install.directory.clone();
+    let dirp = Path::new(&install.directory.clone()).follow_symlink()?;
+    let dir = dirp.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
@@ -356,6 +427,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
     }
 
+    // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
+    if gm.biz == "wuwa_global" {
+        if install.use_xxmi {
+            let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
+            edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
+        }
+    }
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
     load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path, game.clone());

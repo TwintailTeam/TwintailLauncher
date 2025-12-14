@@ -9,5 +9,7 @@ pub mod download;
 pub struct DownloadGamePayload {
     pub install: String,
     pub biz: String,
-    pub lang: String
+    pub lang: String,
+    pub region: String,
+    pub is_latest: Option<String>,
 }

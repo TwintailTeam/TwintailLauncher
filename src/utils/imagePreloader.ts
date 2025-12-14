@@ -6,7 +6,7 @@
  * @returns Promise that resolves when all images are loaded
  */
 // Keep strong references to preloaded images to prevent GC and maximize cache hits
-const imageElementCache: Map<string, HTMLImageElement> = new Map();
+const imageElementCache: Map<string, HTMLImageElement | HTMLVideoElement> = new Map();
 
 export function isImagePreloaded(url: string): boolean {
   return imageElementCache.has(url);
@@ -24,29 +24,60 @@ export function preloadImages(
     if (total === 0) return resolve();
     let loaded = 0;
     toLoad.forEach((src) => {
-      const img = new window.Image();
-      // Hint the browser this is important and should be cached if allowed
-      try {
-        // @ts-ignore fetchPriority isn't typed on HTMLImageElement in all TS versions
-        img.fetchPriority = "high";
-      } catch {}
-      img.decoding = "async";
-      img.loading = "eager";
-      img.onload = () => {
-        loadedCache.add(src);
-        imageElementCache.set(src, img);
-        loaded++;
-        if (onProgress) onProgress(loaded, total);
-        if (loaded === total) resolve();
-      };
-      img.onerror = () => {
-        // Keep a reference anyway to avoid repeated retries during session
-        imageElementCache.set(src, img);
-        loaded++;
-        if (onProgress) onProgress(loaded, total);
-        if (loaded === total) resolve();
-      };
-      img.src = src;
+      if (src.endsWith(".webm") || src.endsWith(".mp4")) {
+        const video = document.createElement("video");
+
+        // Hint to browser for better loading priority where supported
+        try {
+          video.preload = "auto"; // equivalent to high priority hint
+          // No standardized fetchPriority yet for video elements like images
+        } catch {}
+
+        video.muted = true; // often needed for autoPlay to work
+        video.playsInline = true; // important on mobile for autoplay
+        video.autoplay = true; // set autoplay
+        video.loop = true; // loop the video
+
+        video.onloadeddata = () => {
+          loadedCache.add(src);
+          imageElementCache.set(src, video);
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          if (loaded === total) resolve();
+        };
+        video.onerror = () => {
+          // Keep a reference anyway to avoid repeated retries during session
+          imageElementCache.set(src, video);
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          if (loaded === total) resolve();
+        };
+        video.src = src;
+      } else {
+        const img = new window.Image();
+        // Hint the browser this is important and should be cached if allowed
+        try {
+          // @ts-ignore fetchPriority isn't typed on HTMLImageElement in all TS versions
+          img.fetchPriority = "high";
+        } catch {}
+        img.decoding = "async";
+        img.loading = "eager";
+        img.onload = () => {
+          loadedCache.add(src);
+          imageElementCache.set(src, img);
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          if (loaded === total) resolve();
+        };
+        img.onerror = () => {
+          // Keep a reference anyway to avoid repeated retries during session
+          imageElementCache.set(src, img);
+          loaded++;
+          if (onProgress) onProgress(loaded, total);
+          if (loaded === total) resolve();
+        };
+        img.src = src;
+      }
     });
   });
 }

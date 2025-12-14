@@ -6,7 +6,7 @@ use fischl::utils::{assemble_multipart_archive, extract_archive};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
-use crate::utils::repo_manager::{get_manifest, GameVersion};
+use crate::utils::repo_manager::{get_manifest, FullGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
@@ -23,14 +23,15 @@ pub fn register_download_handler(app: &AppHandle) {
 
             let mm = get_manifest(&h4, gid.filename);
             if let Some(gm) = mm {
-                let version = gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>();
+                let version = if payload.is_latest.is_some() { gm.game_versions.iter().filter(|e| e.metadata.version == gm.latest_version).collect::<Vec<&GameVersion>>() } else { gm.game_versions.iter().filter(|e| e.metadata.version == install.version).collect::<Vec<&GameVersion>>() };
                 let picked = version.get(0).unwrap();
 
-                let instn = Arc::new(install.name.clone());
+                let instn = if payload.is_latest.is_some() { Arc::new(picked.metadata.versioned_name.clone()) } else { Arc::new(install.name.clone()) };
+                let inna = instn.clone();
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
                 let mut dlp = dlpayload.lock().unwrap();
-                dlp.insert("name", install.name.clone());
+                dlp.insert("name", instn.clone().to_string());
                 dlp.insert("progress", "0".to_string());
                 dlp.insert("total", "1000".to_string());
 
@@ -43,17 +44,19 @@ pub fn register_download_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_FILE" => {
                         let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
                         let totalsize = picked.game.full.iter().map(|x| x.compressed_size.parse::<u64>().unwrap()).sum::<u64>();
-                        let rslt = <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
-                            let dlpayload = dlpayload.clone();
-                            let h4 = h4.clone();
-                            move |current, _| {
-                                let mut dlp = dlpayload.lock().unwrap();
-                                dlp.insert("name", instn.to_string());
-                                dlp.insert("progress", current.to_string());
-                                dlp.insert("total", totalsize.to_string());
-                                h4.emit("download_progress", dlp.clone()).unwrap();
-                                drop(dlp);
-                            }
+                        let rslt = run_async_command(async {
+                            <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
+                                let dlpayload = dlpayload.clone();
+                                let h4 = h4.clone();
+                                move |current, _| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    dlp.insert("name", instn.clone().to_string());
+                                    dlp.insert("progress", current.to_string());
+                                    dlp.insert("total", totalsize.to_string());
+                                    h4.emit("download_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            }).await
                         });
                         if rslt {
                             // Get first entry in the list, and start extraction
@@ -75,9 +78,9 @@ pub fn register_download_handler(app: &AppHandle) {
                                     let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
                                     let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                     if ext {
-                                        h4.emit("download_complete", install.name.clone()).unwrap();
+                                        h4.emit("download_complete", ()).unwrap();
                                         prevent_exit(&h4, false);
-                                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                                        send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                                     }
                                 }
                             } else {
@@ -88,16 +91,16 @@ pub fn register_download_handler(app: &AppHandle) {
                                 let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
                                 let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
                                 if ext {
-                                    h4.emit("download_complete", install.name.clone()).unwrap();
+                                    h4.emit("download_complete", ()).unwrap();
                                     prevent_exit(&h4, false);
-                                    send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                                    send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                                 }
                             }
                         }
                     }
                     // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
-                        let urls = picked.game.full.clone();
+                        let urls = if payload.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone().unwrap() == payload.region).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone()};
                         for e in urls.clone() {
                             let h4 = h4.clone();
                             run_async_command(async {
@@ -117,9 +120,9 @@ pub fn register_download_handler(app: &AppHandle) {
                             });
                         }
                         // We finished the loop emit complete
-                        h4.emit("download_complete", install.name.clone()).unwrap();
+                        h4.emit("download_complete", ()).unwrap();
                         prevent_exit(&h4, false);
-                        send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                        send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                     }
                     // KuroGame only
                     "DOWNLOAD_MODE_RAW" => {
@@ -142,7 +145,7 @@ pub fn register_download_handler(app: &AppHandle) {
                         if rslt {
                             h4.emit("download_complete", ()).unwrap();
                             prevent_exit(&h4, false);
-                            send_notification(&h4, format!("Download of {inn} complete.", inn = install.name).as_str(), None);
+                            send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                             #[cfg(target_os = "linux")]
                             {
                                 let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();

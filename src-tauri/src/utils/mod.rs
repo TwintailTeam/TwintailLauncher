@@ -44,19 +44,26 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
     fs::create_dir_all(&dst)?;
     let totalsize = dir_size(src.as_ref())?;
     let tracker = Arc::new(AtomicU64::new(0));
+    let mut files_to_remove = Vec::new();
 
     prevent_exit(app, true);
     for entry in fs::read_dir(src.as_ref())? {
         let entry = entry?;
-        let ty = entry.file_type()?;
         let f = entry.file_name();
         let ep = entry.path();
-
         if ep == dst.as_ref() { continue; }
 
-        if ty.is_dir() {
+        let meta = fs::symlink_metadata(ep.clone())?;
+        if meta.file_type().is_symlink() {
+            let target_path = fs::read_link(&ep)?;
+            #[cfg(target_os = "linux")]
+            std::os::unix::fs::symlink(target_path, dst.as_ref().join(&f))?;
+            #[cfg(target_os = "windows")]
+            if target_path.is_dir() { std::os::windows::fs::symlink_dir(target_path, dst.as_ref())?; } else { std::os::windows::fs::symlink_file(target_path, dst.as_ref().join(&f))?; }
+            files_to_remove.push(ep.clone());
+        } else if meta.is_dir() {
             copy_dir_all(&app, ep.clone(), dst.as_ref().join(f), install.clone(), install_name.clone(), install_type.clone())?;
-            fs::remove_dir_all(ep)?;
+            files_to_remove.push(ep.clone());
         } else {
             let size = entry.metadata()?.len();
             tracker.fetch_add(size, Ordering::SeqCst);
@@ -69,9 +76,16 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
             payload.insert("progress", tracker.load(Ordering::SeqCst).to_string());
             payload.insert("total", totalsize.to_string());
 
-            fs::copy(ep.clone(), dst.as_ref().join(f))?;
+            if let Err(e) = fs::copy(ep.clone(), dst.as_ref().join(f)) { eprintln!("Failed to copy {}: {}", ep.clone().display(), e); }
             app.emit("move_progress", &payload).unwrap();
-            fs::remove_file(ep)?;
+            files_to_remove.push(ep.clone());
+        }
+    }
+    for file_path in files_to_remove {
+        if file_path.is_file() || file_path.is_symlink() {
+            if let Err(e) = fs::remove_file(file_path) { eprintln!("Failed to remove file: {}", e); }
+        } else {
+            if let Err(e) = fs::remove_dir_all(file_path) { eprintln!("Failed to remove directory: {}", e); }
         }
     }
     Ok(())
@@ -272,7 +286,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
                 let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
                 let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
                 let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
-                let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
+                let mangohudcfg = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".config/MangoHud/MangoHud.conf");
 
                 // steamrt setup
                 let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
@@ -296,13 +310,13 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, mut path: PathBuf, fix_mode: 
             let dxvk = comppath.join("dxvk").follow_symlink().unwrap();
             let prefixes = comppath.join("prefixes").follow_symlink().unwrap();
             let jadeitepath = path.join("extras").join("jadeite").follow_symlink().unwrap();
-            let mangohudcfg = path.join("mangohud_default.conf").follow_symlink().unwrap();
+            let mangohudcfg = app.path().home_dir().unwrap().follow_symlink().unwrap().join(".config/MangoHud/MangoHud.conf");
 
             // steamrt setup
             let steamrtpath = wine.join("steamrt").follow_symlink().unwrap();
             if !steamrtpath.exists() { fs::create_dir_all(&steamrtpath).unwrap(); }
 
-            if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
+            if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); } else { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
             if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
@@ -321,14 +335,19 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
+                empty_dir(&path).unwrap();
+                let dl = run_async_command(async {
+                    Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
             std::thread::spawn(move || {
-                let dl = Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {});
+                let dl = run_async_command(async {
+                    Extras::download_jadeite("MrLGamer/jadeite".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
                 if dl { extract_archive("".to_string(), path.join("jadeite.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false); }
             });
         }
@@ -338,11 +357,20 @@ pub fn download_or_update_jadeite(path: PathBuf, update_mode: bool) {
 pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
+            std::thread::spawn(move || {
+                empty_dir(&path).unwrap();
+                run_async_command(async {
+                    Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
+            });
         }
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
-            std::thread::spawn(move || { Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), move |_current, _total| {}); });
+            std::thread::spawn(move || {
+                run_async_command(async {
+                    Extras::download_fps_unlock("TwintailTeam/KeqingUnlock".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                });
+            });
         }
     }
 }
@@ -351,7 +379,11 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
             std::thread::spawn(move || {
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, move |_current, _total| {});
+                let dl = run_async_command(async {
+                    Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
+                        move |_current, _total| {}
+                    }).await
+                });
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
                     let gimi = String::from("SilentNightSound/GIMI-Package");
@@ -360,7 +392,9 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
                     let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    let dl1 = run_async_command(async {
+                        Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap()).await
+                    });
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
@@ -389,16 +423,18 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                 dlpayload.insert("total", "1000".to_string());
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
-                let dl = Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
-                    let app = app.clone();
-                    let dlpayload = dlpayload.clone();
-                    move |current, total| {
-                        let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "XXMI Modding tool".to_string());
-                        dlpayload.insert("progress", current.to_string());
-                        dlpayload.insert("total", total.to_string());
-                        app.emit("download_progress", dlpayload.clone()).unwrap();
-                    }
+                let dl = run_async_command(async {
+                    Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
+                        let app = app.clone();
+                        let dlpayload = dlpayload.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", "XXMI Modding tool".to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            app.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    }).await
                 });
                 if dl {
                     extract_archive("".to_string(), path.join("xxmi.zip").as_path().to_str().unwrap().parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), false);
@@ -408,7 +444,9 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     let wwmi = String::from("SpectrumQT/WWMI-Package");
                     let himi = String::from("leotorrez/HIMI-Package");
 
-                    let dl1 = Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap());
+                    let dl1 = run_async_command(async {
+                        Extras::download_xxmi_packages(gimi, srmi, zzmi, wwmi, himi, path.as_path().to_str().unwrap().parse().unwrap()).await
+                    });
                     if dl1 {
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             extract_archive("".to_string(), path.join(format!("{mi}.zip")).as_path().to_str().unwrap().parse().unwrap(), path.join(mi).as_path().to_str().unwrap().parse().unwrap(), false);
@@ -425,6 +463,15 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
                         prevent_exit(&app, false);
                     }
+                } else {
+                    app.dialog().message("Error occurred while trying to download XXMI Modding tool! Please retry later by re-enabling the \"Inject XXMI\" in Install Settings.").title("TwintailLauncher")
+                        .kind(MessageDialogKind::Warning)
+                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                        .show(move |_action| {
+                            prevent_exit(&app, false);
+                            app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
+                            empty_dir(&path).unwrap();
+                        });
                 }
             });
         }
@@ -508,20 +555,31 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
 
-                let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
-                    let app = app.clone();
-                    let dlpayload = dlpayload.clone();
-                    move |current, total| {
-                        let mut dlpayload = dlpayload.clone();
-                        dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
-                        dlpayload.insert("progress", current.to_string());
-                        dlpayload.insert("total", total.to_string());
-                        app.emit("download_progress", dlpayload.clone()).unwrap();
-                    }
+                let r = run_async_command(async {
+                    download_steamrt(steamrt.clone(), steamrt.clone(), "steamrt3".to_string(), "latest-public-beta".to_string(), {
+                        let app = app.clone();
+                        let dlpayload = dlpayload.clone();
+                        move |current, total| {
+                            let mut dlpayload = dlpayload.clone();
+                            dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
+                            dlpayload.insert("progress", current.to_string());
+                            dlpayload.insert("total", total.to_string());
+                            app.emit("download_progress", dlpayload.clone()).unwrap();
+                        }
+                    }).await
                 });
                 if r {
                     app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                     prevent_exit(&app, false);
+                } else {
+                    app.dialog().message("Error occurred while trying to download SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
+                        .kind(MessageDialogKind::Warning)
+                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                        .show(move |_action| {
+                            prevent_exit(&app, false);
+                            app.emit("download_complete", String::from("SteamLinuxRuntime 3")).unwrap();
+                            empty_dir(steamrt.as_path()).unwrap();
+                        });
                 }
             });
         } else {
@@ -529,7 +587,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
             if !vp.exists() { return; }
             let cur_ver = find_steamrt_version(vp).unwrap();
             if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("sniper".to_string(), "latest-public-beta".to_string());
+            let remote_ver = check_steamrt_update("steamrt3".to_string(), "latest-public-beta".to_string());
             if remote_ver.is_some() {
                 let rv = remote_ver.unwrap();
                 if compare_steamrt_versions(&rv, &cur_ver) {
@@ -544,20 +602,31 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                         app.emit("update_progress", dlpayload.clone()).unwrap();
                         prevent_exit(&app, true);
 
-                        let r = download_steamrt(steamrt.clone(), steamrt.clone(), "sniper".to_string(), "latest-public-beta".to_string(), {
-                            let app = app.clone();
-                            let dlpayload = dlpayload.clone();
-                            move |current, total| {
-                                let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
-                                dlpayload.insert("progress", current.to_string());
-                                dlpayload.insert("total", total.to_string());
-                                app.emit("update_progress", dlpayload.clone()).unwrap();
-                            }
+                        let r = run_async_command(async {
+                            download_steamrt(steamrt.clone(), steamrt.clone(), "steamrt3".to_string(), "latest-public-beta".to_string(), {
+                                let app = app.clone();
+                                let dlpayload = dlpayload.clone();
+                                move |current, total| {
+                                    let mut dlpayload = dlpayload.clone();
+                                    dlpayload.insert("name", "SteamLinuxRuntime 3".to_string());
+                                    dlpayload.insert("progress", current.to_string());
+                                    dlpayload.insert("total", total.to_string());
+                                    app.emit("update_progress", dlpayload.clone()).unwrap();
+                                }
+                            }).await
                         });
                         if r {
                             app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
                             prevent_exit(&app, false);
+                        } else {
+                            app.dialog().message("Error occurred while trying to update SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    prevent_exit(&app, false);
+                                    app.emit("update_complete", String::from("SteamLinuxRuntime 3")).unwrap();
+                                    empty_dir(steamrt.as_path()).unwrap();
+                                });
                         }
                     });
                 } else { println!("SteamLinuxRuntime is up to date!"); }
@@ -605,7 +674,7 @@ pub fn is_gamescope() -> bool { std::env::var("XDG_SESSION_DESKTOP").unwrap().to
 
 #[cfg(target_os = "linux")]
 pub fn get_os_release() -> Option<String> {
-    let p = { let metadata = fs::symlink_metadata("/etc/os-release").unwrap(); if metadata.file_type().is_symlink() { if is_flatpak() { "/run/host/os-release" } else { "/usr/lib/os-release" } } else { if is_flatpak() { "/run/host/os-release" } else { "/etc/os-release" } } };
+    let p = if is_flatpak() { "/run/host/os-release" } else { "/usr/lib/os-release" };
     let pp = PathBuf::from(p);
 
     if pp.exists() {
@@ -623,6 +692,56 @@ pub fn get_os_release() -> Option<String> {
 }
 
 #[cfg(target_os = "linux")]
+pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
+    let existing = std::env::var("STEAM_COMPAT_CONFIG").unwrap_or_default();
+    let mut compat_flags: Vec<String> = Vec::new();
+    let mut cmdline_appends: Vec<String> = Vec::new();
+
+    let mut config = existing.as_str();
+    while !config.is_empty() {
+        let (cur, remainder) = match config.split_once(',') {
+            Some((c, r)) => (c, r),
+            None => (config, ""),
+        };
+
+        if cur.starts_with("cmdlineappend:") {
+            let mut full_arg = cur.to_string();
+            let mut remaining = remainder;
+
+            while full_arg.ends_with('\\') && !remaining.is_empty() {
+                let (next_part, new_remainder) = match remaining.split_once(',') {
+                    Some((n, r)) => (n, r),
+                    None => (remaining, ""),
+                };
+                full_arg = format!("{}{}", &full_arg[..full_arg.len()-1], next_part);
+                remaining = new_remainder;
+            }
+
+            let arg = full_arg[14..].replace("\\\\", "\\");
+            cmdline_appends.push(arg);
+        } else if !cur.trim().is_empty() {
+            compat_flags.push(cur.to_string());
+        }
+        config = remainder;
+    }
+
+    for item in append_items.iter() {
+        if item.starts_with("cmdlineappend:") {
+            let arg = item[14..].replace("\\\\", "\\");cmdline_appends.push(arg); } else { compat_flags.push(item.to_string()); }
+    }
+
+    let mut new_parts: Vec<String> = Vec::new();
+    for flag in &compat_flags { new_parts.push(flag.clone()); }
+    for append_arg in &cmdline_appends {
+        let mut escaped_arg = append_arg.replace('\\', "\\\\");
+        escaped_arg = escaped_arg.replace(',', "\\,");
+        new_parts.push(format!("cmdlineappend:{}", escaped_arg));
+    }
+    let new_config = new_parts.join(",");
+    new_config
+}
+
+#[cfg(target_os = "linux")]
 pub fn patch_hkrpg(app: &AppHandle, dir: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
@@ -631,6 +750,62 @@ pub fn patch_hkrpg(app: &AppHandle, dir: String) {
         if target_old.exists() { fs::remove_file(&target_old).unwrap(); }
         let target = dir.join("jsproxy.dll");
         if patch.exists() { fs::copy(&patch, &target).unwrap(); }
+    }
+}
+
+pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
+    let file = Path::new(&engine_ini);
+    if file.exists() {
+        let mut ini = configparser::ini::Ini::new_cs();
+        let f = ini.load(&file);
+        match f {
+            Ok(_) => {
+                let perf_tweaks: HashMap<&str, HashMap<&str, String>> = HashMap::from([(
+                    "SystemSettings",
+                    HashMap::from([
+                        ("r.Streaming.HLODStrategy", "2".to_string()),
+                        ("r.Streaming.PoolSizeForMeshes", "-1".to_string()),
+                        ("r.XGEShaderCompile", "0".to_string()),
+                        ("FX.BatchAsync", "1".to_string()),
+                        ("FX.EarlyScheduleAsync", "1".to_string()),
+                        ("fx.Niagara.ForceAutoPooling", "1".to_string()),
+                        ("wp.Runtime.KuroRuntimeStreamingRangeOverallScale", "0.5".to_string()),
+                        ("tick.AllowAsyncTickCleanup", "1".to_string()),
+                        ("tick.AllowAsyncTickDispatch", "1".to_string()),
+                    ])
+                )]);
+                for (section_name, section_data) in perf_tweaks {
+                    for (option_name, option_value) in section_data { ini.set(section_name, option_name, Some(option_value)); }
+                }
+
+                for section in ini.get_map_ref().keys().cloned().collect::<Vec<_>>() {
+                    ini.set(&section, "r.Streaming.UsingNewKuroStreaming", None); // Ancient 3rd-party configs set it to 0 with bad results
+                    ini.set(&section, "r.Streaming.FullyLoadUsedTextures", None); // No longer works since 14/06
+                }
+                if !ini.sections().contains(&"ConsoleVariables".to_string()) {
+                    ini.set("ConsoleVariables", "temp", Some("".to_string()));
+                    ini.set("ConsoleVariables", "temp", None);
+                }
+                // Controls how far game starts to replace weighted meshes with LoDs
+                // Mods contain mesh metadata only for original model and won't apply to LoDs
+                ini.set("ConsoleVariables", "r.Kuro.SkeletalMesh.LODDistanceScale", Some("24".to_string()));
+                // Controls how aggressively higher resolution textures are pushed to VRAM
+                // Mods contain texture hashes only for original model and won't apply to LoDs
+                ini.set("ConsoleVariables", "r.Streaming.Boost", Some("30.0".to_string()));
+                // Controls amount of VRAM used for textures streaming
+                // When set to 0, tends to keep full resolution textures in VRAM, so LoDs don't break mods
+                ini.set("ConsoleVariables", "r.Streaming.PoolSize", Some("0".to_string()));
+                // Prevents pool size from exceeding VRAM
+                // Doesn't explicitly affect mods, but acts as failsafe for low and mid-range GPUs for PoolSize=0
+                ini.set("ConsoleVariables", "r.Streaming.LimitPoolSizeToVRAM", Some("1".to_string()));
+                let r = ini.write(&file);
+                match r {
+                    Ok(_) => {}
+                    Err(_) => {}
+                }
+            }
+            Err(_) => {}
+        }
     }
 }
 
@@ -663,11 +838,13 @@ fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
 }
 
 #[allow(dead_code)]
-fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    for entry in fs::read_dir(dir.as_ref())? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
+    if dir.as_ref().exists() {
+        for entry in fs::read_dir(dir.as_ref())? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+        }
     }
     Ok(())
 }

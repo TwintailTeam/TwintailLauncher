@@ -6,7 +6,7 @@ use fischl::download::game::{Game, Kuro, Sophon};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve};
+use crate::utils::{empty_dir, prevent_exit, run_async_command, send_notification, PathResolve};
 use crate::utils::repo_manager::{get_manifest, DiffGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
@@ -25,9 +25,15 @@ pub fn register_update_handler(app: &AppHandle) {
 
             let mm = get_manifest(&h5, gid.filename);
             if let Some(gm) = mm {
-                let version = gm.game_versions.iter().filter(|e| e.metadata.version == gm.latest_version).collect::<Vec<&GameVersion>>();
+                let lv = gm.latest_version.clone();
+                let version = gm.game_versions.iter().filter(|e| e.metadata.version == lv).collect::<Vec<&GameVersion>>();
                 let picked = version.get(0).unwrap();
                 let tmp = Arc::new(h5.clone());
+                let vn = picked.metadata.versioned_name.clone();
+                let vc = picked.metadata.version.clone();
+                let ig = picked.assets.game_icon.clone();
+                let gb = picked.assets.game_background.clone();
+                let gbiz = gm.biz.clone();
 
                 let instn = Arc::new(install.name.clone());
                 let dlpayload = Arc::new(Mutex::new(HashMap::new()));
@@ -44,16 +50,57 @@ pub fn register_update_handler(app: &AppHandle) {
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game
                     "DOWNLOAD_MODE_FILE" => {
-                        h5.emit("update_complete", ()).unwrap();
-                        prevent_exit(&h5, false);
+                        let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
+                        if urls.is_empty() {
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Info)
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .show(move |action| {
+                                    if action {
+                                        let ip = Path::new(&install.directory).follow_symlink().unwrap();
+                                        empty_dir(&ip).unwrap();
+                                        let mut data = HashMap::new();
+                                        data.insert("install", install.id.clone());
+                                        data.insert("biz", gbiz);
+                                        data.insert("lang", payload.lang);
+                                        data.insert("region", install.region_code);
+                                        data.insert("is_latest", "1".to_string());
+                                        h5.emit("start_game_download", data).unwrap();
+                                        update_install_after_update_by_id(&h5, install.id, vn, ig, gb, vc);
+                                    } else {
+                                        prevent_exit(&h5, false);
+                                        h5.emit("update_complete", ()).unwrap();
+                                    }
+                                });
+                        } else {
+                            prevent_exit(&h5, false);
+                            h5.emit("update_complete", ()).unwrap();
+                        }
                     }
                     // HoYoverse sophon chunk mode
                     "DOWNLOAD_MODE_CHUNK" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
-
                         if urls.is_empty() {
-                            h5.emit("update_complete", ()).unwrap();
-                            prevent_exit(&h5, false);
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Info)
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .show(move |action| {
+                                    if action {
+                                        let ip = Path::new(&install.directory).follow_symlink().unwrap();
+                                        empty_dir(&ip).unwrap();
+                                        let mut data = HashMap::new();
+                                        data.insert("install", install.id.clone());
+                                        data.insert("biz", gbiz);
+                                        data.insert("lang", payload.lang);
+                                        data.insert("region", install.region_code);
+                                        data.insert("is_latest", "1".to_string());
+                                        h5.emit("start_game_download", data).unwrap();
+                                        update_install_after_update_by_id(&h5, install.id, vn, ig, gb, vc);
+                                    } else {
+                                        prevent_exit(&h5, false);
+                                        h5.emit("update_complete", ()).unwrap();
+                                    }
+                                });
                         } else {
                             let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                             let available = available(install.directory.clone());
@@ -66,7 +113,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                 let hpatchz = h5.path().app_data_dir().unwrap().join("hpatchz.exe");
                                 urls.into_iter().for_each(|e| {
                                     run_async_command(async {
-                                        <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, false, {
+                                        <Game as Sophon>::patch(e.file_url.to_owned(), install.version.clone(), e.file_hash.to_owned(), install.directory.clone(), hpatchz.to_str().unwrap().to_string(), is_preload, {
                                             let dlpayload = dlpayload.clone();
                                             let tmp = tmp.clone();
                                             let instn = instn.clone();
@@ -98,8 +145,26 @@ pub fn register_update_handler(app: &AppHandle) {
                     "DOWNLOAD_MODE_RAW" => {
                         let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                         if urls.is_empty() {
-                            h5.emit("update_complete", ()).unwrap();
-                            prevent_exit(&h5, false);
+                            h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Info)
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .show(move |action| {
+                                    if action {
+                                        let ip = Path::new(&install.directory).follow_symlink().unwrap();
+                                        empty_dir(&ip).unwrap();
+                                        let mut data = HashMap::new();
+                                        data.insert("install", install.id.clone());
+                                        data.insert("biz", gbiz);
+                                        data.insert("lang", payload.lang);
+                                        data.insert("region", install.region_code);
+                                        data.insert("is_latest", "1".to_string());
+                                        h5.emit("start_game_download", data).unwrap();
+                                        update_install_after_update_by_id(&h5, install.id, vn, ig, gb, vc);
+                                    } else {
+                                        prevent_exit(&h5, false);
+                                        h5.emit("update_complete", ()).unwrap();
+                                    }
+                                });
                         } else {
                             let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                             let available = available(install.directory.clone());

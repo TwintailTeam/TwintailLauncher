@@ -260,6 +260,7 @@ export default class App extends React.Component<any, any> {
                     disableUpdate={this.state.disableUpdate}
                     resumeStates={this.state.resumeStates}
                     globalSettings={this.state.globalSettings}
+                    installSettings={this.state.installSettings}
                     buttonType={buttonType}
                     refreshDownloadButtonInfo={this.refreshDownloadButtonInfo}
                     onOpenInstallSettings={() => {
@@ -325,6 +326,8 @@ export default class App extends React.Component<any, any> {
         this.loaderController = startInitialLoad({
             fetchSettings: this.fetchSettings,
             fetchRepositories: this.fetchRepositories,
+            fetchCompatibilityVersions: this.fetchCompatibilityVersions,
+            fetchInstalledRunners: this.fetchInstalledRunners,
             getGamesInfo: () => this.state.gamesinfo,
             getInstalls: () => this.state.installs,
             preloadImages: (images, onProgress, preloaded) => preloadImages(images, onProgress, preloaded),
@@ -426,9 +429,10 @@ export default class App extends React.Component<any, any> {
 
                     if (this.state.installs.length === 0) {
                         if (games.length > 0 && this.state.currentGame == "") {
+                            let bg = (gi[0].assets.game_live_background !== "") ? gi[0].assets.game_background : gi[0].assets.game_background;
                             this.setCurrentGame(games[0].filename.replace(".json", ""));
                             this.setDisplayName(games[0].display_name);
-                            this.setBackground(gi[0].assets.game_background);
+                            this.setBackground(bg);
                             this.setGameIcon(gi[0].assets.game_icon);
                             setTimeout(() => {
                                 // @ts-ignore

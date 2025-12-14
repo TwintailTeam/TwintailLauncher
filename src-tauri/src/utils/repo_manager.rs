@@ -6,18 +6,18 @@ use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_installed_runner, create_manifest, create_repository, delete_manifest_by_id, get_installed_runner_info_by_version, get_manifest_info_by_filename, get_repository_info_by_github_id, update_installed_runner_is_installed_by_version};
+use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
 use crate::utils::{generate_cuid, send_notification};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
 use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, PathResolve};
+use crate::utils::{run_async_command, runner_from_runner_version, PathResolve};
 #[cfg(target_os = "linux")]
 use std::path::Path;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_install_runner_location_by_id, update_install_runner_version_by_id, get_installs};
+use crate::utils::db_manager::{create_installed_runner, update_install_runner_location_by_id, update_install_runner_version_by_id, get_installs, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let url = "https://github.com/TwintailTeam/game-manifests.git";
@@ -271,8 +271,14 @@ pub fn load_manifests(app: &AppHandle) {
                                                                         if installedr.is_none() { create_installed_runner(&app, first.version.clone(), true, np.clone()).unwrap(); } else { update_installed_runner_is_installed_by_version(&app, first.version.clone(), true); }
                                                                         if !pp.exists() {
                                                                             fs::create_dir_all(&pp).unwrap();
-                                                                            Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {});
-                                                                        } else { Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {}); }
+                                                                            run_async_command(async {
+                                                                                Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {}).await
+                                                                            });
+                                                                        } else {
+                                                                            run_async_command(async {
+                                                                                Compat::download_runner(first.url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total| {}).await
+                                                                            });
+                                                                        }
                                                                         update_install_runner_location_by_id(&app, i.id.clone(), np.clone());
                                                                         update_install_runner_version_by_id(&app, i.id, first.version.clone());
                                                                     }
@@ -425,6 +431,7 @@ pub struct LauncherInstall {
     pub mangohud_config_path: String,
     pub shortcut_is_steam: bool,
     pub shortcut_path: String,
+    pub region_code: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -521,7 +528,8 @@ pub struct DiffUrls {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct VersionAssets {
     pub game_icon: String,
-    pub game_background: String
+    pub game_background: String,
+    pub game_live_background: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -536,7 +544,8 @@ pub struct FullGameFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
-    pub file_path: String
+    pub file_path: String,
+    pub region_code: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -562,7 +571,8 @@ pub struct FullAudioFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
-    pub language: String
+    pub language: String,
+    pub region_code: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -607,6 +617,9 @@ pub struct CompatPlatformOverrides {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameCompatOverrides {
     pub install_to_prefix: bool,
+    pub disable_protonfixes: Option<bool>,
+    pub protonfixes_id: Option<String>,
+    pub protonfixes_store: Option<String>,
     pub override_runner: CompatPlatformOverrides
 }
 

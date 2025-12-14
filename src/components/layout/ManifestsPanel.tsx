@@ -4,7 +4,7 @@ import { POPUPS } from "../popups/POPUPS.ts";
 
 interface GameInfoItem {
   manifest_enabled: boolean;
-  assets: { game_icon: string; game_background: string };
+  assets: { game_icon: string; game_background: string, game_live_background: string };
   filename: string;
   icon: string;
   display_name: string;
@@ -76,6 +76,7 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
             onDragStart={(e) => e.preventDefault()}
           >
             {gamesinfo.map((game, index) => {
+              let bg = (game.assets.game_live_background !== "") ? game.assets.game_background : game.assets.game_background;
               const opening = manifestsOpenVisual;
               const delayMs = manifestsInitialLoading
                 ? (index * 100 + 400)
@@ -96,7 +97,7 @@ const ManifestsPanel: React.FC<ManifestsPanelProps> = ({
                     sizeClass="w-12"
                     popup={openPopup}
                     icon={game.assets.game_icon}
-                    background={game.assets.game_background}
+                    background={bg}
                     name={game.display_name}
                     enabled={game.manifest_enabled}
                     id={game.biz}

@@ -3,11 +3,14 @@ import { listen } from "@tauri-apps/api/event";
 import { Events } from "../constants/events.ts";
 import { registerEvents } from "./events.ts";
 
+const IMAGE_PRELOAD_TIMEOUT_MS = 20000;
 export type SetProgressFn = (progress: number, message: string) => void;
 
 export interface LoaderOptions {
   fetchSettings: () => Promise<void>;
   fetchRepositories: () => Promise<void>;
+  fetchCompatibilityVersions: () => Promise<void>;
+  fetchInstalledRunners: () => Promise<void>;
   getGamesInfo: () => any[];
   getInstalls: () => any[];
   preloadImages: (
@@ -51,6 +54,11 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       // Step 2: Repositories
       try {
         await opts.fetchRepositories();
+        // Load runners if application is running on Linux
+        if (window.navigator.platform.includes("Linux")) {
+          await opts.fetchCompatibilityVersions();
+          await opts.fetchInstalledRunners();
+        }
         if (cancelled) return;
         opts.setProgress(50, "Loading game data...");
       } catch (e) {
@@ -71,19 +79,31 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       const games = opts.getGamesInfo() || [];
       const installs = opts.getInstalls ? (opts.getInstalls() || []) : [];
       const gameBackgrounds: string[] = games.map((g: any) => g?.assets?.game_background).filter(Boolean);
+      //const gameLiveBackgrounds: string[] = games.map((g: any) => g?.assets?.game_live_background).filter(Boolean);
       const gameIcons: string[] = games.map((g: any) => g?.assets?.game_icon).filter(Boolean);
       const installBackgrounds: string[] = installs.map((i: any) => i?.game_background).filter(Boolean);
       const installIcons: string[] = installs.map((i: any) => i?.game_icon).filter(Boolean);
-      const images = Array.from(new Set([...(gameBackgrounds as string[]), ...(gameIcons as string[]), ...(installBackgrounds as string[]), ...(installIcons as string[])]));
-      await opts.preloadImages(
-        images,
-        (loaded, total) => {
-          if (cancelled) return;
-          const progress = 75 + Math.round((loaded / total) * 25);
-          opts.setProgress(progress, `Preloading images... (${loaded}/${total})`);
-        },
-        opts.preloadedBackgrounds
-      );
+      const images = Array.from(new Set([/*...(gameLiveBackgrounds as string[]), */...(gameBackgrounds as string[]), ...(gameIcons as string[]), ...(installBackgrounds as string[]), ...(installIcons as string[])]));
+      try {
+        await Promise.race([
+          opts.preloadImages(
+              images,
+              (loaded, total) => {
+                if (cancelled) return;
+                const progress = 75 + Math.round((loaded / total) * 25);
+                opts.setProgress(progress, `Preloading images... (${loaded}/${total})`);
+              },
+              opts.preloadedBackgrounds
+          ),
+          // timeout
+          new Promise<void>((resolve) => {
+            setTimeout(() => {
+              console.warn(`Image preloading did not finish within ${IMAGE_PRELOAD_TIMEOUT_MS}ms, continuing startup.`);
+              resolve();
+            }, IMAGE_PRELOAD_TIMEOUT_MS);
+          }),
+        ]);
+      } catch (e) { console.error("Error during image preloading:", e);}
       if (cancelled) return;
       opts.setProgress(100, "Almost ready...");
 
@@ -117,9 +137,6 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       unlistenFns.forEach((fn) => {
         try { fn(); } catch {}
       });
-      
-      
-      
     },
   };
 }

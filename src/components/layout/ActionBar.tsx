@@ -16,6 +16,7 @@ export type ActionBarProps = {
   resumeStates: any;
   globalSettings: any;
   buttonType: any;
+  installSettings: any;
   refreshDownloadButtonInfo: (existingInstall?: boolean) => void | Promise<void>;
   onOpenInstallSettings: () => Promise<void> | void;
 };
@@ -33,6 +34,7 @@ export default function ActionBar(props: ActionBarProps) {
     resumeStates,
     globalSettings,
     buttonType,
+    installSettings,
     refreshDownloadButtonInfo,
     onOpenInstallSettings,
   } = props;
@@ -51,6 +53,7 @@ export default function ActionBar(props: ActionBarProps) {
                 install: currentInstall,
                 biz: "",
                 lang: "",
+                region: ""
               }).then(() => {});
             }}
           >
@@ -82,6 +85,7 @@ export default function ActionBar(props: ActionBarProps) {
           disableUpdate={disableUpdate}
           currentInstall={currentInstall}
           globalSettings={globalSettings}
+          installSettings={installSettings}
           refreshDownloadButtonInfo={refreshDownloadButtonInfo}
           buttonType={buttonType}
         />

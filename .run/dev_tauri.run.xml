@@ -6,7 +6,9 @@
       <script value="dev:tauri" />
     </scripts>
     <node-interpreter value="project" />
-    <envs />
+    <envs>
+      <env name="RUST_BACKTRACE" value="1" />
+    </envs>
     <method v="2" />
   </configuration>
 </component>

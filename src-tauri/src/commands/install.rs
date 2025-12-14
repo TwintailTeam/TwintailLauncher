@@ -13,27 +13,19 @@ use crate::utils::repo_manager::{get_manifest, GameVersion};
 use crate::utils::shortcuts::{remove_desktop_shortcut};
 
 #[cfg(target_os = "linux")]
-use crate::utils::runner_from_runner_version;
+use crate::utils::{run_async_command, runner_from_runner_version, is_flatpak, shortcuts::{add_steam_shortcut, remove_steam_shortcut, add_desktop_shortcut}};
 #[cfg(target_os = "linux")]
-use fischl::compat::Compat;
+use fischl::{compat::Compat, utils::patch_aki};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
-use fischl::utils::patch_aki;
-#[cfg(target_os = "linux")]
-use crate::utils::is_flatpak;
-#[cfg(target_os = "linux")]
 use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(target_os = "linux")]
-use crate::utils::shortcuts::{add_steam_shortcut, remove_steam_shortcut};
+use steam_shortcuts_util::{app_id_generator::calculate_app_id, Shortcut};
 #[cfg(target_os = "linux")]
-use steam_shortcuts_util::app_id_generator::calculate_app_id;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
-use steam_shortcuts_util::Shortcut;
-#[cfg(target_os = "linux")]
-use crate::utils::db_manager::update_install_shortcut_is_steam_by_id;
-#[cfg(target_os = "linux")]
-use crate::utils::shortcuts::add_desktop_shortcut;
+use crate::utils::db_manager::{update_install_shortcut_is_steam_by_id, create_installed_runner, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -76,7 +68,7 @@ pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
 
 #[allow(unused_mut, unused_variables)]
 #[tauri::command]
-pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool) -> Option<AddInstallRsp> {
+pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -121,7 +113,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             
             let archandle = Arc::new(app.clone());
             let mut runv = Arc::new(runner_version.clone());
-            let runpp = Arc::new(runner_path.clone());
+            let mut runpp = Arc::new(runner_path.clone());
             let rpp = Arc::new(runner_prefix.clone());
             //let dxvkpp = Arc::new(dxvk_path.clone());
             //let dxvkv = Arc::new(dxvk_version.clone());
@@ -135,6 +127,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
                 if co.override_runner.linux.enabled {
                     runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
+                    runpp = Arc::new(runner_path.clone());
                     runv = Arc::new(co.override_runner.linux.runner_version.clone());
                 }
             }
@@ -145,6 +138,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 let runnerp = rv.get(0).unwrap().to_owned();
                 let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
                 let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                let ir = get_installed_runner_info_by_version(archandle.as_ref(), runv.to_string());
 
                 // Download selected DXVK | Deprecated | Reason: Proton ships their own and this is pointless if wine is deprecated
                 /*let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
@@ -154,7 +148,6 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
 
                 if fs::read_dir(rp.as_path()).unwrap().next().is_none() {
                     let mut dlpayload = HashMap::new();
-
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "0".to_string());
                     dlpayload.insert("total", "1000".to_string());
@@ -168,41 +161,40 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         #[cfg(target_arch = "aarch64")]
                         { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                     }
-                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
-                        let archandle = archandle.clone();
-                        let dlpayload = dlpayload.clone();
-                        let runv = runv.clone();
-                        move |current, total| {
-                            let mut dlpayload = dlpayload.clone();
-                            dlpayload.insert("name", runv.to_string());
-                            dlpayload.insert("progress", current.to_string());
-                            dlpayload.insert("total", total.to_string());
-                            archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                        }
+                    let r0 = run_async_command(async {
+                        Compat::download_runner(dl_url, rp.to_str().unwrap().to_string(), true, {
+                            let archandle = archandle.clone();
+                            let dlpayload = dlpayload.clone();
+                            let runv = runv.clone();
+                            move |current, total| {
+                                let mut dlpayload = dlpayload.clone();
+                                dlpayload.insert("name", runv.to_string());
+                                dlpayload.insert("progress", current.to_string());
+                                dlpayload.insert("total", total.to_string());
+                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                            }
+                        }).await
                     });
                     if r0 {
-                        /*let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
-                        let winebin = rp.join(wine64).to_str().unwrap().to_string();*/
-
                         if is_proton {
                             archandle.emit("download_complete", ()).unwrap();
                             prevent_exit(&*archandle, false);
                             send_notification(&*archandle, format!("Download of {runn} complete.", runn = runv.as_str().to_string()).as_str(), None);
+                            if ir.is_some() { update_installed_runner_is_installed_by_version(&*archandle, runv.to_string(), true); } else { create_installed_runner(&*archandle, runv.to_string(), true, rp.to_str().unwrap().to_string().clone()).unwrap(); }
                         } else {
+                            archandle.emit("download_complete", ()).unwrap();
+                            prevent_exit(&*archandle, false);
                             // Wine is deprecated | Reason: Honestly more trouble than its worth it and some games won't even work on it anymore
-                            /*let r1 = Compat::setup_prefix(winebin, rpp.as_str().to_string());
-                            if r1.is_ok() {
-                                let r = r1.unwrap();
-                                let r2 = Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false);
-                                if r2.is_ok() {
-                                    let da = Compat::add_dxvk(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), dxvkpp.as_str().to_string(), false);
-                                    if da.is_ok() {
-                                        Compat::stop_processes(r.wine.binary.to_str().unwrap().to_string(), rpp.as_str().to_string(), false).unwrap();
-                                        if skip_game_dl { archandle.emit("download_complete", runv.as_str().to_string()).unwrap(); prevent_exit(&*archandle, false); send_notification(&*archandle, format!("Download of {runn} complete.", runn = runv.as_str().to_string()).as_str(), None); }
-                                    }
-                                }
-                            }*/
                         }
+                    } else {
+                        archandle.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
+                            .kind(MessageDialogKind::Warning)
+                            .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                            .show(move |_action| {
+                                prevent_exit(&*archandle, false);
+                                archandle.emit("download_complete", ()).unwrap();
+                                if rp.exists() { fs::remove_dir_all(&rp).unwrap(); }
+                            });
                     }
                 } else {
                     //let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -234,13 +226,18 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 download_or_update_jadeite(jadeite, false);
             }
         }
-        if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), g.assets.game_background.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone()).unwrap();
-        Some(AddInstallRsp {
-            success: true,
-            install_id: cuid.clone(),
-            background: g.assets.game_background.clone()
-        })
+        let gbg = g.assets.game_background.clone();/*if g.assets.game_live_background.is_some() {
+            let lbg = g.assets.game_live_background.clone().unwrap();
+            if lbg.is_empty() { g.assets.game_background.clone() } else { lbg }
+        } else { g.assets.game_background.clone() };*/
+        if !install_location.exists() {
+            if let Err(e) = fs::create_dir_all(&install_location) {
+                send_notification(&app, &format!("Failed to start installation! {}", e), None);
+                return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string() });
+            }
+        }
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code).unwrap();
+        Some(AddInstallRsp { success: true, install_id: cuid.clone(), background: gbg })
     }
 }
 
@@ -639,13 +636,14 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
             if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
                 std::thread::spawn(move || {
-                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.to_string()).unwrap()).unwrap();
                     let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                     let runnerp = rv.get(0).unwrap().to_owned();
                     let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
+                    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                    let ir = get_installed_runner_info_by_version(&*archandle, runv.to_string());
 
                     let mut dlpayload = HashMap::new();
-
                     dlpayload.insert("name", runv.to_string());
                     dlpayload.insert("progress", "0".to_string());
                     dlpayload.insert("total", "1000".to_string());
@@ -660,32 +658,43 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                         { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                     }
 
-                    let r0 = Compat::download_runner(dl_url, runpp.as_str().to_string(), true, {
-                        let archandle = archandle.clone();
-                        let dlpayload = dlpayload.clone();
-                        let runv = runv.clone();
-                        move |current, total| {
-                            let mut dlpayload = dlpayload.clone();
-                            dlpayload.insert("name", runv.to_string());
-                            dlpayload.insert("progress", current.to_string());
-                            dlpayload.insert("total", total.to_string());
-                            archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                        }
+                    let r0 = run_async_command(async {
+                        Compat::download_runner(dl_url, rp.to_str().unwrap().to_string(), true, {
+                            let archandle = archandle.clone();
+                            let dlpayload = dlpayload.clone();
+                            let runv = runv.clone();
+                            move |current, total| {
+                                let mut dlpayload = dlpayload.clone();
+                                dlpayload.insert("name", runv.to_string());
+                                dlpayload.insert("progress", current.to_string());
+                                dlpayload.insert("total", total.to_string());
+                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                            }
+                        }).await
                     });
                     if r0 {
                         let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
                         let winebin = rp.join(wine64).to_str().unwrap().to_string();
 
-                        let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
                         if is_proton {  } else { Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap(); }
                         archandle.emit("download_complete", ()).unwrap();
                         prevent_exit(&*archandle, false);
                         send_notification(&*archandle, format!("Download of {rnn} complete.", rnn = runv.as_str().to_string()).as_str(), None);
+                        if ir.is_some() { update_installed_runner_is_installed_by_version(&*archandle, runv.to_string(), true); } else { create_installed_runner(&*archandle, runv.to_string(), true, rp.to_str().unwrap().to_string()).unwrap(); }
+                    } else {
+                        archandle.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
+                            .kind(MessageDialogKind::Warning)
+                            .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                            .show(move |_action| {
+                                prevent_exit(&*archandle, false);
+                                archandle.emit("download_complete", ()).unwrap();
+                                if rp.exists() { fs::remove_dir_all(&rp).unwrap(); }
+                            });
                     }
                 });
             } else {
                 std::thread::spawn(move || {
-                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                    let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.to_string()).unwrap()).unwrap();
                     let rp = Path::new(runpp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -695,7 +704,6 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     if is_proton {  } else { Compat::update_prefix(winebin, rpp.as_str().to_string()).unwrap(); }
                 });
             }
-
             crate::utils::db_manager::update_install_runner_version_by_id(&app, m.id.clone(), version);
             crate::utils::db_manager::update_install_runner_location_by_id(&app, m.id, rpn);
             Some(true)
@@ -736,7 +744,6 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     let rp = Path::new(runp.as_str()).follow_symlink().unwrap().to_path_buf();
 
                     let mut dlpayload = HashMap::new();
-
                     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
 
                     if is_proton { } else {
@@ -754,17 +761,19 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                             { dl_url = if urls.aarch64.is_empty() { dxp.url.clone() } else { urls.aarch64 }; }
                         }
 
-                        let r0 = Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
-                            let archandle = archandle.clone();
-                            let dlpayload = dlpayload.clone();
-                            let runv = runv.clone();
-                            move |current, total| {
-                                let mut dlpayload = dlpayload.clone();
-                                dlpayload.insert("name", runv.to_string());
-                                dlpayload.insert("progress", current.to_string());
-                                dlpayload.insert("total", total.to_string());
-                                archandle.emit("download_progress", dlpayload.clone()).unwrap();
-                            }
+                        let r0 = run_async_command(async {
+                            Compat::download_dxvk(dl_url, dxpp.to_str().unwrap().to_string(), true, {
+                                let archandle = archandle.clone();
+                                let dlpayload = dlpayload.clone();
+                                let runv = runv.clone();
+                                move |current, total| {
+                                    let mut dlpayload = dlpayload.clone();
+                                    dlpayload.insert("name", runv.to_string());
+                                    dlpayload.insert("progress", current.to_string());
+                                    dlpayload.insert("total", total.to_string());
+                                    archandle.emit("download_progress", dlpayload.clone()).unwrap();
+                                }
+                            }).await
                         });
                         if r0 {
                             let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32 } else { rm.paths.wine64 };
@@ -777,6 +786,15 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                                 prevent_exit(&*archandle, false);
                                 send_notification(&*archandle, format!("Download of {dxvn} complete.", dxvn = dxvkv.as_str().to_string()).as_str(), None);
                             }
+                        } else {
+                            archandle.dialog().message(format!("Error occurred while trying to download {dxvn} DXVK! Please retry later.", dxvn = dxvkv.as_str().to_string()).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    prevent_exit(&*archandle, false);
+                                    archandle.emit("download_complete", ()).unwrap();
+                                    if dxpp.exists() { fs::remove_dir_all(&dxpp).unwrap(); }
+                                });
                         }
                     }
                 });
