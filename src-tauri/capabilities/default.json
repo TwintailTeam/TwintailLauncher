@@ -11,6 +11,7 @@
       "identifier": "opener:allow-reveal-item-in-dir",
       "allow": [
         { "path": "/home/**" },
+        { "path":  "/var/home/*/**" },
         { "path": "$APPDATA/**" }
       ]
     }

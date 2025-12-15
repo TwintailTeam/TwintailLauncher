@@ -139,11 +139,11 @@ pub fn register_listeners(app: &AppHandle) {
     app.listen("launcher_action_exit", move |_event| {
         let blocks = h1.state::<Mutex<ActionBlocks>>();
         let state = blocks.lock().unwrap();
-        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else { h1.cleanup_before_exit();h1.exit(0);std::process::exit(0); }
+        if state.action_exit { h1.get_window("main").unwrap().hide().unwrap(); } else { h1.get_window("main").unwrap().hide().unwrap(); h1.cleanup_before_exit(); h1.exit(0); std::process::exit(0); }
     });
 
     let h2 = app.clone();
-    app.listen("launcher_action_minimize", move |_event| { h2.get_window("main").unwrap().hide().unwrap(); });
+    app.listen("launcher_action_minimize", move |_event| { h2.get_window("main").unwrap().minimize().unwrap(); });
 }
 
 pub fn send_notification(app: &AppHandle, body: &str, icon: Option<&str>) {
