@@ -651,13 +651,13 @@ pub fn notify_update(app: &AppHandle) {
     if ttl.is_some() {
         let r = ttl.unwrap();
         let v = r.tag_name.unwrap().replace("ttl-v", "");
-        let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
+        let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide").follow_symlink().unwrap();
         if !suppressed.exists() {
             let cfg = app.config();
             match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
                 std::cmp::Ordering::Less => {
-                    app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("Update available")
-                        .kind(MessageDialogKind::Info)
+                    app.dialog().message("You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("TwintailLauncher")
+                        .kind(MessageDialogKind::Warning)
                         .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
                         //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
                         .show(move |_action| { /*if action {  } else { fs::File::create(&suppressed).unwrap(); }*/ });
