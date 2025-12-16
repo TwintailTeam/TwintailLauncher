@@ -654,12 +654,16 @@ pub fn notify_update(app: &AppHandle) {
         let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
         if !suppressed.exists() {
             let cfg = app.config();
-            if cfg.version.clone().unwrap() < v {
-                app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("Update available")
-                    .kind(MessageDialogKind::Info)
-                    .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
-                    //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
-                    .show(move |_action| { /*if action {  } else { fs::File::create(&suppressed).unwrap(); }*/ });
+            match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
+                std::cmp::Ordering::Less => {
+                    app.dialog().message("You are running outdated version of TwintailLauncher!\nYou can still continue to use currently installed version, however we recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("Update available")
+                        .kind(MessageDialogKind::Info)
+                        .buttons(MessageDialogButtons::OkCustom("Continue anyway".to_string()))
+                        //.buttons(MessageDialogButtons::OkCancelCustom("Continue anyway".to_string(), "Do not show again".to_string()))
+                        .show(move |_action| { /*if action {  } else { fs::File::create(&suppressed).unwrap(); }*/ });
+                }
+                std::cmp::Ordering::Equal => {println!("You are running up to date version of TwintailLauncher!");}
+                std::cmp::Ordering::Greater => {println!("You are running newer version of TwintailLauncher! Is it dev build?");}
             }
         }
     }
@@ -847,6 +851,19 @@ fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
         if a > b { return true; } else if a < b { return false; }
     }
     parts1.len() > parts2.len()
+}
+
+fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
+    fn parse(s: &str) -> (u64, u64, u64) {
+        let mut it = s.split('.');
+        let major = it.next().unwrap_or("1").parse().unwrap_or(1);
+        let minor = it.next().unwrap_or("0").parse().unwrap_or(0);
+        let patch = it.next().unwrap_or("0").parse().unwrap_or(0);
+        (major, minor, patch)
+    }
+    let va = parse(a);
+    let vb = parse(b);
+    va.cmp(&vb)
 }
 
 #[allow(dead_code)]
