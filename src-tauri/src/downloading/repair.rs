@@ -8,9 +8,7 @@ use crate::utils::repo_manager::{get_manifest, FullGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
-use crate::utils::PathResolve;
-#[cfg(target_os = "linux")]
-use fischl::utils::patch_aki;
+use crate::utils::{PathResolve, patch_aki};
 
 pub fn register_repair_handler(app: &AppHandle) {
     let a = app.clone();

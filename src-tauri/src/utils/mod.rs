@@ -753,6 +753,18 @@ pub fn patch_hkrpg(app: &AppHandle, dir: String) {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub fn patch_aki(file: String) {
+    let p = Path::new(&file);
+    if p.exists() {
+        let fp = fs::read_to_string(p).unwrap();
+        let patched = fp.lines().map(|line| {
+            if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line }
+        }).collect::<Vec<_>>().join("\n");
+        fs::write(p, patched).unwrap();
+    }
+}
+
 pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
     let file = Path::new(&engine_ini);
     if file.exists() {

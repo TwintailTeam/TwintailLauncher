@@ -13,9 +13,9 @@ use crate::utils::repo_manager::{get_manifest, GameVersion};
 use crate::utils::shortcuts::{remove_desktop_shortcut};
 
 #[cfg(target_os = "linux")]
-use crate::utils::{run_async_command, runner_from_runner_version, is_flatpak, shortcuts::{add_steam_shortcut, remove_steam_shortcut, add_desktop_shortcut}};
+use crate::utils::{patch_aki, run_async_command, runner_from_runner_version, is_flatpak, shortcuts::{add_steam_shortcut, remove_steam_shortcut, add_desktop_shortcut}};
 #[cfg(target_os = "linux")]
-use fischl::{compat::Compat, utils::patch_aki};
+use fischl::{compat::Compat};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]

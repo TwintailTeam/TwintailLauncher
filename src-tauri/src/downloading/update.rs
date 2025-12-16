@@ -12,7 +12,7 @@ use crate::downloading::DownloadGamePayload;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
 #[cfg(target_os = "linux")]
-use fischl::utils::patch_aki;
+use crate::utils::patch_aki;
 
 pub fn register_update_handler(app: &AppHandle) {
     let a = app.clone();
