@@ -206,7 +206,7 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
         if runner_version.to_lowercase().contains("wine-caffe") {
             rslt = "wine_caffe.json".to_string();
         }
-        if runner_version.to_lowercase().contains("proton-ge") {
+        if runner_version.to_lowercase().contains("proton-ge") || runner_version.to_lowercase().contains("ge-proton") {
             rslt = "proton_ge.json".to_string();
         }
         if runner_version.to_lowercase().contains("proton-cachyos") {
