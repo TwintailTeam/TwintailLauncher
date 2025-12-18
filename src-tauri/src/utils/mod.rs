@@ -173,55 +173,55 @@ pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
     if runner_version.is_empty() {
         None
     } else {
-        if runner_version.contains("vanilla") {
+        if runner_version.to_lowercase().contains("vanilla") {
             rslt = "dxvk_vanilla.json".to_string();
         }
-        if runner_version.contains("async") {
+        if runner_version.to_lowercase().contains("async") {
             rslt = "dxvk_async.json".to_string();
         }
-        if runner_version.contains("gplasync") {
+        if runner_version.to_lowercase().contains("gplasync") {
             rslt = "dxvk_gplasync.json".to_string();
         }
-        if runner_version.contains("wine-vanilla") {
+        if runner_version.to_lowercase().contains("wine-vanilla") {
             rslt = "wine_vanilla.json".to_string();
         }
-        if runner_version.contains("wine-staging") {
+        if runner_version.to_lowercase().contains("wine-staging") {
             rslt = "wine_staging.json".to_string();
         }
-        if runner_version.contains("wine-staging-tkg") {
+        if runner_version.to_lowercase().contains("wine-staging-tkg") {
             rslt = "wine_staging_tkg.json".to_string();
         }
-        if runner_version.contains("wine-vaniglia") {
+        if runner_version.to_lowercase().contains("wine-vaniglia") {
             rslt = "wine_vaniglia.json".to_string();
         }
-        if runner_version.contains("wine-soda") {
+        if runner_version.to_lowercase().contains("wine-soda") {
             rslt = "wine_soda.json".to_string();
         }
-        if runner_version.contains("wine-lutris") {
+        if runner_version.to_lowercase().contains("wine-lutris") {
             rslt = "wine_lutris.json".to_string();
         }
-        if runner_version.contains("wine-ge-proton") {
+        if runner_version.to_lowercase().contains("wine-ge-proton") {
             rslt = "wine_ge_proton.json".to_string();
         }
-        if runner_version.contains("wine-caffe") {
+        if runner_version.to_lowercase().contains("wine-caffe") {
             rslt = "wine_caffe.json".to_string();
         }
-        if runner_version.contains("proton-ge") {
+        if runner_version.to_lowercase().contains("proton-ge") {
             rslt = "proton_ge.json".to_string();
         }
-        if runner_version.contains("proton-cachyos") {
+        if runner_version.to_lowercase().contains("proton-cachyos") {
             rslt = "proton_cachyos.json".to_string();
         }
-        if runner_version.contains("proton-cachyos-spritz") {
+        if runner_version.to_lowercase().contains("proton-cachyos-spritz") {
             rslt = "proton_cachyos_spritz.json".to_string();
         }
-        if runner_version.contains("proton-umu") {
+        if runner_version.to_lowercase().contains("proton-umu") {
             rslt = "proton_umu.json".to_string();
         }
-        if runner_version.contains("proton-vanilla") {
+        if runner_version.to_lowercase().contains("proton-vanilla") {
             rslt = "proton_vanilla.json".to_string();
         }
-        if runner_version.contains("proton-em") {
+        if runner_version.to_lowercase().contains("proton-em") {
             rslt = "proton_em.json".to_string();
         }
         Some(rslt)
