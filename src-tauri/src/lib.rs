@@ -66,11 +66,11 @@ pub fn run() {
                 handle.dialog().message("TwintailLauncher does not support ARM based architectures. Flatpak required ARM builds to be provided but they are not supported!").kind(tauri_plugin_dialog::MessageDialogKind::Warning).title("Unsupported Architecture").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
             }
 
-            notify_update(handle);
-            run_async_command(async { init_db(handle).await; });
-
             #[cfg(target_arch = "x86_64")]
             {
+                notify_update(handle);
+                run_async_command(async { init_db(handle).await; });
+
                 load_manifests(handle);
                 init_tray(handle).unwrap();
                 // Initialize the listeners
@@ -83,13 +83,17 @@ pub fn run() {
                 if args::get_launch_install().is_some() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
+                    handle.get_window("main").unwrap().hide().unwrap();
                     std::thread::sleep(std::time::Duration::from_secs(10));
                     handle.cleanup_before_exit();
                     handle.exit(0);
                     std::process::exit(0);
                 }
 
-                // Hide decorations on most common tiler WindowManagers on linux
+                let res_dir = app.path().resource_dir().unwrap().follow_symlink().unwrap();
+                let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
+                setup_or_fix_default_paths(handle, data_dir.clone(), true);
+
                 #[cfg(target_os = "linux")]
                 {
                     match std::env::var("XDG_SESSION_DESKTOP") {
@@ -109,17 +113,9 @@ pub fn run() {
                         Err(_e) => {},
                     }
                     // cleanup steam.exe jank
-                    let tmphome = app.path().app_data_dir().unwrap().follow_symlink().unwrap().join("tmp_home/").follow_symlink().unwrap();
+                    let tmphome = data_dir.join("tmp_home/").follow_symlink().unwrap();
                     if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
-                }
 
-                let res_dir = app.path().resource_dir().unwrap().follow_symlink().unwrap();
-                let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
-
-                setup_or_fix_default_paths(handle, data_dir.clone(), true);
-                //update_extras(handle.clone(), false);
-                #[cfg(target_os = "linux")]
-                {
                     deprecate_jadeite(handle);
                     sync_installed_runners(handle);
                     download_or_update_steamrt(handle);

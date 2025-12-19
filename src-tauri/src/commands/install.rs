@@ -118,18 +118,17 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             //let dxvkpp = Arc::new(dxvk_path.clone());
             //let dxvkv = Arc::new(dxvk_version.clone());
 
-            // Apply compatibility overrides if they exist and if any are enabled
-            if let Some(co) = gm.extra.compat_overrides {
-                if co.install_to_prefix {
-                    install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap();
-                    if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
-                    directory = install_location.to_str().unwrap().to_string();
-                }
-                if co.override_runner.linux.enabled {
-                    runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
-                    runpp = Arc::new(runner_path.clone());
-                    runv = Arc::new(co.override_runner.linux.runner_version.clone());
-                }
+            // Apply compatibility overrides
+            let co = gm.extra.compat_overrides;
+            if co.install_to_prefix {
+                install_location = prefix_loc.clone().join("pfx").join("drive_c").join("Program Files").join(cuid.clone()).follow_symlink().unwrap();
+                if !install_location.exists() { fs::create_dir_all(&install_location).unwrap(); }
+                directory = install_location.to_str().unwrap().to_string();
+            }
+            if co.override_runner.linux.enabled {
+                runner_path = wine.join(co.override_runner.linux.runner_version.clone()).follow_symlink().unwrap().to_str().unwrap().to_string();
+                runpp = Arc::new(runner_path.clone());
+                runv = Arc::new(co.override_runner.linux.runner_version.clone());
             }
 
             std::thread::spawn(move || {
@@ -188,7 +187,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                         }
                     } else {
                         archandle.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
-                            .kind(MessageDialogKind::Warning)
+                            .kind(MessageDialogKind::Error)
                             .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                             .show(move |_action| {
                                 prevent_exit(&*archandle, false);
@@ -683,7 +682,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                         if ir.is_some() { update_installed_runner_is_installed_by_version(&*archandle, runv.to_string(), true); } else { create_installed_runner(&*archandle, runv.to_string(), true, rp.to_str().unwrap().to_string()).unwrap(); }
                     } else {
                         archandle.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
-                            .kind(MessageDialogKind::Warning)
+                            .kind(MessageDialogKind::Error)
                             .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                             .show(move |_action| {
                                 prevent_exit(&*archandle, false);
@@ -788,7 +787,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                             }
                         } else {
                             archandle.dialog().message(format!("Error occurred while trying to download {dxvn} DXVK! Please retry later.", dxvn = dxvkv.as_str().to_string()).as_str()).title("TwintailLauncher")
-                                .kind(MessageDialogKind::Warning)
+                                .kind(MessageDialogKind::Error)
                                 .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                                 .show(move |_action| {
                                     prevent_exit(&*archandle, false);

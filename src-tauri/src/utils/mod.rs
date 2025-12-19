@@ -28,9 +28,9 @@ mod git_helpers;
 pub mod game_launch_manager;
 pub mod system_tray;
 pub mod args;
+pub mod shortcuts;
 #[cfg(target_os = "linux")]
 pub mod gpu;
-pub mod shortcuts;
 
 pub fn generate_cuid() -> String {
     cuid2::create_id()
@@ -465,7 +465,7 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                     }
                 } else {
                     app.dialog().message("Error occurred while trying to download XXMI Modding tool! Please retry later by re-enabling the \"Inject XXMI\" in Install Settings.").title("TwintailLauncher")
-                        .kind(MessageDialogKind::Warning)
+                        .kind(MessageDialogKind::Error)
                         .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                         .show(move |_action| {
                             prevent_exit(&app, false);
@@ -573,7 +573,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                     prevent_exit(&app, false);
                 } else {
                     app.dialog().message("Error occurred while trying to download SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
-                        .kind(MessageDialogKind::Warning)
+                        .kind(MessageDialogKind::Error)
                         .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                         .show(move |_action| {
                             prevent_exit(&app, false);
@@ -620,7 +620,7 @@ pub fn download_or_update_steamrt(app: &AppHandle) {
                             prevent_exit(&app, false);
                         } else {
                             app.dialog().message("Error occurred while trying to update SteamLinuxRuntime! Please restart the application to retry.").title("TwintailLauncher")
-                                .kind(MessageDialogKind::Warning)
+                                .kind(MessageDialogKind::Error)
                                 .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                                 .show(move |_action| {
                                     prevent_exit(&app, false);

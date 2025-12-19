@@ -25,6 +25,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
     let mut compat_config = update_steam_compat_config(vec![]);
+    let cpo = gm.extra.compat_overrides;
 
     let dirp = Path::new(install.directory.as_str()).follow_symlink()?;
     let dir = dirp.to_str().unwrap().to_string();
@@ -57,17 +58,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if let Some(cpo) = gm.extra.compat_overrides.clone() {
-            if let Some(dpf) = cpo.disable_protonfixes {
-                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
-            }
-            if let Some(st) = cpo.protonfixes_store {
-                if !st.is_empty() { cmd.env("STORE", st); }
-            }
-            if let Some(id) = cpo.protonfixes_id {
-                if !id.is_empty() { cmd.env("UMU_ID", id); }
-            }
-        }
+        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
+        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store.clone()); }
+        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id.clone()); }
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -126,37 +119,25 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if let Some(cpo) = gm.extra.compat_overrides.clone() {
-            if let Some(dpf) = cpo.disable_protonfixes {
-                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
-            }
-            if let Some(st) = cpo.protonfixes_store {
-                if !st.is_empty() { cmd.env("STORE", st); }
-            }
-            if let Some(id) = cpo.protonfixes_id {
-                if !id.is_empty() { cmd.env("UMU_ID", id); }
-            }
-        }
+        if cpo.stub_wintrust { cmd.env("STUB_WINTRUST", "1"); }
+        if cpo.block_first_req { cmd.env("BLOCK_FIRST_REQ", "1"); }
+        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
+        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
+        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
+        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { cmd.env("STUB_WINTRUST", "1"); cmd.env("BLOCK_FIRST_REQ", "1"); cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
-        // https://github.com/Open-Wine-Components/umu-protonfixes/blob/master/gamefixes-umu/umu-zenlesszonezero.py#L7
-        // Can not use protonfixes here due to backwards compatibility with steam.exe
-        if gm.biz == "nap_global" { compat_config = update_steam_compat_config(vec!["gamedrive"]); }
-        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
-        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
         // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
         if gm.biz == "wuwa_global" {
-            compat_config = update_steam_compat_config(vec!["noopwr", "noxalia"]);
             if install.use_xxmi {
                 let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
             }
         }
-        cmd.env("STEAM_COMPAT_CONFIG", compat_config); // Set updated config
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config);
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -221,37 +202,25 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if let Some(cpo) = gm.extra.compat_overrides.clone() {
-            if let Some(dpf) = cpo.disable_protonfixes {
-                if dpf { cmd.env("PROTONFIXES_DISABLE", "1"); }
-            }
-            if let Some(st) = cpo.protonfixes_store {
-                if !st.is_empty() { cmd.env("STORE", st); }
-            }
-            if let Some(id) = cpo.protonfixes_id {
-                if !id.is_empty() { cmd.env("UMU_ID", id); }
-            }
-        }
+        if cpo.stub_wintrust { cmd.env("STUB_WINTRUST", "1"); }
+        if cpo.block_first_req { cmd.env("BLOCK_FIRST_REQ", "1"); }
+        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
+        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
+        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
+        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        // Set override for hkrpg fix
-        if gm.biz == "hkrpg_global" { cmd.env("STUB_WINTRUST", "1"); cmd.env("BLOCK_FIRST_REQ", "1"); cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
-        // https://github.com/Open-Wine-Components/umu-protonfixes/blob/master/gamefixes-umu/umu-zenlesszonezero.py#L7
-        // Can not use protonfixes here due to backwards compatibility with steam.exe
-        if gm.biz == "nap_global" { compat_config = update_steam_compat_config(vec!["gamedrive"]); }
-        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1365
-        // https://github.com/CachyOS/proton-cachyos/blob/cachyos_10.0_20251120/main/proton#L1541
         // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
         if gm.biz == "wuwa_global" {
-            compat_config = update_steam_compat_config(vec!["noopwr", "noxalia"]);
             if install.use_xxmi {
                 let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
             }
         }
-        cmd.env("STEAM_COMPAT_CONFIG", compat_config); // Set updated config
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config);
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());

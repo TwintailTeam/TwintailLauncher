@@ -617,9 +617,12 @@ pub struct CompatPlatformOverrides {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameCompatOverrides {
     pub install_to_prefix: bool,
-    pub disable_protonfixes: Option<bool>,
-    pub protonfixes_id: Option<String>,
-    pub protonfixes_store: Option<String>,
+    pub disable_protonfixes: bool,
+    pub protonfixes_id: String,
+    pub protonfixes_store: String,
+    pub stub_wintrust: bool,
+    pub block_first_req: bool,
+    pub proton_compat_config: Vec<String>,
     pub override_runner: CompatPlatformOverrides
 }
 
@@ -627,6 +630,6 @@ pub struct GameCompatOverrides {
 pub struct GameExtras {
     pub preload: Option<GamePreload>,
     pub switches: GameTweakSwitches,
-    pub compat_overrides: Option<GameCompatOverrides>,
+    pub compat_overrides: GameCompatOverrides,
     pub fps_unlock_options: Vec<String>,
 }

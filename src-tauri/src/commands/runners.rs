@@ -151,7 +151,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                         true
                     } else {
                         app.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
-                            .kind(MessageDialogKind::Warning)
+                            .kind(MessageDialogKind::Error)
                             .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
                             .show(move |_action| {
                                 prevent_exit(&app, false);
