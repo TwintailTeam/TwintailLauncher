@@ -124,7 +124,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
-        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); cmd.env("STEAM_COMPAT_CONFIG", compat_config); }
+        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
         if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
@@ -137,6 +137,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
             }
         }
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config);
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -206,7 +207,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
-        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); cmd.env("STEAM_COMPAT_CONFIG", compat_config); }
+        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
         if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_hkrpg(app, dir.clone()); }
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
@@ -219,6 +220,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string());
             }
         }
+        cmd.env("STEAM_COMPAT_CONFIG", compat_config);
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
