@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Kuro, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification};
+use crate::utils::{empty_dir, prevent_exit, run_async_command, send_notification};
 use crate::utils::repo_manager::{get_manifest, FullGameFile, GameVersion};
 use crate::downloading::DownloadGamePayload;
 
@@ -37,6 +37,13 @@ pub fn register_repair_handler(app: &AppHandle) {
                 h5.emit("repair_progress", dlp.clone()).unwrap();
                 drop(dlp);
                 prevent_exit(&h5, true);
+
+                #[cfg(target_os = "linux")]
+                {
+                    // Set prefix in repair state by emptying the directory
+                    let prefix_path = std::path::Path::new(&i.runner_prefix).follow_symlink().unwrap();
+                    if prefix_path.exists() && !gm.extra.compat_overrides.install_to_prefix { empty_dir(prefix_path).unwrap(); }
+                }
 
                 match picked.metadata.download_mode.as_str() {
                     // Generic zipped mode, Variety per game
