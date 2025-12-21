@@ -13,9 +13,9 @@ use fischl::compat::Compat;
 #[cfg(target_os = "linux")]
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
-use crate::utils::repo_manager::{get_compatibility, LauncherRunner};
+use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, prevent_exit, run_async_command};
+use crate::utils::{runner_from_runner_version, prevent_exit, run_async_command, models::LauncherRunner};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{create_installed_runner};
 

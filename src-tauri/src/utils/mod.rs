@@ -29,6 +29,7 @@ pub mod game_launch_manager;
 pub mod system_tray;
 pub mod args;
 pub mod shortcuts;
+pub mod models;
 #[cfg(target_os = "linux")]
 pub mod gpu;
 

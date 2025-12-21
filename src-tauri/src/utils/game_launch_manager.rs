@@ -5,10 +5,8 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
-use crate::commands::settings::GlobalSettings;
-use crate::utils::repo_manager::{GameManifest, LauncherInstall};
-use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification};
-use crate::utils::{PathResolve};
+use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification, PathResolve};
+use crate::utils::models::{GlobalSettings, LauncherInstall, GameManifest};
 
 #[cfg(target_os = "linux")]
 use crate::utils::{runner_from_runner_version, patch_sparkle, get_steam_appid, update_steam_compat_config};

@@ -1,10 +1,13 @@
 use linked_hash_map::LinkedHashMap;
 use tauri::{AppHandle};
 use crate::utils::db_manager::{get_manifest_info_by_filename, get_manifest_info_by_id, get_manifests_by_repository_id, update_manifest_enabled_by_id};
-use crate::utils::repo_manager::{get_manifest, get_manifests, GameManifest};
+use crate::utils::repo_manager::{get_manifest, get_manifests};
+use crate::utils::models::{GameManifest};
 
 #[cfg(target_os = "linux")]
-use crate::utils::repo_manager::{get_compatibilities, get_compatibility, RunnerManifest};
+use crate::utils::repo_manager::{get_compatibilities, get_compatibility};
+#[cfg(target_os = "linux")]
+use crate::utils::models::{RunnerManifest};
 
 #[tauri::command]
 pub fn get_manifest_by_id(app: AppHandle, id: String) -> Option<String> {

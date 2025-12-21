@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::Path;
-use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 use crate::utils::{block_telemetry, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, get_mi_path_from_game, send_notification, PathResolve};
@@ -269,21 +268,4 @@ pub fn open_uri(app: AppHandle, uri: String) {
         Ok(_) => {},
         Err(_e) => { send_notification(&app, "Opening URL in browser failed!", None); }
     }
-}
-
-// === STRUCTS ===
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GlobalSettings {
-    pub default_game_path: String,
-    pub xxmi_path: String,
-    pub fps_unlock_path: String,
-    pub jadeite_path: String,
-    pub third_party_repo_updates: i32,
-    pub default_runner_prefix_path: String,
-    pub launcher_action: String,
-    pub hide_manifests: bool,
-    pub default_runner_path: String,
-    pub default_dxvk_path: String,
-    pub default_mangohud_config_path: String,
 }

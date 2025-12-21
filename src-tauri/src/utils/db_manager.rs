@@ -4,9 +4,9 @@ use futures_core::future::BoxFuture;
 use sqlx::{query, Error, Executor, Pool, Row, Sqlite, error::BoxDynError, sqlite::SqliteQueryResult, migrate::{Migration as SqlxMigration, MigrateDatabase, MigrationSource, MigrationType, Migrator}};
 use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
-use crate::commands::settings::GlobalSettings;
-use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository, LauncherInstall, LauncherManifest, LauncherRepository, LauncherRunner};
+use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
+use crate::utils::models::{GlobalSettings, LauncherInstall, LauncherManifest, LauncherRepository, LauncherRunner};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();

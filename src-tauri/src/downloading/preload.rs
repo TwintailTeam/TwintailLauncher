@@ -5,8 +5,8 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Listener};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification};
-use crate::utils::repo_manager::{get_manifest, DiffGameFile};
+use crate::utils::{prevent_exit, run_async_command, send_notification, models::{DiffGameFile}};
+use crate::utils::repo_manager::{get_manifest};
 use crate::downloading::DownloadGamePayload;
 
 pub fn register_preload_handler(app: &AppHandle) {
