@@ -746,14 +746,23 @@ pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
 }
 
 #[cfg(target_os = "linux")]
-pub fn patch_hkrpg(app: &AppHandle, dir: String) {
+pub fn patch_sparkle(app: &AppHandle, dir: String, mode: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
-        let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
         let target_old = dir.join("dbghelp.dll");
         if target_old.exists() { fs::remove_file(&target_old).unwrap(); }
-        let target = dir.join("jsproxy.dll");
-        if patch.exists() { fs::copy(&patch, &target).unwrap(); }
+        match mode.as_str() {
+            "add" => {
+                let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
+                let target = dir.join("jsproxy.dll");
+                if patch.exists() { fs::copy(&patch, &target).unwrap(); }
+            }
+            "remove" => {
+                let target = dir.join("jsproxy.dll");
+                if target.exists() { fs::remove_file(&target).unwrap(); }
+            }
+            _ => {}
+        }
     }
 }
 
