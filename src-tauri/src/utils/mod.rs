@@ -8,7 +8,7 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_install_info_by_id, get_installed_runners, get_settings, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use sqlx::types::Json;
 use crate::utils::models::{XXMISettings};
@@ -517,6 +517,16 @@ pub fn sync_installed_runners(app: &AppHandle) {
         let runners = Path::new(&s.default_runner_path).follow_symlink().unwrap();
         if !runners.exists() { return; }
 
+        // Mark non-existing ones as uninstalled
+        let all_runners = get_installed_runners(app);
+        if all_runners.is_some() {
+            let ar = all_runners.unwrap();
+            for r in ar {
+                let dir_path = runners.join(&r.version).follow_symlink().unwrap();
+                if !dir_path.exists() && dir_path.to_str().unwrap().to_string() != "steamrt" { update_installed_runner_is_installed_by_version(app, r.version.clone(), false); }
+            }
+        }
+
         for e in fs::read_dir(runners).unwrap() {
             match e {
                 Ok(d) => {
@@ -528,7 +538,7 @@ pub fn sync_installed_runners(app: &AppHandle) {
                             Ok(mut subdir) => {
                                 if subdir.next().is_some() {
                                     let installed_runner = get_installed_runner_info_by_version(app, dir_name.to_string());
-                                    if installed_runner.is_none() && dir_name != "steamrt" { create_installed_runner(app, dir_name.to_string(), true, path.to_str().unwrap().parse().unwrap()).unwrap(); }
+                                    if installed_runner.is_none() && dir_name != "steamrt" { create_installed_runner(app, dir_name.to_string(), true, path.to_str().unwrap().parse().unwrap()).unwrap(); } else if dir_name != "steamrt" { update_installed_runner_is_installed_by_version(app, dir_name.to_string(), true); }
                                 }
                             },
                             Err(_) => {}
