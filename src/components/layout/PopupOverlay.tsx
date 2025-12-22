@@ -9,6 +9,7 @@ import InstallDeleteConfirm from "../popups/settings/InstallDeleteConfirm";
 import FpsUnlockSettings from "../popups/settings/FpsUnlockSettings.tsx";
 import MangoHudSettings from "../popups/settings/MangoHudSettings.tsx";
 import RunnerManager from "../popups/runnermanager/RunnerManager.tsx";
+import XXMISettings from "../popups/settings/XXMISettings.tsx";
 
 export type PopupOverlayProps = {
   openPopup: POPUPS;
@@ -191,6 +192,9 @@ export default function PopupOverlay(props: PopupOverlayProps) {
       )}
       {openPopup == POPUPS.FPSUNLOCKERSETTINGS && (
           <FpsUnlockSettings install={installSettings} setOpenPopup={setOpenPopup} gameSwitches={installGameSwitches} gameFps={installGameFps} fetchInstallSettings={fetchInstallSettings}/>
+      )}
+      {openPopup == POPUPS.XXMISETTINGS && (
+          <XXMISettings install={installSettings} setOpenPopup={setOpenPopup} gameSwitches={installGameSwitches} fetchInstallSettings={fetchInstallSettings}/>
       )}
       {openPopup == POPUPS.MANGOHUDSETTINGS && (
           <MangoHudSettings install={installSettings} setOpenPopup={setOpenPopup} fetchInstallSettings={fetchInstallSettings} gameSwitches={installGameSwitches}/>

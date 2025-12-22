@@ -167,7 +167,7 @@ pub fn update_extras(app: AppHandle, show_notify: bool) -> bool {
 
         download_or_update_jadeite(jadeite, true);
         download_or_update_fps_unlock(fpsu, true);
-        download_or_update_xxmi(&app, xxmi, true);
+        download_or_update_xxmi(&app, xxmi, None,true);
         if show_notify { send_notification(&app, "Successfully repaired extras.", None); }
         true
     } else {

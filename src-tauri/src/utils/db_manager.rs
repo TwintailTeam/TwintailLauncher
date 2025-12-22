@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::fs;
 use futures_core::future::BoxFuture;
 use sqlx::{query, Error, Executor, Pool, Row, Sqlite, error::BoxDynError, sqlite::SqliteQueryResult, migrate::{Migration as SqlxMigration, MigrateDatabase, MigrationSource, MigrationType, Migrator}};
+use sqlx::types::Json;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{Mutex};
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
-use crate::utils::models::{GlobalSettings, LauncherInstall, LauncherManifest, LauncherRepository, LauncherRunner};
+use crate::utils::models::{GlobalSettings, LauncherInstall, LauncherManifest, LauncherRepository, LauncherRunner, XXMISettings};
 
 pub async fn init_db(app: &AppHandle) {
     let data_path = app.path().app_data_dir().unwrap();
@@ -119,6 +120,12 @@ pub async fn init_db(app: &AppHandle) {
             version: 18,
             description: "alter_install_table_1113",
             sql: r#"ALTER TABLE install ADD COLUMN region_code TEXT DEFAULT 'glb_official' NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 19,
+            description: "alter_install_table_1114",
+            sql: r#"ALTER TABLE install ADD COLUMN xxmi_config TEXT DEFAULT '{"hunting_mode":0,"require_admin":true,"dll_init_delay":500,"close_delay":20,"show_warnings":0,"dump_shaders":false}' NOT NULL;"#,
             kind: MigrationKind::Up,
         },
     ];
@@ -606,7 +613,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
             mangohud_config_path: rslt.get(0).unwrap().get("mangohud_config_path"),
             shortcut_is_steam: rslt.get(0).unwrap().get("shortcut_is_steam"),
             shortcut_path: rslt.get(0).unwrap().get("shortcut_path"),
-            region_code: rslt.get(0).unwrap().get("region_code")
+            region_code: rslt.get(0).unwrap().get("region_code"),
+            xxmi_config: rslt.get(0).unwrap().get("xxmi_config")
         };
 
         Some(rsltt)
@@ -657,7 +665,8 @@ pub fn get_installs_by_manifest_id(app: &AppHandle, manifest_id: String) -> Opti
                 mangohud_config_path: r.get("mangohud_config_path"),
                 shortcut_is_steam: r.get("shortcut_is_steam"),
                 shortcut_path: r.get("shortcut_path"),
-                region_code: r.get("region_code")
+                region_code: r.get("region_code"),
+                xxmi_config: r.get("xxmi_config")
             })
         }
 
@@ -709,7 +718,8 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
                 mangohud_config_path: r.get("mangohud_config_path"),
                 shortcut_is_steam: r.get("shortcut_is_steam"),
                 shortcut_path: r.get("shortcut_path"),
-                region_code: r.get("region_code")
+                region_code: r.get("region_code"),
+                xxmi_config: r.get("xxmi_config")
             })
         }
 
@@ -923,6 +933,15 @@ pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_st
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'shortcut_is_steam' = $1 WHERE id = $2").bind(is_steam).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_xxmi_config_by_id(app: &AppHandle, id: String, xxmi_config: Json<XXMISettings>) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'xxmi_config' = $1 WHERE id = $2").bind(xxmi_config).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

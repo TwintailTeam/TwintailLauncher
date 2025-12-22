@@ -94,6 +94,33 @@ export default function CheckBox({ id, name, enabled, install, fetchSettings, fe
                 }
             }
             break;
+            case "tweak_engineini_edit": {
+                if (fetchInstallSettings !== undefined) {
+                    invoke("update_install_xxmi_config", {engineiniTweaks: !isEnabled, id: install}).then(() => {
+                        setIsEnabled(!isEnabled);
+                        fetchInstallSettings(install as string)
+                    });
+                }
+            }
+            break;
+            case "tweak_xxmi_sw": {
+                if (fetchInstallSettings !== undefined) {
+                    invoke("update_install_xxmi_config", {xxmiSw: !isEnabled, id: install}).then(() => {
+                        setIsEnabled(!isEnabled);
+                        fetchInstallSettings(install as string)
+                    });
+                }
+            }
+            break;
+            case "tweak_xxmi_sd": {
+                if (fetchInstallSettings !== undefined) {
+                    invoke("update_install_xxmi_config", {xxmiSd: !isEnabled, id: install}).then(() => {
+                        setIsEnabled(!isEnabled);
+                        fetchInstallSettings(install as string)
+                    });
+                }
+            }
+            break;
             case "uninstall_prefix_delete": {
                 setIsEnabled(!isEnabled);
             }

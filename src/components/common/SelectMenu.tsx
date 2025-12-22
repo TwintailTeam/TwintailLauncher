@@ -102,8 +102,8 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             }
                         });
                     }
-                    break;
                 }
+                break;
                 case "game_audio_langs": {
                     if (fetchDownloadSizes !== undefined && dir !== undefined && version !== undefined) {
                         fetchDownloadSizes(biz, version(), `${option.value}`, dir(), (disk: any) => {
@@ -126,24 +126,24 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             }
                         });
                     }
-                    break;
                 }
+                break;
                 case "launcher_action": {
                     if (fetchSettings !== undefined) {
                         invoke("update_settings_launcher_action", {action: `${option.value}`}).then(() => {
                             fetchSettings();
                         });
                     }
-                    break;
                 }
+                break;
                 case "install_fps_value": {
                     if (fetchInstallSettings !== undefined) {
                         invoke("update_install_fps_value", {fps: `${option.value}`, id: install}).then(() => {
                             fetchInstallSettings(install as string);
                         });
                     }
-                    break;
                 }
+                break;
                 case "install_runner_version": {
                     if (fetchInstallSettings !== undefined) {
                         invoke("update_install_runner_version", {version: `${option.value}`, id: install}).then(() => {
@@ -151,8 +151,8 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             setOpenPopup(POPUPS.NONE);
                         });
                     }
-                    break;
                 }
+                break;
                 case "install_dxvk_version": {
                     if (fetchInstallSettings !== undefined) {
                         invoke("update_install_dxvk_version", {version: `${option.value}`, id: install}).then(() => {
@@ -160,8 +160,16 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             setOpenPopup(POPUPS.NONE);
                         });
                     }
-                    break;
                 }
+                break;
+                case "tweak_xxmi_hunting": {
+                    if (fetchInstallSettings !== undefined) {
+                        invoke("update_install_xxmi_config", {xxmiHunting: option.value, id: install}).then(() => {
+                            fetchInstallSettings(install as string);
+                        });
+                    }
+                }
+                break;
                 default:
                     break;
             }
@@ -236,10 +244,9 @@ export default function SelectMenu({ id, name, options, selected, install, biz, 
                             }
                             // Animation classes
                             const show = animateIn && !animateOut;
-                            const hide = animateOut;
                             return (
                                 <div
-                                    className={`bg-zinc-800 border border-white/30 rounded-xl shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${hide ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
+                                    className={`bg-zinc-800 border border-white/30 rounded-xl shadow-lg z-[9999] overflow-hidden transition-all duration-200 ${show ? 'opacity-100 scale-y-100' : ''}${animateOut ? ' opacity-0 scale-y-95 pointer-events-none' : ''}`}
                                     style={{
                                         position: 'fixed',
                                         left: rect.left,

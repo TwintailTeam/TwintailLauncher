@@ -8,19 +8,22 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_install_info_by_id, get_settings, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use sqlx::types::Json;
+use crate::utils::models::{XXMISettings};
 
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_manifests;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_version, get_installs, get_manifest_info_by_id, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
+use crate::utils::db_manager::{update_install_xxmi_config_by_id, create_installed_runner, get_installed_runner_info_by_version, get_installs, get_manifest_info_by_id, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 #[cfg(target_os = "linux")]
 use fischl::compat::{download_steamrt, check_steamrt_update};
+use crate::utils::repo_manager::get_manifest;
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -376,9 +379,10 @@ pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     }
 }
 
-pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool) {
+pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, install_id: Option<String>, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
+            let app = app.clone();
             std::thread::spawn(move || {
                 let dl = run_async_command(async {
                     Extras::download_xxmi("SpectrumQT/XXMI-Libs-Package".parse().unwrap(), path.as_path().to_str().unwrap().parse().unwrap(), true, {
@@ -409,6 +413,19 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                                 }
                             }
                         }
+                        #[cfg(target_os = "linux")]
+                        {
+                            if let Some(id) = install_id {
+                                let ai = get_install_info_by_id(&app, id).unwrap();
+                                let repm = get_manifest_info_by_id(&app, ai.manifest_id).unwrap();
+                                let gm = get_manifest(&app, repm.filename).unwrap();
+                                let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+                                let mi = get_mi_path_from_game(exe).unwrap();
+                                let base = path.join(mi);
+                                let data = apply_xxmi_tweaks(base, ai.xxmi_config);
+                                update_install_xxmi_config_by_id(&app, ai.id, data);
+                            }
+                        }
                     }
                 }
             });
@@ -416,8 +433,8 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
     } else {
         if fs::read_dir(&path).unwrap().next().is_none() {
             let app = app.clone();
+            let path = path.clone();
             std::thread::spawn(move || {
-                let app = app.clone();
                 let mut dlpayload = HashMap::new();
                 dlpayload.insert("name", String::from("XXMI Modding tool"));
                 dlpayload.insert("progress", "0".to_string());
@@ -463,6 +480,19 @@ pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, update_mode: bool
                         }
                         app.emit("download_complete", String::from("XXMI Modding tool")).unwrap();
                         prevent_exit(&app, false);
+                        #[cfg(target_os = "linux")]
+                        {
+                            if let Some(id) = install_id {
+                                let ai = get_install_info_by_id(&app, id).unwrap();
+                                let repm = get_manifest_info_by_id(&app, ai.manifest_id).unwrap();
+                                let gm = get_manifest(&app, repm.filename).unwrap();
+                                let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+                                let mi = get_mi_path_from_game(exe).unwrap();
+                                let base = path.join(mi);
+                                let data = apply_xxmi_tweaks(base, ai.xxmi_config);
+                                update_install_xxmi_config_by_id(&app, ai.id, data);
+                            }
+                        }
                     }
                 } else {
                     app.dialog().message("Error occurred while trying to download XXMI Modding tool! Please retry later by re-enabling the \"Inject XXMI\" in Install Settings.").title("TwintailLauncher")
@@ -833,6 +863,44 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
             Err(_) => {}
         }
     }
+}
+
+#[cfg(target_os = "linux")]
+pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json<XXMISettings> {
+    if package.exists() {
+        let cfg = package.join("d3dx.ini").follow_symlink().unwrap();
+        if cfg.exists() {
+            let mut ini = configparser::ini::Ini::new_cs();
+            let f = ini.load(&cfg);
+            match f {
+                Ok(_) => {
+                    ini.set("Hunting", "hunting", Some(data.hunting_mode.to_string()));
+                    let actions = if data.dump_shaders { "clipboard hlsl asm regex" } else { "clipboard" };
+                    ini.set("Hunting", "marking_actions", Some(actions.to_string()));
+                    ini.set("Logging", "show_warnings", Some(data.show_warnings.to_string()));
+                    if package.to_str().unwrap().contains("gimi") {
+                        data.require_admin = false;
+                        ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
+                    }
+                    if package.to_str().unwrap().contains("zzmi") {
+                        data.require_admin = false;
+                        data.dll_init_delay = 500;
+                        data.close_delay = 20;
+                        ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
+                        ini.set("Loader", "delay", Some(data.close_delay.to_string()));
+                        ini.set("System", "dll_initialization_delay", Some(data.dll_init_delay.to_string()));
+                    }
+                    let r = ini.write(&cfg);
+                    match r {
+                        Ok(_) => {}
+                        Err(_) => {}
+                    }
+                }
+                Err(_) => {}
+            }
+            data
+        } else { data }
+    } else { data }
 }
 
 #[cfg(target_os = "linux")]

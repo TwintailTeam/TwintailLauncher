@@ -1,4 +1,17 @@
 use serde::{Deserialize, Serialize};
+use sqlx::types::Json;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct XXMISettings {
+    pub hunting_mode: u64,
+    pub require_admin: bool,
+    pub dll_init_delay: u64,
+    pub close_delay: u64,
+    pub show_warnings: u64,
+    pub dump_shaders: bool
+}
+
+// === DATABASE ===
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GlobalSettings {
@@ -68,7 +81,8 @@ pub struct LauncherInstall {
     pub mangohud_config_path: String,
     pub shortcut_is_steam: bool,
     pub shortcut_path: String,
-    pub region_code: String
+    pub region_code: String,
+    pub xxmi_config: Json<XXMISettings>
 }
 
 #[derive(Serialize, Deserialize, Debug)]

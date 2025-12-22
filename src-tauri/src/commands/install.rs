@@ -6,9 +6,9 @@ use std::sync::Arc;
 use fischl::utils::{prettify_bytes};
 use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Manager};
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{models::{GameVersion}, copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp};
+use crate::utils::{models::{GameVersion}, copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp, get_mi_path_from_game, apply_xxmi_tweaks};
 use crate::utils::repo_manager::{get_manifest};
 use crate::utils::shortcuts::{remove_desktop_shortcut};
 
@@ -20,12 +20,14 @@ use fischl::{compat::Compat};
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use std::time::{SystemTime, UNIX_EPOCH};
+use sqlx::types::Json;
 #[cfg(target_os = "linux")]
 use steam_shortcuts_util::{app_id_generator::calculate_app_id, Shortcut};
 #[cfg(target_os = "linux")]
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{update_install_shortcut_is_steam_by_id, create_installed_runner, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
+use crate::utils::models::XXMISettings;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -444,8 +446,8 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
         let m = manifest.unwrap();
         let p = Path::new(&settings.xxmi_path).follow_symlink().unwrap().to_path_buf();
 
-        update_install_use_xxmi_by_id(&app, m.id, enabled);
-        if enabled { download_or_update_xxmi(&app, p, false); }
+        update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
+        if enabled { download_or_update_xxmi(&app, p, Some(m.id), false); }
         Some(true)
     } else {
         None
@@ -520,6 +522,40 @@ pub fn update_install_mangohud_config_path(app: AppHandle, id: String, path: Str
         let m = install.unwrap();
         let np = path.clone();
         update_install_mangohud_config_location_by_id(&app, m.id, np);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_xxmi_config(app: AppHandle, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, _engineini_tweaks: Option<bool>) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        let gs = get_settings(&app).unwrap();
+        let mut data = Json(XXMISettings {
+            hunting_mode: m.xxmi_config.hunting_mode,
+            require_admin: m.xxmi_config.require_admin,
+            dll_init_delay: m.xxmi_config.dll_init_delay,
+            close_delay: m.xxmi_config.close_delay,
+            show_warnings: m.xxmi_config.show_warnings,
+            dump_shaders: m.xxmi_config.dump_shaders,
+        });
+        if xxmi_hunting.is_some() { data.hunting_mode = xxmi_hunting?; }
+        if xxmi_sd.is_some() { data.dump_shaders = xxmi_sd?; }
+        if xxmi_sw.is_some() { data.show_warnings = if xxmi_sw? { 1 } else { 0 } }
+
+        if let Some(x) = get_manifest_info_by_id(&app, m.manifest_id) {
+            if let Some(g) = get_manifest(&app, x.filename) {
+                let exe = g.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+                let mi = get_mi_path_from_game(exe).unwrap();
+                let package = Path::new(&gs.xxmi_path).join(mi).follow_symlink().unwrap();
+                data = apply_xxmi_tweaks(package, data.clone());
+            }
+        }
+        update_install_xxmi_config_by_id(&app, m.id, data);
         Some(true)
     } else {
         None
