@@ -447,7 +447,22 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
         let p = Path::new(&settings.xxmi_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
-        if enabled { download_or_update_xxmi(&app, p, Some(m.id), false); }
+        if enabled {
+            download_or_update_xxmi(&app, p.clone(), Some(m.id.clone()), false);
+            // Attempt to apply XXMI config for any install if we can not download function will handle this
+            #[cfg(target_os = "linux")]
+            {
+                let repm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
+                let gm = get_manifest(&app, repm.filename).unwrap();
+                let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+                let mi = get_mi_path_from_game(exe).unwrap();
+                let package_path = p.join(mi);
+                if package_path.exists() {
+                    let data = apply_xxmi_tweaks(package_path, m.xxmi_config);
+                    update_install_xxmi_config_by_id(&app, m.id, data);
+                }
+            }
+        }
         Some(true)
     } else {
         None
