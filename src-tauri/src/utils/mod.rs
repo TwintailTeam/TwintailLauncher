@@ -8,7 +8,7 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_installed_runners, get_settings, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_install_info_by_id, get_installed_runners, get_settings, update_install_after_update_by_id, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use sqlx::types::Json;
 use crate::utils::models::{XXMISettings};
@@ -546,6 +546,24 @@ pub fn sync_installed_runners(app: &AppHandle) {
                     }
                 },
                 Err(_) => {}
+            }
+        }
+    }
+}
+
+pub fn sync_install_backgrounds(app: &AppHandle) {
+    let installs = get_installs(app);
+    if let Some(is) = installs {
+        for i in is {
+            let repm = get_manifest_info_by_id(app, i.manifest_id).unwrap();
+            let gm = get_manifest(&app, repm.filename);
+            if let Some(g) = gm {
+                let is_live = i.game_background.ends_with(".webm") || i.game_background.ends_with(".mp4");
+                let comparator = if is_live { i.game_background != g.assets.game_live_background.clone().unwrap() } else { i.game_background != g.assets.game_background };
+                if !i.ignore_updates && comparator {
+                    let bg = if is_live { g.assets.game_live_background.unwrap() } else { g.assets.game_background };
+                    update_install_after_update_by_id(app, i.id, i.name, i.game_icon, bg, i.version);
+                }
             }
         }
     }

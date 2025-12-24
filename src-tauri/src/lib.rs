@@ -12,7 +12,7 @@ use crate::downloading::repair::register_repair_handler;
 use crate::downloading::update::register_update_handler;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, ActionBlocks, PathResolve};
+use crate::utils::{args, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, sync_install_backgrounds, ActionBlocks, PathResolve};
 use crate::utils::system_tray::init_tray;
 use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 
@@ -93,6 +93,7 @@ pub fn run() {
                 let res_dir = app.path().resource_dir().unwrap().follow_symlink().unwrap();
                 let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
+                sync_install_backgrounds(handle);
 
                 #[cfg(target_os = "linux")]
                 {
