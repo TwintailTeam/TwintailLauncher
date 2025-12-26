@@ -11,7 +11,7 @@ use tauri_plugin_notification::NotificationExt;
 use crate::utils::db_manager::{get_install_info_by_id, get_installed_runners, get_settings, update_install_after_update_by_id, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use sqlx::types::Json;
-use crate::utils::models::{XXMISettings};
+use crate::utils::models::{GameVersion, XXMISettings};
 
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
@@ -559,9 +559,12 @@ pub fn sync_install_backgrounds(app: &AppHandle) {
             let gm = get_manifest(&app, repm.filename);
             if let Some(g) = gm {
                 let is_live = i.game_background.ends_with(".webm") || i.game_background.ends_with(".mp4");
-                let comparator = if is_live { i.game_background != g.assets.game_live_background.clone().unwrap() } else { i.game_background != g.assets.game_background };
+                let ver = g.game_versions.iter().filter(|e| e.metadata.version == i.version).collect::<Vec<&GameVersion>>();
+                if ver.is_empty() { return; }
+                let cur = ver.get(0).unwrap();
+                let comparator = if is_live { i.game_background != cur.assets.game_live_background.clone().unwrap() } else { i.game_background != cur.assets.game_background.clone() };
                 if !i.ignore_updates && comparator {
-                    let bg = if is_live { g.assets.game_live_background.unwrap() } else { g.assets.game_background };
+                    let bg = if is_live { cur.assets.game_live_background.clone().unwrap() } else { cur.assets.game_background.clone() };
                     update_install_after_update_by_id(app, i.id, i.name, i.game_icon, bg, i.version);
                 }
             }
