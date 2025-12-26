@@ -1,9 +1,9 @@
-name: "publish"
+name: "build"
 on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/workflows/publish.yml'
+      - 'build.yml'
       - 'package.json'
       - 'src-tauri/**/*'
       - 'src/**/*'
