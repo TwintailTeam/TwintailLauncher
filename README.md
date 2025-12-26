@@ -58,13 +58,14 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 
 ## Installation
 
-| Platform        | Link                                                                            | Note(s)                                     |
-|-----------------|---------------------------------------------------------------------------------|---------------------------------------------|
-| Windows (x64)   | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                           | Installation is only supported via `winget` |
-| Linux (Flatpak) | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Recommended method for all distributions    |
-| Linux (AUR)     | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use AUR helper (`yay` / `paru`)             |
-| Linux (AUR)     | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use AUR helper (`yay` / `paru`)             |
-| Linux (DEB)     | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED** Used for AUR bin        |
+| Platform                            | Link                                                                            | Note(s)                                     |
+|-------------------------------------|---------------------------------------------------------------------------------|---------------------------------------------|
+| Windows (x64)                       | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                           | Installation is only supported via `winget` |
+| Linux (Flatpak, Stable)             | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Recommended method for all distributions    |
+| Linux (AUR, Unstable - From source) | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use AUR helper (`yay` / `paru`)             |
+| Linux (AUR, Stable - From source)   | [twintaillauncher](https://aur.archlinux.org/packages/twintaillauncher)         | Use AUR helper (`yay` / `paru`)             |
+| Linux (AUR, Stable - From deb)      | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use AUR helper (`yay` / `paru`)             |
+| Linux (DEB)                         | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED** Used for AUR bin        |
 
 ## Developers & Compiling
 
