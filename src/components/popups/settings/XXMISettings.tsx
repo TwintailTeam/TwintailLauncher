@@ -5,7 +5,6 @@ import {useState} from "react";
 import SelectMenu from "../../common/SelectMenu.tsx";
 
 interface IProps {
-    biz: any,
     install: any,
     gameSwitches: any,
     fetchInstallSettings: (id: string) => void,

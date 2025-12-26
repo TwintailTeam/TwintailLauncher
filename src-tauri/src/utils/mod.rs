@@ -8,22 +8,20 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_install_info_by_id, get_installed_runners, get_settings, update_install_after_update_by_id, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_install_info_by_id, get_installed_runners, get_settings, update_install_after_update_by_id, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use sqlx::types::Json;
 use crate::utils::models::{GameVersion, XXMISettings};
+use crate::utils::repo_manager::{get_manifest, get_manifests};
 
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
 #[cfg(target_os = "linux")]
-use crate::utils::repo_manager::get_manifests;
-#[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_install_xxmi_config_by_id, create_installed_runner, get_installed_runner_info_by_version, get_installs, get_manifest_info_by_id, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
+use crate::utils::db_manager::{update_install_xxmi_config_by_id, create_installed_runner, get_installed_runner_info_by_version, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 #[cfg(target_os = "linux")]
 use fischl::compat::{download_steamrt, check_steamrt_update};
-use crate::utils::repo_manager::get_manifest;
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -379,6 +377,7 @@ pub fn download_or_update_fps_unlock(path: PathBuf, update_mode: bool) {
     }
 }
 
+#[allow(unused_variables)]
 pub fn download_or_update_xxmi(app: &AppHandle, path: PathBuf, install_id: Option<String>, update_mode: bool) {
     if update_mode {
         if fs::read_dir(&path).unwrap().next().is_some() {
@@ -896,7 +895,7 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
     }
 }
 
-#[cfg(target_os = "linux")]
+#[allow(unused_mut)]
 pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json<XXMISettings> {
     if package.exists() {
         let cfg = package.join("d3dx.ini").follow_symlink().unwrap();
@@ -909,17 +908,21 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
                     let actions = if data.dump_shaders { "clipboard hlsl asm regex" } else { "clipboard" };
                     ini.set("Hunting", "marking_actions", Some(actions.to_string()));
                     ini.set("Logging", "show_warnings", Some(data.show_warnings.to_string()));
-                    if package.to_str().unwrap().contains("gimi") {
-                        data.require_admin = false;
-                        ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
-                    }
-                    if package.to_str().unwrap().contains("zzmi") {
-                        data.require_admin = false;
-                        data.dll_init_delay = 500;
-                        data.close_delay = 20;
-                        ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
-                        ini.set("Loader", "delay", Some(data.close_delay.to_string()));
-                        ini.set("System", "dll_initialization_delay", Some(data.dll_init_delay.to_string()));
+                    #[cfg(target_os = "linux")]
+                    {
+                        if package.to_str().unwrap().contains("gimi") {
+                            data.require_admin = false;
+                            ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
+                        }
+
+                        if package.to_str().unwrap().contains("zzmi") {
+                            data.require_admin = false;
+                            data.dll_init_delay = 500;
+                            data.close_delay = 20;
+                            ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
+                            ini.set("Loader", "delay", Some(data.close_delay.to_string()));
+                            ini.set("System", "dll_initialization_delay", Some(data.dll_init_delay.to_string()));
+                        }
                     }
                     let r = ini.write(&cfg);
                     match r {

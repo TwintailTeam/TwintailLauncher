@@ -523,7 +523,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
 #[cfg(target_os = "windows")]
 fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String, game: String) {
     if install.use_fps_unlock {
-        wait_for_process(game.as_str(), 100,30, |found| {
+        fischl::utils::wait_for_process(game.as_str(), 100, 30, |found| {
             if found {
                 let fpsunlock_path = fpsunlock_path.trim_matches('\\');
                 let loader_path = Path::new(fpsunlock_path).join("fpsunlock.exe");
