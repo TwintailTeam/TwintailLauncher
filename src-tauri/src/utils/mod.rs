@@ -848,47 +848,25 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
             Ok(_) => {
                 let perf_tweaks: HashMap<&str, HashMap<&str, String>> = HashMap::from([(
                     "SystemSettings",
-                    HashMap::from([
-                        ("r.Streaming.HLODStrategy", "2".to_string()),
-                        ("r.Streaming.PoolSizeForMeshes", "-1".to_string()),
-                        ("r.XGEShaderCompile", "0".to_string()),
-                        ("FX.BatchAsync", "1".to_string()),
-                        ("FX.EarlyScheduleAsync", "1".to_string()),
-                        ("fx.Niagara.ForceAutoPooling", "1".to_string()),
+                    HashMap::from([("r.Streaming.HLODStrategy", "2".to_string()), ("r.Streaming.PoolSizeForMeshes", "-1".to_string()), ("r.XGEShaderCompile", "0".to_string()),
+                        ("FX.BatchAsync", "1".to_string()), ("FX.EarlyScheduleAsync", "1".to_string()), ("fx.Niagara.ForceAutoPooling", "1".to_string()),
                         ("wp.Runtime.KuroRuntimeStreamingRangeOverallScale", "0.5".to_string()),
-                        ("tick.AllowAsyncTickCleanup", "1".to_string()),
-                        ("tick.AllowAsyncTickDispatch", "1".to_string()),
-                    ])
+                        ("tick.AllowAsyncTickCleanup", "1".to_string()), ("tick.AllowAsyncTickDispatch", "1".to_string())])
                 )]);
                 for (section_name, section_data) in perf_tweaks {
                     for (option_name, option_value) in section_data { ini.set(section_name, option_name, Some(option_value)); }
                 }
-
                 for section in ini.get_map_ref().keys().cloned().collect::<Vec<_>>() {
-                    ini.set(&section, "r.Streaming.UsingNewKuroStreaming", None); // Ancient 3rd-party configs set it to 0 with bad results
-                    ini.set(&section, "r.Streaming.FullyLoadUsedTextures", None); // No longer works since 14/06
+                    ini.remove_key(&section, "r.Streaming.UsingNewKuroStreaming"); // Ancient 3rd-party configs set it to 0 with bad results
+                    ini.remove_key(&section, "r.Streaming.Boost"); // Replaced with r.Streaming.MinBoost
                 }
-                if !ini.sections().contains(&"ConsoleVariables".to_string()) {
-                    ini.set("ConsoleVariables", "temp", Some("".to_string()));
-                    ini.set("ConsoleVariables", "temp", None);
-                }
-                // Controls how far game starts to replace weighted meshes with LoDs
-                // Mods contain mesh metadata only for original model and won't apply to LoDs
                 ini.set("ConsoleVariables", "r.Kuro.SkeletalMesh.LODDistanceScale", Some("24".to_string()));
-                // Controls how aggressively higher resolution textures are pushed to VRAM
-                // Mods contain texture hashes only for original model and won't apply to LoDs
-                ini.set("ConsoleVariables", "r.Streaming.Boost", Some("30.0".to_string()));
-                // Controls amount of VRAM used for textures streaming
-                // When set to 0, tends to keep full resolution textures in VRAM, so LoDs don't break mods
+                ini.set("ConsoleVariables", "r.Streaming.MinBoost", Some("30.0".to_string()));
+                ini.set("ConsoleVariables", "r.Streaming.UseAllMips", Some("1".to_string()));
                 ini.set("ConsoleVariables", "r.Streaming.PoolSize", Some("0".to_string()));
-                // Prevents pool size from exceeding VRAM
-                // Doesn't explicitly affect mods, but acts as failsafe for low and mid-range GPUs for PoolSize=0
                 ini.set("ConsoleVariables", "r.Streaming.LimitPoolSizeToVRAM", Some("1".to_string()));
                 let r = ini.write(&file);
-                match r {
-                    Ok(_) => {}
-                    Err(_) => {}
-                }
+                match r { Ok(_) => {} Err(_) => {} }
             }
             Err(_) => {}
         }
@@ -925,10 +903,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
                         }
                     }
                     let r = ini.write(&cfg);
-                    match r {
-                        Ok(_) => {}
-                        Err(_) => {}
-                    }
+                    match r { Ok(_) => {} Err(_) => {} }
                 }
                 Err(_) => {}
             }
