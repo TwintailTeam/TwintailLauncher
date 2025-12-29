@@ -860,11 +860,12 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String) {
                     ini.remove_key(&section, "r.Streaming.UsingNewKuroStreaming"); // Ancient 3rd-party configs set it to 0 with bad results
                     ini.remove_key(&section, "r.Streaming.Boost"); // Replaced with r.Streaming.MinBoost
                 }
-                ini.set("ConsoleVariables", "r.Kuro.SkeletalMesh.LODDistanceScale", Some("24".to_string()));
-                ini.set("ConsoleVariables", "r.Streaming.MinBoost", Some("30.0".to_string()));
-                ini.set("ConsoleVariables", "r.Streaming.UseAllMips", Some("1".to_string()));
-                ini.set("ConsoleVariables", "r.Streaming.PoolSize", Some("0".to_string()));
                 ini.set("ConsoleVariables", "r.Streaming.LimitPoolSizeToVRAM", Some("1".to_string()));
+                ini.set("ConsoleVariables", "r.Streaming.PoolSize", Some("0".to_string()));
+                ini.set("ConsoleVariables", "r.Streaming.UseAllMips", Some("1".to_string()));
+                ini.set("ConsoleVariables", "r.Streaming.MinBoost", Some("20.0".to_string()));
+                ini.set("ConsoleVariables", "r.Kuro.SkeletalMesh.LODDistanceScale", Some("24".to_string()));
+                ini.set("ConsoleVariables", "r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", Some("-50".to_string()));
                 let r = ini.write(&file);
                 match r { Ok(_) => {} Err(_) => {} }
             }
