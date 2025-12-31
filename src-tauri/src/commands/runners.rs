@@ -156,7 +156,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                             .show(move |_action| {
                                 prevent_exit(&app, false);
                                 app.emit("download_complete", ()).unwrap();
-                                if runpc.exists() { fs::remove_dir_all(&runpc).unwrap(); }
+                                if runpc.exists() { fs::remove_dir_all(&runpc).unwrap(); update_installed_runner_is_installed_by_version(&app, runv.clone(), false); }
                             });
                         false
                     }

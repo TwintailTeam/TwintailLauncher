@@ -194,7 +194,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                             .show(move |_action| {
                                 prevent_exit(&*archandle, false);
                                 archandle.emit("download_complete", ()).unwrap();
-                                if rp.exists() { fs::remove_dir_all(&rp).unwrap(); }
+                                if rp.exists() { fs::remove_dir_all(&rp).unwrap(); update_installed_runner_is_installed_by_version(&*archandle, runv.clone().as_str().to_string(), false); }
                             });
                     }
                 } else {
