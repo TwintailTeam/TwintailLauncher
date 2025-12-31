@@ -46,8 +46,6 @@
         "resources": [
             "./resources/hpatchz.exe",
             "./resources/hpatchz",
-            "./resources/7zr",
-            "./resources/7zr.exe",
             "./resources/hkrpg_patch.dll",
             "./resources/reaper"
         ],

@@ -56,7 +56,6 @@ jobs:
   
           package() {
             install -Dm755 usr/bin/twintaillauncher -t "\$pkgdir/usr/bin"
-            install -Dm755 usr/lib/twintaillauncher/resources/7zr -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/hpatchz -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm755 usr/lib/twintaillauncher/resources/reaper -t "\$pkgdir/usr/lib/twintaillauncher/resources"
             install -Dm644 usr/lib/twintaillauncher/resources/hkrpg_patch.dll -t "\$pkgdir/usr/lib/twintaillauncher/resources"

@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Emitter, Listener};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve, models::{FullGameFile, GameVersion}};
 use crate::utils::repo_manager::{get_manifest};
@@ -72,11 +72,7 @@ pub fn register_download_handler(app: &AppHandle) {
                                 if r {
                                     let aar = fnn.strip_suffix(".001").unwrap().to_string();
                                     let far = ap.join(aar).to_str().unwrap().to_string();
-                                    #[cfg(target_os = "linux")]
-                                    let sz = h4.path().app_data_dir().unwrap().join("7zr");
-                                    #[cfg(target_os = "windows")]
-                                    let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
-                                    let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
+                                    let ext = extract_archive(far, install.directory.clone(), false);
                                     if ext {
                                         h4.emit("download_complete", ()).unwrap();
                                         prevent_exit(&h4, false);
@@ -85,11 +81,7 @@ pub fn register_download_handler(app: &AppHandle) {
                                 }
                             } else {
                                 let far = ap.join(fnn.clone()).to_str().unwrap().to_string();
-                                #[cfg(target_os = "linux")]
-                                let sz = h4.path().app_data_dir().unwrap().join("7zr");
-                                #[cfg(target_os = "windows")]
-                                let sz = h4.path().app_data_dir().unwrap().join("7zr.exe");
-                                let ext = extract_archive(sz.to_str().unwrap().to_string(), far, install.directory.clone(), false);
+                                let ext = extract_archive(far, install.directory.clone(), false);
                                 if ext {
                                     h4.emit("download_complete", ()).unwrap();
                                     prevent_exit(&h4, false);

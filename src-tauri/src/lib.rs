@@ -131,7 +131,13 @@ pub fn run() {
                     }
                 }
 
-                for r in ["hpatchz", "hpatchz.exe", "7zr", "7zr.exe", "reaper"] {
+                //Delete deprecated resource files
+                for df in ["7zr", "7zr.exe", "krpatchz", "krpatchz.exe"] {
+                    let fd = data_dir.join(df);
+                    if fd.exists() { std::fs::remove_file(fd).unwrap(); }
+                }
+                // Copy required resource files
+                for r in ["hpatchz", "hpatchz.exe", "reaper"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
                     if rd.file_name().unwrap().to_str().unwrap().contains("reaper") {
