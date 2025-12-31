@@ -33,7 +33,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
     let steamrt_path = runnerp.join("steamrt/").follow_symlink()?.to_str().unwrap().to_string();
     let steamrt = runnerp.join("steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
-    let reaper = app.path().app_data_dir()?.follow_symlink()?.join("reaper").follow_symlink()?.to_str().unwrap().to_string();
+    let reaper = app.path().resource_dir()?.follow_symlink()?.join("resources/reaper").follow_symlink()?.to_str().unwrap().to_string();
     let appid = get_steam_appid();
 
     let pre_launch = install.pre_launch_command.clone();

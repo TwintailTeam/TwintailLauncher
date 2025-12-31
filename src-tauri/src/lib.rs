@@ -131,20 +131,16 @@ pub fn run() {
                     }
                 }
 
-                //Delete deprecated resource files
-                for df in ["7zr", "7zr.exe", "krpatchz", "krpatchz.exe"] {
+                // Delete deprecated resource files (PS: reaper binary is executable in resources dir so useless to copy)
+                for df in ["7zr", "7zr.exe", "krpatchz", "krpatchz.exe", "reaper"] {
                     let fd = data_dir.join(df);
                     if fd.exists() { std::fs::remove_file(fd).unwrap(); }
                 }
                 // Copy required resource files
-                for r in ["hpatchz", "hpatchz.exe", "reaper"] {
+                for r in ["hpatchz", "hpatchz.exe"] {
                     let rd = res_dir.join("resources").join(r);
                     let fd = data_dir.join(r);
-                    if rd.file_name().unwrap().to_str().unwrap().contains("reaper") {
-                        if rd.exists() && !fd.exists() { std::fs::copy(rd, fd).unwrap(); }
-                    } else {
-                        if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
-                    }
+                    if rd.exists() { std::fs::copy(rd, fd).unwrap(); }
                 }
             }
             Ok(())
