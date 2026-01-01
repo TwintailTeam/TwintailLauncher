@@ -9,7 +9,7 @@ use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notificat
 use crate::utils::models::{GlobalSettings, LauncherInstall, GameManifest};
 
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, patch_sparkle, get_steam_appid, update_steam_compat_config};
+use crate::utils::{runner_from_runner_version, patch_sparkle, get_steam_appid, update_steam_compat_config, is_flatpak};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility};
 #[cfg(target_os = "linux")]
@@ -33,7 +33,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
     let steamrt_path = runnerp.join("steamrt/").follow_symlink()?.to_str().unwrap().to_string();
     let steamrt = runnerp.join("steamrt/_v2-entry-point").follow_symlink()?.to_str().unwrap().to_string();
-    let reaper = app.path().resource_dir()?.follow_symlink()?.join("resources/reaper").follow_symlink()?.to_str().unwrap().to_string();
+    let reaper = if is_flatpak() { app.path().resource_dir()?.follow_symlink()?.join("resources/reaper").follow_symlink()?.to_str().unwrap().to_string().replace("/usr/lib/", "/run/parent/usr/lib/") } else { app.path().resource_dir()?.follow_symlink()?.join("resources/reaper").follow_symlink()?.to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
     let appid = get_steam_appid();
 
     let pre_launch = install.pre_launch_command.clone();
