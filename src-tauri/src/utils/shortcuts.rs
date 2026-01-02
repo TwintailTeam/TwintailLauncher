@@ -5,7 +5,7 @@ use steam_shortcuts_util::{parse_shortcuts, shortcuts_to_bytes, Shortcut};
 
 #[allow(dead_code)]
 fn check_steam_user_data_dir(steam_userdata_dir: PathBuf) -> Vec<String> {
-    let ignore_folders = ["0", "ac"];
+    let ignore_folders = ["0", "ac", "anonymous"];
     if !steam_userdata_dir.exists() { return vec![]; }
     let mut folders: Vec<String> = Vec::new();
 

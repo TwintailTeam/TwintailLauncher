@@ -1123,7 +1123,9 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         send_notification(&app, format!("Successfully removed {} from Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
                     } else {
-                        send_notification(&app, format!("Failed to remove {} from Steam (Flatpak)!", install.name.as_str()).as_str(), None);
+                        // If flatpak Steam somehow exists but has no shortcut this will trigger an edge case with DB state
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                        send_notification(&app, format!("Failed to remove {} from Steam (Flatpak)! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None);
                     }
                 }
 
@@ -1133,7 +1135,9 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         send_notification(&app, format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None);
                     } else {
-                        send_notification(&app, format!("Failed to remove {} from Steam!", install.name.as_str()).as_str(), None);
+                        // If normal Steam somehow exists but has no shortcut this will trigger an edge case with DB state
+                        update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
+                        send_notification(&app, format!("Failed to remove {} from Steam! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None);
                     }
                 }
             }
