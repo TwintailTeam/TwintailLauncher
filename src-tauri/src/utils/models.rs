@@ -274,7 +274,8 @@ pub struct GameCompatOverrides {
     pub stub_wintrust: bool,
     pub block_first_req: bool,
     pub proton_compat_config: Vec<String>,
-    pub override_runner: CompatPlatformOverrides
+    pub override_runner: CompatPlatformOverrides,
+    pub min_runner_versions: Vec<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

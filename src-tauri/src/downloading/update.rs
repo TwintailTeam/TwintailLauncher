@@ -54,7 +54,7 @@ pub fn register_update_handler(app: &AppHandle) {
                         if urls.is_empty() {
                             h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
-                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "Cancel".to_string()))
                                 .show(move |action| {
                                     if action {
                                         let ip = Path::new(&install.directory).follow_symlink().unwrap();
@@ -83,7 +83,7 @@ pub fn register_update_handler(app: &AppHandle) {
                         if urls.is_empty() {
                             h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
-                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "Cancel".to_string()))
                                 .show(move |action| {
                                     if action {
                                         let ip = Path::new(&install.directory).follow_symlink().unwrap();
@@ -147,7 +147,7 @@ pub fn register_update_handler(app: &AppHandle) {
                         if urls.is_empty() {
                             h5.dialog().message(format!("Could not find update for {inn}!\nRedownload latest version by pressing \"Redownload\" button.", inn = install.name.clone()).as_str()).title("TwintailLauncher")
                                 .kind(MessageDialogKind::Info)
-                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "I will figure it out".to_string()))
+                                .buttons(MessageDialogButtons::OkCancelCustom("Redownload".to_string(), "Cancel".to_string()))
                                 .show(move |action| {
                                     if action {
                                         let ip = Path::new(&install.directory).follow_symlink().unwrap();

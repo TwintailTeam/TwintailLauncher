@@ -954,6 +954,20 @@ fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
     va.cmp(&vb)
 }
 
+pub fn is_runner_lower(min_runner_versions: Vec<String>, runner_version: String) -> bool {
+    let idx = match runner_version.find("proton-") { Some(i) => i, None => return false };
+    let (left, right) = runner_version.split_at(idx);
+    let cand_ver = left.strip_suffix('-').unwrap_or(left).replace("-", ".");
+
+    for s in min_runner_versions {
+        let idx = match s.find("proton-") { Some(i) => i, None => continue };
+        let (l, r) = s.split_at(idx);
+        let ver = l.strip_suffix('-').unwrap_or(l).replace("-", ".");
+        if r == right && compare_version(cand_ver.as_str(), ver.as_str()).is_lt() { return true; }
+    }
+    false
+}
+
 #[allow(dead_code)]
 pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     if dir.as_ref().exists() {
