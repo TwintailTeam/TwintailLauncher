@@ -41,7 +41,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let reaper = app.path().resource_dir()?.follow_symlink()?.join("resources/reaper").follow_symlink()?.to_str().unwrap().to_string();
     let appid = get_steam_appid();
 
-    if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) {
+    if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         app.dialog().message(format!("Launching {inn} with {sr} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {minrunn}", inn = install.name.clone(), sr = install.runner_version.clone(), minrunn = cpo.min_runner_versions.clone().join(", ").as_str()).as_str()).title("TwintailLauncher")
             .kind(MessageDialogKind::Warning)
             .buttons(MessageDialogButtons::OkCustom("I understand".to_string()))
