@@ -400,7 +400,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     }
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
-    load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path, game.clone());
+    load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);
 
     let rslt = if install.launch_command.is_empty() {
         let args;
@@ -534,35 +534,28 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
 }
 
 #[cfg(target_os = "windows")]
-fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String, game: String) {
+fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String) {
     if install.use_fps_unlock {
-        fischl::utils::wait_for_process(game.as_str(), 100, 30, |found| {
-            if found {
-                let fpsunlock_path = fpsunlock_path.trim_matches('\\');
-                let loader_path = Path::new(fpsunlock_path).join("fpsunlock.exe");
-                let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
-                let fpsv = install.fps_value.clone();
-                let args = format!("run {} {} 3000 \"{}\"", biz, fpsv, game_path);
-                let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, args, fpsunlock_path);
+        let fpsunlock_path = fpsunlock_path.trim_matches('\\');
+        let loader_path = Path::new(fpsunlock_path).join("fpsunlock.exe");
+        let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
+        let fpsv = install.fps_value.clone();
+        let args = format!("run {} {} 3000 0 \"{}\"", biz, fpsv, game_path);
+        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, args, fpsunlock_path);
 
-                let mut cmd = Command::new("powershell");
-                cmd.arg("-Command");
-                cmd.arg(&command);
+        let mut cmd = Command::new("powershell");
+        cmd.arg("-Command");
+        cmd.arg(&command);
 
-                cmd.stdout(Stdio::piped());
-                cmd.stderr(Stdio::piped());
-                cmd.current_dir(fpsunlock_path);
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+        cmd.current_dir(fpsunlock_path);
 
-                let spawned = cmd.spawn();
-                if spawned.is_ok() {
-                    let process = spawned.unwrap();
-                    write_log(app, Path::new(&fpsunlock_path).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
-                }
-                true
-            } else {
-                false
-            }
-        });
+        let spawned = cmd.spawn();
+        if spawned.is_ok() {
+            let process = spawned.unwrap();
+            write_log(app, Path::new(&fpsunlock_path).to_path_buf(), process, "fps_unlocker.log".parse().unwrap());
+        }
     }
 }
 

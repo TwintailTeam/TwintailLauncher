@@ -8,7 +8,7 @@ use fischl::download::Extras;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_plugin_notification::NotificationExt;
-use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_install_info_by_id, get_installed_runners, get_settings, update_install_after_update_by_id, update_installed_runner_is_installed_by_version, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
+use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use sqlx::types::Json;
 use crate::utils::models::{GameVersion, XXMISettings};
@@ -17,7 +17,7 @@ use crate::utils::repo_manager::{get_manifest, get_manifests};
 #[cfg(target_os = "linux")]
 use std::io::BufRead;
 #[cfg(target_os = "linux")]
-use crate::utils::db_manager::{update_install_xxmi_config_by_id, create_installed_runner, get_installed_runner_info_by_version, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
+use crate::utils::db_manager::{get_installed_runners, get_install_info_by_id, update_installed_runner_is_installed_by_version, update_install_xxmi_config_by_id, create_installed_runner, get_installed_runner_info_by_version, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location};
 #[cfg(target_os = "linux")]
 use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 #[cfg(target_os = "linux")]
@@ -949,6 +949,7 @@ fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
     va.cmp(&vb)
 }
 
+#[cfg(target_os = "linux")]
 pub fn is_runner_lower(min_runner_versions: Vec<String>, runner_version: String) -> bool {
     let idx = match runner_version.find("proton-") { Some(i) => i, None => return false };
     let (left, right) = runner_version.split_at(idx);
