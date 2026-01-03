@@ -889,12 +889,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
                     ini.set("Logging", "show_warnings", Some(data.show_warnings.to_string()));
                     #[cfg(target_os = "linux")]
                     {
-                        if package.to_str().unwrap().contains("gimi") {
-                            data.require_admin = false;
-                            ini.set("Loader", "require_admin", Some(data.require_admin.to_string()));
-                        }
-
-                        if package.to_str().unwrap().contains("zzmi") {
+                        if package.to_str().unwrap().contains("gimi") || package.to_str().unwrap().contains("zzmi") {
                             data.require_admin = false;
                             data.dll_init_delay = 500;
                             data.close_delay = 20;
