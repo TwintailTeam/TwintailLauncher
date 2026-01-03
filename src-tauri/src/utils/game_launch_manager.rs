@@ -324,7 +324,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             let app = appc.clone();
             let fpsunlock_path = fpsunlock_path.clone();
             let fpsv = install.fps_value.clone();
-            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 300 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 300 '{game_path}'") };
+            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") };
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
