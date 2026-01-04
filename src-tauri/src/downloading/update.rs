@@ -11,9 +11,6 @@ use crate::utils::repo_manager::{get_manifest};
 use crate::downloading::DownloadGamePayload;
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 
-#[cfg(target_os = "linux")]
-use crate::utils::patch_aki;
-
 pub fn register_update_handler(app: &AppHandle) {
     let a = app.clone();
     app.listen("start_game_update", move |event| {
@@ -191,10 +188,7 @@ pub fn register_update_handler(app: &AppHandle) {
                                     send_notification(&h5, format!("Updating {inn} complete.", inn = install.name).as_str(), None);
                                     update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                     #[cfg(target_os = "linux")]
-                                    {
-                                        let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
-                                        patch_aki(target.to_str().unwrap().to_string());
-                                    }
+                                    crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
                                 }
                             } else {
                                 h5.dialog().message(format!("Unable to update {inn} as there is not enough free space, please make sure there is enough free space for the update!", inn = install.name).as_str()).title("TwintailLauncher")

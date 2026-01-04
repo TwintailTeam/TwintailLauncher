@@ -511,35 +511,44 @@ pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
 }
 
 #[cfg(target_os = "linux")]
-pub fn patch_sparkle(app: &AppHandle, dir: String, mode: String) {
+pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
-        let target_old = dir.join("dbghelp.dll");
-        if target_old.exists() { fs::remove_file(&target_old).unwrap(); }
-        match mode.as_str() {
-            "add" => {
-                let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
-                let target = dir.join("jsproxy.dll");
-                if patch.exists() { fs::copy(&patch, &target).unwrap(); }
+        match patch_type.as_str() {
+            "aki" => {
+                match mode.as_str() {
+                    "add" => {
+                        let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
+                        if f.exists() {
+                            let fp = fs::read_to_string(f.clone()).unwrap();
+                            let patched = fp.lines().map(|line| {
+                                if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line }
+                            }).collect::<Vec<_>>().join("\n");
+                            fs::write(f, patched).unwrap();
+                        }
+                    }
+                    "remove" => {}
+                    _ => {}
+                }
             }
-            "remove" => {
-                let target = dir.join("jsproxy.dll");
-                if target.exists() { fs::remove_file(&target).unwrap(); }
+            "sparkle" => {
+                let target_old = dir.join("dbghelp.dll");
+                if target_old.exists() { fs::remove_file(&target_old).unwrap(); }
+                match mode.as_str() {
+                    "add" => {
+                        let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
+                        let target = dir.join("jsproxy.dll");
+                        if patch.exists() { fs::copy(&patch, &target).unwrap(); }
+                    }
+                    "remove" => {
+                        let target = dir.join("jsproxy.dll");
+                        if target.exists() { fs::remove_file(&target).unwrap(); }
+                    }
+                    _ => {}
+                }
             }
             _ => {}
         }
-    }
-}
-
-#[cfg(target_os = "linux")]
-pub fn patch_aki(file: String) {
-    let p = Path::new(&file);
-    if p.exists() {
-        let fp = fs::read_to_string(p).unwrap();
-        let patched = fp.lines().map(|line| {
-            if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line }
-        }).collect::<Vec<_>>().join("\n");
-        fs::write(p, patched).unwrap();
     }
 }
 

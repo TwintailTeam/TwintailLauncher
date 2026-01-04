@@ -8,16 +8,14 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Manager};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{models::{GameVersion}, copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp, get_mi_path_from_game, apply_xxmi_tweaks};
+use crate::utils::{models::{GameVersion, XXMISettings}, copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp, get_mi_path_from_game, apply_xxmi_tweaks};
 use crate::utils::repo_manager::{get_manifest};
 use crate::utils::shortcuts::{remove_desktop_shortcut};
 
 #[cfg(target_os = "linux")]
-use crate::utils::{patch_aki, run_async_command, runner_from_runner_version, is_flatpak, shortcuts::{add_steam_shortcut, remove_steam_shortcut, add_desktop_shortcut}};
+use crate::utils::{run_async_command, runner_from_runner_version, is_flatpak, repo_manager::get_compatibility, shortcuts::{add_steam_shortcut, remove_steam_shortcut, add_desktop_shortcut}};
 #[cfg(target_os = "linux")]
 use fischl::{compat::Compat};
-#[cfg(target_os = "linux")]
-use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use std::time::{SystemTime, UNIX_EPOCH};
 use sqlx::types::Json;
@@ -27,7 +25,6 @@ use steam_shortcuts_util::{app_id_generator::calculate_app_id, Shortcut};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{update_install_shortcut_is_steam_by_id, create_installed_runner, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
-use crate::utils::models::XXMISettings;
 
 #[tauri::command]
 pub async fn list_installs(app: AppHandle) -> Option<String> {
@@ -219,7 +216,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             });
 
             // Patch wuwa if existing install
-            if gm.biz == "wuwa_global" && skip_game_dl { let target = Path::new(&directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();patch_aki(target.to_str().unwrap().to_string()); }
+            if gm.biz == "wuwa_global" && skip_game_dl { crate::utils::apply_patch(&app, Path::new(&directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string()); }
             // Download and enable jadeite automatically for these games
             if gm.biz == "bh3_global" {
                 use_jadeite = true;

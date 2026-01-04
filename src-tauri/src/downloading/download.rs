@@ -9,9 +9,6 @@ use crate::utils::{prevent_exit, run_async_command, send_notification, PathResol
 use crate::utils::repo_manager::{get_manifest};
 use crate::downloading::DownloadGamePayload;
 
-#[cfg(target_os = "linux")]
-use crate::utils::patch_aki;
-
 pub fn register_download_handler(app: &AppHandle) {
     let a = app.clone();
     app.listen("start_game_download", move |event| {
@@ -139,10 +136,7 @@ pub fn register_download_handler(app: &AppHandle) {
                             prevent_exit(&h4, false);
                             send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                             #[cfg(target_os = "linux")]
-                            {
-                                let target = Path::new(&install.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
-                                patch_aki(target.to_str().unwrap().to_string());
-                            }
+                            crate::utils::apply_patch(&h4, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
                         }
                     }
                     // Fallback mode

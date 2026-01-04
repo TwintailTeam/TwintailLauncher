@@ -8,7 +8,7 @@ use crate::utils::repo_manager::{get_manifest};
 use crate::downloading::DownloadGamePayload;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{PathResolve, patch_aki, empty_dir};
+use crate::utils::{PathResolve, empty_dir};
 
 pub fn register_repair_handler(app: &AppHandle) {
     let a = app.clone();
@@ -100,10 +100,7 @@ pub fn register_repair_handler(app: &AppHandle) {
                             prevent_exit(&h5, false);
                             send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                             #[cfg(target_os = "linux")]
-                            {
-                                let target = std::path::Path::new(&i.directory.clone()).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin").follow_symlink().unwrap();
-                                patch_aki(target.to_str().unwrap().to_string());
-                            }
+                            crate::utils::apply_patch(&h5, std::path::Path::new(&i.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
                         }
                     }
                     // Fallback mode

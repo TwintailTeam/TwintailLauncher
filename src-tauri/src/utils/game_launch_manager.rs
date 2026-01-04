@@ -9,9 +9,7 @@ use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notificat
 use crate::utils::models::{GlobalSettings, LauncherInstall, GameManifest};
 
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, patch_sparkle, get_steam_appid, update_steam_compat_config, is_runner_lower};
-#[cfg(target_os = "linux")]
-use crate::utils::repo_manager::{get_compatibility};
+use crate::utils::{runner_from_runner_version, get_steam_appid, update_steam_compat_config, is_runner_lower, repo_manager::get_compatibility};
 #[cfg(target_os = "linux")]
 use tauri::Manager;
 #[cfg(target_os = "linux")]
@@ -136,7 +134,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
         if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_sparkle(app, dir.clone(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { patch_sparkle(app, dir.clone(), "remove".to_string()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
@@ -219,7 +217,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
         if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); patch_sparkle(app, dir.clone(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { patch_sparkle(app, dir.clone(), "remove".to_string()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD","1");
