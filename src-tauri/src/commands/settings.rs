@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
-use crate::utils::{block_telemetry, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, get_mi_path_from_game, send_notification, PathResolve};
+use crate::utils::{block_telemetry, get_mi_path_from_game, send_notification, PathResolve};
 use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::repo_manager::get_manifest;
 use tauri_plugin_notification::NotificationExt;
@@ -165,9 +165,9 @@ pub fn update_extras(app: AppHandle, show_notify: bool) -> bool {
         let jadeite = Path::new(&s.jadeite_path).follow_symlink().unwrap().to_path_buf();
         let fpsu = Path::new(&s.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
-        download_or_update_jadeite(jadeite, true);
-        download_or_update_fps_unlock(fpsu, true);
-        download_or_update_xxmi(&app, xxmi, None,true);
+        crate::downloading::misc::download_or_update_jadeite(jadeite, true);
+        crate::downloading::misc::download_or_update_fps_unlock(fpsu, true);
+        crate::downloading::misc::download_or_update_xxmi(&app, xxmi, None,true);
         if show_notify { send_notification(&app, "Successfully repaired extras.", None); }
         true
     } else {

@@ -19,7 +19,9 @@ use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id,
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::RunnerLoader;
 #[cfg(target_os = "linux")]
-use crate::utils::{download_or_update_steamrt, deprecate_jadeite, sync_installed_runners, is_flatpak, block_telemetry};
+use crate::utils::{deprecate_jadeite, sync_installed_runners, is_flatpak, block_telemetry};
+#[cfg(target_os = "linux")]
+use crate::downloading::misc::{download_or_update_steamrt};
 
 mod utils;
 mod commands;

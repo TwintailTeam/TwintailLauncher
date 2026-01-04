@@ -8,7 +8,7 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Manager};
 use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_location_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id};
 use crate::utils::game_launch_manager::launch;
-use crate::utils::{models::{GameVersion}, copy_dir_all, download_or_update_fps_unlock, download_or_update_jadeite, download_or_update_xxmi, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp, get_mi_path_from_game, apply_xxmi_tweaks};
+use crate::utils::{models::{GameVersion}, copy_dir_all, generate_cuid, prevent_exit, send_notification, AddInstallRsp, DownloadSizesRsp, PathResolve, ResumeStatesRsp, get_mi_path_from_game, apply_xxmi_tweaks};
 use crate::utils::repo_manager::{get_manifest};
 use crate::utils::shortcuts::{remove_desktop_shortcut};
 
@@ -224,7 +224,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             if gm.biz == "bh3_global" {
                 use_jadeite = true;
                 let jadeite = Path::new(&gs.jadeite_path).follow_symlink().unwrap().to_path_buf();
-                download_or_update_jadeite(jadeite, false);
+                crate::downloading::misc::download_or_update_jadeite(jadeite, false);
             }
         }
         let gbg = g.assets.game_background.clone();/*if g.assets.game_live_background.is_some() {
@@ -430,7 +430,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
         let p = Path::new(&settings.jadeite_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_jadeite_by_id(&app, m.id, enabled);
-        if enabled { download_or_update_jadeite(p, false); }
+        if enabled { crate::downloading::misc::download_or_update_jadeite(p, false); }
         Some(true)
     } else {
         None
@@ -448,7 +448,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
         if enabled {
-            download_or_update_xxmi(&app, p.clone(), Some(m.id.clone()), false);
+            crate::downloading::misc::download_or_update_xxmi(&app, p.clone(), Some(m.id.clone()), false);
             // Attempt to apply XXMI config for any install if we can not download function will handle this
             #[cfg(target_os = "linux")]
             {
@@ -479,7 +479,7 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
         let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
-        if enabled { download_or_update_fps_unlock(p, false); }
+        if enabled { crate::downloading::misc::download_or_update_fps_unlock(p, false); }
         Some(true)
     } else {
         None
@@ -496,7 +496,7 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
         let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
 
         update_install_fps_value_by_id(&app, m.id, fps);
-        if m.use_fps_unlock { download_or_update_fps_unlock(p, false); }
+        if m.use_fps_unlock { crate::downloading::misc::download_or_update_fps_unlock(p, false); }
         Some(true)
     } else {
         None
