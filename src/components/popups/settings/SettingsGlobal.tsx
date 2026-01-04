@@ -1,6 +1,5 @@
 import {EyeOffIcon, WrenchIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
-import CheckBox from "../../common/CheckBox.tsx";
 import FolderInput from "../../common/FolderInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
 import {invoke} from "@tauri-apps/api/core";
@@ -18,15 +17,15 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
             </div>
             <div className="w-full overflow-y-auto overflow-x-hidden hover-scrollbar pr-4 -mr-4 flex-1">
                 <div className="p-6 flex flex-col gap-2">
-                    <CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Auto update 3rd party repositories"} fetchSettings={fetchSettings} id={"third_party_repo_updates"} helpText={"Allow launcher to automatically update 3rd party repositories and their manifests."}/>
+                    {null/*<CheckBox enabled={Boolean(settings.third_party_repo_updates)} name={"Update 3rd party repositories"} fetchSettings={fetchSettings} id={"third_party_repo_updates"} helpText={"Allow launcher to automatically update 3rd party repositories and their manifests."}/>*/}
                     <FolderInput name={"Default game install location"} clearable={true} value={`${settings.default_game_path}`} folder={true} id={"default_game_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all games will be installed."}/>
                     <FolderInput name={"XXMI location"} clearable={true} folder={true} value={`${settings.xxmi_path}`} id={"default_xxmi_path"} fetchSettings={fetchSettings} helpText={"Location where all XXMI modding tool files will be stored."}/>
                     <FolderInput name={"FPS Unlocker location"} clearable={true} folder={true} value={`${settings.fps_unlock_path}`} id={"default_fps_unlock_path"} fetchSettings={fetchSettings} helpText={"Location where fps unlocker is stored."}/>
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Jadeite location"} clearable={true} folder={true} value={`${settings.jadeite_path}`} id={"default_jadeite_path"} fetchSettings={fetchSettings} helpText={"Location where jadeite patch is stored."}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default runner location"} clearable={true} folder={true} value={`${settings.default_runner_path}`} id={"default_runner_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all Wine/Proton versions will be stored."}/> : null}
                     {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default DXVK location"} clearable={true} folder={true} value={`${settings.default_dxvk_path}`} id={"default_dxvk_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all DXVK versions will be stored."}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default runner prefix location"} clearable={true} folder={true} value={`${settings.default_runner_prefix_path}`} id={"default_prefix_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all Wine/Proton prefixes will be stored."}/> : null}
-                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default mangohud config location"} clearable={true} folder={false} extensions={["conf"]} value={`${settings.default_mangohud_config_path}`} id={"default_mangohud_config_path"} fetchSettings={fetchSettings} helpText={"Default configuration file for MangoHUD."}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default prefix location"} clearable={true} folder={true} value={`${settings.default_runner_prefix_path}`} id={"default_prefix_path"} fetchSettings={fetchSettings} helpText={"Default base directory where all Wine/Proton prefixes will be stored."}/> : null}
+                    {(window.navigator.platform.includes("Linux")) ? <FolderInput name={"Default MangoHud location"} clearable={true} folder={false} extensions={["conf"]} value={`${settings.default_mangohud_config_path}`} id={"default_mangohud_config_path"} fetchSettings={fetchSettings} helpText={"Default configuration file for MangoHUD."}/> : null}
                     <SelectMenu id={"launcher_action"} name={"After game launch"} multiple={false} options={[{value: "exit", name: "Close launcher"}, {value: "keep", name: "Keep launcher open"}, {value: "minimize", name: "Minimize launcher to tray"}]} selected={`${settings.launcher_action}`} fetchSettings={fetchSettings} helpText={"What will launcher do once it launches a game."} setOpenPopup={setOpenPopup}/>
                 </div>
             </div>
