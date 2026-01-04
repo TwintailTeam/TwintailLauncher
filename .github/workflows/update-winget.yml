@@ -1,15 +1,34 @@
-name: Publish to WinGet
+name: update-winget.yml
 on:
-#  release:
-#    types: [released]
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. ttl-v0.6.9)"
+        required: true
+
 jobs:
-  publish:
+  update-winget-package:
     runs-on: windows-latest
     steps:
-      - uses: vedantmgoyal9/winget-releaser@main
+      - name: Set version
+        shell: "bash"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW_VERSION=${{ github.event.inputs.version }}
+          else
+            RAW_VERSION=${{ github.event.release.tag_name }}
+          fi
+          CLEAN_VERSION="${RAW_VERSION#ttl-v}"
+          echo "VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+      - name: Update winget package
+        uses: vedantmgoyal9/winget-releaser@main
+        env:
+          VERSION: ${{ env.VERSION }}
         with:
           identifier: TwintailTeam.TTL
-          max-versions-to-keep: 5
-          installers-regex: '\.exe$' # Only .exe files
+          max-versions-to-keep: 3
+          version: '${{ env.VERSION }}'
+          installers-regex: '\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
