@@ -21,7 +21,7 @@ jobs:
             RAW_VERSION=${{ github.event.release.tag_name }}
           fi
           CLEAN_VERSION="${RAW_VERSION#ttl-v}"
-          echo "RAW_VERSION" >> $GITHUB_ENV
+          echo "RAW_VERSION=$RAW_VERSION" >> "$GITHUB_ENV"
           echo "VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
       - name: Update winget package
         uses: vedantmgoyal9/winget-releaser@main
