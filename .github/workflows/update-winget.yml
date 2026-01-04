@@ -21,14 +21,17 @@ jobs:
             RAW_VERSION=${{ github.event.release.tag_name }}
           fi
           CLEAN_VERSION="${RAW_VERSION#ttl-v}"
+          echo "RAW_VERSION" >> $GITHUB_ENV
           echo "VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
       - name: Update winget package
         uses: vedantmgoyal9/winget-releaser@main
         env:
           VERSION: ${{ env.VERSION }}
+          RAW_VERSION: ${{ env.RAW_VERSION }}
         with:
           identifier: TwintailTeam.TTL
           max-versions-to-keep: 3
           version: '${{ env.VERSION }}'
+          release-tag: '${{ env.RAW_VERSION }}'
           installers-regex: '\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
