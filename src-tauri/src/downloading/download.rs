@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use fischl::utils::{assemble_multipart_archive, extract_archive};
 use tauri::{AppHandle, Emitter, Listener};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification, PathResolve, models::{FullGameFile, GameVersion}};
 use crate::utils::repo_manager::{get_manifest};
@@ -137,6 +138,16 @@ pub fn register_download_handler(app: &AppHandle) {
                             send_notification(&h4, format!("Download of {inn} complete.", inn = inna.to_string()).as_str(), None);
                             #[cfg(target_os = "linux")]
                             crate::utils::apply_patch(&h4, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
+                        } else {
+                            h4.dialog().message(format!("Error occurred while trying to download {inn}\nPlease try again!", inn = install.name).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    let dir = Path::new(&install.directory).join("downloading");
+                                    if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
+                                    prevent_exit(&h4, false);
+                                    h4.emit("download_complete", ()).unwrap();
+                                });
                         }
                     }
                     // Fallback mode

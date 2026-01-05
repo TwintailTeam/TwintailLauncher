@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use fischl::download::game::{Game, Kuro, Sophon};
 use tauri::{AppHandle, Emitter, Listener};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::{prevent_exit, run_async_command, send_notification, models::{FullGameFile, GameVersion}};
 use crate::utils::repo_manager::{get_manifest};
@@ -101,6 +102,16 @@ pub fn register_repair_handler(app: &AppHandle) {
                             send_notification(&h5, format!("Repair of {inn} complete.", inn = i.name).as_str(), None);
                             #[cfg(target_os = "linux")]
                             crate::utils::apply_patch(&h5, std::path::Path::new(&i.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
+                        } else {
+                            h5.dialog().message(format!("Error occurred while trying to repair {inn}\nPlease try again!", inn = i.name).as_str()).title("TwintailLauncher")
+                                .kind(MessageDialogKind::Warning)
+                                .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                .show(move |_action| {
+                                    let dir = std::path::Path::new(&i.directory).join("repairing");
+                                    if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
+                                    prevent_exit(&h5, false);
+                                    h5.emit("repair_complete", ()).unwrap();
+                                });
                         }
                     }
                     // Fallback mode

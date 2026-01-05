@@ -189,6 +189,16 @@ pub fn register_update_handler(app: &AppHandle) {
                                     update_install_after_update_by_id(&h5, install.id, picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), picked.assets.game_background.clone(), picked.metadata.version.clone());
                                     #[cfg(target_os = "linux")]
                                     crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
+                                } else {
+                                    h5.dialog().message(format!("Error occurred while trying to update {inn}\nPlease try again!", inn = install.name).as_str()).title("TwintailLauncher")
+                                        .kind(MessageDialogKind::Warning)
+                                        .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                        .show(move |_action| {
+                                            let dir = Path::new(&install.directory).join("patching");
+                                            if dir.exists() { fs::remove_dir_all(dir).unwrap_or_default(); }
+                                            prevent_exit(&h5, false);
+                                            h5.emit("update_complete", ()).unwrap();
+                                        });
                                 }
                             } else {
                                 h5.dialog().message(format!("Unable to update {inn} as there is not enough free space, please make sure there is enough free space for the update!", inn = install.name).as_str()).title("TwintailLauncher")

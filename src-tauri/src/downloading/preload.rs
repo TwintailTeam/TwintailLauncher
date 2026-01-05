@@ -5,8 +5,7 @@ use fischl::utils::free_space::available;
 use tauri::{AppHandle, Emitter, Listener};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
-use crate::utils::{prevent_exit, run_async_command, send_notification, models::{DiffGameFile}};
-use crate::utils::repo_manager::{get_manifest};
+use crate::utils::{prevent_exit, run_async_command, send_notification, models::{DiffGameFile}, repo_manager::{get_manifest}};
 use crate::downloading::DownloadGamePayload;
 
 pub fn register_preload_handler(app: &AppHandle) {
@@ -122,6 +121,16 @@ pub fn register_preload_handler(app: &AppHandle) {
                                         h5.emit("preload_complete", ()).unwrap();
                                         prevent_exit(&h5, false);
                                         send_notification(&h5, format!("Predownload for {inn} complete.", inn = instn).as_str(), None);
+                                    } else {
+                                        h5.dialog().message(format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str()).title("TwintailLauncher")
+                                            .kind(MessageDialogKind::Warning)
+                                            .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
+                                            .show(move |_action| {
+                                                let dir = std::path::Path::new(&install.directory).join("patching");
+                                                if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
+                                                prevent_exit(&h5, false);
+                                                h5.emit("preload_complete", ()).unwrap();
+                                            });
                                     }
                                 } else {
                                     h5.dialog().message(format!("Unable to predownload update for {inn} as there is not enough free space, please make sure there is enough free space for the update!", inn = install.name).as_str()).title("TwintailLauncher")
