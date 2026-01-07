@@ -1,0 +1,37 @@
+name: update-copr.yml
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. ttl-v0.6.9)"
+        required: true
+
+jobs:
+  update-rpm-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW_VERSION=${{ github.event.inputs.version }}
+          else
+            RAW_VERSION=${{ github.event.release.tag_name }}
+          fi
+          CLEAN_VERSION="${RAW_VERSION#ttl-v}"
+          echo "RAW_VERSION=$RAW_VERSION" >> "$GITHUB_ENV"
+          echo "VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+      - name: Dispatch to RPM repo
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.WINGET_TOKEN }}
+          repository: TwintailTeam/copr-pkgs
+          event-type: upstream-release
+          client-payload: >-
+            {
+              "release_tag": "${{ env.RAW_VERSION }}",
+              "release_name": "${{ env.VERSION }}",
+              "url": "${{ github.event.release.html_url || 'manual' }}"
+            }
