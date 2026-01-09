@@ -898,7 +898,7 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
 }
 
 #[tauri::command]
-pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String) -> Option<String> {
+pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<String> {
     let manifest = get_manifest(&app, biz + ".json");
 
     if manifest.is_some() {
@@ -906,7 +906,7 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
         
         let entry = m.game_versions.into_iter().filter(|e| e.metadata.version == version).collect::<Vec<GameVersion>>();
         let g = entry.get(0).unwrap();
-        let gs = g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>();
+        let gs = if m.biz == "bh3_global" { g.game.full.iter().filter(|e| e.region_code.clone().unwrap() == region.clone().unwrap()).into_iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>() } else { g.game.full.iter().map(|x| x.decompressed_size.parse::<u64>().unwrap()).sum::<u64>() };
         let mut fss = gs;
         if !g.audio.full.is_empty() {
             let audios: Vec<_> = g.audio.full.iter().filter(|x| x.language == lang).collect();

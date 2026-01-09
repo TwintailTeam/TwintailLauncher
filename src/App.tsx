@@ -564,8 +564,8 @@ export default class App extends React.Component<any, any> {
         })
     }
 
-    fetchDownloadSizes(biz: any, version: any, lang: any, path: any, callback: (data: any) => void) {
-        invoke("get_download_sizes", {biz: biz, version: version, path: path, lang: lang}).then(data => {
+    fetchDownloadSizes(biz: any, version: any, lang: any, path: any, region_filter: any, callback: (data: any) => void) {
+        invoke("get_download_sizes", {biz: biz, version: version, path: path, lang: lang, region: region_filter}).then(data => {
             if (data === null) {
                 console.error("Could not get download sizes!");
             } else {
@@ -613,6 +613,7 @@ export default class App extends React.Component<any, any> {
                 this.state.gameVersions[0]?.value,
                 "en-us",
                 `${this.state.globalSettings.default_game_path}/${this.state.currentGame}`,
+                "glb_official",
                 (disk) => {
                     // @ts-ignore
                     const btn = document.getElementById("game_dl_btn");

@@ -41,6 +41,7 @@ export type PopupOverlayProps = {
     version: any,
     lang: any,
     path: any,
+    region_filter: any,
     callback: (data: any) => void
   ) => void;
   pushInstalls: (...args: any[]) => any;
