@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
-use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification, PathResolve};
+use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, is_using_overriden_runner, send_notification, PathResolve};
 use crate::utils::models::{GlobalSettings, LauncherInstall, GameManifest};
 
 #[cfg(target_os = "linux")]
@@ -41,6 +41,14 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         app.dialog().message(format!("Launching {inn} with {sr} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {minrunn}", inn = install.name.clone(), sr = install.runner_version.clone(), minrunn = cpo.min_runner_versions.clone().join(", ").as_str()).as_str()).title("TwintailLauncher")
+            .kind(MessageDialogKind::Warning)
+            .buttons(MessageDialogButtons::OkCustom("I understand".to_string()))
+            .show(move |_action| {});
+        return Ok(false);
+    }
+
+    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) {
+        app.dialog().message(format!("Launching {inn} without using {orv} could lead to various issues.\nPlease change your runner to at minimum {orv} and try again!", inn = install.name.clone(), orv = cpo.override_runner.linux.runner_version.clone()).as_str()).title("TwintailLauncher")
             .kind(MessageDialogKind::Warning)
             .buttons(MessageDialogButtons::OkCustom("I understand".to_string()))
             .show(move |_action| {});

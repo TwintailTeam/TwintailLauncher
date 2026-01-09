@@ -677,6 +677,17 @@ pub fn is_runner_lower(min_runner_versions: Vec<String>, runner_version: String)
     false
 }
 
+#[cfg(target_os = "linux")]
+pub fn is_using_overriden_runner(installed_runner: String, override_runner: String) -> bool {
+    fn family_suffix(s: &str) -> Option<&str> {
+        let idx = s.rfind("proton-")?;
+        Some(&s[idx..])
+    }
+    let override_family = match family_suffix(&override_runner) { Some(f) => f, None => return false };
+    let installed_family = match family_suffix(&installed_runner) { Some(f) => f, None => return false};
+    installed_family == override_family
+}
+
 #[allow(dead_code)]
 pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     if dir.as_ref().exists() {
