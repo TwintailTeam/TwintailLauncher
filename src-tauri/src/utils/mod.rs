@@ -717,7 +717,7 @@ pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 let is_dir = path.is_dir();
                 let should_skip = EXCEPTIONS.iter().any(|&ex| {
-                    if ex.ends_with('/') { is_dir && name == &ex[..ex.len() - 1] } else { !is_dir && name == ex }
+                    if ex.ends_with('/') { is_dir && name.contains(&ex[..ex.len() - 1]) } else { !is_dir && name == ex }
                 });
                 if should_skip { continue; }
                 if is_dir {

@@ -275,7 +275,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
     } else {
         let ap = if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" { path.join(&package_type) } else { path.clone() };
         let entries: Vec<_> = fs::read_dir(&ap).ok().map(|r| r.filter_map(|e| e.ok()).collect()).unwrap_or_default();
-        let is_effectively_empty = if package_type == "xxmi" { entries.iter().all(|e| { let name = e.file_name(); e.path().is_dir() && (name == "gimi" || name == "srmi" || name == "zzmi" || name == "himi" || name == "wwmi") }) } else { entries.is_empty() || entries.iter().all(|e| e.file_name() == "Mods" || e.file_name() == "ShaderCache") };
+        let is_effectively_empty = if package_type == "xxmi" { entries.iter().all(|e| { let name = e.file_name(); e.path().is_dir() && (name == "gimi" || name == "srmi" || name == "zzmi" || name == "himi" || name == "wwmi") }) } else { entries.is_empty() || entries.iter().all(|e| e.file_name().to_str().unwrap().contains("Mods") || e.file_name().to_str().unwrap().contains("ShaderCache")) };
         if is_effectively_empty {
             let app = app.clone();
             let path = path.clone();
