@@ -1,11 +1,11 @@
 extern crate core;
 
 use std::sync::{Mutex};
-use tauri::{Emitter, Manager, RunEvent, WindowEvent};
+use tauri::{Manager, RunEvent, WindowEvent};
 use crate::commands::install::{add_install, game_launch, get_download_sizes, get_resume_states, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install, update_install_dxvk_path, update_install_dxvk_version, update_install_env_vars, update_install_fps_value, update_install_game_path, update_install_launch_args, update_install_launch_cmd, update_install_pre_launch_cmd, update_install_prefix_path, update_install_runner_path, update_install_runner_version, update_install_skip_hash_valid, update_install_skip_version_updates, update_install_use_fps_unlock, update_install_use_jadeite, update_install_use_xxmi, update_install_use_gamemode, update_install_use_mangohud, update_install_mangohud_config_path, add_shortcut, remove_shortcut, update_install_xxmi_config};
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled, get_game_manifest_by_manifest_id, list_compatibility_manifests, get_compatibility_manifest_by_manifest_id};
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
-use crate::commands::settings::{block_telemetry_cmd, list_settings, open_folder, open_uri, update_extras, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
+use crate::commands::settings::{block_telemetry_cmd, list_settings, open_folder, open_uri, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
 use crate::downloading::download::register_download_handler;
 use crate::downloading::preload::register_preload_handler;
 use crate::downloading::repair::register_repair_handler;
@@ -17,21 +17,13 @@ use crate::utils::system_tray::init_tray;
 use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 
 #[cfg(target_os = "linux")]
-use crate::utils::repo_manager::RunnerLoader;
-#[cfg(target_os = "linux")]
 use crate::utils::{deprecate_jadeite, sync_installed_runners, is_flatpak, block_telemetry};
 #[cfg(target_os = "linux")]
-use crate::downloading::misc::{download_or_update_steamrt};
+use crate::downloading::misc::{download_or_update_steamrt, check_extras_update};
 
 mod utils;
 mod commands;
 mod downloading;
-
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-    args: Vec<String>,
-    cwd: String,
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -43,8 +35,8 @@ pub fn run() {
             utils::raise_fd_limit(999999);
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
-                .manage(ManifestLoaders {game: ManifestLoader::default(), runner: RunnerLoader::default()})
-                .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| { app.emit("single-instance", Payload { args: argv, cwd }).unwrap(); }))
+                .manage(ManifestLoaders {game: ManifestLoader::default(), runner: utils::repo_manager::RunnerLoader::default()})
+                .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); }))
                 .plugin(tauri_plugin_notification::init())
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
@@ -54,7 +46,7 @@ pub fn run() {
             tauri::Builder::default()
                 .manage(Mutex::new(ActionBlocks { action_exit: false }))
                 .manage(ManifestLoaders {game: ManifestLoader::default()})
-                .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| { app.emit("single-instance", Payload { args: argv, cwd }).unwrap(); }))
+                .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); }))
                 .plugin(tauri_plugin_notification::init())
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
@@ -96,6 +88,7 @@ pub fn run() {
                 let data_dir = app.path().app_data_dir().unwrap().follow_symlink().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 sync_install_backgrounds(handle);
+                check_extras_update(handle);
 
                 #[cfg(target_os = "linux")]
                 {
@@ -146,7 +139,7 @@ pub fn run() {
                 }
             }
             Ok(())
-        }).invoke_handler(tauri::generate_handler![open_uri, open_folder, update_extras, block_telemetry_cmd, list_settings, update_settings_third_party_repo_updates, update_settings_default_game_path, update_settings_default_xxmi_path, update_settings_default_fps_unlock_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_dxvk_path, update_settings_launcher_action, update_settings_manifests_hide,
+        }).invoke_handler(tauri::generate_handler![open_uri, open_folder, block_telemetry_cmd, list_settings, update_settings_third_party_repo_updates, update_settings_default_game_path, update_settings_default_xxmi_path, update_settings_default_fps_unlock_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_dxvk_path, update_settings_launcher_action, update_settings_manifests_hide,
             remove_repository, add_repository, get_repository, list_repositories,
             get_manifest_by_id, get_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled,
             get_game_manifest_by_filename, list_game_manifests, get_game_manifest_by_manifest_id,

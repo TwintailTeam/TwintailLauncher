@@ -157,25 +157,6 @@ pub fn block_telemetry_cmd(app: AppHandle) -> Option<bool> {
 }
 
 #[tauri::command]
-pub fn update_extras(app: AppHandle, show_notify: bool) -> bool {
-    let settings = get_settings(&app);
-    if settings.is_some() {
-        let s = settings.unwrap();
-        let xxmi = Path::new(&s.xxmi_path).follow_symlink().unwrap().to_path_buf();
-        let jadeite = Path::new(&s.jadeite_path).follow_symlink().unwrap().to_path_buf();
-        let fpsu = Path::new(&s.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
-
-        crate::downloading::misc::download_or_update_jadeite(jadeite, true);
-        crate::downloading::misc::download_or_update_fps_unlock(fpsu, true);
-        crate::downloading::misc::download_or_update_xxmi(&app, xxmi, None,true);
-        if show_notify { send_notification(&app, "Successfully repaired extras.", None); }
-        true
-    } else {
-        false
-    }
-}
-
-#[tauri::command]
 pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
     match path_type.as_str() {
         "mods" => {

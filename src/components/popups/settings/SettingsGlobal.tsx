@@ -1,4 +1,4 @@
-import {EyeOffIcon, WrenchIcon, X} from "lucide-react";
+import {EyeOffIcon, X} from "lucide-react";
 import {POPUPS} from "../POPUPS.ts";
 import FolderInput from "../../common/FolderInput.tsx";
 import SelectMenu from "../../common/SelectMenu.tsx";
@@ -30,11 +30,6 @@ export default function SettingsGlobal({setOpenPopup, settings, fetchSettings}: 
                 </div>
             </div>
             <div className="flex justify-center gap-3 pt-5 mt-4 border-t border-white/10">
-                <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
-                    setOpenPopup(POPUPS.NONE);
-                    invoke("update_extras", {showNotify: true}).then(() => {});
-                }}><WrenchIcon/><span>Repair extras</span>
-                </button>
             {window.navigator.platform.includes("Linux") ? <button className="flex flex-row gap-3 items-center py-3 px-6 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 rounded-xl transition-all duration-200 transform hover:scale-105 font-semibold text-white" onClick={() => {
                         setOpenPopup(POPUPS.NONE);
                         invoke("block_telemetry_cmd").then(() => {});

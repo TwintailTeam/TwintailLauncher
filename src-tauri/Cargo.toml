@@ -33,15 +33,14 @@ steam_shortcuts_util = "1.1.8"
 configparser = "3.1.0"
 
 # tauri plugins
-tauri-plugin-dialog = "2"
-tauri-plugin-notification = "2"
-tauri-plugin-opener = "2.5.0"
-tauri-plugin-single-instance = "2.3.4"
+tauri-plugin-dialog = "2.5.0"
+tauri-plugin-notification = "2.3.3"
+tauri-plugin-opener = "2.5.3"
+tauri-plugin-single-instance = "2.3.7"
 
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
 wgpu = { version = "27.0", default-features = true }
-libc = { version = "0.2.177" }
 
 [target."cfg(any(target_os = \"windows\"))".dependencies]
 shortcuts-rs = "1.1.1"

@@ -5,17 +5,18 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::process::{Child, Command, Stdio};
 use tauri::{AppHandle, Error};
-use crate::utils::{edit_wuwa_configs_xxmi, get_mi_path_from_game, is_using_overriden_runner, send_notification, PathResolve};
+use crate::utils::{apply_xxmi_tweaks, edit_wuwa_configs_xxmi, get_mi_path_from_game, send_notification, PathResolve};
 use crate::utils::models::{GlobalSettings, LauncherInstall, GameManifest};
 
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, get_steam_appid, update_steam_compat_config, is_runner_lower, repo_manager::get_compatibility};
+use crate::utils::{runner_from_runner_version, get_steam_appid, update_steam_compat_config, is_runner_lower, is_using_overriden_runner, repo_manager::get_compatibility};
 #[cfg(target_os = "linux")]
 use tauri::Manager;
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 #[cfg(target_os = "linux")]
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use crate::utils;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -286,7 +287,12 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             let app = appc.clone();
             let xxmi_path = xxmi_path.clone();
             let mipath = get_mi_path_from_game(game.clone()).unwrap();
+            let mi_pathbuf = Path::new(&xxmi_path).join(&mipath).follow_symlink().unwrap();
             let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
+
+            // Apply the installation tweaks
+            let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
+            utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -330,7 +336,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             let app = appc.clone();
             let fpsunlock_path = fpsunlock_path.clone();
             let fpsv = install.fps_value.clone();
-            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/fpsunlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") };
+            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 3000 600 '{game_path}'") };
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -519,9 +525,14 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
     if install.use_xxmi {
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
-        let loader_path = Path::new(xxmi_path).join("3dmloader.exe");
+        let mi_pathbuf = Path::new(&xxmi_path).join(&mipath).follow_symlink().unwrap();
+        let loader_path = Path::new(xxmi_path).join("3dmloader.exe").follow_symlink().unwrap();
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
+
+        // Apply the installation tweaks
+        let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
+        utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
@@ -543,7 +554,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
 fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String) {
     if install.use_fps_unlock {
         let fpsunlock_path = fpsunlock_path.trim_matches('\\');
-        let loader_path = Path::new(fpsunlock_path).join("fpsunlock.exe");
+        let loader_path = Path::new(fpsunlock_path).join("keqing_unlock.exe").follow_symlink().unwrap();
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let fpsv = install.fps_value.clone();
         let args = format!("run {} {} 3000 0 \"{}\"", biz, fpsv, game_path);

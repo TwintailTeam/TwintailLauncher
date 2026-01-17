@@ -17,8 +17,6 @@ use crate::utils::repo_manager::{get_manifest};
 use std::io::BufRead;
 #[cfg(target_os = "linux")]
 use crate::utils::{repo_manager::{get_manifests}, db_manager::{get_installed_runners, update_installed_runner_is_installed_by_version, create_installed_runner, get_installed_runner_info_by_version, update_install_use_jadeite_by_id, update_settings_default_jadeite_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_dxvk_location}};
-#[cfg(target_os = "linux")]
-use libc::{getrlimit, rlim_t, rlimit, setrlimit, RLIMIT_NOFILE};
 
 pub mod db_manager;
 pub mod repo_manager;
@@ -410,7 +408,16 @@ pub fn deprecate_jadeite(app: &AppHandle) {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(non_camel_case_types)]
 pub fn raise_fd_limit(new_limit: i32) {
+    type rlim_t = u64;
+    #[repr(C)]
+    struct rlimit { rlim_cur: rlim_t, rlim_max: rlim_t, }
+    const RLIMIT_NOFILE: i32 = 7;
+    unsafe extern "C" {
+        fn getrlimit(resource: i32, rlp: *mut rlimit) -> i32;
+        fn setrlimit(resource: i32, rlp: *const rlimit) -> i32;
+    }
     let mut cur = rlimit { rlim_cur: 0, rlim_max: 0 };
     unsafe { getrlimit(RLIMIT_NOFILE, &mut cur); };
     if cur.rlim_cur >= cur.rlim_max { return; }
@@ -649,9 +656,10 @@ pub fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
     parts1.len() > parts2.len()
 }
 
-fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
+pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
     fn parse(s: &str) -> (u64, u64, u64) {
-        let mut it = s.split('.');
+        let ss = s.replace("-", ".");
+        let mut it = ss.split('.');
         let major = it.next().unwrap_or("1").parse().unwrap_or(1);
         let minor = it.next().unwrap_or("0").parse().unwrap_or(0);
         let patch = it.next().unwrap_or("0").parse().unwrap_or(0);
@@ -660,6 +668,17 @@ fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
     let va = parse(a);
     let vb = parse(b);
     va.cmp(&vb)
+}
+
+pub fn find_package_version(file_path: PathBuf, package_name: &str) -> Option<String> {
+    let file = fs::File::open(file_path).ok()?;
+    let reader = io::BufReader::new(file);
+    for line in reader.lines().flatten() {
+        if let Some((key, value)) = line.split_once('=') {
+            if key.trim().to_ascii_uppercase() == package_name.to_ascii_uppercase() { return Some(value.trim().to_string()); }
+        }
+    }
+    None
 }
 
 #[cfg(target_os = "linux")]
@@ -690,11 +709,22 @@ pub fn is_using_overriden_runner(installed_runner: String, override_runner: Stri
 
 #[allow(dead_code)]
 pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
+    const EXCEPTIONS: &[&str] = &["Mods/", "ShaderCache/", "d3dx_user.ini"];
     if dir.as_ref().exists() {
         for entry in fs::read_dir(dir.as_ref())? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_dir() { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                let is_dir = path.is_dir();
+                let should_skip = EXCEPTIONS.iter().any(|&ex| {
+                    if ex.ends_with('/') { is_dir && name == &ex[..ex.len() - 1] } else { !is_dir && name == ex }
+                });
+                if should_skip { continue; }
+                if is_dir {
+                    empty_dir(&path)?;
+                    if fs::read_dir(&path)?.next().is_none() { fs::remove_dir(&path)?; }
+                } else { fs::remove_file(&path)?; }
+            }
         }
     }
     Ok(())

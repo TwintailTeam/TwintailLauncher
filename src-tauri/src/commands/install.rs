@@ -221,7 +221,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             if gm.biz == "bh3_global" {
                 use_jadeite = true;
                 let jadeite = Path::new(&gs.jadeite_path).follow_symlink().unwrap().to_path_buf();
-                crate::downloading::misc::download_or_update_jadeite(jadeite, false);
+                crate::downloading::misc::download_or_update_extra(&app, jadeite.clone(), "jadeite".to_string(), "v5.0.1-hotfix".to_string(), false);
             }
         }
         let gbg = g.assets.game_background.clone();/*if g.assets.game_live_background.is_some() {
@@ -425,9 +425,8 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
     if manifest.is_some() {
         let m = manifest.unwrap();
         let p = Path::new(&settings.jadeite_path).follow_symlink().unwrap().to_path_buf();
-
         update_install_use_jadeite_by_id(&app, m.id, enabled);
-        if enabled { crate::downloading::misc::download_or_update_jadeite(p, false); }
+        if enabled { crate::downloading::misc::download_or_update_extra(&app, p.clone(), "jadeite".to_string(), "v5.0.1-hotfix".to_string(), false); }
         Some(true)
     } else {
         None
@@ -442,23 +441,14 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
     if manifest.is_some() {
         let m = manifest.unwrap();
         let p = Path::new(&settings.xxmi_path).follow_symlink().unwrap().to_path_buf();
-
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
         if enabled {
-            crate::downloading::misc::download_or_update_xxmi(&app, p.clone(), Some(m.id.clone()), false);
-            // Attempt to apply XXMI config for any install if we can not download function will handle this
-            #[cfg(target_os = "linux")]
-            {
-                let repm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
-                let gm = get_manifest(&app, repm.filename).unwrap();
-                let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
-                let mi = get_mi_path_from_game(exe).unwrap();
-                let package_path = p.join(mi);
-                if package_path.exists() {
-                    let data = apply_xxmi_tweaks(package_path, m.xxmi_config);
-                    update_install_xxmi_config_by_id(&app, m.id, data);
-                }
-            }
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "xxmi".to_string(), false);
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "gimi".to_string(), false);
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "srmi".to_string(), false);
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "zzmi".to_string(), false);
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "himi".to_string(), false);
+            crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), "wwmi".to_string(), false);
         }
         Some(true)
     } else {
@@ -474,9 +464,8 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
     if manifest.is_some() {
         let m = manifest.unwrap();
         let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
-
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
-        if enabled { crate::downloading::misc::download_or_update_fps_unlock(p, false); }
+        if enabled { crate::downloading::misc::download_or_update_extra(&app, p.clone(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); }
         Some(true)
     } else {
         None
@@ -491,9 +480,8 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
     if install.is_some() {
         let m = install.unwrap();
         let p = Path::new(&settings.fps_unlock_path).follow_symlink().unwrap().to_path_buf();
-
         update_install_fps_value_by_id(&app, m.id, fps);
-        if m.use_fps_unlock { crate::downloading::misc::download_or_update_fps_unlock(p, false); }
+        if m.use_fps_unlock { crate::downloading::misc::download_or_update_extra(&app, p.clone(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); }
         Some(true)
     } else {
         None
