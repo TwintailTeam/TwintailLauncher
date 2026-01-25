@@ -85,8 +85,8 @@ pub fn run() {
                     std::process::exit(0);
                 }
 
-                let res_dir = if cfg!(target_os = "linux") { app.path().resource_dir().unwrap().canonicalize().unwrap() } else { app.path().resource_dir().unwrap() };
-                let data_dir = if cfg!(target_os = "linux") { app.path().app_data_dir().unwrap().canonicalize().unwrap() } else { app.path().app_data_dir().unwrap() };
+                let res_dir = app.path().resource_dir().unwrap();
+                let data_dir = app.path().app_data_dir().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 sync_install_backgrounds(handle);
                 check_extras_update(handle);

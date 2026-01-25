@@ -903,8 +903,8 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
         }
 
         let p = PathBuf::from(&path);
-        let ap = if cfg!(target_os = "linux") { match p.canonicalize() { Ok(resolved) => resolved, Err(_) => match p.parent() { Some(parent) => parent.canonicalize().unwrap_or(p.clone()), None => p.clone(), } } } else { p };
-        let a = available(ap);
+        //let ap = if cfg!(target_os = "linux") { match p.canonicalize() { Ok(resolved) => resolved, Err(_) => match p.parent() { Some(parent) => parent.canonicalize().unwrap_or(p.clone()), None => p.clone(), } } } else { p };
+        let a = available(p);
         let stringified;
         
         if a.is_some() {

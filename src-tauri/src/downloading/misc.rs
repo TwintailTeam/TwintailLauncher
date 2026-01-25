@@ -215,6 +215,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                             });
                         return;
                     } else {
+                        let ap = if package_type.as_str() == "xxmi" || package_id.as_str() == "jadeite" || package_id == "keqingunlock" { path.clone() } else { path.join(&package_type) };
                         let ver_path = if package_id == "keqingunlock" || package_id == "jadeite" || package_type == "xxmi" { path.join("VERSION.txt") } else { path.join(package_type.clone()).join("VERSION.txt") };
                         if !ver_path.exists() { return; }
                         let pkg_type = if package_id == "keqingunlock" || package_id == "jadeite" { package_id.as_str() } else { package_type.as_str() };
@@ -230,21 +231,22 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                                             let f_path = path.join(file);
                                             if f_path.exists() { let _ = fs::remove_file(f_path); }
                                         }
-                                    } else { let ap = path.join(package_type.clone()); empty_dir(&ap).unwrap(); }
+                                    } else { empty_dir(&ap).unwrap(); }
                                     prevent_exit(&app, true);
                                     let dl = run_async_command(async {
-                                        let needs_extract = if package_type.as_str() == "keqing_unlock" { false } else { true };
+                                        let needs_extract = if package_type.as_str() == "keqing_unlock" || package_type.as_str() == "xxmi" { false } else { true };
                                         let needs_append = if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" { true } else { false };
-                                        Extras::download_extra_package(package_id.clone(), package_type.clone(), needs_extract, false, needs_append, path.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
+                                        Extras::download_extra_package(package_id.clone(), package_type.clone(), needs_extract, false, needs_append, ap.as_path().to_str().unwrap().parse().unwrap(), |_current, _total| {}).await
                                     });
                                     if dl {
                                         if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" {
                                             for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                                                 for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                                     let linkedpath = path.join(mi).join(lib);
+                                                    let _ = fs::remove_file(&linkedpath);
                                                     if !linkedpath.exists() {
                                                         #[cfg(target_os = "linux")]
-                                                        if !linkedpath.exists() { std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap(); }
+                                                        std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
                                                         #[cfg(target_os = "windows")]
                                                         fs::copy(path.join(lib), linkedpath).unwrap();
                                                     }
@@ -285,10 +287,11 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                 app.emit("download_progress", dlpayload.clone()).unwrap();
                 prevent_exit(&app, true);
 
+                if !ap.exists() { let _ = fs::create_dir_all(&ap); }
                 let dl = run_async_command(async {
-                    let needs_extract = if package_type.as_str() == "keqing_unlock" { false } else { true };
+                    let needs_extract = if package_type.as_str() == "keqing_unlock" || package_type.as_str() == "xxmi" { false } else { true };
                     let needs_append = if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" { true } else { false };
-                    Extras::download_extra_package(package_id.clone(), package_type.clone(), needs_extract, false, needs_append, path.as_path().to_str().unwrap().parse().unwrap(), {
+                    Extras::download_extra_package(package_id.clone(), package_type.clone(), needs_extract, false, needs_append, ap.as_path().to_str().unwrap().parse().unwrap(), {
                         let app = app.clone();
                         let pkg_id = package_id.clone();
                         let dlpayload = dlpayload.clone();
@@ -306,9 +309,10 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                         for mi in ["gimi", "srmi", "zzmi", "wwmi", "himi"] {
                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                 let linkedpath = path.join(mi).join(lib);
+                                let _ = fs::remove_file(&linkedpath);
                                 if !linkedpath.exists() {
                                     #[cfg(target_os = "linux")]
-                                    if !linkedpath.exists() { std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap(); }
+                                    std::os::unix::fs::symlink(path.join(lib), linkedpath).unwrap();
                                     #[cfg(target_os = "windows")]
                                     fs::copy(path.join(lib), linkedpath).unwrap();
                                 }
