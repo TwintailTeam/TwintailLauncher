@@ -2,7 +2,7 @@
 name: Bug report
 about: Report issues about TTL
 title: "[BUG] "
-labels: bug, oh shit! I need help
+labels: Bug, Oh shit! I need help
 assignees: ''
 
 ---
