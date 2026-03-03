@@ -128,7 +128,10 @@ pub fn run() {
                 }
 
                 // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
-                let data_dir = { let d = app.path().app_data_dir().unwrap(); if cfg!(target_os = "linux") && utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
+                #[cfg(target_os = "linux")]
+                let data_dir = { let d = app.path().app_data_dir().unwrap(); if utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
+                #[cfg(target_os = "windows")]
+                let data_dir = app.path().app_data_dir().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 sync_install_backgrounds(handle);
                 check_extras_update(handle);
