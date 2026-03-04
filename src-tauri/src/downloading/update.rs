@@ -137,22 +137,20 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         log::debug!("Starting update of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
                         let patching_marker = Path::new(&install.directory).join("patching");
                         let is_preload = patching_marker.join(".preload").exists();
+                        let combined_download_total = total_size;
+                        let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
                         let cumulative_download = Arc::new(AtomicU64::new(0));
                         let cumulative_install = Arc::new(AtomicU64::new(0));
-                        let last_diff_total = Arc::new(AtomicU64::new(0));
-                        let last_install_total = Arc::new(AtomicU64::new(0));
                         let total_manifests = urls.len();
                         let mut ok = true;
                         for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
+                            let compressed = e.compressed_size.parse::<u64>().unwrap_or(0);
+                            let decompressed = e.decompressed_size.parse::<u64>().unwrap_or(0);
                             let h5 = h5.clone();
                             let cancel_token = cancel_token.clone();
                             let cumulative_download = cumulative_download.clone();
                             let cumulative_install = cumulative_install.clone();
-                            let last_diff_total = last_diff_total.clone();
-                            let last_install_total = last_install_total.clone();
                             let is_last_manifest = manifest_idx == total_manifests - 1;
-                            last_diff_total.store(0, Ordering::SeqCst);
-                            last_install_total.store(0, Ordering::SeqCst);
                             let rslt = run_async_command(async {
                                 <Game as Sophon>::patch(e.file_url.clone(), install.version.clone(), e.file_hash.clone(), install.directory.clone(), is_preload, {
                                         let dlpayload = dlpayload.clone();
@@ -160,23 +158,16 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                         let job_id = job_id.clone();
                                         let cumulative_download = cumulative_download.clone();
                                         let cumulative_install = cumulative_install.clone();
-                                        let last_diff_total = last_diff_total.clone();
-                                        let last_install_total = last_install_total.clone();
-                                        move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
+                                        move |download_current, _download_total, install_current, _install_total, net_speed, disk_speed, phase| {
                                             let mut dlp = dlpayload.lock().unwrap();
-                                            last_install_total.store(install_total, Ordering::SeqCst);
-                                            let cum_dl = cumulative_download.load(Ordering::SeqCst);
-                                            let cum_in = cumulative_install.load(Ordering::SeqCst);
-                                            if !is_preload { last_diff_total.store(download_total, Ordering::SeqCst); }
-                                            let (prog, tot, spd) = if is_preload { (cum_in + install_current, cum_in + install_total, disk_speed) } else { (cum_dl + download_current, cum_dl + download_total, net_speed) };
+                                            let total_download_progress = cumulative_download.load(Ordering::SeqCst) + download_current;
+                                            let total_install_progress = cumulative_install.load(Ordering::SeqCst) + install_current;
                                             dlp.insert("job_id", job_id.to_string());
                                             dlp.insert("name", instn.to_string());
-                                            dlp.insert("progress", prog.to_string());
-                                            dlp.insert("total", tot.to_string());
-                                            dlp.insert("speed", spd.to_string());
+                                            if is_preload { dlp.insert("progress", total_install_progress.to_string()); dlp.insert("total", combined_install_total.to_string()); dlp.insert("speed", disk_speed.to_string()); } else { dlp.insert("progress", total_download_progress.to_string()); dlp.insert("total", combined_download_total.to_string()); dlp.insert("speed", net_speed.to_string()); }
                                             dlp.insert("disk", disk_speed.to_string());
-                                            dlp.insert("install_progress", (cum_in + install_current).to_string());
-                                            dlp.insert("install_total", (cum_in + install_total).to_string());
+                                            dlp.insert("install_progress", total_install_progress.to_string());
+                                            dlp.insert("install_total", combined_install_total.to_string());
                                             let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
                                             dlp.insert("phase", effective_phase.to_string());
                                             h5.emit("update_progress", dlp.clone()).unwrap();
@@ -185,15 +176,13 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                     }, Some(cancel_token), Some(verified_files.clone())).await
                             });
                             if !rslt { ok = false; break; }
-                            let dt = last_diff_total.load(Ordering::SeqCst);
-                            let it = last_install_total.load(Ordering::SeqCst);
-                            cumulative_download.fetch_add(dt, Ordering::SeqCst);
-                            cumulative_install.fetch_add(it, Ordering::SeqCst);
+                            cumulative_download.fetch_add(compressed, Ordering::SeqCst);
+                            cumulative_install.fetch_add(decompressed, Ordering::SeqCst);
                         }
                         if ok {
                             if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
-                            h5.emit("update_complete", ()).unwrap();
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
+                            h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_CHUNK, marking as complete", install.name);
                             #[cfg(target_os = "linux")]
                             crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
@@ -264,8 +253,8 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         if rslt {
                             // Remove patching marker on success
                             if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
-                            h5.emit("update_complete", ()).unwrap();
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
+                            h5.emit("update_complete", ()).unwrap();
                             #[cfg(target_os = "linux")]
                             {
                                 crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());

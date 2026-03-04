@@ -94,34 +94,27 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
+                            let combined_download_total = total_size;
                             let cumulative_download = Arc::new(AtomicU64::new(0));
-                            let cumulative_total = Arc::new(AtomicU64::new(0));
-                            let last_diff_total = Arc::new(AtomicU64::new(0));
                             let mut ok = true;
                             for e in urls.into_iter() {
+                                let compressed = e.compressed_size.parse::<u64>().unwrap_or(0);
                                 let h5 = h5.clone();
                                 let cancel_token = cancel_token.clone();
                                 let cumulative_download = cumulative_download.clone();
-                                let cumulative_total = cumulative_total.clone();
-                                let last_diff_total = last_diff_total.clone();
-                                last_diff_total.store(0, Ordering::SeqCst);
                                 let rslt = run_async_command(async {
                                     <Game as Sophon>::preload(e.file_url.clone(), install.version.clone(), e.file_hash.clone(), install.directory.clone(), {
                                             let dlpayload = dlpayload.clone();
                                             let instn = instn.clone();
                                             let job_id = job_id.clone();
                                             let cumulative_download = cumulative_download.clone();
-                                            let cumulative_total = cumulative_total.clone();
-                                            let last_diff_total = last_diff_total.clone();
-                                            move |download_current, download_total, _install_current, _install_total, net_speed, disk_speed, phase| {
+                                            move |download_current, _download_total, _install_current, _install_total, net_speed, disk_speed, phase| {
                                                 let mut dlp = dlpayload.lock().unwrap();
-                                                last_diff_total.store(download_total, Ordering::SeqCst);
                                                 let total_download_progress = cumulative_download.load(Ordering::SeqCst) + download_current;
-                                                let total_total = cumulative_total.load(Ordering::SeqCst) + download_total;
                                                 dlp.insert("job_id", job_id.to_string());
                                                 dlp.insert("name", instn.to_string());
                                                 dlp.insert("progress", total_download_progress.to_string());
-                                                dlp.insert("total", total_total.to_string());
+                                                dlp.insert("total", combined_download_total.to_string());
                                                 dlp.insert("speed", net_speed.to_string());
                                                 dlp.insert("disk", disk_speed.to_string());
                                                 dlp.insert("phase", phase.to_string());
@@ -131,9 +124,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                         }, Some(cancel_token), Some(verified_files.clone())).await
                                 });
                                 if !rslt { ok = false; break; }
-                                let dt = last_diff_total.load(Ordering::SeqCst);
-                                cumulative_download.fetch_add(dt, Ordering::SeqCst);
-                                cumulative_total.fetch_add(dt, Ordering::SeqCst);
+                                cumulative_download.fetch_add(compressed, Ordering::SeqCst);
                             }
                             if ok {
                                 h5.emit("preload_complete", ()).unwrap();
