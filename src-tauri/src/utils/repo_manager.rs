@@ -2,11 +2,10 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{PathBuf};
 use std::sync::{RwLock};
-use git2::{Error, Repository};
 use linked_hash_map::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use crate::utils::db_manager::{create_manifest, create_repository, delete_manifest_by_id, get_manifest_info_by_filename, get_repository_info_by_github_id};
+use crate::utils::db_manager::{create_manifest,create_repository,delete_manifest_by_id,get_manifest_info_by_filename,get_manifests_by_repository_id,get_repositories,get_repository_info_by_github_id,update_manifest_enabled_by_id};
 use crate::utils::{generate_cuid, models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
@@ -16,6 +15,12 @@ use crate::utils::{run_async_command, runner_from_runner_version};
 use std::path::Path;
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{create_installed_runner, update_install_runner_location_by_id, update_install_runner_version_by_id, get_installs, get_installed_runner_info_by_version, update_installed_runner_is_installed_by_version};
+
+fn manifest_branch() -> &'static str { if cfg!(debug_assertions) { "next" } else { "main" } }
+
+fn clone_repo(url: &str, path: &PathBuf) -> Result<git2::Repository, git2::Error> {
+    if cfg!(debug_assertions) { git2::build::RepoBuilder::new().branch("next").clone(url, path) } else { git2::Repository::clone(url, path) }
+}
 
 pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let url = "https://github.com/TwintailTeam/game-manifests.git";
@@ -30,8 +35,8 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     if !path.exists() {
         return;
     } else if !repo_path.exists() {
-        Repository::clone(url, &repo_path).unwrap();
-        
+        clone_repo(url, &repo_path).unwrap();
+
         if repo_manifest.exists() {
             let rm = fs::File::open(&repo_manifest).unwrap();
             let reader = BufReader::new(rm);
@@ -62,7 +67,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     }
 }
 
-pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, Error> {
+pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, git2::Error> {
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
     let repo_name = tmp.split(".").collect::<Vec<&str>>()[0];
@@ -73,7 +78,7 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
     if !path.exists() {
         Ok(false)
     } else if !repo_path.exists() {
-       let repo = Repository::clone(url.as_str(), &repo_path);
+       let repo = clone_repo(url.as_str(), &repo_path);
 
         if repo_manifest.exists() && repo.is_ok() {
             let rm = fs::File::open(&repo_manifest).unwrap();
@@ -109,14 +114,15 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
     }
 }
 
-pub fn update_repositories(path: &PathBuf) -> Result<bool, Error> {
-    let repo = Repository::open(&path);
+pub fn update_repositories(path: &PathBuf) -> Result<bool, git2::Error> {
+    let repo = git2::Repository::open(&path);
 
     if repo.is_ok() && path.exists() {
         let r = repo?;
         let mut remote = r.find_remote("origin")?;
-        let fetch_commit = do_fetch(&r, &["main"], &mut remote)?;
-        do_merge(&r, "main", fetch_commit)?;
+        let branch = manifest_branch();
+        let fetch_commit = do_fetch(&r, &[branch], &mut remote)?;
+        do_merge(&r, branch, fetch_commit)?;
         log::debug!("Successfully updated repositories!");
         #[cfg(debug_assertions)]
         { println!("Successfully updated repositories!"); }
@@ -143,7 +149,7 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
     if !path.exists() {
         return;
     } else if !repo_path.exists() {
-        Repository::clone(url, &repo_path).unwrap();
+        clone_repo(url, &repo_path).unwrap();
 
         if repo_manifest.exists() {
             let rm = fs::File::open(&repo_manifest).unwrap();
@@ -303,7 +309,27 @@ pub fn load_manifests(app: &AppHandle) {
                 }
             }
         }
+        cleanup_unloaded_manifests(app);
     }
+
+fn cleanup_unloaded_manifests(app: &AppHandle) {
+    let game_loader = app.state::<ManifestLoaders>().game.0.read().unwrap().clone();
+    #[cfg(target_os = "linux")]
+    let runner_loader = app.state::<ManifestLoaders>().runner.0.read().unwrap().clone();
+
+    if let Some(repos) = get_repositories(app) {
+        for repo in repos {
+            if let Some(manifests) = get_manifests_by_repository_id(app, repo.id) {
+                for m in manifests {
+                    let loaded = game_loader.contains_key(&m.filename);
+                    #[cfg(target_os = "linux")]
+                    let loaded = loaded || runner_loader.contains_key(&m.filename);
+                    if !loaded && m.enabled { update_manifest_enabled_by_id(app, m.id, false); }
+                }
+            }
+        }
+    }
+}
 
 fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, path: PathBuf) {
     let dbm = get_manifest_info_by_filename(&app, filename.clone());
