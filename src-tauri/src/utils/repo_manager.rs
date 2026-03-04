@@ -343,7 +343,7 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
             let cuid = generate_cuid();
             create_manifest(&app, cuid, dbrr.id, display_name, filename.as_str(), true).unwrap();
         }
-    }
+    } else if let Some(m) = dbm { if !m.enabled { update_manifest_enabled_by_id(app, m.id, true); } }
 }
 
 pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
