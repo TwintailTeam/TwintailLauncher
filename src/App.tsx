@@ -753,6 +753,18 @@ export default class App extends React.Component<any, any> {
         // Update available backgrounds when installs list changes (handles async pushInstalls completion)
         // This fixes the race condition where setCurrentInstall is called before pushInstalls completes
         if (this.state.installs !== prevState.installs && this.state.currentInstall) {
+            const updatedInstall = this.state.installs.find((i: any) => i.id === this.state.currentInstall);
+            if (updatedInstall) {
+                const updates: any = {};
+                if (updatedInstall.name !== this.state.displayName) updates.displayName = updatedInstall.name;
+                if (updatedInstall.game_icon !== this.state.gameIcon) updates.gameIcon = updatedInstall.game_icon;
+                // Merge fresh install fields into installSettings (syncs version, name, icon, etc.)
+                // Only if installSettings belongs to the current install to avoid cross-install contamination
+                if (this.state.installSettings?.id === this.state.currentInstall) {
+                    updates.installSettings = { ...this.state.installSettings, ...updatedInstall };
+                }
+                if (Object.keys(updates).length > 0) this.setState(updates);
+            }
             this.updateAvailableBackgrounds();
         }
     }
@@ -1092,8 +1104,12 @@ export default class App extends React.Component<any, any> {
                     }
                 }
 
-                // Always ensure the install's own background is added if we didn't get it yet
-                if (install.game_background) {
+                // If the install has a stored background that isn't in the current manifest
+                // (e.g. an outdated/imported version), clear manifest backgrounds and show only
+                // the install's own background — no navigation alternatives for outdated installs
+                if (install.game_background && !backgrounds.some(b => b.src === install.game_background)) {
+                    backgrounds.length = 0;
+                    seen.clear();
                     addBg(install.game_background, "Static", false);
                 }
             }
