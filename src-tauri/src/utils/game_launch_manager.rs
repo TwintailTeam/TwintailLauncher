@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Error};
+use tauri::{AppHandle, Emitter, Error};
 use crate::utils::db_manager::{update_install_last_played_by_id,update_install_total_playtime_by_id};
 use crate::utils::discord_rpc;
 use fischl::utils::is_process_running;
@@ -762,6 +762,7 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
                 if !running {
                     if install.show_discord_rpc { if let Some(ref mut client) = rpc_client { discord_rpc::terminate(client); } }
                     if install.disable_system_idle { drop(keepawake); }
+                    app.emit("game_closed", install_id.clone()).unwrap();
                     return;
                 }
                 last_db_write_elapsed = elapsed;

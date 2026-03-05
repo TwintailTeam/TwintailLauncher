@@ -65,6 +65,9 @@ export function registerEvents(
         disableResume: false,
       };
     }
+    case 'game_closed':
+      pushInstalls();
+      return undefined;
     case 'move_complete':
     case 'download_removed':
     case 'download_complete':

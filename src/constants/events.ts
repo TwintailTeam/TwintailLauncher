@@ -15,6 +15,7 @@ export const Events = [
   'preload_complete',
   'move_progress',
   'move_complete',
+  'game_closed',
 ] as const;
 
 export type AppEvent = typeof Events[number];
