@@ -152,7 +152,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             let cumulative_install = cumulative_install.clone();
                             let is_last_manifest = manifest_idx == total_manifests - 1;
                             let rslt = run_async_command(async {
-                                <Game as Sophon>::patch(e.file_url.clone(), install.version.clone(), e.file_hash.clone(), install.directory.clone(), is_preload, {
+                                <Game as Sophon>::patch(e.file_url.clone(), install.version.clone(), e.file_path.clone(), install.directory.clone(), is_preload, {
                                         let dlpayload = dlpayload.clone();
                                         let instn = instn.clone();
                                         let job_id = job_id.clone();
@@ -229,7 +229,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let is_preload = patching_marker.join(".preload").exists();
                         let cancel_token = cancel_token.clone();
                         let rslt = run_async_command(async {
-                            <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_hash.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
+                            <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_path.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
                                     let dlpayload = dlpayload.clone();
                                     let job_id = job_id.clone();
                                     move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {

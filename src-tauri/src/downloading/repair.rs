@@ -88,10 +88,10 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
 
             log::debug!("Starting repair for {} with DOWNLOAD_MODE_CHUNK", i.name);
-            let urls = if gm.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone().unwrap() == i.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
+            let urls = if gm.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == i.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
             // Pre-calculate combined totals across all manifest files
-            let combined_download_total: u64 = if gm.biz == "bh3_global" { urls.iter().filter(|e| e.region_code.clone().unwrap() == i.region_code.clone()).map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum() } else { urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum() };
-            let combined_install_total: u64 = if gm.biz == "bh3_global" { urls.iter().filter(|e| e.region_code.clone().unwrap() == i.region_code.clone()).map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum() } else { urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum() };
+            let combined_download_total: u64 = if gm.biz == "bh3_global" { urls.iter().filter(|e| e.region_code.clone() == i.region_code.clone()).map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum() } else { urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum() };
+            let combined_install_total: u64 = if gm.biz == "bh3_global" { urls.iter().filter(|e| e.region_code.clone() == i.region_code.clone()).map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum() } else { urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum() };
             // Track cumulative progress from completed manifests
             let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
             let cumulative_install = Arc::new(std::sync::atomic::AtomicU64::new(0));

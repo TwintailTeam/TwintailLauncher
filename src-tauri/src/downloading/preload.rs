@@ -103,7 +103,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                 let cancel_token = cancel_token.clone();
                                 let cumulative_download = cumulative_download.clone();
                                 let rslt = run_async_command(async {
-                                    <Game as Sophon>::preload(e.file_url.clone(), install.version.clone(), e.file_hash.clone(), install.directory.clone(), {
+                                    <Game as Sophon>::preload(e.file_url.clone(), install.version.clone(), e.file_path.clone(), install.directory.clone(), {
                                             let dlpayload = dlpayload.clone();
                                             let instn = instn.clone();
                                             let job_id = job_id.clone();
@@ -157,7 +157,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                         if has_space {
                             let cancel_token = cancel_token.clone();
                             let rslt = run_async_command(async {
-                                <Game as Kuro>::preload(manifest.file_url.clone(), manifest.file_hash.clone(), pmd.res_list_url.clone(), install.directory.clone(), {
+                                <Game as Kuro>::preload(manifest.file_url.clone(), manifest.file_path.clone(), pmd.res_list_url.clone(), install.directory.clone(), {
                                         let dlpayload = dlpayload.clone();
                                         let tmp = tmp.clone();
                                         let instn = instn.clone();

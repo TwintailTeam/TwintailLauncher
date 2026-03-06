@@ -210,7 +210,7 @@ pub struct FullGameFile {
     pub decompressed_size: String,
     pub file_hash: String,
     pub file_path: String,
-    pub region_code: Option<String>,
+    pub region_code: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -219,6 +219,7 @@ pub struct DiffGameFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
+    pub file_path: String,
     pub diff_type: String,
     pub original_version: String,
     pub delete_files: Vec<String>,
@@ -236,6 +237,7 @@ pub struct FullAudioFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
+    pub file_path: String,
     pub language: String,
     pub region_code: Option<String>,
 }
@@ -246,6 +248,7 @@ pub struct DiffAudioFile {
     pub compressed_size: String,
     pub decompressed_size: String,
     pub file_hash: String,
+    pub file_path: String,
     pub diff_type: String,
     pub original_version: String,
     pub language: String,
