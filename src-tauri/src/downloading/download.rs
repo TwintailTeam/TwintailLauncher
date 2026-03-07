@@ -84,32 +84,43 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
-                let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                let cancel_token = cancel_token.clone();
-                let rslt = run_async_command(async {
-                    <Game as Zipped>::download(urls.clone(), install.directory.clone(), {
-                            let dlpayload = dlpayload.clone();
-                            let h4 = h4.clone();
-                            let instn = instn.clone();
-                            let job_id = job_id.clone();
-                            move |current, total, net_speed, disk_speed| {
-                                let mut dlp = dlpayload.lock().unwrap();
-                                let instn = instn.to_string();
-                                dlp.insert("job_id", job_id.to_string());
-                                dlp.insert("name", instn);
-                                dlp.insert("progress", current.to_string());
-                                dlp.insert("total", total.to_string());
-                                dlp.insert("speed", net_speed.to_string());
-                                dlp.insert("disk", disk_speed.to_string());
-                                dlp.insert("install_progress", "0".to_string());
-                                dlp.insert("install_total", "1000".to_string());
-                                dlp.insert("phase", "2".to_string());
-                                h4.emit("download_progress", dlp.clone()).unwrap();
-                                drop(dlp);
-                            }
-                        }, Some(cancel_token), Some(verified_files.clone())).await
-                });
-                if rslt {
+                let files = picked.game.full.clone();
+                let urls = files.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                let combined_download_total: u64 = files.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                let combined_install_total: u64 = files.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+                let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
+                let mut ok = true;
+                for e in files.iter() {
+                    let url = e.file_url.clone();
+                    let cancel_token = cancel_token.clone();
+                    let dl_ok = run_async_command(async {
+                        <Game as Zipped>::download(url.clone(), install.directory.clone(), {
+                                let dlpayload = dlpayload.clone();
+                                let h4 = h4.clone();
+                                let instn = instn.clone();
+                                let job_id = job_id.clone();
+                                let cumulative_download = cumulative_download.clone();
+                                move |current, _total, net_speed, disk_speed| {
+                                    let mut dlp = dlpayload.lock().unwrap();
+                                    let total_dl_progress = cumulative_download.load(Ordering::SeqCst) + current;
+                                    dlp.insert("job_id", job_id.to_string());
+                                    dlp.insert("name", instn.to_string());
+                                    dlp.insert("progress", total_dl_progress.to_string());
+                                    dlp.insert("total", combined_download_total.to_string());
+                                    dlp.insert("speed", net_speed.to_string());
+                                    dlp.insert("disk", disk_speed.to_string());
+                                    dlp.insert("install_progress", "0".to_string());
+                                    dlp.insert("install_total", combined_install_total.to_string());
+                                    dlp.insert("phase", "2".to_string());
+                                    h4.emit("download_progress", dlp.clone()).unwrap();
+                                    drop(dlp);
+                                }
+                            }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                    });
+                    if !dl_ok { ok = false; break; }
+                    cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                }
+                if ok {
                     // Get first entry in the list, and start extraction
                     let first = urls.get(0).unwrap();
                     let tmpf = first.split('/').collect::<Vec<&str>>();
@@ -142,7 +153,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         success = true;
                     }
                 } else {
-                    show_dialog(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]));
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_FILE for {}, marking as failed", install.name);
                 }
@@ -272,7 +283,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     let url = e.file_url.clone();
                     let cancel_token = cancel_token.clone();
                     let dl_ok = run_async_command(async {
-                        <Game as Zipped>::download(vec![url.clone()], install.directory.clone(), {
+                        <Game as Zipped>::download(url.clone(), install.directory.clone(), {
                                 let dlpayload = dlpayload.clone();
                                 let h4 = h4.clone();
                                 let instn = instn.clone();
@@ -301,7 +312,6 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 if ok {
                     let ap = Path::new(&install.directory).to_path_buf();
                     let downloading_path = ap.join("downloading");
-                    // endfield_global: parts assembled by extract_archive_with_progress; break after first
                     ok = true;
                     for (file_idx, e) in files.iter().enumerate() {
                         let fnn = e.file_url.split('/').last().unwrap_or_default().to_string();
@@ -329,7 +339,6 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         });
                         if !ext { ok = false; break; }
                         cumulative_install.fetch_add(file_install_size, Ordering::SeqCst);
-                        if gm.biz == "endfield_global" { break; }
                     }
                     if ok {
                         if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
