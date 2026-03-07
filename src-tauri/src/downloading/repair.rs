@@ -4,7 +4,7 @@ use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog};
-use fischl::download::game::{Game, Kuro, Sophon};
+use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::{Arc, Mutex};
@@ -79,9 +79,80 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     let mut success = false;
     match picked.metadata.download_mode.as_str() {
         "DOWNLOAD_MODE_FILE" => {
-            h5.emit("repair_complete", ()).unwrap();
-            log::warn!("There is no support for DOWNLOAD_MODE_FILE repair currently, marking as complete");
-            success = true;
+            let install_dir = std::path::Path::new(&i.directory);
+            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+
+            log::debug!("Starting game repair using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
+            let files = picked.game.full.clone();
+            let urls = files.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+            let combined_download_total: u64 = files.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let combined_install_total: u64 = files.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let mut ok = true;
+            for e in files.iter() {
+                let url = e.file_url.clone();
+                let cancel_token = cancel_token.clone();
+                let dl_ok = run_async_command(async {
+                    <Game as Zipped>::download(url.clone(), i.directory.clone(), {
+                            let dlpayload = dlpayload.clone();
+                            let h5 = h5.clone();
+                            let instn = instn.clone();
+                            let job_id = job_id.clone();
+                            let cumulative_download = cumulative_download.clone();
+                            move |current, _total, net_speed, disk_speed| {
+                                let mut dlp = dlpayload.lock().unwrap();
+                                let total_dl_progress = cumulative_download.load(Ordering::SeqCst) + current;
+                                dlp.insert("job_id", job_id.to_string());
+                                dlp.insert("name", instn.to_string());
+                                dlp.insert("progress", total_dl_progress.to_string());
+                                dlp.insert("total", combined_download_total.to_string());
+                                dlp.insert("speed", net_speed.to_string());
+                                dlp.insert("disk", disk_speed.to_string());
+                                dlp.insert("install_progress", "0".to_string());
+                                dlp.insert("install_total", combined_install_total.to_string());
+                                dlp.insert("phase", "2".to_string());
+                                h5.emit("repair_progress", dlp.clone()).unwrap();
+                                drop(dlp);
+                            }
+                        }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                });
+                if !dl_ok { ok = false; break; }
+                cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+            }
+            if ok {
+                let first = urls.get(0).unwrap();
+                let fnn = first.split('/').last().unwrap_or_default().to_string();
+                let ap = std::path::Path::new(&i.directory).to_path_buf();
+                let downloading_path = ap.join("downloading");
+                let archive_path = downloading_path.join("staging").join(fnn.clone());
+                let far = archive_path.to_str().unwrap().to_string();
+                log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, i.directory);
+                let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                    let dlpayload = dlpayload.clone();
+                    let h5 = h5.clone();
+                    let instn = instn.clone();
+                    let job_id = job_id.clone();
+                    move |current, total| {
+                        let mut dlp = dlpayload.lock().unwrap();
+                        dlp.insert("job_id", job_id.to_string());
+                        dlp.insert("name", instn.to_string());
+                        dlp.insert("install_progress", current.to_string());
+                        dlp.insert("install_total", total.to_string());
+                        dlp.insert("phase", "3".to_string());
+                        h5.emit("repair_progress", dlp.clone()).unwrap();
+                    }
+                });
+                if ext {
+                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    h5.emit("repair_complete", ()).unwrap();
+                    log::debug!("Extraction complete for {}, marking repair as complete", i.name);
+                    success = true;
+                }
+            } else {
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                h5.emit("repair_complete", ()).unwrap();
+                log::debug!("Error occurred during DOWNLOAD_MODE_FILE repair for {}, marking as failed", i.name);
+            }
         }
         "DOWNLOAD_MODE_CHUNK" => {
             let install_dir = std::path::Path::new(&i.directory);
@@ -188,6 +259,95 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]));
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_RAW", i.name);
+            }
+        }
+        "DOWNLOAD_MODE_MULTIFILE" => {
+            let install_dir = std::path::Path::new(&i.directory);
+            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+
+            log::debug!("Starting game repair using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
+            let files = picked.game.full.clone();
+            let combined_download_total: u64 = files.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let combined_install_total: u64 = files.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let cumulative_install = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let total_files = files.len();
+            let mut ok = true;
+            for (_file_idx, e) in files.iter().enumerate() {
+                let url = e.file_url.clone();
+                let cancel_token = cancel_token.clone();
+                let dl_ok = run_async_command(async {
+                    <Game as Zipped>::download(url.clone(), i.directory.clone(), {
+                            let dlpayload = dlpayload.clone();
+                            let h5 = h5.clone();
+                            let instn = instn.clone();
+                            let job_id = job_id.clone();
+                            let cumulative_download = cumulative_download.clone();
+                            move |current, _total, net_speed, disk_speed| {
+                                let mut dlp = dlpayload.lock().unwrap();
+                                let total_dl_progress = cumulative_download.load(Ordering::SeqCst) + current;
+                                dlp.insert("job_id", job_id.to_string());
+                                dlp.insert("name", instn.to_string());
+                                dlp.insert("progress", total_dl_progress.to_string());
+                                dlp.insert("total", combined_download_total.to_string());
+                                dlp.insert("speed", net_speed.to_string());
+                                dlp.insert("disk", disk_speed.to_string());
+                                dlp.insert("install_progress", "0".to_string());
+                                dlp.insert("install_total", combined_install_total.to_string());
+                                dlp.insert("phase", "2".to_string());
+                                h5.emit("repair_progress", dlp.clone()).unwrap();
+                                drop(dlp);
+                            }
+                        }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                });
+                if !dl_ok { ok = false; break; }
+                cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+            }
+            if ok {
+                let ap = std::path::Path::new(&i.directory).to_path_buf();
+                let downloading_path = ap.join("downloading");
+                ok = true;
+                for (file_idx, e) in files.iter().enumerate() {
+                    let fnn = e.file_url.split('/').last().unwrap_or_default().to_string();
+                    let archive_path = downloading_path.join("staging").join(&fnn);
+                    let far = archive_path.to_str().unwrap().to_string();
+                    let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
+                    if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
+                    log::debug!("Extracting archive {} to {} ({}/{})", far, i.directory, file_idx + 1, total_files);
+                    let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                        let dlpayload = dlpayload.clone();
+                        let h5 = h5.clone();
+                        let instn = instn.clone();
+                        let job_id = job_id.clone();
+                        let cumulative_install = cumulative_install.clone();
+                        move |current, _total| {
+                            let mut dlp = dlpayload.lock().unwrap();
+                            let total_inst_progress = cumulative_install.load(Ordering::SeqCst) + current;
+                            dlp.insert("job_id", job_id.to_string());
+                            dlp.insert("name", instn.to_string());
+                            dlp.insert("install_progress", total_inst_progress.to_string());
+                            dlp.insert("install_total", combined_install_total.to_string());
+                            dlp.insert("phase", "3".to_string());
+                            h5.emit("repair_progress", dlp.clone()).unwrap();
+                        }
+                    });
+                    if !ext { ok = false; break; }
+                    cumulative_install.fetch_add(file_install_size, Ordering::SeqCst);
+                }
+                if ok {
+                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    h5.emit("repair_complete", ()).unwrap();
+                    log::debug!("All {} archives extracted for {}, marking repair as complete", total_files, i.name);
+                    success = true;
+                } else {
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                    h5.emit("repair_complete", ()).unwrap();
+                    log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE repair extraction for {}, marking as failed", i.name);
+                }
+            } else {
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                h5.emit("repair_complete", ()).unwrap();
+                log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE repair for {}, marking as failed", i.name);
             }
         }
         _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog(&h5, "error", "TwintailLauncher", "Unsupported download mode for repair!", Some(vec!["Ok"])); }
