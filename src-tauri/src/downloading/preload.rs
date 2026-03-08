@@ -145,12 +145,11 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                 "DOWNLOAD_MODE_RAW" => {
                     let pg = picked.game.unwrap();
                     let urls = pg.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
-                    let manifest = urls.get(0).unwrap();
-
                     if urls.is_empty() {
                         h5.emit("preload_complete", ()).unwrap();
                         success = true;
                     } else {
+                        let manifest = urls.get(0).unwrap();
                         let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                         let available = available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
@@ -179,14 +178,13 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                             tmp.emit("preload_progress", dlp.clone()).unwrap();
                                             drop(dlp);
                                         }
-                                    }, Some(cancel_token),
-                                ).await
+                                    }, Some(cancel_token), Some(verified_files.clone())).await
                             });
                             if rslt {
                                 h5.emit("preload_complete", ()).unwrap();
                                 success = true;
                             } else {
-                                show_dialog(&h5,"warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"]));
+                                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5,"warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"])); }
                                 let dir = std::path::Path::new(&install.directory).join("patching");
                                 if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
                                 h5.emit("preload_complete", ()).unwrap();
@@ -196,6 +194,11 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                             h5.emit("preload_complete", ()).unwrap();
                         }
                     }
+                }
+                "DOWNLOAD_MODE_MULTIFILE" => {
+                    h5.emit("preload_complete", ()).unwrap();
+                    log::warn!("There is no support for DOWNLOAD_MODE_MULTIFILE preloading currently, marking as complete");
+                    success = true;
                 }
                 _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog(&h5, "error", "TwintailLauncher", "Unsupported download mode for predownload!", Some(vec!["Ok"])); }
             }

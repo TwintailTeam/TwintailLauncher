@@ -214,11 +214,13 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     data.insert("is_latest", "1".to_string());
                     h5_clone.emit("start_game_download", data).unwrap();
                     update_install_after_update_by_id(&h5_clone, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
+                    h5.emit("update_complete", ()).unwrap();
                     #[cfg(target_os = "linux")]
                     {
                         crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                         crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
                     }
+                    success = true;
                 } else {
                     let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                     let available = available(install.directory.clone());
@@ -247,8 +249,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                         tmp.emit("update_progress", dlp.clone()).unwrap();
                                         drop(dlp);
                                     }
-                                }, Some(cancel_token),
-                            ).await
+                                }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                         });
                         if rslt {
                             // Remove patching marker on success
@@ -262,7 +263,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             }
                             success = true;
                         } else {
-                            show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]));
+                            if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
                             h5.emit("update_complete", ()).unwrap();
                         }
                     } else {
