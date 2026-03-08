@@ -92,9 +92,6 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-pub fn block_telemetry(_app: &AppHandle) {}
-
 pub fn register_listeners(app: &AppHandle) {
     let h1 = app.clone();
     app.listen("launcher_action_exit", move |_event| {

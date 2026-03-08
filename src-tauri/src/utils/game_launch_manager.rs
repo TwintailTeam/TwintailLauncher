@@ -116,13 +116,10 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let verb = if install.use_xxmi || install.use_fps_unlock { "run" } else { "waitforexitandrun" };
     let drive = if cpo.proton_compat_config.contains(&"gamedrive".to_string()) { format!("s:\\{game}") } else { format!("z:\\{dir}/{game}") };
     let rslt = if install.launch_command.is_empty() {
-        let mut args = String::new();
-        if !install.launch_args.is_empty() {
-            args = install.clone().launch_args;
-            if install.use_xxmi && gm.biz == "wuwa_global" { args += " -dx11" }
-        } else {
-            if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
-        }
+        let mut args = install.launch_args.clone();
+        if install.use_xxmi && gm.biz == "wuwa_global" { if args.is_empty() { args = "-dx11".to_string() } else { args += " -dx11" } }
+        if install.use_xxmi && gm.biz == "endfield_global" { if args.is_empty() { args = "-force-d3d11".to_string() } else { args += " -force-d3d11" } }
+
         let mut command = if is_proton {
             let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
             if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
@@ -216,16 +213,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
-        let mut args = String::new();
+        let mut args = install.launch_args.clone();
         let mut command = format!("{c}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
-        if !install.launch_args.is_empty() {
-            args = install.clone().launch_args;
-            if install.use_xxmi && gm.biz == "wuwa_global" { args += " -dx11" }
-            command = format!("{c} {args}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
-        } else {
-            if install.use_xxmi && gm.biz == "wuwa_global" { args += "-dx11" }
-        }
+        if install.use_xxmi && gm.biz == "wuwa_global" { if args.is_empty() { args = "-dx11".to_string() } else { args += " -dx11" } }
+        if install.use_xxmi && gm.biz == "endfield_global" { if args.is_empty() { args = "-force-d3d11".to_string() } else { args += " -force-d3d11" } }
+        if !args.is_empty() { command = format!("{c} {args}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -546,7 +539,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);
 
     let rslt = if install.launch_command.is_empty() {
-        let args;
+        let mut args= install.launch_args.clone();
         let dir = dir.trim_matches('\\');
         let game = game.trim_matches('\\');
         let tmp = game.replace("/", "\\");
@@ -555,10 +548,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
-        if !install.launch_args.is_empty() {
-            args = &install.launch_args;
-            command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs");
-        }
+        if install.use_xxmi && gm.biz == "wuwa_global" { if args.is_empty() { args = "-dx11".to_string() } else { args += " -dx11" } }
+        if install.use_xxmi && gm.biz == "endfield_global" { if args.is_empty() { args = "-force-d3d11".to_string() } else { args += " -force-d3d11" } }
+        if !args.is_empty() { command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs"); }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
@@ -606,13 +598,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let full_path = Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let c = install.launch_command.clone();
-        let args;
+        let mut args= install.launch_args.clone();
         let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
 
-        if !install.launch_args.is_empty() {
-            args = &install.launch_args;
-            command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
-        }
+        if install.use_xxmi && gm.biz == "wuwa_global" { if args.is_empty() { args = "-dx11".to_string() } else { args += " -dx11" } }
+        if install.use_xxmi && gm.biz == "endfield_global" { if args.is_empty() { args = "-force-d3d11".to_string() } else { args += " -force-d3d11" } }
+        if !args.is_empty() { command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str()); }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");

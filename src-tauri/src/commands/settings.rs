@@ -12,9 +12,11 @@ use crate::utils::repo_manager::get_manifest;
 use crate::utils::{get_mi_path_from_game, show_dialog};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle};
 use tauri_plugin_opener::OpenerExt;
 
+#[cfg(target_os = "linux")]
+use tauri::Manager;
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 
@@ -262,6 +264,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
     }
 }
 
+#[allow(unused_variables)]
 #[tauri::command]
 pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
     match path_type.as_str() {
