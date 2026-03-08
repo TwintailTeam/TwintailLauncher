@@ -161,7 +161,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                         let tmp = tmp.clone();
                                         let instn = instn.clone();
                                         let job_id = job_id.clone();
-                                        move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
+                                        move |download_current, download_total, _install_current, _install_total, net_speed, disk_speed, phase| {
                                             let mut dlp = dlpayload.lock().unwrap();
                                             let tmp = tmp.clone();
                                             let instn = instn.clone();
@@ -171,14 +171,11 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                             dlp.insert("total", download_total.to_string());
                                             dlp.insert("speed", net_speed.to_string());
                                             dlp.insert("disk", disk_speed.to_string());
-                                            dlp.insert("install_progress", install_current.to_string());
-                                            dlp.insert("install_total", install_total.to_string());
-                                            // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
                                             dlp.insert("phase", phase.to_string());
                                             tmp.emit("preload_progress", dlp.clone()).unwrap();
                                             drop(dlp);
                                         }
-                                    }, Some(cancel_token), Some(verified_files.clone())).await
+                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                             });
                             if rslt {
                                 h5.emit("preload_complete", ()).unwrap();
