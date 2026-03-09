@@ -283,7 +283,7 @@ export default function GameSettings({
                                     onChange={(val) => handleUpdate("skip_hash_valid", val)}
                                 />
                                 <ModernToggle
-                                    label="Enable DiscordRPC"
+                                    label="DiscordRPC"
                                     description="Show Discord rich presence activity while you are playing the game."
                                     checked={installSettings.show_discord_rpc}
                                     onChange={(val) => handleUpdate("show_drpc", val)}
@@ -296,7 +296,7 @@ export default function GameSettings({
                         <SettingsSection title="Launch Configuration">
                             <div className="flex flex-col gap-4">
                                 <ModernToggle
-                                    label="Prevent idle"
+                                    label="Prevent Idle"
                                     description="Prevents system from going to idle/screenlock state while playing the game."
                                     checked={installSettings.disable_system_idle}
                                     onChange={(val) => handleUpdate("disable_system_idle", val)}
@@ -368,27 +368,23 @@ export default function GameSettings({
                                     value={`${installSettings.runner_prefix}`}
                                     onChange={(val) => handleUpdate("prefix_path", val)}
                                 />
-                                {prefetchedSwitches.jadeite && (
+                                {prefetchedSwitches.jadeite && isLinux && (
                                     <ModernToggle
-                                        label="Use Jadeite"
+                                        label="Jadeite"
                                         description="Enable Jadeite patch."
                                         checked={installSettings.use_jadeite}
                                         onChange={(val) => handleUpdate("use_jadeite", val)}
                                     />
                                 )}
                                 <ModernToggle
-                                    label="Feral Gamemode"
+                                    label="Gamemode"
                                     description="Enable Feral Interactive's GameMode."
                                     checked={installSettings.use_gamemode}
                                     onChange={(val) => handleUpdate("use_gamemode", val)}
                                 />
-                            </div>
-                        </SettingsSection>
-                        <SettingsSection title={"MangoHUD"}>
-                            <div className="flex flex-col gap-4">
                                 <ModernToggle
-                                    label="Enable MangoHUD"
-                                    description="Enable the MangoHUD overlay monitor while playing."
+                                    label="MangoHUD"
+                                    description="Enable the MangoHUD overlay while playing."
                                     checked={!!installSettings.use_mangohud}
                                     onChange={(val) => handleUpdate("use_mangohud", val)}
                                 />
