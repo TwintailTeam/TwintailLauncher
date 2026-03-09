@@ -203,7 +203,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             h5.emit("repair_progress", dlp.clone()).unwrap();
                             drop(dlp);
                         }
-                    }, Some(cancel_token), Some(verified_files.clone())).await
+                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                 });
                 if !rslt { ok = false;break; }
                 // After manifest completes, add its size to cumulative progress
@@ -215,7 +215,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_CHUNK", i.name);
                 success = true;
             } else {
-                show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]));
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_CHUNK", i.name);
             }
@@ -247,7 +247,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             tmp.emit("repair_progress", dlp.clone()).unwrap();
                             drop(dlp);
                         }
-                    }, Some(cancel_token), Some(verified_files.clone())).await
+                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
             });
             if rslt {
                 h5.emit("repair_complete", ()).unwrap();
@@ -256,7 +256,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 #[cfg(target_os = "linux")]
                 crate::utils::apply_patch(&h5, std::path::Path::new(&i.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
             } else {
-                show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]));
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_RAW", i.name);
             }

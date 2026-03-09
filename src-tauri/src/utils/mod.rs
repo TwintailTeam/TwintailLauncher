@@ -681,17 +681,21 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String, device_profiles_ini: String) {
         if let Ok(content) = fs::read_to_string(dp_file) {
             let mut out: Vec<String> = Vec::new();
             let mut in_target = false;
+            let mut written_profiles: std::collections::HashSet<&str> = std::collections::HashSet::new();
+            let mut current_profile: Option<&str> = None;
             for line in content.lines() {
                 let tr = line.trim();
                 if tr.starts_with('[') && tr.ends_with(']') {
-                    if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } }
-                    in_target = profiles.iter().any(|&s| s == &tr[1..tr.len()-1]);
+                    if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } if let Some(p) = current_profile { written_profiles.insert(p); } }
+                    current_profile = profiles.iter().find(|&&s| s == &tr[1..tr.len()-1]).copied();
+                    in_target = current_profile.is_some();
                     out.push(line.to_string());
                 } else if in_target {
                     if !cvars.iter().any(|(k,_)| tr.starts_with(&format!("{}=",k))) { out.push(line.to_string()); }
                 } else { out.push(line.to_string()); }
             }
-            if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } }
+            if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } if let Some(p) = current_profile { written_profiles.insert(p); } }
+            for p in &profiles { if !written_profiles.contains(p) { out.push(format!("[{}]",p)); for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } } }
             let _ = fs::write(dp_file, out.join("\n"));
             log::debug!("Edited DeviceProfiles.ini at {}", dp_file.display());
         }

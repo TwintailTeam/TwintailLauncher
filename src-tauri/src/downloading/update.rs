@@ -173,7 +173,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                             h5.emit("update_progress", dlp.clone()).unwrap();
                                             drop(dlp);
                                         }
-                                    }, Some(cancel_token), Some(verified_files.clone())).await
+                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                             });
                             if !rslt { ok = false; break; }
                             cumulative_download.fetch_add(compressed, Ordering::SeqCst);

@@ -121,7 +121,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                                 h5.emit("preload_progress", dlp.clone()).unwrap();
                                                 drop(dlp);
                                             }
-                                        }, Some(cancel_token), Some(verified_files.clone())).await
+                                        }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                                 });
                                 if !rslt { ok = false; break; }
                                 cumulative_download.fetch_add(compressed, Ordering::SeqCst);
