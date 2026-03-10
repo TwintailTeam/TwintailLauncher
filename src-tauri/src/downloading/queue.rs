@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -68,7 +67,7 @@ pub struct QueueStatePayload {
 
 #[derive(Clone)]
 pub struct DownloadQueueHandle {
-    tx: mpsc::Sender<QueueCommand>,
+    tx: std::sync::mpsc::Sender<QueueCommand>,
 }
 
 impl DownloadQueueHandle {
@@ -171,19 +170,19 @@ pub enum QueueCommand {
     SetMaxConcurrent(usize),
     SetPaused(bool),
     SetPausing(String, bool),
-    MoveUp(String, mpsc::Sender<bool>),
-    MoveDown(String, mpsc::Sender<bool>),
-    Remove(String, mpsc::Sender<bool>),
-    RemoveByInstallId(String, mpsc::Sender<bool>),
-    ActivateJob(String, mpsc::Sender<Option<String>>),
-    Reorder(String, usize, mpsc::Sender<bool>),
-    GetState(mpsc::Sender<QueueStatePayload>),
-    ResumeJob(String, mpsc::Sender<bool>),
+    MoveUp(String, std::sync::mpsc::Sender<bool>),
+    MoveDown(String, std::sync::mpsc::Sender<bool>),
+    Remove(String, std::sync::mpsc::Sender<bool>),
+    RemoveByInstallId(String, std::sync::mpsc::Sender<bool>),
+    ActivateJob(String, std::sync::mpsc::Sender<Option<String>>),
+    Reorder(String, usize, std::sync::mpsc::Sender<bool>),
+    GetState(std::sync::mpsc::Sender<QueueStatePayload>),
+    ResumeJob(String, std::sync::mpsc::Sender<bool>),
     ClearCompleted,
     AutoPause,
-    AutoResume(mpsc::Sender<bool>),
-    IsAutoPaused(mpsc::Sender<bool>),
-    HasJobForId(String, mpsc::Sender<bool>),
+    AutoResume(std::sync::mpsc::Sender<bool>),
+    IsAutoPaused(std::sync::mpsc::Sender<bool>),
+    HasJobForId(String, std::sync::mpsc::Sender<bool>),
     Shutdown,
 }
 
@@ -209,8 +208,8 @@ fn emit_queue_state(app: &AppHandle, max_concurrent: usize, paused: bool, auto_p
 }
 
 pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize, run_job: fn(AppHandle, QueueJob) -> QueueJobOutcome) -> DownloadQueueHandle {
-    let (tx, rx) = mpsc::channel::<QueueCommand>();
-    let (done_tx, done_rx) = mpsc::channel::<(String, QueueJobOutcome)>();
+    let (tx, rx) = std::sync::mpsc::channel::<QueueCommand>();
+    let (done_tx, done_rx) = std::sync::mpsc::channel::<(String, QueueJobOutcome)>();
 
     std::thread::spawn(move || {
         let mut max_concurrent = initial_max_concurrent.max(1);
@@ -511,8 +510,8 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                     }
                     QueueCommand::Shutdown => break,
                 },
-                Err(mpsc::RecvTimeoutError::Timeout) => {}
-                Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
             }
         }
     });
