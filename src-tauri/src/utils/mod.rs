@@ -618,7 +618,15 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
                         log::debug!("Applied AKI patch to {}", dir.display());
                     }
                 }
-                "remove" => {}
+                "remove" => {
+                    let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
+                    if f.exists() {
+                        let fp = fs::read_to_string(f.clone()).unwrap();
+                        let patched = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=240" } else { line } }).collect::<Vec<_>>().join("\n");
+                        fs::write(f, patched).unwrap();
+                        log::debug!("Removed AKI patch from {}", dir.display());
+                    }
+                }
                 _ => {}
             },
             "sparkle" => {

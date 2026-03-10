@@ -230,6 +230,9 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let patching_marker = Path::new(&install.directory).join("patching");
                         let is_preload = patching_marker.join(".preload").exists();
                         let cancel_token = cancel_token.clone();
+                        // Remove the patch that makes wuwa channelID set to steam release so diffs apply properly
+                        #[cfg(target_os = "linux")]
+                        crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "remove".to_string());
                         let rslt = run_async_command(async {
                             <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_path.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
                                     let dlpayload = dlpayload.clone();
