@@ -115,6 +115,7 @@ pub struct LauncherRunner {
 pub struct RunnerManifest {
     pub version: i32,
     pub display_name: String,
+    pub aarch64_supported: bool,
     pub versions: Vec<RunnerVersion>,
     pub paths: RunnerPaths,
 }
