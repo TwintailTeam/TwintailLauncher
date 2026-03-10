@@ -19,6 +19,8 @@ pub fn init(app: &AppHandle, install: LauncherInstall, gm: GameManifest) -> Opti
         "endfield_global" => "endf_icon",
         "stellasora_global" => "stso_icon",
         "dna_global" => "dna_icon",
+        "rev1999_global" => "rev1999_icon",
+        "sdsgc_global" => "sdsgc_icon",
         &_ => "tl_512"
     };
     let start = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
