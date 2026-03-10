@@ -5,6 +5,13 @@ use steam_shortcuts_util::{parse_shortcuts, shortcuts_to_bytes, Shortcut};
 #[cfg(target_os = "linux")]
 use tauri::{AppHandle, Manager};
 
+#[cfg(target_os = "linux")]
+pub fn resolve_normal_steam_userdata(home_dir: PathBuf) -> PathBuf {
+    let steam_symlink = home_dir.join(".steam/steam");
+    let steam_base = if steam_symlink.exists() { fs::canonicalize(&steam_symlink).unwrap_or_else(|_| home_dir.join(".local/share/Steam")) } else { home_dir.join(".local/share/Steam") };
+    steam_base.join("userdata")
+}
+
 #[allow(dead_code)]
 fn check_steam_user_data_dir(steam_userdata_dir: PathBuf) -> Vec<String> {
     let ignore_folders = ["0", "ac", "anonymous"];

@@ -16,7 +16,7 @@ use sqlx::types::Json;
 use std::sync::atomic::Ordering;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
-use crate::DownloadState;
+use crate::{utils, DownloadState};
 use crate::downloading::ExtrasDownloadPayload;
 use crate::downloading::queue::QueueJobKind;
 use crate::downloading::QueueJobPayload;
@@ -973,7 +973,7 @@ Type=Application
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
-                let normal_steam = app.path().home_dir().unwrap().join(".local/share/Steam/userdata");
+                let normal_steam = utils::shortcuts::resolve_normal_steam_userdata(app.path().home_dir().unwrap());
 
                 let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
                 let m = get_manifest(&app, manifest.filename).unwrap();
@@ -1057,7 +1057,7 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
-                let normal_steam = app.path().data_dir().unwrap().join("Steam/userdata");
+                let normal_steam = utils::shortcuts::resolve_normal_steam_userdata(app.path().home_dir().unwrap());
 
                 if flatpak_steam.exists() {
                     let status = remove_steam_shortcut(flatpak_steam, install.name.as_str());
