@@ -166,7 +166,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             }
 
             // Download runner via queue system (shows in downloads UI)
-            let rm = get_compatibility(&app, &runner_from_runner_version(runv.as_str().to_string()).unwrap());
+            let rm = get_compatibility(&app, &runner_from_runner_version(&app, runv.as_str().to_string()).unwrap_or_default());
             if let Some(rm) = rm {
                 let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runv.as_str()).collect::<Vec<_>>();
                 if let Some(runnerp) = rv.get(0) {
@@ -699,7 +699,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
         if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
             // Download runner via queue system (shows in downloads UI)
-            let rm = get_compatibility(&app, &runner_from_runner_version(version.clone()).unwrap());
+            let rm = get_compatibility(&app, &runner_from_runner_version(&app, version.clone()).unwrap_or_default());
             if let Some(rm) = rm {
                 let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == version.as_str()).collect::<Vec<_>>();
                 if let Some(runnerp) = rv.get(0) {
@@ -765,7 +765,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
         if fs::read_dir(pn.as_str()).unwrap().next().is_none() {
             std::thread::spawn(move || {
-                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(runv.as_str().to_string()).unwrap()).unwrap();
+                let rm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(archandle.as_ref(), runv.as_str().to_string()).unwrap_or_default()).unwrap();
                 //let dm = get_compatibility(archandle.as_ref(), &runner_from_runner_version(dxvkv.as_str().to_string()).unwrap()).unwrap();
                 //let dv = dm.versions.into_iter().filter(|v| v.version.as_str() == dxvkv.as_str()).collect::<Vec<_>>();
                 //let dxp = dv.get(0).unwrap().to_owned();

@@ -103,7 +103,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
         #[cfg(target_os = "linux")]
         {
             let gs = get_settings(&app).unwrap();
-            let rm = get_compatibility(&app, &runner_from_runner_version(runner_version.as_str().to_string()).unwrap()).unwrap();
+            let rm = get_compatibility(&app, &runner_from_runner_version(&app, runner_version.as_str().to_string()).unwrap_or_default()).unwrap();
             let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
             let runnerp = rv.get(0).unwrap().to_owned();
             let runner_path = Path::new(&gs.default_runner_path).join(runner_version.clone());

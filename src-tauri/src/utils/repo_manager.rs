@@ -261,7 +261,7 @@ pub fn load_manifests(app: &AppHandle) {
                                                         let install = installs.unwrap();
                                                         // Fallback installs that use deprecated runner
                                                         for i in install {
-                                                            let ir = runner_from_runner_version(i.runner_version.clone()).unwrap();
+                                                            let ir = runner_from_runner_version(app, i.runner_version.clone()).unwrap_or_default();
                                                             if ir == m {
                                                                 let file = fs::File::open(p.join("proton_cachyos.json")).unwrap();
                                                                 let reader = BufReader::new(file);

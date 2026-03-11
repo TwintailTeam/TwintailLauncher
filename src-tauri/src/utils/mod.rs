@@ -20,7 +20,7 @@ use std::{fs, io};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 
 #[cfg(target_os = "linux")]
-use crate::utils::repo_manager::{get_compatibility};
+use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
 use crate::DownloadState;
 #[cfg(target_os = "linux")]
@@ -159,68 +159,33 @@ pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str
 }
 
 #[cfg(target_os = "linux")]
-pub fn runner_from_runner_version(runner_version: String) -> Option<String> {
-    let mut rslt = String::new();
-
-    if runner_version.is_empty() {
-        None
-    } else {
-        if runner_version.to_lowercase().contains("vanilla") {
-            rslt = "dxvk_vanilla.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("async") {
-            rslt = "dxvk_async.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("gplasync") {
-            rslt = "dxvk_gplasync.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-vanilla") {
-            rslt = "wine_vanilla.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-staging") {
-            rslt = "wine_staging.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-staging-tkg") {
-            rslt = "wine_staging_tkg.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-vaniglia") {
-            rslt = "wine_vaniglia.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-soda") {
-            rslt = "wine_soda.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-lutris") {
-            rslt = "wine_lutris.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-ge-proton") {
-            rslt = "wine_ge_proton.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("wine-caffe") {
-            rslt = "wine_caffe.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-ge") || runner_version.to_lowercase().contains("ge-proton") {
-            rslt = "proton_ge.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-cachyos") {
-            rslt = "proton_cachyos.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-cachyos-spritz") {
-            rslt = "proton_cachyos_spritz.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-umu") {
-            rslt = "proton_umu.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-vanilla") {
-            rslt = "proton_vanilla.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-em") {
-            rslt = "proton_em.json".to_string();
-        }
-        if runner_version.to_lowercase().contains("proton-ttl") {
-            rslt = "proton_ttl.json".to_string();
-        }
-        Some(rslt)
+pub fn runner_from_runner_version(app: &AppHandle, runner_version: String) -> Option<String> {
+    if runner_version.is_empty() { return None; }
+    let loader = get_compatibilities(app);
+    for (filename, manifest) in &loader {
+        if manifest.versions.iter().any(|v| v.version == runner_version) { return Some(filename.clone()); }
     }
+    let rl = runner_version.to_lowercase();
+    let rslt = if rl.contains("proton-cachyos-spritz") { "proton_cachyos_spritz.json" }
+        else if rl.contains("proton-cachyos") { "proton_cachyos.json" }
+        else if rl.contains("proton-ge") || rl.contains("ge-proton") { "proton_ge.json" }
+        else if rl.contains("proton-umu") { "proton_umu.json" }
+        else if rl.contains("proton-vanilla") { "proton_vanilla.json" }
+        else if rl.contains("proton-em") { "proton_em.json" }
+        else if rl.contains("proton-ttl") { "proton_ttl.json" }
+        else if rl.contains("wine-staging-tkg") { "wine_staging_tkg.json" }
+        else if rl.contains("wine-staging") { "wine_staging.json" }
+        else if rl.contains("wine-ge-proton") { "wine_ge_proton.json" }
+        else if rl.contains("wine-vaniglia") { "wine_vaniglia.json" }
+        else if rl.contains("wine-vanilla") { "wine_vanilla.json" }
+        else if rl.contains("wine-soda") { "wine_soda.json" }
+        else if rl.contains("wine-lutris") { "wine_lutris.json" }
+        else if rl.contains("wine-caffe") { "wine_caffe.json" }
+        else if rl.contains("gplasync") { "dxvk_gplasync.json" }
+        else if rl.contains("async") { "dxvk_async.json" }
+        else if rl.contains("vanilla") { "dxvk_vanilla.json" }
+        else { "proton_cachyos.json" };
+    Some(rslt.to_string())
 }
 
 pub fn get_mi_path_from_game(exe_name: String) -> Option<String> {
@@ -401,7 +366,7 @@ pub fn sync_installed_runners(app: &AppHandle) {
                 if is_installed { continue; }
 
                 // Resolve the download URL from the compatibility manifest
-                let manifest_file = match runner_from_runner_version(rv.clone()) {
+                let manifest_file = match runner_from_runner_version(app, rv.clone()) {
                     Some(f) if !f.is_empty() => f,
                     _ => continue,
                 };

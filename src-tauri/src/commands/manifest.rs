@@ -125,7 +125,7 @@ pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
     for value in manifestss.clone().into_iter().map(|(_, value)| value) {
         #[cfg(target_arch = "aarch64")]
         { if !value.aarch64_supported { continue; } }
-        let mut v = value;
+        #[allow(unused_mut)] let mut v = value;
         #[cfg(target_arch = "aarch64")]
         { v.versions = v.versions.into_iter().filter(|ver| ver.urls.as_ref().map(|u| !u.aarch64.is_empty()).unwrap_or(false)).collect(); }
         manifests.push(v);
@@ -148,7 +148,7 @@ pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> 
         let manifest = get_compatibility(&app, &dbm.filename);
 
         if dbm.enabled {
-            let mut m = manifest.unwrap();
+            #[allow(unused_mut)] let mut m = manifest.unwrap();
             #[cfg(target_arch = "aarch64")]
             { if !m.aarch64_supported { return None; } m.versions = m.versions.into_iter().filter(|v| v.urls.as_ref().map(|u| !u.aarch64.is_empty()).unwrap_or(false)).collect(); }
             let stringified = serde_json::to_string(&m).unwrap();

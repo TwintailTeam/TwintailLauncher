@@ -20,7 +20,7 @@ use tauri::Manager;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
-    let rm = get_compatibility(&app, &runner_from_runner_version(install.runner_version.clone()).unwrap()).unwrap();
+    let Some(rm) = get_compatibility(&app, &runner_from_runner_version(app, install.runner_version.clone()).unwrap_or_default()) else { return Ok(false); };
     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
     let mut compat_config = update_steam_compat_config(vec![]);
     let cpo = gm.extra.compat_overrides.clone();
