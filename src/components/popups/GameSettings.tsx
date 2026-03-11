@@ -47,6 +47,7 @@ interface GameSettingsProps {
     fetchInstallSettings: (id: string) => void;
     prefetchedSwitches: any;
     prefetchedFps: any;
+    prefetchedGraphicsApi: any;
     installedRunners: any[];
     installs?: any[];
     gamesinfo?: any[]; // Game manifests to look up static backgrounds
@@ -67,6 +68,7 @@ export default function GameSettings({
     fetchInstallSettings,
     prefetchedSwitches,
     prefetchedFps,
+    prefetchedGraphicsApi,
     installedRunners,
     installs,
     gamesinfo,
@@ -123,6 +125,9 @@ export default function GameSettings({
             } else if (key === "fps_value") {
                 // update_install_fps_value uses { id, fps }
                 payload.fps = value;
+            } else if (key === "graphics_api") {
+                // update_install_graphics_api uses { id, api }
+                payload.api = value;
             }
 
             await invoke(command, payload);
@@ -301,6 +306,15 @@ export default function GameSettings({
                                     checked={installSettings.disable_system_idle}
                                     onChange={(val) => handleUpdate("disable_system_idle", val)}
                                 />
+                                {prefetchedSwitches.graphics_api && prefetchedGraphicsApi?.options?.length > 0 && (
+                                    <ModernSelect
+                                        label="Graphics API"
+                                        description="Graphics API the game will use."
+                                        value={installSettings.graphics_api || ""}
+                                        options={prefetchedGraphicsApi.options}
+                                        onChange={(val) => handleUpdate("graphics_api", val)}
+                                    />
+                                )}
                                 <ModernInput
                                     label="Launch Arguments"
                                     description="Additional arguments passed to the game executable."

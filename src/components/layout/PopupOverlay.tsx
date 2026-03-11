@@ -51,6 +51,7 @@ export type PopupOverlayProps = {
   fetchInstallSettings: (installId: string) => Promise<any> | any;
   installGameSwitches: any;
   installGameFps: any[];
+  installGameGraphicsApi: any;
 
   // Delete confirmation
   installs: any[];
@@ -92,6 +93,7 @@ export default function PopupOverlay(props: PopupOverlayProps) {
     fetchInstallSettings,
     installGameSwitches,
     installGameFps,
+    installGameGraphicsApi,
     installs,
     setCurrentPage,
     setDisplayName,
@@ -180,6 +182,7 @@ export default function PopupOverlay(props: PopupOverlayProps) {
             fetchInstallSettings={fetchInstallSettings}
             prefetchedSwitches={installGameSwitches}
             prefetchedFps={installGameFps}
+            prefetchedGraphicsApi={installGameGraphicsApi}
             installs={installs}
             setCurrentPage={setCurrentPage}
             gamesinfo={gamesinfo}

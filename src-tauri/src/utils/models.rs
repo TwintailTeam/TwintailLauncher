@@ -97,6 +97,7 @@ pub struct LauncherInstall {
     pub show_discord_rpc: bool,
     pub disable_system_idle: bool,
     pub steam_imported: bool,
+    pub graphics_api: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -269,6 +270,7 @@ pub struct GameTweakSwitches {
     pub fps_unlocker: bool,
     pub jadeite: bool,
     pub xxmi: bool,
+    pub graphics_api: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -298,6 +300,18 @@ pub struct GameCompatOverrides {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphicsApiOption {
+    pub value: String,
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GraphicsApiConfig {
+    pub options: Vec<GraphicsApiOption>,
+    pub default: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SteamImportConfig {
     pub enabled: bool,
     pub steam_appid_txt: String,
@@ -311,4 +325,5 @@ pub struct GameExtras {
     pub compat_overrides: GameCompatOverrides,
     pub fps_unlock_options: Vec<String>,
     pub steam_import_config: SteamImportConfig,
+    pub graphics_api_options: GraphicsApiConfig,
 }

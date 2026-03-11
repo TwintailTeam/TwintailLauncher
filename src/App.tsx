@@ -91,6 +91,7 @@ export default class App extends React.Component<any, any> {
             installSettings: {},
             installGameSwitches: {},
             installGameFps: [],
+            installGameGraphicsApi: null,
             manifestsInitialLoading: true,
             manifestsOpenVisual: false,
             manifestsPanelWidth: null,
@@ -581,6 +582,7 @@ export default class App extends React.Component<any, any> {
                         fetchInstallSettings={this.fetchInstallSettings}
                         installGameSwitches={this.state.installGameSwitches}
                         installGameFps={this.state.installGameFps}
+                        installGameGraphicsApi={this.state.installGameGraphicsApi}
                         installs={this.state.installs}
                         setCurrentPage={this.setCurrentPage}
                         setDisplayName={this.setDisplayName}
@@ -903,7 +905,7 @@ export default class App extends React.Component<any, any> {
         return invoke("get_install_by_id", { id: install }).then(async data => {
             if (data === null) {
                 console.error("Failed to fetch install settings!");
-                this.setState(() => ({ installSettings: null, gameManifest: null, preloadAvailable: false, installGameSwitches: {}, installGameFps: [] }));
+                this.setState(() => ({ installSettings: null, gameManifest: null, preloadAvailable: false, installGameSwitches: {}, installGameFps: [], installGameGraphicsApi: null }));
             } else {
                 let parsed = JSON.parse(data as string);
                 let md = await this.fetchManifestById(parsed.manifest_id);
@@ -912,7 +914,8 @@ export default class App extends React.Component<any, any> {
                 // Prepare switches and fps list for SettingsInstall (keep newer fields if present)
                 const switches = md?.extra?.switches ?? {};
                 const fpsList = Array.isArray(md?.extra?.fps_unlock_options) ? md.extra.fps_unlock_options.map((e: any) => ({ value: `${e}`, name: `${e}` })) : [];
-                this.setState(() => ({ installSettings: parsed, gameManifest: md, preloadAvailable: isPreload, installGameSwitches: switches, installGameFps: fpsList }));
+                const graphicsApiOptions = md?.extra?.graphics_api_options ?? null;
+                this.setState(() => ({ installSettings: parsed, gameManifest: md, preloadAvailable: isPreload, installGameSwitches: switches, installGameFps: fpsList, installGameGraphicsApi: graphicsApiOptions }));
             }
         });
     }
