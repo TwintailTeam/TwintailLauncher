@@ -612,20 +612,24 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
                 "add" => {
                     let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
                     if f.exists() {
+                        let bkp = f.with_extension("bin.bkp");
                         let fp = fs::read_to_string(f.clone()).unwrap();
-                        let patched = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line } }).collect::<Vec<_>>().join("\n");
-                        fs::write(f, patched).unwrap();
+                        let already_patched = fp.lines().any(|l| l.trim() == "KR_ChannelID=205");
+                        if !bkp.exists() {
+                            let original = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=240" } else { line } }).collect::<Vec<_>>().join("\n");
+                            fs::write(&bkp, original).unwrap();
+                        }
+                        if !already_patched {
+                            let patched = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line } }).collect::<Vec<_>>().join("\n");
+                            fs::write(&f, patched).unwrap();
+                        }
                         log::debug!("Applied AKI patch to {}", dir.display());
                     }
                 }
                 "remove" => {
                     let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
-                    if f.exists() {
-                        let fp = fs::read_to_string(f.clone()).unwrap();
-                        let patched = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=240" } else { line } }).collect::<Vec<_>>().join("\n");
-                        fs::write(f, patched).unwrap();
-                        log::debug!("Removed AKI patch from {}", dir.display());
-                    }
+                    let bkp = f.with_extension("bin.bkp");
+                    if bkp.exists() { fs::copy(&bkp, &f).unwrap(); log::debug!("Removed AKI patch from {}", dir.display()); }
                 }
                 _ => {}
             },
