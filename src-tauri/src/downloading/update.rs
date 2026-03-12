@@ -6,7 +6,7 @@ use crate::utils::db_manager::{
 };
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{empty_dir, models::{DiffGameFile, GameVersion}, run_async_command, show_dialog};
-use fischl::download::game::{Game, Kuro, Sophon};
+use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use fischl::utils::free_space::available;
 use std::collections::HashMap;
 use std::fs;
@@ -104,10 +104,94 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     #[cfg(target_os = "linux")]
                     crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                 } else {
-                    h5.emit("update_complete", ()).unwrap();
-                    log::warn!("Diff files found for this update using DOWNLOAD_MODE_FILE, but this mode does not support patching, marking as complete");
+                    // we have diffs update the game
+                    match gbiz.as_str() {
+                        "endfield_global" => {
+                            let diff_files = urls;
+                            let combined_download_total: u64 = diff_files.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                            let combined_install_total: u64 = diff_files.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+                            let cumulative_download = Arc::new(AtomicU64::new(0));
+                            let mut ok = true;
+                            for e in diff_files.iter() {
+                                let url = e.file_url.clone();
+                                let cancel_token = cancel_token.clone();
+                                let dl_ok = run_async_command(async {
+                                    <Game as Zipped>::download(url.clone(), install.directory.clone(), true, false,{
+                                            let dlpayload = dlpayload.clone();
+                                            let h5 = h5.clone();
+                                            let instn = instn.clone();
+                                            let job_id = job_id.clone();
+                                            let cumulative_download = cumulative_download.clone();
+                                            move |current, _total, net_speed, disk_speed| {
+                                                let mut dlp = dlpayload.lock().unwrap();
+                                                let total_dl_progress = cumulative_download.load(Ordering::SeqCst) + current;
+                                                dlp.insert("job_id", job_id.to_string());
+                                                dlp.insert("name", instn.to_string());
+                                                dlp.insert("progress", total_dl_progress.to_string());
+                                                dlp.insert("total", combined_download_total.to_string());
+                                                dlp.insert("speed", net_speed.to_string());
+                                                dlp.insert("disk", disk_speed.to_string());
+                                                dlp.insert("install_progress", "0".to_string());
+                                                dlp.insert("install_total", combined_install_total.to_string());
+                                                dlp.insert("phase", "2".to_string());
+                                                h5.emit("update_progress", dlp.clone()).unwrap();
+                                                drop(dlp);
+                                            }
+                                        }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                                });
+                                if !dl_ok { ok = false; break; }
+                                cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                            }
+                            if ok {
+                                let patching_path = Path::new(&install.directory).join("patching");
+                                let first = diff_files.get(0).unwrap();
+                                let fnn = first.file_url.split('/').last().unwrap_or_default().to_string();
+                                let archive_path = patching_path.join("staging").join(fnn);
+                                let far = archive_path.to_str().unwrap().to_string();
+                                let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                                    let dlpayload = dlpayload.clone();
+                                    let h5 = h5.clone();
+                                    let instn = instn.clone();
+                                    let job_id = job_id.clone();
+                                    move |current, total| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        dlp.insert("job_id", job_id.to_string());
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("install_progress", current.to_string());
+                                        dlp.insert("install_total", total.to_string());
+                                        dlp.insert("phase", "3".to_string());
+                                        h5.emit("update_progress", dlp.clone()).unwrap();
+                                    }
+                                });
+                                ok = ext;
+                                if ok {
+                                    let delete_list = Path::new(&install.directory).join("delete_files.txt");
+                                    if delete_list.exists() {
+                                        if let Ok(contents) = fs::read_to_string(&delete_list) { for line in contents.lines() { let line = line.trim(); if !line.is_empty() { let _ = fs::remove_file(Path::new(&install.directory).join(line)); } } }
+                                        let _ = fs::remove_file(&delete_list);
+                                    }
+                                    if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
+                                    update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
+                                    h5.emit("update_complete", ()).unwrap();
+                                    #[cfg(target_os = "linux")]
+                                    crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
+                                    success = true;
+                                } else {
+                                    if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
+                                    h5.emit("update_complete", ()).unwrap();
+                                }
+                            } else {
+                                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
+                                h5.emit("update_complete", ()).unwrap();
+                            }
+                        }
+                        _ => {
+                            h5.emit("update_complete", ()).unwrap();
+                            log::warn!("Diff files found for this update using DOWNLOAD_MODE_FILE, but this mode does not support patching, marking as complete");
+                            success = true;
+                        }
+                    }
                 }
-                success = true;
             }
             "DOWNLOAD_MODE_CHUNK" => {
                 let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).cloned().collect::<Vec<DiffGameFile>>();
@@ -266,6 +350,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     }
                 }
             }
+            "DOWNLOAD_MODE_MULTIFILE" => {}
             _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog(&h5, "error", "TwintailLauncher", "Unsupported download mode for update!", Some(vec!["Ok"])); }
         }
 
