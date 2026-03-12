@@ -259,8 +259,6 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Download complete for {}, marking as complete", install.name);
                     success = true;
-                    #[cfg(target_os = "linux")]
-                    crate::utils::apply_patch(&h4, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
                 } else {
                     if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
                     h4.emit("download_complete", ()).unwrap();

@@ -253,8 +253,6 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_RAW", i.name);
                 success = true;
-                #[cfg(target_os = "linux")]
-                crate::utils::apply_patch(&h5, std::path::Path::new(&i.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
             } else {
                 if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
                 h5.emit("repair_complete", ()).unwrap();

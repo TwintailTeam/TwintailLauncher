@@ -215,12 +215,9 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     h5_clone.emit("start_game_download", data).unwrap();
                     update_install_after_update_by_id(&h5_clone, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                     h5.emit("update_complete", ()).unwrap();
-                    #[cfg(target_os = "linux")]
-                    {
-                        crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
-                        crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
-                    }
                     success = true;
+                    #[cfg(target_os = "linux")]
+                    crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                 } else {
                     let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                     let available = available(install.directory.clone());
@@ -230,9 +227,6 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let patching_marker = Path::new(&install.directory).join("patching");
                         let is_preload = patching_marker.join(".preload").exists();
                         let cancel_token = cancel_token.clone();
-                        // Remove the patch that makes wuwa channelID set to steam release so diffs apply properly
-                        #[cfg(target_os = "linux")]
-                        crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "remove".to_string());
                         let rslt = run_async_command(async {
                             <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_path.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
                                     let dlpayload = dlpayload.clone();
@@ -259,12 +253,9 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
-                            #[cfg(target_os = "linux")]
-                            {
-                                crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
-                                crate::utils::apply_patch(&h5, Path::new(&install.directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string());
-                            }
                             success = true;
+                            #[cfg(target_os = "linux")]
+                            crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                         } else {
                             if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
                             h5.emit("update_complete", ()).unwrap();
