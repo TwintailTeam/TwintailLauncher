@@ -20,12 +20,12 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 
 ### Supported games
 * Genshin Impact
-* Honkai: Star Rail
-* Honkai Impact 3rd
-* Zenless Zone Zero
+* Honkai: StarRail
+* HonkaiImpact 3rd
+* ZenlessZoneZero
 * Wuthering Waves
-* Punishing: Gray Raven
-* AetherGazer
+* Punishing Gray Raven
+* Aether Gazer
 * Arknights Endfield
 
 ### Is TTL safe to use? Can I get banned?
