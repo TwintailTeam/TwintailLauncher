@@ -161,16 +161,16 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                         let tmp = tmp.clone();
                                         let instn = instn.clone();
                                         let job_id = job_id.clone();
-                                        move |download_current, download_total, _install_current, _install_total, net_speed, disk_speed, phase| {
+                                        move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
                                             let mut dlp = dlpayload.lock().unwrap();
-                                            let tmp = tmp.clone();
-                                            let instn = instn.clone();
                                             dlp.insert("job_id", job_id.to_string());
                                             dlp.insert("name", instn.to_string());
                                             dlp.insert("progress", download_current.to_string());
                                             dlp.insert("total", download_total.to_string());
                                             dlp.insert("speed", net_speed.to_string());
                                             dlp.insert("disk", disk_speed.to_string());
+                                            dlp.insert("install_progress", install_current.to_string());
+                                            dlp.insert("install_total", install_total.to_string());
                                             dlp.insert("phase", phase.to_string());
                                             tmp.emit("preload_progress", dlp.clone()).unwrap();
                                             drop(dlp);
@@ -181,9 +181,11 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                 h5.emit("preload_complete", ()).unwrap();
                                 success = true;
                             } else {
-                                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5,"warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"])); }
-                                let dir = std::path::Path::new(&install.directory).join("patching");
-                                if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
+                                if !cancel_token.load(Ordering::Relaxed) {
+                                    show_dialog(&h5,"warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"]));
+                                    let dir = std::path::Path::new(&install.directory).join("patching");
+                                    if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
+                                }
                                 h5.emit("preload_complete", ()).unwrap();
                             }
                         } else {

@@ -6,7 +6,8 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
 use crate::downloading::QueueJobPayload;
-use crate::utils::db_manager::get_install_info_by_id;
+use crate::utils::db_manager::{get_install_info_by_id,get_manifest_info_by_id};
+use crate::utils::repo_manager::get_manifest;
 
 static JOB_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -304,7 +305,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                 Ok(cmd) => match cmd {
                     QueueCommand::Enqueue(job) => {
                         let install_id = job.payload.get_id();
-                        let name = if let QueueJobPayload::Game(ref p) = job.payload { get_install_info_by_id(&app, p.install.clone()).map(|i| i.name).unwrap_or_else(|| job.payload.get_name()) } else { job.payload.get_name() };
+                        let name = if let (QueueJobKind::GamePreload, QueueJobPayload::Game(p)) = (&job.kind, &job.payload) { get_install_info_by_id(&app, p.install.clone()).map(|install| { let fallback = install.name.clone(); let ver = install.version.clone(); get_manifest_info_by_id(&app, install.manifest_id.clone()).and_then(|gid| get_manifest(&app, gid.filename)).and_then(|gm| gm.extra.preload).and_then(|pl| pl.metadata).map(|pmd| fallback.replace(ver.as_str(), pmd.version.as_str())).unwrap_or(fallback) }) } else if let QueueJobPayload::Game(ref p) = job.payload { get_install_info_by_id(&app, p.install.clone()).map(|i| i.name) } else { None }.unwrap_or_else(|| job.payload.get_name());
                         queued_views.push_back(QueueJobView {
                             id: job.id.clone(),
                             kind: job.kind,
