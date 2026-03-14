@@ -3,7 +3,7 @@ use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
 use crate::utils::repo_manager::get_manifest;
-use crate::utils::{empty_dir, models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog};
+use crate::utils::{models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use fischl::utils::free_space::available;
 use std::collections::HashMap;
@@ -252,8 +252,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         }
                         _ => {
                             h5.emit("update_complete", ()).unwrap();
-                            log::warn!("Diff files found for this update using DOWNLOAD_MODE_FILE, but this mode does not support patching, marking as complete");
-                            success = true;
+                            log::warn!("Diff files found for this update using DOWNLOAD_MODE_FILE, but this mode does not support patching, marking as failed");
                         }
                     }
                 }
@@ -262,7 +261,6 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).cloned().collect::<Vec<DiffGameFile>>();
                 if urls.is_empty() {
                     log::debug!("No diff files found for this update using DOWNLOAD_MODE_CHUNK, treating as full download");
-                    empty_dir(&install.directory).unwrap_or_default();
                     let install_dir = Path::new(&install.directory);
                     if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
                     let full_urls = if gbiz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == install.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
