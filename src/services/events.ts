@@ -1,4 +1,3 @@
-import { toPercent, formatBytes } from '../utils/progress.ts';
 import type { DownloadPhase } from '../types/downloadQueue.ts';
 
 export type EventStateUpdate = Record<string, any> | ((prev: any) => Record<string, any>);
@@ -66,8 +65,6 @@ export function registerEvents(
       };
     }
     case 'game_closed':
-      pushInstalls();
-      return undefined;
     case 'move_complete':
     case 'download_removed':
     case 'download_complete':
@@ -100,20 +97,25 @@ export function registerEvents(
       return undefined;
     }
     case 'move_progress': {
-      return {
-        hideProgressBar: false,
-        disableInstallEdit: true,
-        disableRun: true,
-        disableUpdate: true,
-        disableDownload: true,
-        disablePreload: true,
-        disableResume: true,
-        progressName: `Moving "${event.payload.file}"`,
-        progressVal: Math.round(toPercent(event.payload.progress, event.payload.total)),
-        progressPercent: `${toPercent(event.payload.progress, event.payload.total).toFixed(2)}%`,
-        progressSpeed: "",
-        progressPretty: `${formatBytes(event.payload.progress)}`,
-        progressPrettyTotal: `${formatBytes(event.payload.total)}`,
+      const jobId = event.payload.install_id;
+      if (!jobId) return undefined;
+      const { progress, total } = parseProgressPair(event.payload.progress, event.payload.total);
+      const { progress: installProgress, total: installTotal } = parseProgressPair(event.payload.install_progress, event.payload.install_total);
+      return (prev) => {
+        const next = { ...(prev?.downloadProgressByJobId || {}) };
+        next[jobId] = {
+          jobId,
+          name: event.payload.install_name,
+          progress,
+          total,
+          speed: 0,
+          disk: 0,
+          installProgress,
+          installTotal,
+          phase: parsePhase(event.payload.phase),
+          eventType,
+        };
+        return { downloadProgressByJobId: next };
       };
     }
     case 'download_progress': {

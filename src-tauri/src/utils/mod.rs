@@ -71,15 +71,16 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
             files_to_remove.push(ep.clone());
         } else {
             let size = entry.metadata()?.len();
-            tracker.fetch_add(size, Ordering::SeqCst);
+            let cur = tracker.fetch_add(size, Ordering::SeqCst) + size;
 
             let mut payload = HashMap::new();
             payload.insert("file", f.to_str().unwrap().to_string());
             payload.insert("install_id", install.clone());
             payload.insert("install_name", install_name.clone());
             payload.insert("install_type", install_type.clone());
-            payload.insert("progress", tracker.load(Ordering::SeqCst).to_string());
-            payload.insert("total", totalsize.to_string());
+            payload.insert("phase", "5".to_string());
+            payload.insert("install_progress", cur.to_string());
+            payload.insert("install_total", totalsize.to_string());
 
             if let Err(e) = fs::copy(ep.clone(), dst.as_ref().join(f)) { eprintln!("Failed to copy {}: {}", ep.clone().display(), e); }
             app.emit("move_progress", &payload).unwrap();
