@@ -602,7 +602,7 @@ export default function GameSettings({
                                         </button>
                                     )}
 
-                                    {gameBiz && !gameBiz.startsWith("wuwa") && !gameBiz.startsWith("pgr") && !gameBiz.startsWith("endfield") && (
+                                    {gameBiz && !gameBiz.startsWith("wuwa") && !gameBiz.startsWith("pgr") && !gameBiz.startsWith("endfield") && !gameBiz.startsWith("aethergazer") && (
                                         <button
                                             onClick={async () => {
                                                 if (isAuthkeyCopying) { return; }
