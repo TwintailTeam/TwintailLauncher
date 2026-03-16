@@ -574,30 +574,25 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
     let dir = Path::new(&dir);
     if dir.exists() {
         match patch_type.as_str() {
-            "aki" => match mode.as_str() {
-                "add" => {
-                    let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
-                    if f.exists() {
-                        let bkp = f.with_extension("bin.bkp");
-                        let fp = fs::read_to_string(f.clone()).unwrap();
-                        let already_patched = fp.lines().any(|l| l.trim() == "KR_ChannelID=205");
-                        if !bkp.exists() {
-                            let original = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=240" } else { line } }).collect::<Vec<_>>().join("\n");
-                            fs::write(&bkp, original).unwrap();
+            "aki" => {
+                let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
+                if f.exists() {
+                    match mode.as_str() {
+                        "add" => {
+                            let mut data = fs::read(&f).unwrap();
+                            let from = b"KR_ChannelID=240";
+                            let to   = b"KR_ChannelID=205";
+                            if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Applied AKI patch to {}", dir.display()); }
                         }
-                        if !already_patched {
-                            let patched = fp.lines().map(|line| { if line.starts_with("KR_ChannelID=") { "KR_ChannelID=205" } else { line } }).collect::<Vec<_>>().join("\n");
-                            fs::write(&f, patched).unwrap();
+                        "remove" => {
+                            let mut data = fs::read(&f).unwrap();
+                            let from = b"KR_ChannelID=205";
+                            let to   = b"KR_ChannelID=240";
+                            if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Removed AKI patch from {}", dir.display()); }
                         }
-                        log::debug!("Applied AKI patch to {}", dir.display());
+                        _ => {}
                     }
                 }
-                "remove" => {
-                    let f = dir.join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDK.bin");
-                    let bkp = f.with_extension("bin.bkp");
-                    if bkp.exists() { fs::copy(&bkp, &f).unwrap(); log::debug!("Removed AKI patch from {}", dir.display()); }
-                }
-                _ => {}
             },
             "sparkle" => {
                 let target_old = dir.join("dbghelp.dll");

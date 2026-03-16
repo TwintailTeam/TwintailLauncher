@@ -205,7 +205,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 }
             }
             // Patch wuwa if existing install
-            //if gm.biz == "wuwa_global" && skip_game_dl { crate::utils::apply_patch(&app, Path::new(&directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string()); }
+            if gm.biz == "wuwa_global" && skip_game_dl { crate::utils::apply_patch(&app, Path::new(&directory.clone()).to_str().unwrap().to_string(), "aki".to_string(), "add".to_string()); }
         }
         #[cfg(target_os = "linux")]
         let gbg = g.assets.game_background.clone();

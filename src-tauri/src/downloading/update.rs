@@ -402,6 +402,8 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     let available = available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
+                        #[cfg(target_os = "linux")]
+                        crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "remove".to_string());
                         log::debug!("Starting update of {} using DOWNLOAD_MODE_RAW, total size: {}, available space: {:?}", install.name, total_size, available);
                         let manifest = urls.get(0).unwrap();
                         let patching_marker = Path::new(&install.directory).join("patching");
@@ -429,14 +431,16 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                         });
                         if rslt {
-                            // Remove patching marker on success
                             if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_RAW, marking as complete", install.name);
                             success = true;
                             #[cfg(target_os = "linux")]
-                            crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
+                            {
+                                crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
+                                crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "add".to_string());
+                            }
                         } else {
                             if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"])); }
                             h5.emit("update_complete", ()).unwrap();
