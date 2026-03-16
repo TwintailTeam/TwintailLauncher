@@ -321,6 +321,8 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             cmd.arg("-c");
             cmd.arg(&command);
 
+            let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
+            cmd.env("LOADER_MODE", loader_mode);
             cmd.env("WINEARCH", "win64");
             cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
             cmd.env("STEAM_COMPAT_APP_ID", "0");
@@ -672,6 +674,8 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         cmd.arg("-Command");
         cmd.arg(&command);
 
+        let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
+        cmd.env("LOADER_MODE", loader_mode);
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
         cmd.current_dir(xxmi_path);

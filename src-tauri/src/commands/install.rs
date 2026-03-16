@@ -6,7 +6,6 @@ use crate::utils::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, apply_xxmi_
 use fischl::utils::free_space::get_disk_space;
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
-use std::collections::HashMap;
 use std::fs;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
@@ -20,11 +19,13 @@ use crate::DownloadState;
 use crate::downloading::ExtrasDownloadPayload;
 use crate::downloading::queue::QueueJobKind;
 use crate::downloading::QueueJobPayload;
+use crate::utils::models::XXMISettings;
+#[cfg(target_os = "linux")]
+use std::collections::HashMap;
 #[cfg(target_os = "linux")]
 use crate::downloading::RunnerDownloadPayload;
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{create_installed_runner, get_installed_runner_info_by_version, update_install_shortcut_is_steam_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::models::XXMISettings;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
