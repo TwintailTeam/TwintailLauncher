@@ -681,12 +681,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
         let cfg = package.join("d3dx.ini");
         if cfg.exists() {
             let actions = if data.dump_shaders { "clipboard hlsl asm regex" } else { "clipboard" };
-            let mut managed: Vec<(&str, &str, String)> = vec![
-                //("Include","exclude_recursive","DISABLED*".to_string()),
-                ("Hunting","hunting",data.hunting_mode.to_string()),
-                ("Hunting","marking_actions",actions.to_string()),
-                ("Logging","show_warnings",data.show_warnings.to_string()),
-            ];
+            let mut managed: Vec<(&str, &str, String)> = vec![("Hunting","hunting",data.hunting_mode.to_string()), ("Hunting","marking_actions",actions.to_string()), ("Logging","show_warnings",data.show_warnings.to_string()), ];
 
             #[cfg(target_os = "linux")]
             {
