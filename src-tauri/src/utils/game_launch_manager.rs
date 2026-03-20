@@ -1,5 +1,5 @@
 use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
-use crate::utils::{apply_xxmi_tweaks,edit_wuwa_configs_xxmi,get_mi_path_from_game,prevent_system_idle,show_dialog};
+use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -166,14 +166,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             cmd.env("MANGOHUD", "1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
-        if gm.biz == "wuwa_global" {
+        /*if gm.biz == "wuwa_global" {
             if install.use_xxmi {
                 let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
                 let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
             }
-        }
+        }*/
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -251,14 +250,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             cmd.env("MANGOHUD", "1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
-        if gm.biz == "wuwa_global" {
+        /*if gm.biz == "wuwa_global" {
             if install.use_xxmi {
                 let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
                 let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
                 edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
             }
-        }
+        }*/
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -532,14 +530,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
     }
 
-    // https://github.com/SpectrumQT/XXMI-Launcher/blob/main/src/xxmi_launcher/core/packages/model_importers/wwmi_package.py#L330
-    if gm.biz == "wuwa_global" {
+    /*if gm.biz == "wuwa_global" {
         if install.use_xxmi {
             let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
             let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
             edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
         }
-    }
+    }*/
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
     load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);

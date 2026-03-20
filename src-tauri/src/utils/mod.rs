@@ -615,7 +615,7 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
     }
 }
 
-pub fn edit_wuwa_configs_xxmi(engine_ini: String, device_profiles_ini: String) {
+/*pub fn edit_wuwa_configs_xxmi(engine_ini: String, device_profiles_ini: String) {
     let engine_file = Path::new(&engine_ini);
     if engine_file.exists() {
         let perf = [("r.Streaming.HLODStrategy","2"),("r.Streaming.PoolSizeForMeshes","-1"),("r.XGEShaderCompile","0"),("FX.BatchAsync","1"),("FX.EarlyScheduleAsync","1"),("fx.Niagara.ForceAutoPooling","1"),("wp.Runtime.KuroRuntimeStreamingRangeOverallScale","0.5"),("tick.AllowAsyncTickCleanup","1"),("tick.AllowAsyncTickDispatch","1")];
@@ -673,7 +673,7 @@ pub fn edit_wuwa_configs_xxmi(engine_ini: String, device_profiles_ini: String) {
             log::debug!("Edited DeviceProfiles.ini at {}", dp_file.display());
         }
     }
-}
+}*/
 
 #[allow(unused_mut)]
 pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json<XXMISettings> {
