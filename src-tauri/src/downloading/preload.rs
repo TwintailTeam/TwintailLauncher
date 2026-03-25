@@ -90,41 +90,50 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                         h5.emit("preload_complete", ()).unwrap();
                     } else {
                         let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                        let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
                         let available = available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
-                            let combined_download_total = total_size;
                             let cumulative_download = Arc::new(AtomicU64::new(0));
+                            let cumulative_install = Arc::new(AtomicU64::new(0));
+                            let total_manifests = urls.len();
                             let mut ok = true;
-                            for e in urls.into_iter() {
-                                let compressed = e.compressed_size.parse::<u64>().unwrap_or(0);
+                            for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
                                 let h5 = h5.clone();
                                 let cancel_token = cancel_token.clone();
                                 let cumulative_download = cumulative_download.clone();
+                                let cumulative_install = cumulative_install.clone();
+                                let is_last_manifest = manifest_idx == total_manifests - 1;
                                 let rslt = run_async_command(async {
                                     <Game as Sophon>::preload(e.file_url.clone(), install.version.clone(), e.file_path.clone(), install.directory.clone(), {
                                             let dlpayload = dlpayload.clone();
                                             let instn = instn.clone();
                                             let job_id = job_id.clone();
                                             let cumulative_download = cumulative_download.clone();
-                                            move |download_current, _download_total, _install_current, _install_total, net_speed, disk_speed, phase| {
+                                            let cumulative_install = cumulative_install.clone();
+                                            move |download_current, _download_total, install_current, _install_total, net_speed, disk_speed, phase| {
                                                 let mut dlp = dlpayload.lock().unwrap();
                                                 let total_download_progress = cumulative_download.load(Ordering::SeqCst) + download_current;
+                                                let total_install_progress = cumulative_install.load(Ordering::SeqCst) + install_current;
                                                 dlp.insert("job_id", job_id.to_string());
                                                 dlp.insert("name", instn.to_string());
                                                 dlp.insert("progress", total_download_progress.to_string());
-                                                dlp.insert("total", combined_download_total.to_string());
+                                                dlp.insert("total", total_size.to_string());
                                                 dlp.insert("speed", net_speed.to_string());
                                                 dlp.insert("disk", disk_speed.to_string());
-                                                dlp.insert("phase", phase.to_string());
+                                                dlp.insert("install_progress", total_install_progress.to_string());
+                                                dlp.insert("install_total", combined_install_total.to_string());
+                                                let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
+                                                dlp.insert("phase", effective_phase.to_string());
                                                 h5.emit("preload_progress", dlp.clone()).unwrap();
                                                 drop(dlp);
                                             }
                                         }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                                 });
                                 if !rslt { ok = false; break; }
-                                cumulative_download.fetch_add(compressed, Ordering::SeqCst);
+                                cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                                cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                             }
                             if ok {
                                 h5.emit("preload_complete", ()).unwrap();

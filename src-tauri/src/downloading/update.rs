@@ -322,6 +322,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 } else {
                     // we have diffs update the game
                     let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                    let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
                     let available = available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
@@ -329,14 +330,11 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let patching_marker = Path::new(&install.directory).join("patching");
                         let is_preload = patching_marker.join(".preload").exists();
                         let combined_download_total = total_size;
-                        let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
                         let cumulative_download = Arc::new(AtomicU64::new(0));
                         let cumulative_install = Arc::new(AtomicU64::new(0));
                         let total_manifests = urls.len();
                         let mut ok = true;
                         for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
-                            let compressed = e.compressed_size.parse::<u64>().unwrap_or(0);
-                            let decompressed = e.decompressed_size.parse::<u64>().unwrap_or(0);
                             let h5 = h5.clone();
                             let cancel_token = cancel_token.clone();
                             let cumulative_download = cumulative_download.clone();
@@ -355,7 +353,9 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                             let total_install_progress = cumulative_install.load(Ordering::SeqCst) + install_current;
                                             dlp.insert("job_id", job_id.to_string());
                                             dlp.insert("name", instn.to_string());
-                                            if is_preload { dlp.insert("progress", total_install_progress.to_string()); dlp.insert("total", combined_install_total.to_string()); dlp.insert("speed", disk_speed.to_string()); } else { dlp.insert("progress", total_download_progress.to_string()); dlp.insert("total", combined_download_total.to_string()); dlp.insert("speed", net_speed.to_string()); }
+                                            dlp.insert("progress", total_download_progress.to_string());
+                                            dlp.insert("total", combined_download_total.to_string());
+                                            dlp.insert("speed", net_speed.to_string());
                                             dlp.insert("disk", disk_speed.to_string());
                                             dlp.insert("install_progress", total_install_progress.to_string());
                                             dlp.insert("install_total", combined_install_total.to_string());
@@ -367,8 +367,8 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                     }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                             });
                             if !rslt { ok = false; break; }
-                            cumulative_download.fetch_add(compressed, Ordering::SeqCst);
-                            cumulative_install.fetch_add(decompressed, Ordering::SeqCst);
+                            cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                            cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                         }
                         if ok {
                             if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
