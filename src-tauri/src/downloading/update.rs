@@ -262,7 +262,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 if urls.is_empty() {
                     log::debug!("No diff files found for this update using DOWNLOAD_MODE_CHUNK, treating as full download");
                     let install_dir = Path::new(&install.directory);
-                    if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                    if !install_dir.exists() { fs::create_dir_all(install_dir).unwrap_or_default(); }
                     let full_urls = if gbiz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == install.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
                     log::debug!("Starting full download of {} using DOWNLOAD_MODE_CHUNK with {} manifest(s)", install.name, full_urls.len());
                     let combined_download_total: u64 = full_urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
