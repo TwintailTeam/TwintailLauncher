@@ -19,7 +19,7 @@ import {
     X,
     FileCode2,
     LayoutDashboard,
-    Terminal
+    Terminal, Settings2
 } from "lucide-react";
 import { SettingsLayout } from "../layout/SettingsLayout.tsx";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
@@ -732,6 +732,21 @@ export default function GameSettings({
                                             <div className="flex flex-col">
                                                 <span className="font-bold">Open Command Prompt</span>
                                                 <span className="text-xs text-zinc-400">Open cmd.exe for Wine/Proton prefix</span>
+                                            </div>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setOpenPopup(POPUPS.NONE);
+                                                invoke("open_in_prefix", {
+                                                    installId: installSettings.id,
+                                                    pathType: "winecfg.exe"
+                                                });
+                                            }}
+                                            className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
+                                            <Settings2 className="w-6 h-6 text-purple-400" />
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">Open Wine Config</span>
+                                                <span className="text-xs text-zinc-400">Open winecfg.exe for Wine/Proton prefix</span>
                                             </div>
                                         </button>
                                     </div>
