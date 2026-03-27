@@ -3,7 +3,6 @@
 * [TwintailLauncher](#twintaillauncher)
   * [About](#about)
     * [Supported games](#supported-games)
-    * [Is TTL safe to use? Can I get banned?](#is-ttl-safe-to-use-can-i-get-banned)
     * [Screenshots](#screenshots)
   * [Installation](#installation)
   * [Developers & Compiling](#developers--compiling)
@@ -27,9 +26,6 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 * Punishing Gray Raven
 * Aether Gazer
 * Arknights Endfield
-
-### Is TTL safe to use? Can I get banned?
-We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
 
 ### Screenshots
 
