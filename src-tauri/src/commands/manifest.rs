@@ -165,11 +165,11 @@ pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> 
 #[tauri::command]
 pub fn get_compatibility_manifest_by_manifest_id(_app: AppHandle, _id: String) -> Option<String> { None }
 
+#[allow(unused_variables)]
 #[tauri::command]
 pub async fn override_manifest_url(app: AppHandle, filename: String, url: String) -> Option<bool> {
-    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(30)).build().unwrap_or_else(|_| reqwest::Client::new());
-    let resp = client.get(&url).send().await.ok()?;
-    let text = resp.text().await.ok()?;
+    // Moved reqwest calls fully to fischl so this is dirty disabled
+    let text = "";
     let manifest: GameManifest = serde_json::from_str(&text).ok()?;
     let ml = app.state::<ManifestLoaders>();
     let mut loader = ml.game.0.write().unwrap();

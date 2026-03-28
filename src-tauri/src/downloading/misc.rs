@@ -315,7 +315,7 @@ pub fn check_extras_update(app: &AppHandle) {
         let zzmi = xxmi.join("zzmi");
         let himi = xxmi.join("himi");
         let wwmi = xxmi.join("wwmi");
-        //let efmi = xxmi.join("efmi");
+        let efmi = xxmi.join("efmi");
 
         //let ver_jadeite = jadeite.join("VERSION.txt");
         let ver_fpsunlock = fpsunlock.join("VERSION.txt");
@@ -325,7 +325,7 @@ pub fn check_extras_update(app: &AppHandle) {
         let ver_zzmi = zzmi.join("VERSION.txt");
         let ver_himi = himi.join("VERSION.txt");
         let ver_wwmi = wwmi.join("VERSION.txt");
-        //let ver_efmi = efmi.join("VERSION.txt");
+        let ver_efmi = efmi.join("VERSION.txt");
 
         log::info!("Starting extras update check");
         /*if ver_jadeite.exists() {
@@ -384,12 +384,12 @@ pub fn check_extras_update(app: &AppHandle) {
             download_or_update_extra(app, xxmi.clone(), "xxmi".to_string(), "wwmi".to_string(), false, None);
         }
 
-        /*if ver_efmi.exists() {
+        if ver_efmi.exists() {
             download_or_update_extra(app, xxmi.clone(), "xxmi".to_string(), "efmi".to_string(), true, None);
         } else if efmi.exists() && fs::read_dir(&efmi).ok().and_then(|mut d| d.next()).is_some() {
             empty_dir(&efmi).unwrap();
             download_or_update_extra(app, xxmi.clone(), "xxmi".to_string(), "efmi".to_string(), false, None);
-        }*/
+        }
         log::info!("Completed extras update check");
     }
 }
@@ -510,7 +510,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                     }).await
                 });
                 if dl {
-                    let mi_variants = if package_id == "xxmi" { vec!["gimi", "srmi", "zzmi", "wwmi", "himi"/*, "efmi"*/] } else if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { vec![package_type.as_str()] } else { vec![] };
+                    let mi_variants = if package_id == "xxmi" { vec!["gimi", "srmi", "zzmi", "wwmi", "himi", "efmi"] } else if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { vec![package_type.as_str()] } else { vec![] };
                     for mi in mi_variants {
                         for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                             let linkedpath = path.join(mi).join(lib);

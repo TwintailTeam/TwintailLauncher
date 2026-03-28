@@ -36,7 +36,6 @@ steam_shortcuts_util = "1.1.8"
 rpcdiscord = "0.2.6"
 keepawake = "0.6.0"
 log = "0.4.29"
-reqwest = { version = "0.13.2", features = ["native-tls-vendored", "__tls"], default-features = false }
 
 # tauri plugins
 tauri-plugin-log = "2.8.0"

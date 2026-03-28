@@ -57,14 +57,8 @@ pub fn start_connection_monitor(app: AppHandle) {
 
 async fn check_connectivity() -> bool {
     let endpoints = ["https://store.steampowered.com", "https://one.one.one.one", "https://twintaillauncher.app"];
-
-    let client = match reqwest::Client::builder().timeout(Duration::from_secs(10)).build() {
-        Ok(c) => c,
-        Err(_) => return false,
-    };
-
     for endpoint in endpoints {
-        match client.head(endpoint).send().await {
+        match fischl::utils::check_network_status(endpoint.to_string()).await {
             Ok(response) => { if response.status().is_success() || response.status().as_u16() == 204 { return true; } }
             Err(_) => continue,
         }

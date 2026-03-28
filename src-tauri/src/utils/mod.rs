@@ -943,7 +943,7 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
     for url in urls.into_iter().rev() {
         let lowered = url.to_ascii_lowercase();
         if !hints.iter().any(|h| lowered.contains(h)) { continue; }
-        if let Ok(uri) = reqwest::Url::parse(url) {
+        if let Ok(uri) = fischl::utils::parse_url(url.parse().unwrap()) {
             for (key, value) in uri.query_pairs() { if key.eq_ignore_ascii_case("authkey") && value.len() > 10 { return Some(value.into_owned()); } }
         }
     }
