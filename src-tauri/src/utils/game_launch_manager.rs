@@ -741,12 +741,11 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
     let app = app.clone();
     let install_id = install.id.clone();
     let base_playtime = install.total_playtime as u64;
-    // Linux kernel truncates process comm to 15 chars; clamp the stem so is_process_running matches
     #[cfg(target_os = "linux")]
     let exe_name = { let stem = exe_name.split('.').next().unwrap_or(&exe_name); stem[..stem.len().min(15)].to_string() };
     std::thread::spawn(move || {
-        let poll_interval = std::time::Duration::from_secs(10);
-        let db_write_interval = 60u64;
+        let poll_interval = std::time::Duration::from_secs(5);
+        let db_write_interval = 30u64;
         let mut last_db_write_elapsed: u64 = 0;
         std::thread::sleep(std::time::Duration::from_secs(5));
         if !is_process_running(&exe_name) { return; }
