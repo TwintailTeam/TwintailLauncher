@@ -167,13 +167,12 @@ pub fn runner_from_runner_version(app: &AppHandle, runner_version: String) -> Op
         if manifest.versions.iter().any(|v| v.version == runner_version) { return Some(filename.clone()); }
     }
     let rl = runner_version.to_lowercase();
-    let rslt = if rl.contains("proton-cachyos-spritz") { "proton_cachyos_spritz.json" }
-        else if rl.contains("proton-cachyos") { "proton_cachyos.json" }
+    let rslt = if rl.contains("proton-cachyos") { "proton_cachyos.json" }
         else if rl.contains("proton-ge") || rl.contains("ge-proton") { "proton_ge.json" }
+        else if rl.contains("proton-twintail") { "proton_twintail.json" }
         else if rl.contains("proton-umu") { "proton_umu.json" }
         else if rl.contains("proton-vanilla") { "proton_vanilla.json" }
         else if rl.contains("proton-em") { "proton_em.json" }
-        else if rl.contains("proton-ttl") { "proton_ttl.json" }
         else if rl.contains("wine-staging-tkg") { "wine_staging_tkg.json" }
         else if rl.contains("wine-staging") { "wine_staging.json" }
         else if rl.contains("wine-ge-proton") { "wine_ge_proton.json" }
