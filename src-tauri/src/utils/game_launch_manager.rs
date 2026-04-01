@@ -45,15 +45,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
     let appid = get_steam_appid();
 
-    if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version, ) && !cpo.min_runner_versions.is_empty() {
+    if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
         show_dialog(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]));
         return Ok(false);
     }
 
-    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone(), ) {
+    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
-        show_dialog(app, "warning", "TwintailLauncher", &format!("Launching {} without using {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, cpo.override_runner.linux.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]));
+        show_dialog(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]));
         return Ok(false);
     }
 
