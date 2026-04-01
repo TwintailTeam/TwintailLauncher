@@ -33,7 +33,7 @@ gumdrop = "0.8.1"
 #fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 fischl = { git = "https://github.com/Minlor/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 steam_shortcuts_util = "1.1.8"
-rpcdiscord = "0.2.6"
+rpcdiscord = { git = "https://github.com/TukanDev/rpcdiscord.git", branch = "main" }
 keepawake = "0.6.0"
 log = "0.4.29"
 

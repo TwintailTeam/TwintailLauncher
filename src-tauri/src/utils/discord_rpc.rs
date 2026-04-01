@@ -26,9 +26,9 @@ pub fn init(app: &AppHandle, install: LauncherInstall, gm: GameManifest) -> Opti
     let start = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
     let ver = app.config().version.clone().unwrap_or_default();
     let small_txt = format!("TwintailLauncher v{ver}");
-    let details = format!("Playing {}", install.name);
+    let details = format!("{}", install.name);
 
-    let payload = activity::Activity::new().details(&details).state("In Game").timestamps(activity::Timestamps::new().start(start)).assets(activity::Assets::new().large_image(icon_key).large_text(&install.name).small_image("tl_512").small_text(&small_txt));
+    let payload = activity::Activity::new().activity_display_type(activity::ActivityDisplayType::Details).activity_type(activity::ActivityType::Playing).details(&details).state("In Game").timestamps(activity::Timestamps::new().start(start)).assets(activity::Assets::new().large_image(icon_key).large_text(&install.name).small_image("tl_512").small_text(&small_txt));
     let _ = client.set_activity(payload);
     log::info!("Discord RPC initialized for {} (ID: {})!", install.name, install.id);
     Some(client)
