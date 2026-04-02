@@ -3,7 +3,7 @@ use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
-use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog};
+use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,Ordering};
@@ -17,7 +17,7 @@ pub fn register_repair_handler(app: &AppHandle) {
         let state = a.state::<DownloadState>();
         let q = state.queue.lock().unwrap().clone();
         if let Some(queue) = q {
-            if queue.has_job_for_id(payload.install.clone()) { show_dialog(&a, "warning", "TwintailLauncher", "This game is already queued for repair!", None); return; }
+            if queue.has_job_for_id(payload.install.clone()) { show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for repair!", Some(vec!["Ok"]), None); return; }
             queue.enqueue(QueueJobKind::GameRepair, QueueJobPayload::Game(payload));
         } else {
             let h5 = a.clone();
@@ -149,7 +149,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     success = true;
                 }
             } else {
-                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]), None); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Error occurred during DOWNLOAD_MODE_FILE repair for {}, marking as failed", i.name);
             }
@@ -215,7 +215,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_CHUNK", i.name);
                 success = true;
             } else {
-                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]), None); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_CHUNK", i.name);
             }
@@ -258,7 +258,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 #[cfg(target_os = "linux")]
                 crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "add".to_string());
             } else {
-                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]), None); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_RAW", i.name);
             }
@@ -342,17 +342,17 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     log::debug!("All {} archives extracted for {}, marking repair as complete", total_files, i.name);
                     success = true;
                 } else {
-                    if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]), None); }
                     h5.emit("repair_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE repair extraction for {}, marking as failed", i.name);
                 }
             } else {
-                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"])); }
+                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to repair {}\nPlease try again!", i.name), Some(vec!["Ok"]), None); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE repair for {}, marking as failed", i.name);
             }
         }
-        _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog(&h5, "error", "TwintailLauncher", "Unsupported download mode for repair!", Some(vec!["Ok"])); }
+        _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h5, "error", "TwintailLauncher", "Unsupported download mode for repair!", Some(vec!["Ok"]), None); }
     }
 
     let mut cancelled = false;

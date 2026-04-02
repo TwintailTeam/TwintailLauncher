@@ -143,10 +143,6 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     utils::fix_window_decorations(handle);
-                    // cleanup steam.exe jank
-                    let tmphome = data_dir.join("tmp_home/");
-                    if tmphome.exists() { std::fs::remove_dir_all(&tmphome).unwrap(); }
-
                     utils::deprecate_jadeite(handle);
                     utils::sync_installed_runners(handle);
                     downloading::misc::download_or_update_steamrt3(handle);

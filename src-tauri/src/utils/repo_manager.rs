@@ -6,7 +6,7 @@ use crate::utils::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_manifest,create_repository,delete_manifest_by_id,get_manifest_info_by_filename,get_manifests_by_repository_id,get_repositories,get_repository_info_by_github_id,update_manifest_enabled_by_id};
-use crate::utils::{generate_cuid, models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog};
+use crate::utils::{generate_cuid, models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog_with_callback};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
@@ -62,7 +62,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for game manifest repository! {}", e.to_string()).as_str(), None); }
+            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for game manifest repository! {}", e.to_string()).as_str(), None, None); }
         }
     }
 }
@@ -108,7 +108,7 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for one or multiple 3rd party repositories! {}", e.to_string()).as_str(), None); }
+            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for one or multiple 3rd party repositories! {}", e.to_string()).as_str(), None, None); }
         }
         Ok(false)
     }
@@ -180,7 +180,7 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for compatibility repository! {}", e.to_string()).as_str(), None); }
+            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for compatibility repository! {}", e.to_string()).as_str(), None, None); }
         }
     }
 }

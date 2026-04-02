@@ -1,5 +1,5 @@
 use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
-use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog};
+use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog_with_callback};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -47,13 +47,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
-        show_dialog(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]));
+        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
     if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
-        show_dialog(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]));
+        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
@@ -61,7 +61,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     if !prefixp.exists() {
         if let Err(e) = fs::create_dir_all(&prefixp) {
             log::error!("Failed to create missing runner prefix folder at {}! Error: {}", prefixp.to_str().unwrap(), e.to_string());
-            show_dialog(app, "warning", "TwintailLauncher", &format!("Encountered an error while trying to reinitialize your runner prefix! - {err}!", err = e.to_string()), Some(vec!["I understand"]));
+            show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Encountered an error while trying to reinitialize your runner prefix! - {err}!", err = e.to_string()), Some(vec!["I understand"]), None);
             return Ok(false);
         };
     }
@@ -101,15 +101,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None); }
+                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
                 }
                 Ok(None) => {
                     log::info!("Executing prelaunch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("pre_launch.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "pre_launch.log".parse().unwrap());
                 }
-                Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None); }
+                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
         }
     }
 
@@ -166,13 +166,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             cmd.env("MANGOHUD", "1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        /*if gm.biz == "wuwa_global" {
-            if install.use_xxmi {
-                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
-                let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
-                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
-            }
-        }*/
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -197,7 +190,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -206,9 +199,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     log::info!("Executing launch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("game.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "game.log".parse().unwrap());
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
         }
         true
     } else {
@@ -250,13 +243,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
             cmd.env("MANGOHUD", "1");
             if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
         }
-        /*if gm.biz == "wuwa_global" {
-            if install.use_xxmi {
-                let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
-                let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
-                edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
-            }
-        }*/
 
         cmd.stdout(Stdio::piped());
         cmd.stderr(Stdio::piped());
@@ -281,7 +267,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check install settings.", None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check install settings.", None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -290,9 +276,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     log::info!("Executing launch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("game.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "game.log".parse().unwrap());
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
         }
         true
     };
@@ -350,15 +336,15 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             match cmd.spawn() {
                 Ok(mut child) => match child.try_wait() {
                     Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing XXMI command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None); }
+                        if !status.success() { log::info!("Executing XXMI command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None, None); }
                     }
                     Ok(None) => {
                         log::info!("Executing XXMI command: \"{}\" detailed output of the command is available at {}", command, Path::new(&xxmi_path).join("xxmi.log").to_str().unwrap());
                         write_log(&app, Path::new(&xxmi_path).to_path_buf(), child, "xxmi.log".parse().unwrap());
                     }
-                    Err(_) => { log::error!("Executing XXMI command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again later!", None); }
+                    Err(_) => { log::error!("Executing XXMI command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again later!", None, None); }
                 },
-                Err(_) => { log::error!("Executing XXMI command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to run XXMI! Something serious is wrong.", None); }
+                Err(_) => { log::error!("Executing XXMI command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Something serious is wrong.", None, None); }
             }
         });
     }
@@ -408,15 +394,15 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             match cmd.spawn() {
                 Ok(mut child) => match child.try_wait() {
                     Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing FPS Unlocker command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None); }
+                        if !status.success() { log::info!("Executing FPS Unlocker command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None, None); }
                     }
                     Ok(None) => {
                         log::info!("Executing FPS Unlocker command: \"{}\" detailed output of the command is available at {}", command, Path::new(&fpsunlock_path).join("fps_unlocker.log").to_str().unwrap());
                         write_log(&app, Path::new(&fpsunlock_path).to_path_buf(), child, "fps_unlocker.log".parse().unwrap());
                     }
-                    Err(_) => { log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again later!", None); }
+                    Err(_) => { log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again later!", None, None); }
                 },
-                Err(_) => { log::error!("Executing FPS Unlocker command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Something serious is wrong.", None); }
+                Err(_) => { log::error!("Executing FPS Unlocker command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Something serious is wrong.", None, None); }
             }
         });
     }
@@ -485,13 +471,13 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
                 let status = child.wait();
                 match status {
                     Ok(s) => {
-                        if !s.success() { log::info!("Executing WineTricks command: \"{}\" failed with status: {}", command, s.code().unwrap()); show_dialog(&app, "warning", "TwintailLauncher", "Winetricks setup failed! The game will still attempt to launch.", Some(vec!["I understand"])); }
+                        if !s.success() { log::info!("Executing WineTricks command: \"{}\" failed with status: {}", command, s.code().unwrap()); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! The game will still attempt to launch.", Some(vec!["I understand"]), None); }
                         s.success()
                     }
-                    Err(_) => { log::error!("Executing WineTricks command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "warning", "TwintailLauncher", "Winetricks setup failed! Please try again later!", Some(vec!["I understand"])); false }
+                    Err(_) => { log::error!("Executing WineTricks command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! Please try again later!", Some(vec!["I understand"]), None); false }
                 }
             }
-            Err(_) => { log::error!("Executing WineTricks command \"{}\" failed catastrophically!", command); show_dialog(&app, "warning", "TwintailLauncher", "Failed to execute winetricks for setup! Something serious is wrong.", Some(vec!["I understand"])); false }
+            Err(_) => { log::error!("Executing WineTricks command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Failed to execute winetricks for setup! Something serious is wrong.", Some(vec!["I understand"]), None); false }
         }
     })
 }
@@ -518,25 +504,18 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None); }
+                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None); }
                 }
                 Ok(None) => {
                     log::info!("Executing prelaunch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("pre_launch.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "pre_launch.log".parse().unwrap());
                 }
-                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None); }
+                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None); }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None); }
         }
     }
 
-    /*if gm.biz == "wuwa_global" {
-        if install.use_xxmi {
-            let engine_file = dirp.join("Client/Saved/Config/WindowsNoEditor/Engine.ini");
-            let device_profiles_file = dirp.join("Client/Saved/Config/WindowsNoEditor/DeviceProfiles.ini");
-            edit_wuwa_configs_xxmi(engine_file.to_str().unwrap().to_string(), device_profiles_file.to_str().unwrap().to_string());
-        }
-    }*/
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
     load_fps_unlock(app, install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);
@@ -580,7 +559,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -589,9 +568,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     log::info!("Executing launch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("game.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "game.log".parse().unwrap());
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check the command correctness.", None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check the command correctness.", None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
         }
         true
     } else {
@@ -635,7 +614,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -644,9 +623,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     log::info!("Executing launch command: \"{}\" detailed output of the command is available at {}", command, Path::new(&dir).join("game.log").to_str().unwrap());
                     write_log(app, Path::new(&dir).to_path_buf(), child, "game.log".parse().unwrap());
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None); }
         }
         true
     };
@@ -838,7 +817,7 @@ fn write_log(app: &AppHandle, log_dir: PathBuf, child: Child, file: String) {
 
         if !status.success() || !stderr_output.trim().is_empty() {
             let message = if !stderr_output.trim().is_empty() { format!("Failed to run command: {}", stderr_output.trim()) } else { "Failed to run command! Please try again or check logs available in game directory or respective tool's directory.".to_string() };
-            show_dialog(&ac, "error", "TwintailLauncher", &message, None);
+            show_dialog_with_callback(&ac, "error", "TwintailLauncher", &message, None, None);
         }
 
         if let Ok(mut file) = game_output.lock() { file.flush().unwrap(); }

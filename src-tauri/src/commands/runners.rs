@@ -3,7 +3,6 @@ use crate::utils::db_manager::{
     get_installs, get_settings, update_install_runner_location_by_id,
     update_install_runner_version_by_id, update_installed_runner_is_installed_by_version,
 };
-use crate::utils::{show_dialog};
 use std::fs;
 use std::path::Path;
 use tauri::AppHandle;
@@ -117,7 +116,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let q = state.queue.lock().unwrap().clone();
                 if let Some(ref queue) = q {
                     if queue.has_job_for_id(runner_version.clone()) {
-                        show_dialog(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None);
+                        crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None, None);
                         return Some(false);
                     }
                 }
@@ -140,10 +139,10 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                     }));
                 }
                 // Create/update database entry (will be marked as installed by the download job on completion)
-                if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false); } else { create_installed_runner(&app, runner_version.clone(), false, runner_path.to_str().unwrap().to_string(), ).unwrap(); }
+                if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false); } else { create_installed_runner(&app, runner_version.clone(), false, runner_path.to_str().unwrap().to_string()).unwrap(); }
                 Some(true)
             } else {
-                show_dialog(&app, "info", "TwintailLauncher", format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None);
+                crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None, None);
                 Some(false)
             }
         }
@@ -186,7 +185,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
             }
             Some(true)
         } else {
-            show_dialog(&app, "info", "TwintailLauncher", format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None);
+            crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None, None);
             Some(false)
         }
     }

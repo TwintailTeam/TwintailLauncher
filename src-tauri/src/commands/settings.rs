@@ -9,7 +9,7 @@ use crate::utils::db_manager::{
     update_settings_third_party_repo_update
 };
 use crate::utils::repo_manager::get_manifest;
-use crate::utils::{get_mi_path_from_game, show_dialog};
+use crate::utils::{get_mi_path_from_game, show_dialog_with_callback};
 use std::fs;
 use std::path::Path;
 use tauri::{AppHandle};
@@ -181,9 +181,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}
-                        Err(_e) => { show_dialog(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None); }
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app, "error", "TwintailLauncher", "XXMI is not downloaded or folder structure is corrupt! Can not open the folder.", None); };
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "XXMI is not downloaded or folder structure is corrupt! Can not open the folder.", None, None); };
             }
         }
         "install" => {
@@ -196,9 +196,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}
-                        Err(_e) => { show_dialog(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None); }
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app,"error", "TwintailLauncher", "Can not open game directory, Please try again later!", None); };
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open game directory, Please try again later!", None, None); };
             }
         }
         "runner" => {
@@ -209,9 +209,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}
-                        Err(_e) => { show_dialog(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None); }
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app, "error", "TwintailLauncher", "Can not open runner directory, Is runner downloaded properly?", None); };
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner directory, Is runner downloaded properly?", None, None); };
             }
         }
         "runner_global" => {
@@ -222,9 +222,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}
-                        Err(_e) => { show_dialog(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None); }
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app, "error", "TwintailLauncher", "Can not open runner directory, Is runner downloaded properly?", None); }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner directory, Is runner downloaded properly?", None, None); }
             }
         }
         "runner_prefix" => {
@@ -235,9 +235,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 if fp.exists() {
                     match app.opener().reveal_item_in_dir(fp.as_path()) {
                         Ok(_) => {}
-                        Err(_e) => { show_dialog(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None); }
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None); };
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None, None); };
             }
         }
         _ => {}
@@ -255,9 +255,9 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
                 if fp.exists() {
                     match crate::utils::empty_dir(fp) {
                         Ok(_) => {}
-                        Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Runner prefix repair failed, try again later!", None); }
+                        Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Runner prefix repair failed, try again later!", None, None); }
                     }
-                } else { show_dialog(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None); };
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None, None); };
             }
         }
         _ => {}
@@ -276,7 +276,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                     let fp = Path::new(&i.runner_path);
                     let rp = Path::new(&i.runner_prefix).join("pfx/");
                     if fp.exists() {
-                        if !rp.exists() { show_dialog(&app, "error", "TwintailLauncher", "Can not execute regedit.exe, Please start game at least once!", None); return; }
+                        if !rp.exists() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute regedit.exe, Please start game at least once!", None, None); return; }
                         let runnerparent = fp.parent().unwrap().to_path_buf();
                         let toolid = crate::utils::get_steam_tool_appid(fp.to_path_buf());
                         let steamrtpp = runnerparent.join("steamrt/").join(toolid.clone());
@@ -317,14 +317,14 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                         match cmd.spawn() {
                             Ok(mut child) => match child.try_wait() {
                                 Ok(Some(status)) => {
-                                    if !status.success() { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Please try again.", None); }
+                                    if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Please try again.", None, None); }
                                 }
                                 Ok(None) => {}
-                                Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Please try again or check the command correctness.", None); }
+                                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Please try again or check the command correctness.", None, None); }
                             },
-                            Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Something serious is wrong.", None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute regedit helper command! Something serious is wrong.", None, None); }
                         }
-                    } else { show_dialog(&app, "error", "TwintailLauncher", "Can not execute regedit.exe, Is runner downloaded properly?", None); };
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute regedit.exe, Is runner downloaded properly?", None, None); };
                 }
             }
         }
@@ -337,7 +337,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                     let fp = Path::new(&i.runner_path);
                     let rp = Path::new(&i.runner_prefix).join("pfx/");
                     if fp.exists() {
-                        if !rp.exists() { show_dialog(&app, "error", "TwintailLauncher", "Can not execute control.exe, Please start game at least once!", None); return; }
+                        if !rp.exists() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute control.exe, Please start game at least once!", None, None); return; }
                         let runnerparent = fp.parent().unwrap().to_path_buf();
                         let toolid = crate::utils::get_steam_tool_appid(fp.to_path_buf());
                         let steamrtpp = runnerparent.join("steamrt/").join(toolid.clone());
@@ -378,14 +378,14 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                         match cmd.spawn() {
                             Ok(mut child) => match child.try_wait() {
                                 Ok(Some(status)) => {
-                                    if !status.success() { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Please try again.", None); }
+                                    if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Please try again.", None, None); }
                                 }
                                 Ok(None) => {}
-                                Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Please try again or check the command correctness.", None); }
+                                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Please try again or check the command correctness.", None, None); }
                             },
-                            Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Something serious is wrong.", None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute control helper command! Something serious is wrong.", None, None); }
                         }
-                    } else { show_dialog(&app, "error", "TwintailLauncher", "Can not execute control.exe, Is runner downloaded properly?", None); };
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute control.exe, Is runner downloaded properly?", None, None); };
                 }
             }
         }
@@ -398,7 +398,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                     let fp = Path::new(&i.runner_path);
                     let rp = Path::new(&i.runner_prefix).join("pfx/");
                     if fp.exists() {
-                        if !rp.exists() { show_dialog(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Please start game at least once!", None); return; }
+                        if !rp.exists() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Please start game at least once!", None, None); return; }
                         let runnerparent = fp.parent().unwrap().to_path_buf();
                         let toolid = crate::utils::get_steam_tool_appid(fp.to_path_buf());
                         let steamrtpp = runnerparent.join("steamrt/").join(toolid.clone());
@@ -439,14 +439,14 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                         match cmd.spawn() {
                             Ok(mut child) => match child.try_wait() {
                                 Ok(Some(status)) => {
-                                    if !status.success() { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Please try again.", None); }
+                                    if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Please try again.", None, None); }
                                 }
                                 Ok(None) => {}
-                                Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Please try again or check the command correctness.", None); }
+                                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Please try again or check the command correctness.", None, None); }
                             },
-                            Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Something serious is wrong.", None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute cmd helper command! Something serious is wrong.", None, None); }
                         }
-                    } else { show_dialog(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Is runner downloaded properly?", None); };
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Is runner downloaded properly?", None, None); };
                 }
             }
         }
@@ -459,7 +459,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                     let fp = Path::new(&i.runner_path);
                     let rp = Path::new(&i.runner_prefix).join("pfx/");
                     if fp.exists() {
-                        if !rp.exists() { show_dialog(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Please start game at least once!", None); return; }
+                        if !rp.exists() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute cmd.exe, Please start game at least once!", None, None); return; }
                         let runnerparent = fp.parent().unwrap().to_path_buf();
                         let toolid = crate::utils::get_steam_tool_appid(fp.to_path_buf());
                         let steamrtpp = runnerparent.join("steamrt/").join(toolid.clone());
@@ -500,14 +500,14 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                         match cmd.spawn() {
                             Ok(mut child) => match child.try_wait() {
                                 Ok(Some(status)) => {
-                                    if !status.success() { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Please try again.", None); }
+                                    if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Please try again.", None, None); }
                                 }
                                 Ok(None) => {}
-                                Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Please try again or check the command correctness.", None); }
+                                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Please try again or check the command correctness.", None, None); }
                             },
-                            Err(_) => { show_dialog(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Something serious is wrong.", None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute winecfg helper command! Something serious is wrong.", None, None); }
                         }
-                    } else { show_dialog(&app, "error", "TwintailLauncher", "Can not execute winecfg.exe, Is runner downloaded properly?", None); };
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute winecfg.exe, Is runner downloaded properly?", None, None); };
                 }
             }
         }

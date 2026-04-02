@@ -3,7 +3,7 @@ use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
-use crate::utils::{models::DiffGameFile, run_async_command, show_dialog};
+use crate::utils::{models::DiffGameFile, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon};
 use fischl::utils::free_space::available;
 use std::collections::HashMap;
@@ -78,7 +78,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
             match pmd.download_mode.as_str() {
                 "DOWNLOAD_MODE_FILE" => {
                     log::warn!("No preload supported for {} using DOWNLOAD_MODE_FILE - this should never happen, the manifest may be corrupt or the current version is unrecognized", install.name);
-                    show_dialog(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]));
+                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]), None);
                     h5.emit("preload_complete", ()).unwrap();
                 }
                 "DOWNLOAD_MODE_CHUNK" => {
@@ -86,7 +86,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     let urls = pg.diff.into_iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<DiffGameFile>>();
                     if urls.is_empty() {
                         log::warn!("No preload supported for {} using DOWNLOAD_MODE_CHUNK - this should never happen, the manifest may be corrupt or the current version is unrecognized", install.name);
-                        show_dialog(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]));
+                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]), None);
                         h5.emit("preload_complete", ()).unwrap();
                     } else {
                         let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
@@ -140,12 +140,12 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                 log::debug!("Successfully preloaded {} using DOWNLOAD_MODE_CHUNK, marking as complete", install.name);
                                 success = true;
                             } else {
-                                if !cancel_token.load(Ordering::Relaxed) { show_dialog(&h5, "warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"])); }
+                                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"]), None); }
                                 h5.emit("preload_complete", ()).unwrap();
                                 log::debug!("Error occurred during preload of {} using DOWNLOAD_MODE_CHUNK, marking as failed", install.name);
                             }
                         } else {
-                            show_dialog(&h5,"warning", "TwintailLauncher", format!("Unable to predownload update for {inn} as there is not enough free space, please make sure there is enough free space for predownload!", inn = install.name).as_str(), Some(vec!["Ok"]));
+                            show_dialog_with_callback(&h5, "warning", "TwintailLauncher", format!("Unable to predownload update for {inn} as there is not enough free space, please make sure there is enough free space for predownload!", inn = install.name).as_str(), Some(vec!["Ok"]), None);
                             h5.emit("preload_complete", ()).unwrap();
                             log::debug!("Not enough space to preload {} using DOWNLOAD_MODE_CHUNK, required: {}, available: {:?}", install.name, total_size, available);
                         }
@@ -156,7 +156,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     let urls = pg.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                     if urls.is_empty() {
                         log::warn!("No preload supported for {} using DOWNLOAD_MODE_RAW - this should never happen, the manifest may be corrupt or the current version is unrecognized", install.name);
-                        show_dialog(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]));
+                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]), None);
                         h5.emit("preload_complete", ()).unwrap();
                     } else {
                         let manifest = urls.get(0).unwrap();
@@ -194,7 +194,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                 success = true;
                             } else {
                                 if !cancel_token.load(Ordering::Relaxed) {
-                                    show_dialog(&h5,"warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"]));
+                                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", format!("Error occurred while trying to predownload {inn}\nPlease try again!", inn = install.name).as_str(), Some(vec!["Ok"]), None);
                                     let dir = std::path::Path::new(&install.directory).join("patching");
                                     if dir.exists() { std::fs::remove_dir_all(dir).unwrap_or_default(); }
                                 }
@@ -202,7 +202,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                                 log::debug!("Error occurred during preload of {} using DOWNLOAD_MODE_RAW, marking as failed", install.name);
                             }
                         } else {
-                            show_dialog(&h5,"warning", "TwintailLauncher", format!("Unable to predownload update for {inn} as there is not enough free space, please make sure there is enough free space for predownload!", inn = install.name).as_str(), Some(vec!["Ok"]));
+                            show_dialog_with_callback(&h5, "warning", "TwintailLauncher", format!("Unable to predownload update for {inn} as there is not enough free space, please make sure there is enough free space for predownload!", inn = install.name).as_str(), Some(vec!["Ok"]), None);
                             h5.emit("preload_complete", ()).unwrap();
                             log::debug!("Not enough space to preload {} using DOWNLOAD_MODE_RAW, required: {}, available: {:?}", install.name, total_size, available);
                         }
@@ -210,10 +210,10 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                 }
                 "DOWNLOAD_MODE_MULTIFILE" => {
                     log::warn!("No preload supported for {} using DOWNLOAD_MODE_MULTIFILE - this should never happen, the manifest may be corrupt or the current version is unrecognized", install.name);
-                    show_dialog(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]));
+                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to predownload {} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.", install.name), Some(vec!["Ok"]), None);
                     h5.emit("preload_complete", ()).unwrap();
                 }
-                _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog(&h5, "error", "TwintailLauncher", "Unsupported download mode for predownload!", Some(vec!["Ok"])); }
+                _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h5, "error", "TwintailLauncher", "Unsupported download mode for predownload!", Some(vec!["Ok"]), None); }
             }
 
             let mut cancelled = false;

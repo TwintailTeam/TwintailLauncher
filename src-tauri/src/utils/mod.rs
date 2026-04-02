@@ -9,7 +9,6 @@ use crate::utils::db_manager::{
 use crate::utils::models::{DialogResponse,XXMISettings};
 use crate::utils::repo_manager::get_manifest;
 use fischl::utils::get_github_release;
-use serde::{Deserialize, Serialize};
 use sqlx::types::Json;
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -109,11 +108,6 @@ pub fn register_listeners(app: &AppHandle) {
     app.listen_any("dialog_response", move |event| {
         if let Ok(response) = serde_json::from_str::<DialogResponse>(event.payload()) {
             match response.callback_id.as_str() {
-                "dialog_aarch64_kill" => {
-                    h3.cleanup_before_exit();
-                    h3.exit(0);
-                    std::process::exit(0);
-                }
                 "dialog_steamrt3_dl_fail" => {
                     let gs = get_settings(&h3).unwrap();
                     let runnerp = Path::new(gs.default_runner_path.as_str()).to_path_buf();
@@ -134,29 +128,15 @@ pub fn register_listeners(app: &AppHandle) {
     });
 }
 
-pub fn show_dialog(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>) {
-    show_dialog_with_callback(app, dialog_type, title, message, buttons, None);
-}
-
 pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>) {
-    #[derive(Serialize, Clone)]
-    struct DialogPayload {
-        dialog_type: String,
-        title: String,
-        message: String,
+    #[derive(serde::Serialize, Clone)]
+    struct DialogPayload { dialog_type: String, title: String, message: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         buttons: Option<Vec<String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         callback_id: Option<String>,
     }
-
-    let payload = DialogPayload {
-        dialog_type: dialog_type.to_string(),
-        title: title.to_string(),
-        message: message.to_string(),
-        buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect::<Vec<String>>()),
-        callback_id: callback_id.map(|id| id.to_string()),
-    };
+    let payload = DialogPayload { dialog_type: dialog_type.to_string(), title: title.to_string(), message: message.to_string(), buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect::<Vec<String>>()), callback_id: callback_id.map(|id| id.to_string()), };
     app.emit("show_dialog", payload).unwrap();
 }
 
@@ -164,9 +144,7 @@ pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str
 pub fn runner_from_runner_version(app: &AppHandle, runner_version: String) -> Option<String> {
     if runner_version.is_empty() { return None; }
     let loader = get_compatibilities(app);
-    for (filename, manifest) in &loader {
-        if manifest.versions.iter().any(|v| v.version == runner_version) { return Some(filename.clone()); }
-    }
+    for (filename, manifest) in &loader { if manifest.versions.iter().any(|v| v.version == runner_version) { return Some(filename.clone()); } }
     let rl = runner_version.to_lowercase();
     let rslt = if rl.contains("proton-cachyos") { "proton_cachyos.json" }
         else if rl.contains("proton-ge") || rl.contains("ge-proton") { "proton_ge.json" }
@@ -367,19 +345,10 @@ pub fn sync_installed_runners(app: &AppHandle) {
                 if is_installed { continue; }
 
                 // Resolve the download URL from the compatibility manifest
-                let manifest_file = match runner_from_runner_version(app, rv.clone()) {
-                    Some(f) if !f.is_empty() => f,
-                    _ => continue,
-                };
-                let compat = match get_compatibility(app, &manifest_file) {
-                    Some(c) => c,
-                    None => continue,
-                };
+                let manifest_file = match runner_from_runner_version(app, rv.clone()) { Some(f) if !f.is_empty() => f, _ => continue };
+                let compat = match get_compatibility(app, &manifest_file) { Some(c) => c, None => continue };
                 let matched: Vec<_> = compat.versions.into_iter().filter(|v| v.version == *rv).collect();
-                let runner_ver = match matched.first() {
-                    Some(v) => v,
-                    None => continue,
-                };
+                let runner_ver = match matched.first() { Some(v) => v, None => continue };
 
                 // Determine the download URL based on architecture
                 let mut dl_url = runner_ver.url.clone();
@@ -454,10 +423,7 @@ pub fn deprecate_jadeite(app: &AppHandle) {
 pub fn raise_fd_limit(new_limit: i32) {
     type rlim_t = u64;
     #[repr(C)]
-    struct rlimit {
-        rlim_cur: rlim_t,
-        rlim_max: rlim_t,
-    }
+    struct rlimit { rlim_cur: rlim_t, rlim_max: rlim_t }
     const RLIMIT_NOFILE: i32 = 7;
     unsafe extern "C" {
         fn getrlimit(resource: i32, rlp: *mut rlimit) -> i32;
@@ -481,7 +447,7 @@ pub fn notify_update(app: &AppHandle) {
             let cfg = app.config();
             match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
                 std::cmp::Ordering::Less => {
-                    show_dialog(&app, "warning", "TwintailLauncher", "You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.", Some(vec!["Continue anyway"]));
+                    show_dialog_with_callback(&app, "warning", "TwintailLauncher", "You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.", Some(vec!["Continue anyway"]), None);
                     log::info!("You are running outdated version of TwintailLauncher!");
                 }
                 std::cmp::Ordering::Equal => {
@@ -512,9 +478,7 @@ pub fn is_flatpak() -> bool {
 pub fn fix_window_decorations(app: &AppHandle) {
     let ssd = vec!["hyprland", "i3", "sway", "bspwm", "awesome", "dwm", "xmonad", "qtile", "niri", "mango", "mangowc"];
     match std::env::var("XDG_SESSION_DESKTOP") {
-        Ok(val) => {
-            if ssd.contains(&&**&val.to_ascii_lowercase()) { app.get_window("main").unwrap().set_decorations(false).unwrap(); } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); }
-        },
+        Ok(val) => { if ssd.contains(&&**&val.to_ascii_lowercase()) { app.get_window("main").unwrap().set_decorations(false).unwrap(); } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); } },
         Err(_e) => {},
     }
 }
@@ -615,66 +579,6 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
     }
 }
 
-/*pub fn edit_wuwa_configs_xxmi(engine_ini: String, device_profiles_ini: String) {
-    let engine_file = Path::new(&engine_ini);
-    if engine_file.exists() {
-        let perf = [("r.Streaming.HLODStrategy","2"),("r.Streaming.PoolSizeForMeshes","-1"),("r.XGEShaderCompile","0"),("FX.BatchAsync","1"),("FX.EarlyScheduleAsync","1"),("fx.Niagara.ForceAutoPooling","1"),("wp.Runtime.KuroRuntimeStreamingRangeOverallScale","0.5"),("tick.AllowAsyncTickCleanup","1"),("tick.AllowAsyncTickDispatch","1")];
-        let rm = ["r.Streaming.UsingNewKuroStreaming","r.Streaming.LimitPoolSizeToVRAM","r.Streaming.PoolSize","r.Streaming.UseAllMips","r.Streaming.MinBoost","r.Streaming.Boost","r.Kuro.SkeletalMesh.LODDistanceScale","r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset"];
-        // Fuck .ini files who tf uses ini files in 2026
-        if let Ok(content) = fs::read_to_string(engine_file) {
-            let mut out: Vec<String> = Vec::new();
-            let mut in_ss = false;
-            let mut found_ss = false;
-            let mut written = [false; 9];
-            for line in content.lines() {
-                let tr = line.trim();
-                if tr.starts_with('[') && tr.ends_with(']') {
-                    if in_ss { for (i,(k,v)) in perf.iter().enumerate() { if !written[i] { out.push(format!("{}={}",k,v)); written[i]=true; } } }
-                    in_ss = &tr[1..tr.len()-1] == "SystemSettings";
-                    if in_ss { found_ss = true; }
-                    out.push(line.to_string());
-                } else if !tr.starts_with(';') && !tr.starts_with('#') && tr.contains('=') {
-                    let key = tr.splitn(2,'=').next().unwrap_or("").trim();
-                    if rm.contains(&key) { continue; }
-                    if in_ss { if let Some(i) = perf.iter().position(|(pk,_)| *pk == key) { out.push(format!("{}={}",perf[i].0,perf[i].1)); written[i]=true; continue; } }
-                    out.push(line.to_string());
-                } else { out.push(line.to_string()); }
-            }
-            if in_ss { for (i,(k,v)) in perf.iter().enumerate() { if !written[i] { out.push(format!("{}={}",k,v)); } } }
-            if !found_ss { out.push("[SystemSettings]".to_string()); for (k,v) in &perf { out.push(format!("{}={}",k,v)); } }
-            let _ = fs::write(engine_file, out.join("\n"));
-            log::debug!("Edited Engine.ini at {}", engine_file.display());
-        }
-    }
-    let dp_file = Path::new(&device_profiles_ini);
-    if dp_file.exists() {
-        let cvars = [("CVars=r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset","-10"),("CVars=r.Streaming.Boost","20.0"),("CVars=r.Streaming.MinBoost","0.0"),("CVars=r.Streaming.UseAllMips","1"),("CVars=r.Streaming.PoolSize","0"),("CVars=r.Streaming.LimitPoolSizeToVRAM","1"),("CVars=r.Streaming.UseFixedPoolSize","1")];
-        let profiles = ["Windows_Highest DeviceProfile","Windows_VeryHigh DeviceProfile","Windows_High DeviceProfile","Windows_Mid DeviceProfile","Windows_Low DeviceProfile","Windows_Lowest DeviceProfile"];
-        // I do not want to know how, but it works and that is nice... will be fun when we need to edit the content
-        if let Ok(content) = fs::read_to_string(dp_file) {
-            let mut out: Vec<String> = Vec::new();
-            let mut in_target = false;
-            let mut written_profiles: std::collections::HashSet<&str> = std::collections::HashSet::new();
-            let mut current_profile: Option<&str> = None;
-            for line in content.lines() {
-                let tr = line.trim();
-                if tr.starts_with('[') && tr.ends_with(']') {
-                    if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } if let Some(p) = current_profile { written_profiles.insert(p); } }
-                    current_profile = profiles.iter().find(|&&s| s == &tr[1..tr.len()-1]).copied();
-                    in_target = current_profile.is_some();
-                    out.push(line.to_string());
-                } else if in_target {
-                    if !cvars.iter().any(|(k,_)| tr.starts_with(&format!("{}=",k))) { out.push(line.to_string()); }
-                } else { out.push(line.to_string()); }
-            }
-            if in_target { for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } if let Some(p) = current_profile { written_profiles.insert(p); } }
-            for p in &profiles { if !written_profiles.contains(p) { out.push(format!("[{}]",p)); for (k,v) in &cvars { out.push(format!("{}={}",k,v)); } } }
-            let _ = fs::write(dp_file, out.join("\n"));
-            log::debug!("Edited DeviceProfiles.ini at {}", dp_file.display());
-        }
-    }
-}*/
-
 #[allow(unused_mut)]
 pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json<XXMISettings> {
     if package.exists() {
@@ -741,9 +645,7 @@ pub fn find_steamrt_version(file_path: PathBuf) -> io::Result<String> {
 pub fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
     let parts1: Vec<u64> = v1.split('.').map(|v| v.parse().unwrap_or(0)).collect();
     let parts2: Vec<u64> = v2.split('.').map(|v| v.parse().unwrap_or(0)).collect();
-    for (a, b) in parts1.iter().zip(parts2.iter()) {
-        if a > b { return true; } else if a < b { return false; }
-    }
+    for (a, b) in parts1.iter().zip(parts2.iter()) { if a > b { return true; } else if a < b { return false; } }
     parts1.len() > parts2.len()
 }
 
@@ -777,7 +679,6 @@ pub fn is_runner_lower(min_runner_versions: Vec<String>, runner_version: String)
     let idx = match runner_version.find("proton-") { Some(i) => i, None => return false };
     let (left, right) = runner_version.split_at(idx);
     let cand_ver = left.strip_suffix('-').unwrap_or(left).replace("-", ".");
-
     for s in min_runner_versions {
         let idx = match s.find("proton-") { Some(i) => i, None => continue };
         let (l, r) = s.split_at(idx);
@@ -807,9 +708,7 @@ pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
             let path = entry.path();
             if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
                 let is_dir = path.is_dir();
-                let should_skip = EXCEPTIONS.iter().any(|&ex| {
-                    if ex.ends_with('/') { is_dir && name.contains(&ex[..ex.len() - 1]) } else { !is_dir && name == ex }
-                });
+                let should_skip = EXCEPTIONS.iter().any(|&ex| { if ex.ends_with('/') { is_dir && name.contains(&ex[..ex.len() - 1]) } else { !is_dir && name == ex } });
                 if should_skip { continue; }
                 if is_dir { fs::remove_dir_all(&path)?; } else { fs::remove_file(&path)?; }
             }
@@ -822,38 +721,28 @@ pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
 pub fn get_steam_appid() -> u32 {
     if let Ok(path) = std::env::var("STEAM_COMPAT_TRANSCODED_MEDIA_PATH") {
         if let Some(last) = Path::new(&path).components().last() {
-            if let Some(val) = last.as_os_str().to_str() {
-                if let Ok(id) = val.parse::<u32>() { return id; }
-            }
+            if let Some(val) = last.as_os_str().to_str() { if let Ok(id) = val.parse::<u32>() { return id; } }
         }
     }
     if let Ok(path) = std::env::var("STEAM_COMPAT_MEDIA_PATH") {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 2 {
-            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<u32>() { return id; }
-            }
+            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() { if let Ok(id) = val.parse::<u32>() { return id; } }
         }
     }
     if let Ok(path) = std::env::var("STEAM_FOSSILIZE_DUMP_PATH") {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 3 {
-            if let Some(val) = parts[parts.len() - 3].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<u32>() { return id; }
-            }
+            if let Some(val) = parts[parts.len() - 3].as_os_str().to_str() { if let Ok(id) = val.parse::<u32>() { return id; } }
         }
     }
     if let Ok(path) = std::env::var("DXVK_STATE_CACHE_PATH") {
         let parts: Vec<_> = Path::new(&path).components().collect();
         if parts.len() >= 2 {
-            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() {
-                if let Ok(id) = val.parse::<u32>() { return id; }
-            }
+            if let Some(val) = parts[parts.len() - 2].as_os_str().to_str() { if let Ok(id) = val.parse::<u32>() { return id; } }
         }
     }
-    if let Ok(id_str) = std::env::var("SteamGameId") {
-        if let Ok(id) = id_str.parse::<u64>() { return (id >> 32) as u32; }
-    }
+    if let Ok(id_str) = std::env::var("SteamGameId") { if let Ok(id) = id_str.parse::<u64>() { return (id >> 32) as u32; } }
     0
 }
 
@@ -950,65 +839,23 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
     None
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct AddInstallRsp {
-    pub success: bool,
-    pub install_id: String,
-    pub background: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DownloadSizesRsp {
-    pub game_decompressed_size: String,
-    pub free_disk_space: String,
-    pub total_disk_space: String,
-    pub game_decompressed_size_raw: u64,
-    pub free_disk_space_raw: u64,
-    pub total_disk_space_raw: u64,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ResumeStatesRsp {
-    pub downloading: bool,
-    pub updating: bool,
-    pub preloading: bool,
-    pub repairing: bool,
-}
-
 // === LinkedHashMap ===
 
 #[derive(Debug, Clone)]
-pub struct LinkedHashMap<K, V> {
-    order: Vec<K>,
-    map: HashMap<K, V>,
-}
+pub struct LinkedHashMap<K, V> { order: Vec<K>, map: HashMap<K, V>, }
 impl<K, V> Default for LinkedHashMap<K, V> {
-    fn default() -> Self {
-        Self { order: Vec::new(), map: HashMap::new() }
-    }
+    fn default() -> Self { Self { order: Vec::new(), map: HashMap::new() } }
 }
 impl<K: Eq + Hash + Clone, V: Clone> LinkedHashMap<K, V> {
-    pub fn new() -> Self {
-        Self { order: Vec::new(), map: HashMap::new() }
-    }
+    pub fn new() -> Self { Self { order: Vec::new(), map: HashMap::new() } }
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        if !self.map.contains_key(&key) {
-            self.order.push(key.clone());
-        }
+        if !self.map.contains_key(&key) { self.order.push(key.clone()); }
         self.map.insert(key, value)
     }
-    pub fn get(&self, key: &K) -> Option<&V> {
-        self.map.get(key)
-    }
-    pub fn contains_key(&self, key: &K) -> bool {
-        self.map.contains_key(key)
-    }
-    pub fn len(&self) -> usize {
-        self.order.len()
-    }
-    pub fn is_empty(&self) -> bool {
-        self.order.is_empty()
-    }
+    pub fn get(&self, key: &K) -> Option<&V> { self.map.get(key) }
+    pub fn contains_key(&self, key: &K) -> bool { self.map.contains_key(key) }
+    pub fn len(&self) -> usize { self.order.len() }
+    pub fn is_empty(&self) -> bool { self.order.is_empty() }
 }
 impl<K: Eq + Hash + Clone, V: Clone> IntoIterator for LinkedHashMap<K, V> {
     type Item = (K, V);
@@ -1021,20 +868,14 @@ impl<K: Eq + Hash + Clone, V: Clone> IntoIterator for LinkedHashMap<K, V> {
 impl<'a, K: Eq + Hash + Clone, V: Clone> IntoIterator for &'a LinkedHashMap<K, V> {
     type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
-    fn into_iter(self) -> Self::IntoIter {
-        Iter { inner: self.order.iter().map(|k| (k, self.map.get(k).unwrap())).collect::<Vec<_>>().into_iter() }
-    }
+    fn into_iter(self) -> Self::IntoIter { Iter { inner: self.order.iter().map(|k| (k, self.map.get(k).unwrap())).collect::<Vec<_>>().into_iter() } }
 }
-pub struct LinkedHashMapIter<K, V> {
-    inner: std::vec::IntoIter<(K, V)>,
-}
+pub struct LinkedHashMapIter<K, V> { inner: std::vec::IntoIter<(K, V)>, }
 impl<K, V> Iterator for LinkedHashMapIter<K, V> {
     type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> { self.inner.next() }
 }
-pub struct Iter<'a, K, V> {
-    inner: std::vec::IntoIter<(&'a K, &'a V)>,
-}
+pub struct Iter<'a, K, V> { inner: std::vec::IntoIter<(&'a K, &'a V)>, }
 impl<'a, K, V> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
     fn next(&mut self) -> Option<Self::Item> { self.inner.next() }

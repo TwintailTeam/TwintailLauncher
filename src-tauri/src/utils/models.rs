@@ -327,3 +327,28 @@ pub struct GameExtras {
     pub steam_import_config: SteamImportConfig,
     pub graphics_api_options: GraphicsApiConfig,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AddInstallRsp {
+    pub success: bool,
+    pub install_id: String,
+    pub background: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DownloadSizesRsp {
+    pub game_decompressed_size: String,
+    pub free_disk_space: String,
+    pub total_disk_space: String,
+    pub game_decompressed_size_raw: u64,
+    pub free_disk_space_raw: u64,
+    pub total_disk_space_raw: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResumeStatesRsp {
+    pub downloading: bool,
+    pub updating: bool,
+    pub preloading: bool,
+    pub repairing: bool,
+}
