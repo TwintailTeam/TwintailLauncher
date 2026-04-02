@@ -1007,10 +1007,10 @@ Type=Application
                 let r = sl.create_lnk(file.as_path());
                 if r.is_ok() {
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully created desktop shortcut. Find it on your desktop.", None);
-                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to create launch shortcut!", None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully created desktop shortcut. Find it on your desktop.", None, None);
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to create launch shortcut!", None, None); }
             }
-            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None); }
+            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
             _ => {}
         }
     }
@@ -1074,10 +1074,10 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully deleted desktop shortcut.", None);
-                } else { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully deleted desktop shortcut.", None, None);
+                } else { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None, None); }
             }
-            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None); }
+            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
             _ => {}
         }
     };
