@@ -4,7 +4,6 @@ use crate::utils::models::{
 };
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
-use futures_core::future::BoxFuture;
 use sqlx::types::Json;
 use sqlx::{
     Error, Executor, Pool, Row, Sqlite,
@@ -17,6 +16,7 @@ use sqlx::{
 };
 use std::collections::HashMap;
 use std::fs;
+use std::pin::Pin;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
@@ -1773,7 +1773,7 @@ pub struct Migration {
 struct MigrationList(Vec<Migration>);
 
 impl MigrationSource<'static> for MigrationList {
-    fn resolve(self) -> BoxFuture<'static, Result<Vec<SqlxMigration>, BoxDynError>> {
+    fn resolve(self) -> Pin<Box<dyn Future<Output = Result<Vec<SqlxMigration>, BoxDynError>> + Send>> {
         Box::pin(async move {
             let mut migrations = Vec::new();
             for migration in self.0 {
@@ -1783,6 +1783,7 @@ impl MigrationSource<'static> for MigrationList {
                         migration.description.into(),
                         migration.kind.into(),
                         migration.sql.into(),
+                        false
                     ));
                 }
             }

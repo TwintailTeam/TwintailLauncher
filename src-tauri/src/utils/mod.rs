@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc};
 use std::{fs, io};
+use std::hash::Hash;
 use tauri::{AppHandle, Emitter, Listener, Manager};
 
 #[cfg(target_os = "linux")]
@@ -972,4 +973,69 @@ pub struct ResumeStatesRsp {
     pub updating: bool,
     pub preloading: bool,
     pub repairing: bool,
+}
+
+// === LinkedHashMap ===
+
+#[derive(Debug, Clone)]
+pub struct LinkedHashMap<K, V> {
+    order: Vec<K>,
+    map: HashMap<K, V>,
+}
+impl<K, V> Default for LinkedHashMap<K, V> {
+    fn default() -> Self {
+        Self { order: Vec::new(), map: HashMap::new() }
+    }
+}
+impl<K: Eq + Hash + Clone, V: Clone> LinkedHashMap<K, V> {
+    pub fn new() -> Self {
+        Self { order: Vec::new(), map: HashMap::new() }
+    }
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        if !self.map.contains_key(&key) {
+            self.order.push(key.clone());
+        }
+        self.map.insert(key, value)
+    }
+    pub fn get(&self, key: &K) -> Option<&V> {
+        self.map.get(key)
+    }
+    pub fn contains_key(&self, key: &K) -> bool {
+        self.map.contains_key(key)
+    }
+    pub fn len(&self) -> usize {
+        self.order.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.order.is_empty()
+    }
+}
+impl<K: Eq + Hash + Clone, V: Clone> IntoIterator for LinkedHashMap<K, V> {
+    type Item = (K, V);
+    type IntoIter = LinkedHashMapIter<K, V>;
+    fn into_iter(mut self) -> Self::IntoIter {
+        let items: Vec<(K, V)> = self.order.into_iter().filter_map(|k| { self.map.remove(&k).map(|v| (k, v)) }).collect();
+        LinkedHashMapIter { inner: items.into_iter() }
+    }
+}
+impl<'a, K: Eq + Hash + Clone, V: Clone> IntoIterator for &'a LinkedHashMap<K, V> {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+    fn into_iter(self) -> Self::IntoIter {
+        Iter { inner: self.order.iter().map(|k| (k, self.map.get(k).unwrap())).collect::<Vec<_>>().into_iter() }
+    }
+}
+pub struct LinkedHashMapIter<K, V> {
+    inner: std::vec::IntoIter<(K, V)>,
+}
+impl<K, V> Iterator for LinkedHashMapIter<K, V> {
+    type Item = (K, V);
+    fn next(&mut self) -> Option<Self::Item> { self.inner.next() }
+}
+pub struct Iter<'a, K, V> {
+    inner: std::vec::IntoIter<(&'a K, &'a V)>,
+}
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+    fn next(&mut self) -> Option<Self::Item> { self.inner.next() }
 }

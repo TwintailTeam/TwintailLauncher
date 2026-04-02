@@ -2,7 +2,7 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{PathBuf};
 use std::sync::{RwLock};
-use linked_hash_map::LinkedHashMap;
+use crate::utils::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use crate::utils::db_manager::{create_manifest,create_repository,delete_manifest_by_id,get_manifest_info_by_filename,get_manifests_by_repository_id,get_repositories,get_repository_info_by_github_id,update_manifest_enabled_by_id};
