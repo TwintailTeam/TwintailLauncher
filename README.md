@@ -26,6 +26,7 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 * Punishing Gray Raven
 * Aether Gazer
 * Arknights Endfield
+* The Seven Deadly Sins: Grand Cross
 
 ### Screenshots
 
