@@ -53,6 +53,7 @@ export default class App extends React.Component<any, any> {
         this.fetchDownloadSizes = this.fetchDownloadSizes.bind(this);
         this.fetchGameVersions = this.fetchGameVersions.bind(this);
         this.fetchCompatibilityVersions = this.fetchCompatibilityVersions.bind(this);
+        this.fetchCompatibilityVersionsFiltered = this.fetchCompatibilityVersionsFiltered.bind(this);
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
         this.fetchInstalledRunners = this.fetchInstalledRunners.bind(this);
         this.fetchSteamRTStatus = this.fetchSteamRTStatus.bind(this);
@@ -96,8 +97,11 @@ export default class App extends React.Component<any, any> {
             manifestsOpenVisual: false,
             manifestsPanelWidth: null,
             runnerVersions: [],
+            runnerVersionsFiltered: [],
             dxvkVersions: [],
+            dxvkVersionsFiltered: [],
             runners: [],
+            runnersFiltered: [],
             installedRunners: [],
             steamrtInstalled: true,
             downloadSizes: {},
@@ -560,10 +564,10 @@ export default class App extends React.Component<any, any> {
                         fetchSettings={this.fetchSettings}
                         globalSettings={this.state.globalSettings}
                         downloadSizes={this.state.downloadSizes}
-                        runnerVersions={this.state.runnerVersions}
-                        dxvkVersions={this.state.dxvkVersions}
+                        runnerVersions={this.state.runnerVersionsFiltered}
+                        dxvkVersions={this.state.dxvkVersionsFiltered}
                         gameVersions={this.state.gameVersions}
-                        runners={this.state.runners}
+                        runners={this.state.runnersFiltered}
                         installedRunners={this.state.installedRunners}
                         fetchInstalledRunners={this.fetchInstalledRunners}
                         gameIcon={this.state.gameIcon}
@@ -664,6 +668,7 @@ export default class App extends React.Component<any, any> {
             fetchSettings: this.fetchSettings,
             fetchRepositories: this.fetchRepositories,
             fetchCompatibilityVersions: this.fetchCompatibilityVersions,
+            fetchCompatibilityVersionsFiltered: this.fetchCompatibilityVersionsFiltered,
             fetchInstalledRunners: this.fetchInstalledRunners,
             fetchSteamRTStatus: this.fetchSteamRTStatus,
             getGamesInfo: () => this.state.gamesinfo,
@@ -682,6 +687,7 @@ export default class App extends React.Component<any, any> {
         this.networkMonitor.setRecoveryOptions({
             fetchRepositories: this.fetchRepositories,
             fetchCompatibilityVersions: this.fetchCompatibilityVersions,
+            fetchCompatibilityVersionsFiltered: this.fetchCompatibilityVersionsFiltered,
             fetchInstalledRunners: this.fetchInstalledRunners,
             fetchSteamRTStatus: this.fetchSteamRTStatus,
             getGamesInfo: () => this.state.gamesinfo,
@@ -727,6 +733,7 @@ export default class App extends React.Component<any, any> {
                     this.fetchInstallSettings(install),
                     this.fetchInstallResumeStates(install),
                     this.fetchCompatibilityVersions(),
+                    this.fetchCompatibilityVersionsFiltered(),
                     this.fetchInstalledRunners(),
                     this.fetchSteamRTStatus(),
                 ]);
@@ -941,7 +948,7 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchCompatibilityVersions() {
-        return invoke("list_compatibility_manifests", { biz: this.state.currentGame || null }).then(data => {
+        return invoke("list_compatibility_manifests", { biz: null }).then(data => {
             if (data === null) {
                 console.error("Failed to get compatibility versions.");
             } else {
@@ -957,6 +964,27 @@ export default class App extends React.Component<any, any> {
                 });
                 let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine"));
                 this.setState({ runnerVersions: wines, dxvkVersions: dxvks, runners: d });
+            }
+        })
+    }
+
+    fetchCompatibilityVersionsFiltered() {
+        return invoke("list_compatibility_manifests", { biz: this.state.currentGame || null }).then(data => {
+            if (data === null) {
+                console.error("Failed to get filtered compatibility versions.");
+            } else {
+                let r = JSON.parse(data as string);
+                let dxvks: any[] = [];
+                let wines: any[] = [];
+                // Bad but will work for now... DO NOT EVER FILTER LIKE THIS...
+                r.filter((e: any) => e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
+                    e.versions.forEach((v: any) => dxvks.push({ value: v.version, name: v.version }));
+                });
+                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine")).forEach((e: any) => {
+                    e.versions.forEach((v: any) => wines.push({ value: v.version, name: v.version }));
+                });
+                let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine"));
+                this.setState({ runnerVersionsFiltered: wines, dxvkVersionsFiltered: dxvks, runnersFiltered: d });
             }
         })
     }
@@ -1030,6 +1058,7 @@ export default class App extends React.Component<any, any> {
         await Promise.all([
             this.fetchGameVersions(this.state.currentGame),
             this.fetchCompatibilityVersions(),
+            this.fetchCompatibilityVersionsFiltered()
         ]);
 
         // Fetch download sizes and open popup only after data is ready

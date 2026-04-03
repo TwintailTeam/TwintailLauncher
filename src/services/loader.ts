@@ -54,6 +54,7 @@ export interface LoaderOptions {
   fetchSettings: () => Promise<void>;
   fetchRepositories: () => Promise<void>;
   fetchCompatibilityVersions: () => Promise<void>;
+  fetchCompatibilityVersionsFiltered: () => Promise<void>;
   fetchInstalledRunners: () => Promise<void>;
   fetchSteamRTStatus: () => Promise<void>;
   getGamesInfo: () => any[];
@@ -151,6 +152,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         if (window.navigator.platform.includes("Linux")) {
           await Promise.all([
             opts.fetchCompatibilityVersions(),
+            opts.fetchCompatibilityVersionsFiltered(),
             opts.fetchInstalledRunners(),
             opts.fetchSteamRTStatus(),
           ]);
@@ -280,7 +282,7 @@ export class NetworkMonitor {
   private previousStatus: NetworkStatus["status"] = "online";
   private consecutiveFailures = 0;
   private static readonly FAILURE_THRESHOLD = 3;
-  private recoveryOpts: Pick<LoaderOptions, 'fetchRepositories' | 'fetchCompatibilityVersions' | 'fetchInstalledRunners' | 'fetchSteamRTStatus' | 'getGamesInfo' | 'getInstalls' | 'preloadImages' | 'preloadedBackgrounds' | 'applyEventState'> | null = null;
+  private recoveryOpts: Pick<LoaderOptions, 'fetchRepositories' | 'fetchCompatibilityVersions' | 'fetchCompatibilityVersionsFiltered' | 'fetchInstalledRunners' | 'fetchSteamRTStatus' | 'getGamesInfo' | 'getInstalls' | 'preloadImages' | 'preloadedBackgrounds' | 'applyEventState'> | null = null;
 
   constructor(
     onStatusChange: (status: NetworkStatus, isRecovering: boolean) => void,
@@ -389,6 +391,7 @@ export class NetworkMonitor {
         if (window.navigator.platform.includes("Linux")) {
           await Promise.all([
             this.recoveryOpts.fetchCompatibilityVersions(),
+            this.recoveryOpts.fetchCompatibilityVersionsFiltered(),
             this.recoveryOpts.fetchInstalledRunners(),
             this.recoveryOpts.fetchSteamRTStatus(),
           ]);
