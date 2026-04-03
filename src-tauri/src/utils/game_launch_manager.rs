@@ -44,6 +44,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     #[cfg(debug_assertions)]
     let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
     let appid = get_steam_appid();
+    let endfield_can_bypass = gm.biz == "endfield_global" && install.runner_version.starts_with("proton-ge-") && {
+        let v = install.runner_version.strip_prefix("proton-ge-").unwrap_or("");
+        let parts: Vec<&str> = v.split('.').collect();
+        let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
+        let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+        major > 10 || (major == 10 && minor >= 32)
+    };
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
@@ -51,7 +58,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         return Ok(false);
     }
 
-    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) {
+    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) && !endfield_can_bypass {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
         show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
         return Ok(false);
