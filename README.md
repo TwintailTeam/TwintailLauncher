@@ -33,12 +33,15 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 <details>
 <summary>Windows</summary>
 
-![Pic1](screenshots/windows/pic01.png)
-![Pic2](screenshots/windows/pic02.png)
-![Pic3](screenshots/windows/pic03.png)
-![Pic4](screenshots/windows/pic04.png)
-![Pic5](screenshots/windows/pic05.png)
-![Pic6](screenshots/windows/pic06.png)
+![Pic1](screenshots/windows/01.png)
+![Pic2](screenshots/windows/02.png)
+![Pic3](screenshots/windows/03.png)
+![Pic4](screenshots/windows/04.png)
+![Pic5](screenshots/windows/05.png)
+![Pic6](screenshots/windows/06.png)
+![Pic7](screenshots/windows/07.png)
+![Pic8](screenshots/windows/08.png)
+![Pic9](screenshots/windows/09.png)
 
 </details>
 
