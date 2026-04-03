@@ -87,14 +87,14 @@ export default function GameButton({ currentInstall, globalSettings, buttonType,
         // Clear any existing interval/timeout
         stopPolling();
 
-        // Fallback timeout: if game is never detected after 60 seconds, reset to idle
+        // Fallback timeout: if game is never detected after 30 seconds, reset to idle
         // This handles cases where process detection doesn't work (e.g., some Flatpak scenarios)
         timeoutRef.current = window.setTimeout(() => {
             if (!wasRunningRef.current) {
                 setGameStatus("idle");
                 stopPolling();
             }
-        }, 60000);
+        }, 30000);
 
         // Poll every 2 seconds
         pollIntervalRef.current = window.setInterval(async () => {
