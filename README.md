@@ -51,6 +51,10 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 ![Pic4](screenshots/linux/pic04.png)
 ![Pic5](screenshots/linux/pic05.png)
 ![Pic6](screenshots/linux/pic06.png)
+![Pic7](screenshots/linux/pic07.png)
+![Pic8](screenshots/linux/pic08.png)
+![Pic9](screenshots/linux/pic09.png)
+![Pic10](screenshots/linux/pic010.png)
 
 </details>
 
