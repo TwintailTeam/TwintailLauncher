@@ -166,9 +166,6 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 if (r.success) {
                     pushInstalls();
                     setCurrentInstall(r.install_id as string);
-                    // Don't call setBackground here - updateAvailableBackgrounds in App.tsx
-                    // will be triggered by setCurrentInstall and will select the best background
-                    // (dynamic if available). Calling setBackground here would override it with static.
                     setTimeout(() => {
                         let installui = document.getElementById(r.install_id);
                         if (installui) installui.focus();

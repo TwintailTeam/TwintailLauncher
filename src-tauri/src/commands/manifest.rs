@@ -118,9 +118,16 @@ pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Opt
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
-pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
+pub fn list_compatibility_manifests(app: AppHandle, biz: Option<String>) -> Option<String> {
     let manifestss: LinkedHashMap<String, RunnerManifest> = get_compatibilities(&app);
     let mut manifests: Vec<RunnerManifest> = Vec::new();
+
+    let override_version: Option<String> = if let Some(ref b) = biz {
+        if let Some(gm) = get_manifest(&app, format!("{}.json", b)) {
+            let ovr = &gm.extra.compat_overrides.override_runner.linux;
+            if ovr.enabled && !ovr.runner_version.is_empty() { Some(ovr.runner_version.clone()) } else { None }
+        } else { None }
+    } else { None };
 
     for value in manifestss.clone().into_iter().map(|(_, value)| value) {
         #[cfg(target_arch = "aarch64")]
@@ -128,6 +135,7 @@ pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
         #[allow(unused_mut)] let mut v = value;
         #[cfg(target_arch = "aarch64")]
         { v.versions = v.versions.into_iter().filter(|ver| ver.urls.as_ref().map(|u| !u.aarch64.is_empty()).unwrap_or(false)).collect(); }
+        if let Some(ref ov) = override_version { v.versions = v.versions.into_iter().filter(|ver| crate::utils::is_using_overriden_runner(ver.version.clone(), ov.clone())).collect(); }
         manifests.push(v);
     }
 
@@ -136,7 +144,7 @@ pub fn list_compatibility_manifests(app: AppHandle) -> Option<String> {
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn list_compatibility_manifests(_app: AppHandle) -> Option<String> { None }
+pub fn list_compatibility_manifests(_app: AppHandle, _biz: Option<String>) -> Option<String> { None }
 
 #[cfg(target_os = "linux")]
 #[tauri::command]

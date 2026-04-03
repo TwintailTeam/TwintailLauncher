@@ -941,7 +941,7 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchCompatibilityVersions() {
-        return invoke("list_compatibility_manifests").then(data => {
+        return invoke("list_compatibility_manifests", { biz: this.state.currentGame || null }).then(data => {
             if (data === null) {
                 console.error("Failed to get compatibility versions.");
             } else {
