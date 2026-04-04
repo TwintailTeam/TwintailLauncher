@@ -53,5 +53,6 @@ pub fn init_tray<R: Runtime>(app: &AppHandle<R>) -> Result<(), tauri::Error> {
             TrayIconEvent::Leave { .. } => {}
             _ => {}
         }).build(app)?;
+    log::info!("System tray initialized!");
     Ok(())
 }

@@ -1,12 +1,22 @@
 export function toPercent(number: any, total: any): number {
-  return (parseInt(number) / parseInt(total)) * 100;
+  const current = Number(number);
+  const max = Number(total);
+  if (!Number.isFinite(current) || !Number.isFinite(max) || max <= 0) {
+    return 0;
+  }
+
+  const percent = (current / max) * 100;
+  return Math.max(0, Math.min(100, percent));
 }
 
-export function formatBytes(bytes: any): string {
-  const MiB = 1024 * 1024;
-  const GiB = 1024 * MiB;
-  const b = parseInt(bytes);
-  if (b >= GiB) return (b / GiB).toFixed(2) + ' GiB';
-  if (b >= MiB) return (b / MiB).toFixed(2) + ' MiB';
-  return b + ' B';
+export function formatBytes(bytes: number): string {
+  if (bytes > 1000 * 1000 * 1000) {
+    return (bytes / 1000.0 / 1000.0 / 1000.0).toFixed(2) + ' GB';
+  } else if (bytes > 1000 * 1000) {
+    return (bytes / 1000.0 / 1000.0).toFixed(2) + ' MB';
+  } else if (bytes > 1000) {
+    return (bytes / 1000.0).toFixed(2) + ' KB';
+  } else {
+    return bytes.toFixed(2) + ' B';
+  }
 }

@@ -1,28 +1,41 @@
 import React from "react";
 import { POPUPS } from "../popups/POPUPS.ts";
-import { DownloadIcon, X } from "lucide-react";
+import { PAGES } from "../pages/PAGES.ts";
+import { PlusCircle, X } from "lucide-react";
 
 export default function SidebarManifests({
   isOpen,
   onToggle,
   popup: _popup,
-  hasInstalls
+  hasInstalls,
+  currentPage,
+  setCurrentPage,
 }: {
   isOpen: boolean,
   onToggle: () => void,
   popup: POPUPS,
-  hasInstalls: boolean
+  hasInstalls: boolean,
+  currentPage?: PAGES,
+  setCurrentPage?: (page: PAGES) => void,
 }) {
+
+  const handleClick = () => {
+    // Close any open page when toggling manifests
+    if (setCurrentPage && currentPage !== PAGES.NONE) {
+      setCurrentPage(PAGES.NONE);
+    }
+    onToggle();
+  };
 
   return (
     <React.Fragment>
       <div
         id="sidebar_manifests_toggle"
         className="group text-white hover:text-white/55 w-8 h-16 mb-0 cursor-pointer flex-initial relative flex items-center justify-center"
-        onClick={onToggle}>
-        {/* Animated icon swap: Download when closed -> X when open */}
+        onClick={handleClick}>
+        {/* Animated icon swap: Add when closed -> X when open */}
         <span className="absolute inset-0 flex items-center justify-center">
-          <DownloadIcon
+          <PlusCircle
             className={`w-8 h-10 transition-all duration-300 ease-out ${isOpen ? 'opacity-0 scale-75 rotate-90' : 'opacity-100 scale-100 rotate-0'}`}
             aria-hidden="true"
           />
@@ -34,7 +47,7 @@ export default function SidebarManifests({
           />
         </span>
 
-        {/* Purple shining dot over the Download icon when there are no installs and panel is closed */}
+        {/* Purple shining dot over the Add icon when there are no installs and panel is closed */}
         {!hasInstalls && !isOpen && (
           <>
             <span className="absolute top-4 right-0.5 flex h-2 w-2">
@@ -44,7 +57,8 @@ export default function SidebarManifests({
           </>
         )}
       </div>
-      
+
     </React.Fragment>
   );
 }
+

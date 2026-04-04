@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "1.1.15"
+version = "2.0.0"
 description = "A multi-platform launcher for your anime games"
 authors = ["TukanDev"]
 edition = "2024"
@@ -16,31 +16,30 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
+tauri = { version = "2.10.3", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["sync"] }
-# NOTE: Keep 0.7.4 as fixed version
-sqlx = { version = "0.7.4", features = ["sqlite", "json", "time", "runtime-tokio"] }
+sqlx = { version = "0.8.6", features = ["sqlite", "json", "time", "runtime-tokio"] }
 serde_json = "1"
 git2 = "0.20"
 cuid2 = "0.1"
-linked-hash-map = "0.5.6"
-futures-core = "0.3"
 gumdrop = "0.8.1"
-# Main library to handle downloads and comaptibility
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 steam_shortcuts_util = "1.1.8"
-configparser = "3.1.0"
+rpcdiscord = { git = "https://github.com/TukanDev/rpcdiscord.git", branch = "main" }
+keepawake = "0.6.0"
+log = "0.4.29"
 
 # tauri plugins
+tauri-plugin-log = "2.8.0"
 tauri-plugin-dialog = "2.6.0"
-tauri-plugin-notification = "2.3.3"
 tauri-plugin-opener = "2.5.3"
-tauri-plugin-single-instance = "2.3.7"
+tauri-plugin-single-instance = "2.4.0"
+tauri-plugin-clipboard-manager = "2.3.2"
 
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
-wgpu = { version = "27.0", default-features = true }
+wgpu = { version = "27.0.1", default-features = false, features = ["vulkan"] }
 
 [target."cfg(any(target_os = \"windows\"))".dependencies]
 shortcuts-rs = "1.1.1"

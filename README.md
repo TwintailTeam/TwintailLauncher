@@ -3,7 +3,6 @@
 * [TwintailLauncher](#twintaillauncher)
   * [About](#about)
     * [Supported games](#supported-games)
-    * [Is TTL safe to use? Can I get banned?](#is-ttl-safe-to-use-can-i-get-banned)
     * [Screenshots](#screenshots)
   * [Installation](#installation)
   * [Developers & Compiling](#developers--compiling)
@@ -20,15 +19,14 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 
 ### Supported games
 * Genshin Impact
-* Honkai: Star Rail
-* Honkai Impact 3rd
-* Zenless Zone Zero
+* Honkai: StarRail
+* HonkaiImpact 3rd
+* ZenlessZoneZero
 * Wuthering Waves
-* Punishing: Gray Raven
-* AetherGazer
-
-### Is TTL safe to use? Can I get banned?
-We do our best to ensure the launcher avoids detection and doesn't interfere with sensitive files or anti-cheat systems. However, some games require the Launcher to disable the anti-cheat to get them running (Linux only). So use TTL at your own risk.
+* Punishing Gray Raven
+* Aether Gazer
+* Arknights Endfield
+* The Seven Deadly Sins: Grand Cross
 
 ### Screenshots
 
@@ -41,6 +39,9 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 ![Pic4](screenshots/windows/pic04.png)
 ![Pic5](screenshots/windows/pic05.png)
 ![Pic6](screenshots/windows/pic06.png)
+![Pic7](screenshots/windows/pic07.png)
+![Pic8](screenshots/windows/pic08.png)
+![Pic9](screenshots/windows/pic09.png)
 
 </details>
 
@@ -53,20 +54,25 @@ We do our best to ensure the launcher avoids detection and doesn't interfere wit
 ![Pic4](screenshots/linux/pic04.png)
 ![Pic5](screenshots/linux/pic05.png)
 ![Pic6](screenshots/linux/pic06.png)
+![Pic7](screenshots/linux/pic07.png)
+![Pic8](screenshots/linux/pic08.png)
+![Pic9](screenshots/linux/pic09.png)
+![Pic10](screenshots/linux/pic010.png)
 
 </details>
 
 ## Installation
 
-| Platform                            | Link                                                                            | Note(s)                                              |
-|-------------------------------------|---------------------------------------------------------------------------------|------------------------------------------------------|
-| Windows (x64, Stable)               | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                           | Installation is only supported via `winget`          |
-| Linux (Flatpak, Stable)             | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                    | Recommended method for all distributions             |
-| Linux (Copr, Stable)                | [Copr](https://copr.fedorainfracloud.org/coprs/tukandev/TwintailLauncher/)      | Fedora & Fedora based distributions                  |
-| Linux (AUR, Unstable - From source) | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git) | Use AUR helper (`yay` / `paru`)                      |
-| Linux (AUR, Stable - From source)   | [twintaillauncher](https://aur.archlinux.org/packages/twintaillauncher)         | Use AUR helper (`yay` / `paru`)                      |
-| Linux (AUR, Stable - From deb)      | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin) | Use AUR helper (`yay` / `paru`)                      |
-| Linux (DEB)                         | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)    | **NOT RECOMMENDED** Used for AUR & Copr repositories |
+| Platform                            | Link                                                                                       | Note(s)                                                |
+|-------------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| Windows (x64, Stable)               | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                                      | Installation is only supported via `winget`            |
+| Linux (Flatpak, Stable)             | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                               | Works for all distributions                            |
+| Linux (Copr, Stable)                | [Copr](https://copr.fedorainfracloud.org/coprs/tukandev/TwintailLauncher/)                 | Fedora & Fedora based distributions                    |
+| Linux (Terra, Stable)               | [Terra](https://fedora.pkgs.org/43/terra/twintaillauncher-0:1.1.15-1.fc43.x86_64.rpm.html) | Fedora & Fedora based distributions                    |
+| Linux (AUR, Unstable - From source) | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git)            | Use AUR helper (`yay` / `paru`)                        |
+| Linux (AUR, Stable - From source)   | [twintaillauncher](https://aur.archlinux.org/packages/twintaillauncher)                    | Use AUR helper (`yay` / `paru`)                        |
+| Linux (AUR, Stable - From deb)      | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin)            | Use AUR helper (`yay` / `paru`)                        |
+| Linux (DEB)                         | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)               | **NOT RECOMMENDED** Used for AUR & Fedora repositories |
 
 ## Developers & Compiling
 

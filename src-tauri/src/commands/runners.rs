@@ -1,19 +1,28 @@
+use crate::utils::db_manager::{
+    get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners,
+    get_installs, get_settings, update_install_runner_location_by_id,
+    update_install_runner_version_by_id, update_installed_runner_is_installed_by_version,
+};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle};
-use crate::utils::db_manager::{get_installed_runner_info_by_id, get_installed_runner_info_by_version, get_installed_runners, get_installs, get_settings, update_install_runner_location_by_id, update_install_runner_version_by_id, update_installed_runner_is_installed_by_version};
-use crate::utils::{send_notification};
+use tauri::AppHandle;
 
 #[cfg(target_os = "linux")]
-use tauri::Emitter;
+use crate::DownloadState;
 #[cfg(target_os = "linux")]
-use std::collections::HashMap;
+use crate::downloading::queue::QueueJobKind;
 #[cfg(target_os = "linux")]
-use fischl::compat::Compat;
+use crate::downloading::{QueueJobPayload, RunnerDownloadPayload};
 #[cfg(target_os = "linux")]
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use crate::utils::db_manager::create_installed_runner;
 #[cfg(target_os = "linux")]
-use crate::utils::{runner_from_runner_version, prevent_exit, run_async_command, models::LauncherRunner, repo_manager::{get_compatibility}, db_manager::{create_installed_runner}};
+use crate::utils::models::LauncherRunner;
+#[cfg(target_os = "linux")]
+use crate::utils::repo_manager::get_compatibility;
+#[cfg(target_os = "linux")]
+use crate::utils::runner_from_runner_version;
+#[cfg(target_os = "linux")]
+use tauri::Manager;
 
 #[allow(unused_variables)]
 #[tauri::command]
@@ -93,7 +102,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
         #[cfg(target_os = "linux")]
         {
             let gs = get_settings(&app).unwrap();
-            let rm = get_compatibility(&app, &runner_from_runner_version(runner_version.as_str().to_string()).unwrap()).unwrap();
+            let rm = get_compatibility(&app, &runner_from_runner_version(&app, runner_version.as_str().to_string()).unwrap_or_default()).unwrap();
             let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
             let runnerp = rv.get(0).unwrap().to_owned();
             let runner_path = Path::new(&gs.default_runner_path).join(runner_version.clone());
@@ -102,65 +111,38 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 
             // Empty folder download
             if fs::read_dir(runner_path.as_path()).unwrap().next().is_none() {
-                let appc = app.clone();
-                let runvc = runner_version.clone();
-                let runpc = runner_path.clone();
-                std::thread::spawn(move || {
-                    let app = appc.clone();
-                    let runnerp = runnerp.clone();
-                    let runv = runvc.clone();
-                    let runpc = runpc.clone();
-
-                    let mut dlp = HashMap::new();
-                    dlp.insert("name", runv.to_string());
-                    dlp.insert("progress", "0".to_string());
-                    dlp.insert("total", "1000".to_string());
-                    app.emit("download_progress", dlp.clone()).unwrap();
-                    prevent_exit(&app, true);
-
-                    let mut dl_url = runnerp.url.clone(); // Always x86_64
-                    if let Some(urls) = runnerp.urls {
-                        #[cfg(target_arch = "x86_64")]
-                        { dl_url = urls.x86_64; }
-                        #[cfg(target_arch = "aarch64")]
-                        { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                // Check if this runner version is already queued/downloading
+                let state = app.state::<DownloadState>();
+                let q = state.queue.lock().unwrap().clone();
+                if let Some(ref queue) = q {
+                    if queue.has_job_for_id(runner_version.clone()) {
+                        crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None, None);
+                        return Some(false);
                     }
+                }
 
-                    let r0 = run_async_command(async {
-                        Compat::download_runner(dl_url, runpc.to_str().unwrap().to_string(), true, {
-                            let archandle = app.clone();
-                            let dlpayload = dlp.clone();
-                            let runv = runv.clone();
-                            move |current, total| {
-                                let mut dlp = dlpayload.clone();
-                                dlp.insert("name", runv.to_string());
-                                dlp.insert("progress", current.to_string());
-                                dlp.insert("total", total.to_string());
-                                archandle.emit("download_progress", dlp.clone()).unwrap();
-                            }
-                        }).await
-                    });
-                    if r0 {
-                        app.emit("download_complete", ()).unwrap();
-                        prevent_exit(&app, false);
-                        send_notification(&app, format!("Download of {runn} complete.", runn = runv.clone().as_str().to_string()).as_str(), None);
-                        true
-                    } else {
-                        app.dialog().message(format!("Error occurred while trying to download {runn} runner! Please retry later.", runn = runv.clone().as_str().to_string()).as_str()).title("TwintailLauncher")
-                            .kind(MessageDialogKind::Error)
-                            .buttons(MessageDialogButtons::OkCustom("Ok".to_string()))
-                            .show(move |_action| {
-                                prevent_exit(&app, false);
-                                app.emit("download_complete", ()).unwrap();
-                                if runpc.exists() { fs::remove_dir_all(&runpc).unwrap(); update_installed_runner_is_installed_by_version(&app, runv.clone(), false); }
-                            });
-                        false
-                    }
-                });
-                if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), true); } else { create_installed_runner(&app, runner_version.clone(), true, runner_path.to_str().unwrap().to_string()).unwrap(); }
+                // Determine the download URL based on architecture
+                let mut dl_url = runnerp.url.clone();
+                if let Some(urls) = runnerp.urls {
+                    #[cfg(target_arch = "x86_64")]
+                    { dl_url = urls.x86_64; }
+                    #[cfg(target_arch = "aarch64")]
+                    { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                }
+
+                // Enqueue the download job
+                if let Some(queue) = q {
+                    queue.enqueue(QueueJobKind::RunnerDownload, QueueJobPayload::Runner(RunnerDownloadPayload {
+                            runner_version: runner_version.clone(),
+                            runner_url: dl_url,
+                            runner_path: runner_path.to_str().unwrap().to_string(),
+                    }));
+                }
+                // Create/update database entry (will be marked as installed by the download job on completion)
+                if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false); } else { create_installed_runner(&app, runner_version.clone(), false, runner_path.to_str().unwrap().to_string()).unwrap(); }
                 Some(true)
             } else {
-                send_notification(&app, format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None);
+                crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None, None);
                 Some(false)
             }
         }
@@ -183,7 +165,6 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
         if fs::read_dir(runner_path.as_path()).unwrap().next().is_some() {
             fs::remove_dir_all(runner_path.as_path()).unwrap();
             update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false);
-            send_notification(&app, format!("Successfully removed {runn} runner.", runn = runner_version.as_str().to_string()).as_str(), None);
 
             // Set installations using the removed runner to first available one as fallback
             let installs = get_installs(&app);
@@ -204,8 +185,28 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
             }
             Some(true)
         } else {
-            send_notification(&app, format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None);
+            crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None, None);
             Some(false)
         }
+    }
+}
+
+#[allow(unused_variables)]
+#[tauri::command]
+pub fn is_steamrt_installed(app: AppHandle) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        let gs = match get_settings(&app) {
+            Some(s) => s,
+            None => return false,
+        };
+        let steamrt_path = Path::new(&gs.default_runner_path).join("steamrt");
+        if !steamrt_path.exists() { return false; }
+        match fs::read_dir(&steamrt_path) { Ok(mut entries) => entries.next().is_some(), Err(_) => false }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // SteamRT is not needed on Windows
+        true
     }
 }

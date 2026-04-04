@@ -50,7 +50,6 @@ pub fn remove_repository(app: AppHandle, id: String) -> Option<bool> {
         None
     } else {
         // TODO: Properly delete repository bullshit and disallow if installation with ANY manifest of a repo exists
-        // PS: can be done once installs work sort of so we can validate if manifest has install
         let rtn = delete_repository_by_id(&app, id);
         if rtn.is_ok() {
             Some(rtn.unwrap())
