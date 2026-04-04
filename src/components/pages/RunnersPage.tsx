@@ -39,6 +39,7 @@ function RunnerItem({
     onInstall,
     onRemove,
     onOpenFolder,
+    isLastInstalled = false,
 }: {
     version: string;
     isInstalled: boolean;
@@ -48,6 +49,7 @@ function RunnerItem({
     onInstall: () => void;
     onRemove: () => void;
     onOpenFolder: () => void;
+    isLastInstalled?: boolean;
 }) {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -90,9 +92,9 @@ function RunnerItem({
                         </button>
                         <button
                             onClick={handleRemove}
-                            disabled={isLoading}
-                            className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50"
-                            title="Remove"
+                            disabled={isLoading || isLastInstalled}
+                            className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-white/50 disabled:hover:bg-transparent"
+                            title={isLastInstalled ? "Cannot remove the last installed runner" : "Remove"}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -248,6 +250,7 @@ export default function RunnersPage({
                                                     isDownloading={isDownloading}
                                                     isQueued={isQueued}
                                                     progress={progress}
+                                                    isLastInstalled={isInstalled && totalInstalled <= 1}
                                                     onInstall={async () => {
                                                         await invoke("add_installed_runner", {
                                                             runnerUrl: v.url,
