@@ -135,6 +135,11 @@ export default function GameSettings({
             // Use requestAnimationFrame to prevent flickering on Linux
             requestAnimationFrame(() => {
                 fetchInstallSettings(installId);
+                // Refresh the installs list so the play button's runner check
+                // sees the updated runner_version immediately (not stale data)
+                if (key === "runner_version" || key === "dxvk_version") {
+                    pushInstalls();
+                }
             });
         } catch (e) {
             console.error(`Failed to update game setting ${key}:`, e);
