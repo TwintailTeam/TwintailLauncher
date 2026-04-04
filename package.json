@@ -15,7 +15,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.19",
         "@tauri-apps/api": "^2.10.1",
-        "@tauri-apps/plugin-dialog": "^2.6.0",
+        "@tauri-apps/plugin-dialog": "^2.7.0",
         "framer-motion": "^12.38.0",
         "lucide-react": "^0.487.0",
         "react": "^18.3.1",
