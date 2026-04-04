@@ -24,11 +24,7 @@ serde_json = "1"
 git2 = "0.20"
 cuid2 = "0.1"
 gumdrop = "0.8.1"
-# Main library to handle downloads and comaptibility
-# TODO: SWITCH TO FISCHL-RS WHEN IT'S READY ON MAIN REPO
-#fischl = { path = "../fischl-rs", features = ["compat", "download"] }
-#fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
-fischl = { git = "https://github.com/Minlor/fischl-rs.git", branch = "master", features = ["compat", "download"] }
+fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 steam_shortcuts_util = "1.1.8"
 rpcdiscord = { git = "https://github.com/TukanDev/rpcdiscord.git", branch = "main" }
 keepawake = "0.6.0"
