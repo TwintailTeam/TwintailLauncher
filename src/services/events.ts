@@ -49,19 +49,33 @@ export function registerEvents(
 ): EventStateUpdate | undefined {
   switch (eventType) {
     case 'download_queue_state': {
+      const queueState = event.payload;
+      const completedIds = new Set<string>((queueState.completed ?? []).map((j: any) => j.id));
+
       // Note: disableRun and disableInstallEdit are now calculated per-install in the UI
-      return {
-        downloadQueueState: event.payload,
-        // keep legacy fields hidden (UI is replaced)
-        hideProgressBar: true,
-        // disableInstallEdit is now calculated per-install in the UI (allows editing settings for non-downloading games)
-        // disableRun is now calculated per-install in the UI (allows playing installed games while others download)
-        // Allow queueing new downloads/updates even while work is in progress
-        // The queue system handles multiple jobs
-        disableUpdate: false,
-        disableDownload: false,
-        disablePreload: false,
-        disableResume: false,
+      return (prev: any) => {
+        const result: Record<string, any> = {
+          downloadQueueState: queueState,
+          // keep legacy fields hidden (UI is replaced)
+          hideProgressBar: true,
+          // Allow queueing new downloads/updates even while work is in progress
+          disableUpdate: false,
+          disableDownload: false,
+          disablePreload: false,
+          disableResume: false,
+        };
+
+        // Prune progress entries for completed queue jobs to prevent phantom active items
+        if (completedIds.size > 0 && prev?.downloadProgressByJobId) {
+          const next = { ...prev.downloadProgressByJobId };
+          let pruned = false;
+          for (const id of completedIds) {
+            if (next[id]) { delete next[id]; pruned = true; }
+          }
+          if (pruned) result.downloadProgressByJobId = next;
+        }
+
+        return result;
       };
     }
     case 'game_closed':
