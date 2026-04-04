@@ -616,6 +616,7 @@ export default class App extends React.Component<any, any> {
                     runners={this.state.runners}
                     installedRunners={this.state.installedRunners}
                     fetchInstalledRunners={this.fetchInstalledRunners}
+                    pushInstalls={this.pushInstalls}
                     imageVersion={this.state.imageVersion}
                 />
                 {this.state.showLoadingOverlay && (

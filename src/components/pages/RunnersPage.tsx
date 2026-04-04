@@ -26,6 +26,7 @@ interface RunnersPageProps {
     runners: RunnerManifest[];
     installedRunners: InstalledRunner[];
     fetchInstalledRunners: () => void;
+    pushInstalls: () => void;
     downloadQueueState: DownloadQueueStatePayload | null;
     downloadProgressByJobId: Record<string, DownloadJobProgress>;
 }
@@ -145,6 +146,7 @@ export default function RunnersPage({
     runners,
     installedRunners,
     fetchInstalledRunners,
+    pushInstalls,
     downloadQueueState,
     downloadProgressByJobId,
 }: RunnersPageProps) {
@@ -263,6 +265,7 @@ export default function RunnersPage({
                                                             runnerVersion: v.version
                                                         });
                                                         fetchInstalledRunners();
+                                                        pushInstalls();
                                                     }}
                                                     onOpenFolder={() => {
                                                         invoke("open_folder", {

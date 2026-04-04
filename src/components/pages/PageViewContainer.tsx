@@ -53,6 +53,7 @@ interface PageViewContainerProps {
     runners: RunnerManifest[];
     installedRunners: InstalledRunner[];
     fetchInstalledRunners: () => void;
+    pushInstalls: () => void;
 
     // Network recovery
     imageVersion?: number;
@@ -73,6 +74,7 @@ export default function PageViewContainer({
     runners,
     installedRunners,
     fetchInstalledRunners,
+    pushInstalls,
     imageVersion = 0,
 }: PageViewContainerProps) {
     const isOpen = currentPage !== PAGES.NONE;
@@ -140,6 +142,7 @@ export default function PageViewContainer({
                         runners={runners}
                         installedRunners={installedRunners}
                         fetchInstalledRunners={fetchInstalledRunners}
+                        pushInstalls={pushInstalls}
                         downloadQueueState={downloadQueueState}
                         downloadProgressByJobId={downloadProgressByJobId}
                     />
