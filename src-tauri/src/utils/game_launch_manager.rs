@@ -44,8 +44,8 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     #[cfg(debug_assertions)]
     let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
     let appid = get_steam_appid();
-    let endfield_can_bypass = gm.biz == "endfield_global" && install.runner_version.starts_with("proton-ge-") && {
-        let v = install.runner_version.strip_prefix("proton-ge-").unwrap_or("");
+    let endfield_can_bypass = gm.biz == "endfield_global" && install.runner_version.ends_with("-proton-ge") && {
+        let v = install.runner_version.strip_suffix("-proton-ge").unwrap_or("");
         let parts: Vec<&str> = v.split('.').collect();
         let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
         let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
