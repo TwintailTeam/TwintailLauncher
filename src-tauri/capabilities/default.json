@@ -6,7 +6,6 @@
   "permissions": [
     "core:default",
     "dialog:default",
-    "notification:default",
     {
       "identifier": "opener:allow-reveal-item-in-dir",
       "allow": [

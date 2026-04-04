@@ -49,16 +49,17 @@ export default function SidebarLink({uri, title, iconType, popup}: {uri: string,
 
     return (
         <React.Fragment>
-            {iconType === "discord" && (
-                <DiscordIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 cursor-pointer flex-initial" onClick={() => {
+            <div
+                ref={refs.setReference}
+                {...getReferenceProps()}
+                className={`flex items-center justify-center w-10 h-10 rounded-xl cursor-pointer transition-all duration-200 text-white/70 hover:text-white hover:bg-white/5 hover:shadow-[0_0_12px_rgba(147,51,234,0.15)] active:scale-95 ${iconType === "donate" ? "mb-2" : ""}`}
+                onClick={() => {
                     invoke('open_uri', {uri: uri}).then(() => {});
-                }} />
-            )}
-            {iconType === "donate" && (
-                <HeartIcon ref={refs.setReference} {...getReferenceProps()} className="text-white hover:text-white/55 w-8 h-10 mb-2 cursor-pointer flex-initial" onClick={() => {
-                    invoke('open_uri', {uri: uri}).then(() => {});
-                }} />
-            )}
+                }}
+            >
+                {iconType === "discord" && <DiscordIcon className="w-6 h-6" />}
+                {iconType === "donate" && <HeartIcon className="w-6 h-6" />}
+            </div>
             {(isOpen && popup == POPUPS.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />

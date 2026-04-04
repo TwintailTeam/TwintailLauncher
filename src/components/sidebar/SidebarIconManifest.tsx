@@ -1,4 +1,4 @@
-import React, {useRef, useState} from "react";
+import React, { useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import {
     arrow,
@@ -11,7 +11,7 @@ import {
     useHover,
     useInteractions
 } from "@floating-ui/react";
-import {POPUPS} from "../popups/POPUPS.ts";
+import { POPUPS } from "../popups/POPUPS.ts";
 
 type SidebarIconProps = {
     icon: string,
@@ -19,6 +19,7 @@ type SidebarIconProps = {
     id: string,
     background: string,
     enabled: boolean,
+    currentGame?: string,
     setCurrentGame: (a: string) => void,
     setOpenPopup: (a: POPUPS) => void,
     popup: POPUPS,
@@ -30,11 +31,12 @@ type SidebarIconProps = {
     variant?: "default" | "floating",
 }
 
-export default function SidebarIconManifest({icon, name, id, setGameIcon, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, sizeClass = "w-12", variant = "default"}: SidebarIconProps) {
+// @ts-ignore
+export default function SidebarIconManifest({ icon, name, id, setGameIcon, setCurrentGame, setCurrentInstall, setOpenPopup, popup, setDisplayName, setBackground, background, enabled, sizeClass = "w-12", variant = "default", currentGame }: SidebarIconProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
-    const {refs, floatingStyles, context} = useFloating({
+    const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
         middleware: [offset(10), flip(), shift(), arrow({
@@ -44,8 +46,8 @@ export default function SidebarIconManifest({icon, name, id, setGameIcon, setCur
         placement: "bottom",
     });
 
-    const hover = useHover(context, {move: false});
-    const {getReferenceProps, getFloatingProps} = useInteractions([hover]);
+    const hover = useHover(context, { move: false });
+    const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
     const baseImgClass = `aspect-square ${sizeClass} rounded-lg cursor-pointer outline-none`;
     const defaultDecor = `hover:border-2 hover:border-purple-600 focus:border-2 focus:border-purple-600`;
@@ -55,16 +57,15 @@ export default function SidebarIconManifest({icon, name, id, setGameIcon, setCur
 
     return (
         <React.Fragment>
-            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className={composedClass} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} draggable={false} onDragStart={(e) => e.preventDefault()} onClick={() => {
+            {(enabled) ? <img ref={refs.setReference} {...getReferenceProps()} id={id} className={composedClass} srcSet={undefined} loading={"lazy"} decoding={"async"} src={icon} tabIndex={0} onClick={() => {
                 setOpenPopup(POPUPS.NONE)
-                setCurrentGame(id)
                 setCurrentInstall("")
+                setCurrentGame(id)
                 setDisplayName(name)
-                setBackground(background)
                 setGameIcon(icon)
                 // @ts-ignore
                 document.getElementById(id).focus();
-            }} alt={"?"}/> : null}
+            }} alt={"?"} /> : null}
             {(enabled && isOpen && popup == POPUPS.NONE) ?
                 (typeof window !== "undefined" && window.document &&
                     ReactDOM.createPortal(
