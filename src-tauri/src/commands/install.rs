@@ -418,7 +418,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
         let ps = p.to_str().unwrap().to_string();
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
         if enabled {
-            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi"/*, "efmi"*/] { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); }
+            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi", "efmi"] { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); }
         }
         Some(true)
     } else {
