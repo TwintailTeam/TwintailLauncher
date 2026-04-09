@@ -166,12 +166,6 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
 
                     {activeTab === "linux" && (
                         <SettingsSection title="Linux Configuration">
-                            {/*<ModernPathInput
-                                label="Jadeite Location"
-                                description="Path to the Jadeite patch."
-                                value={`${settings.jadeite_path}`}
-                                onChange={(val) => updateSetting("jadeite_path", val)}
-                            />*/}
                             <ModernPathInput
                                 label="Default Runner Location"
                                 description="Base directory for Wine/Proton versions."
