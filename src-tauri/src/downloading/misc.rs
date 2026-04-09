@@ -305,7 +305,6 @@ pub fn check_extras_update(app: &AppHandle) {
     let gs = get_settings(app);
     if gs.is_some() {
         let s = gs.unwrap();
-        //let jadeite = Path::new(&s.jadeite_path).to_path_buf();
         let fpsunlock = Path::new(&s.fps_unlock_path).to_path_buf();
         let xxmi = Path::new(&s.xxmi_path).to_path_buf();
         let gimi = xxmi.join("gimi");
@@ -315,7 +314,6 @@ pub fn check_extras_update(app: &AppHandle) {
         let wwmi = xxmi.join("wwmi");
         let efmi = xxmi.join("efmi");
 
-        //let ver_jadeite = jadeite.join("VERSION.txt");
         let ver_fpsunlock = fpsunlock.join("VERSION.txt");
         let ver_xxmi = xxmi.join("VERSION.txt");
         let ver_gimi = gimi.join("VERSION.txt");
@@ -326,13 +324,6 @@ pub fn check_extras_update(app: &AppHandle) {
         let ver_efmi = efmi.join("VERSION.txt");
 
         log::info!("Starting extras update check");
-        /*if ver_jadeite.exists() {
-            download_or_update_extra(app, jadeite, "jadeite".to_string(), "v5.0.1-hotfix".to_string(), true, None);
-        } else if jadeite.exists() && fs::read_dir(&jadeite).ok().and_then(|mut d| d.next()).is_some() {
-            empty_dir(&jadeite).unwrap();
-            download_or_update_extra(app, jadeite, "jadeite".to_string(), "v5.0.1-hotfix".to_string(), false, None);
-        }*/
-
         if ver_fpsunlock.exists() {
             download_or_update_extra(app, fpsunlock, "keqingunlock".to_string(), "keqing_unlock".to_string(), true, None);
         } else if fpsunlock.exists() && fs::read_dir(&fpsunlock).ok().and_then(|mut d| d.next()).is_some() {

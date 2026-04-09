@@ -394,13 +394,10 @@ pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool)
 #[tauri::command]
 pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
-    let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = Path::new(&settings.jadeite_path).to_path_buf();
         update_install_use_jadeite_by_id(&app, m.id, enabled);
-        if enabled { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "jadeite".to_string(), "v5.0.1-hotfix".to_string(), false); }
         Some(true)
     } else {
         None
