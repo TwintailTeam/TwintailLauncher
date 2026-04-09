@@ -78,7 +78,10 @@ export function registerEvents(
         return result;
       };
     }
-    case 'game_closed':
+    case 'game_closed': {
+      pushInstalls();
+      return undefined;
+    }
     case 'move_complete':
     case 'download_removed':
     case 'download_complete':
