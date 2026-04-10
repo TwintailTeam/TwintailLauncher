@@ -1022,6 +1022,7 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
             "desktop" => {
                 let base = app.path().home_dir().unwrap().join(".local/share/applications");
                 let file = base.join(format!("{}.desktop", install.name.as_str()));
+                if !file.exists() { fs::write(file.clone(), "").unwrap(); }
 
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
