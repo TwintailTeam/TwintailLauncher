@@ -432,7 +432,7 @@ _w_get_broken_messages()
 
             # win64 broken messages
             broken_good_version_known_win64="此软件包（${W_PACKAGE}）在 64 位 wine-${_wine_version_stripped} 上存在问题。可以使用 WINEARCH=win32 创建的前缀，或升级 wine 至 >=${good_version} 来解决此问题。或者使用 --force 仍可尝试。更多信息请参见 ${bug_link}。"
-            broken_good_and_bad_version_known_win64="此软件包（${W_PACKAGE}）在 64 位 wine-${_wine_version_stripped} 中已损坏，自 ${bad_version} 起出现该问题。请使用使用 WINEARCH=win32 创建的前缀，或升级 wine 至 >=${good_version} 来解决此问题。更多信息请参见 ${bug_link}。如仍要尝试，请使用 --force。"
+            broken_good_and_bad_version_known_win64="此软件包（${W_PACKAGE}）在 64 位 wine-${_wine_version_stripped} 中已损坏，自 ${bad_version} 起出现该问题。请使用 WINEARCH=win32 创建的前缀，或升级 wine 至 >=${good_version} 来解决此问题。更多信息请参见 ${bug_link}。如仍要尝试，请使用 --force。"
             broken_only_bad_version_known_win64="此软件包（${W_PACKAGE}）在 64 位 wine-${_wine_version_stripped} 上已损坏，自 ${bad_version} 起出现该问题。请使用 WINEARCH=win32 创建的前缀作为解决方法。更多信息请参见 ${bug_link}。如仍要尝试，请使用 --force。"
             broken_no_version_known_win64="此软件包（${W_PACKAGE}）在 wine 未使用 mingw 构建时已损坏。更多信息请参见 ${bug_link}。如仍要尝试，请使用 --force。"
             ;;
@@ -645,7 +645,7 @@ w_package_unsupported_win64()
             pl*) w_warn "Ten pakiet (${W_PACKAGE}) nie działa z 64-bitową instalacją. Musisz użyć prefiksu utworzonego z WINEARCH=win32." ;;
             pt*) w_warn "Este pacote (${W_PACKAGE}) não funciona em instalação de 64-bit. Você precisa usar um prefixo feito com WINEARCH=win32." ;;
             ru*) w_warn "Данный пакет не работает в 64-битном окружении. Используйте префикс, созданный с помощью WINEARCH=win32." ;;
-            zh_CN*) w_warn "(${W_PACKAGE}) 无法在64位下工作，只能将容器变量设置为 WINEARCH=win32。" ;;
+            zh_CN*) w_warn "(${W_PACKAGE}) 无法在 64 位环境下工作，您必须使用 WINEARCH=win32 创建的容器。" ;;
             zh_TW*|zh_HK*) w_warn "(${W_PACKAGE}) 無法在64元下工作，只能將容器變數設定為 WINEARCH=win32 安装。" ;;
             *) w_warn "This package (${W_PACKAGE}) does not work on a 64-bit installation. You must use a prefix made with WINEARCH=win32." ;;
         esac
@@ -1029,11 +1029,11 @@ w_read_key()
             uk*) _W_keymsg="Будь ласка, введіть ключ для додатка '${W_PACKAGE}'"
                 _W_nokeymsg="Ключ не надано"
                 ;;
-            zh_CN*)  _W_keymsg="按任意键为 '${W_PACKAGE}'"
-                _W_nokeymsg="未检测到按键"
+            zh_CN*)  _W_keymsg="请输入 '${W_PACKAGE}' 的产品密钥"
+                _W_nokeymsg="未提供密钥"
                 ;;
-            zh_TW*|zh_HK*)  _W_keymsg="按任意鍵為 '${W_PACKAGE}'"
-                _W_nokeymsg="No key given"
+            zh_TW*|zh_HK*)  _W_keymsg="請輸入應用程式 '${W_PACKAGE}' 的產品金鑰"
+                _W_nokeymsg="未提供金鑰"
                 ;;
             *)  _W_keymsg="Please enter the key for app '${W_PACKAGE}'"
                 _W_nokeymsg="No key given"
@@ -1362,7 +1362,7 @@ w_dotnet_verify()
         dotnet471) version="4.7.1" ;;
         dotnet472) version="4.7.2" ;;
         dotnet48) version="4.8" ;;
-        *) echo error ; exit 1 ;;
+        *) echo "error: w_dotnet_verify unknown dotnet version"; exit 1 ;;
     esac
 
     w_call dotnet_verifier
@@ -1456,6 +1456,7 @@ winetricks_selfupdate()
     w_try cp "$0" "${_W_rollback_file}"
     w_try chmod -x "${_W_rollback_file}"
 
+    # Uses mv to avoid race condition in overwriting running shell script. Do not replace with cp or other non-atomic writes!
     w_try mv "${_W_update_file}" "$0"
     w_try chmod +x "$0"
 
@@ -1471,6 +1472,7 @@ winetricks_selfupdate_rollback()
     _W_rollback_file="${0}.bak"
 
     if test -f "${_W_rollback_file}"; then
+        # Uses mv to avoid race condition in overwriting running shell script. Do not replace with cp or other non-atomic writes!
         w_try mv "${_W_rollback_file}" "$0"
         w_try chmod +x "$0"
         w_warn "Rollback finished! The current version is $($0 -V)."
@@ -3120,11 +3122,11 @@ winetricks_latest_version_check()
                     ;;
                 zh_CN*)
                     w_warn "你正在使用 winetricks-${WINETRICKS_VERSION}，最新版本是 winetricks-${latest_version}!"
-                    w_warn "你应该使用你的发行版软件管理器、--self-update 或者手动来更新。"
+                    w_warn "建议通过发行版的包管理器、--self-update 或者手动方式进行更新。"
                     ;;
                 zh_TW*|zh_HK*)
                     w_warn "你正在使用 winetricks-${WINETRICKS_VERSION}，最新版本是 winetricks-${latest_version}!"
-                    w_warn "你應該使用你的發行版軟體管理者、--self-update 或者手動更新。"
+                    w_warn "建議通過發行版的套件管理員、--self-update 或者手動方式進行更新。"
                     ;;
                 *)
                     w_warn "You are running winetricks-${WINETRICKS_VERSION}, latest upstream is winetricks-${latest_version}!"
@@ -5649,15 +5651,21 @@ load_atmlib()
 w_metadata avifil32 dlls \
     title="MS avifil32" \
     publisher="Microsoft" \
-    year="2004" \
+    year="2009" \
     media="download" \
-    file1="../winxpsp3/WindowsXP-KB936929-SP3-x86-ENU.exe" \
+    file1="windowsserver2003.windowsxp-kb971557-x64-enu_32943d879a20893dace5191677c4e499aaef0ef8.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/avifil32.dll"
 
 load_avifil32()
 {
-    helper_winxpsp3 i386/avifil32.dl_
-    w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_TMP}"/i386/avifil32.dl_
+    w_download https://catalog.s.download.windowsupdate.com/msdownload/update/software/secu/2009/07/windowsserver2003.windowsxp-kb971557-x64-enu_32943d879a20893dace5191677c4e499aaef0ef8.exe e20a2ee0d35e4338549b37badcd5eebe9dc0be86fbbd9b8809191fc315745a8f
+    w_try_cabextract --directory="${W_TMP}" "${W_CACHE}/${W_PACKAGE}/${file1}"
+
+    w_try_cp_dll "${W_TMP}"/SP2GDR/wow/wavifil32.dll "${W_SYSTEM32_DLLS}"/avifil32.dll
+
+    if [ "${W_ARCH}" = "win64" ]; then
+        w_try_cp_dll "${W_TMP}"/SP2GDR/avifil32.dll "${W_SYSTEM64_DLLS}"/avifil32.dll
+    fi
 
     w_override_dlls native avifil32
 }
@@ -5978,7 +5986,7 @@ load_d3dcompiler_43()
 w_metadata d3dcompiler_46 dlls \
     title="MS d3dcompiler_46.dll" \
     publisher="Microsoft" \
-    year="2010" \
+    year="2012" \
     media="download" \
     file1="../directx9/directx_Jun2010_redist.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/d3dcompiler_46.dll"
@@ -5987,12 +5995,12 @@ load_d3dcompiler_46()
 {
     # See https://bugs.winehq.org/show_bug.cgi?id=50350#c13
 
-    w_download http://download.microsoft.com/download/F/1/3/F1300C9C-A120-4341-90DF-8A52509B23AC/standalonesdk/Installers/2630bae9681db6a9f6722366f47d055c.cab
+    w_download https://download.microsoft.com/download/F/1/3/F1300C9C-A120-4341-90DF-8A52509B23AC/standalonesdk/Installers/2630bae9681db6a9f6722366f47d055c.cab
     w_try_cabextract -d "${W_TMP}" -L -F "fil47ed91e900f4b9d9659b66a211b57c39" "${W_CACHE}/${W_PACKAGE}/2630bae9681db6a9f6722366f47d055c.cab"
     w_try mv "${W_TMP}/fil47ed91e900f4b9d9659b66a211b57c39" "${W_SYSTEM32_DLLS}/d3dcompiler_46.dll"
 
     if [ "${W_ARCH}" = "win64" ]; then
-        w_download http://download.microsoft.com/download/F/1/3/F1300C9C-A120-4341-90DF-8A52509B23AC/standalonesdk/Installers/61d57a7a82309cd161a854a6f4619e52.cab
+        w_download https://download.microsoft.com/download/F/1/3/F1300C9C-A120-4341-90DF-8A52509B23AC/standalonesdk/Installers/61d57a7a82309cd161a854a6f4619e52.cab
         w_try_cabextract -d "${W_TMP}" -L -F "fil8c20206095817436f8df4a711faee5b7" "${W_CACHE}/${W_PACKAGE}/61d57a7a82309cd161a854a6f4619e52.cab"
         w_try mv "${W_TMP}/fil8c20206095817436f8df4a711faee5b7" "${W_SYSTEM64_DLLS}/d3dcompiler_46.dll"
     fi
@@ -6005,19 +6013,21 @@ load_d3dcompiler_46()
 w_metadata d3dcompiler_47 dlls \
     title="MS d3dcompiler_47.dll" \
     publisher="Microsoft" \
-    year="FIXME" \
+    year="2013" \
     media="download" \
-    file1="d3dcompiler_47_32.dll" \
+    file1="../directx9/directx_Jun2010_redist.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/d3dcompiler_47.dll"
 
 load_d3dcompiler_47()
 {
-    w_download https://raw.githubusercontent.com/mozilla/fxc2/master/dll/d3dcompiler_47_32.dll 2ad0d4987fc4624566b190e747c9d95038443956ed816abfd1e2d389b5ec0851
-    w_try_cp_dll "${W_CACHE}/d3dcompiler_47/d3dcompiler_47_32.dll" "${W_SYSTEM32_DLLS}/d3dcompiler_47.dll"
+    w_download https://download.microsoft.com/download/B/0/C/B0C80BA3-8AD6-4958-810B-6882485230B5/standalonesdk/Installers/2630bae9681db6a9f6722366f47d055c.cab
+    w_try_cabextract -d "${W_TMP}" -L -F "fila319f706acfa16d6707473ebf29bdc7f" "${W_CACHE}/${W_PACKAGE}/2630bae9681db6a9f6722366f47d055c.cab"
+    w_try mv "${W_TMP}/fila319f706acfa16d6707473ebf29bdc7f" "${W_SYSTEM32_DLLS}/d3dcompiler_47.dll"
 
     if [ "${W_ARCH}" = "win64" ]; then
-        w_download https://raw.githubusercontent.com/mozilla/fxc2/master/dll/d3dcompiler_47.dll 4432bbd1a390874f3f0a503d45cc48d346abc3a8c0213c289f4b615bf0ee84f3
-        w_try_cp_dll "${W_CACHE}/d3dcompiler_47/d3dcompiler_47.dll" "${W_SYSTEM64_DLLS}/d3dcompiler_47.dll"
+        w_download https://download.microsoft.com/download/B/0/C/B0C80BA3-8AD6-4958-810B-6882485230B5/standalonesdk/Installers/61d57a7a82309cd161a854a6f4619e52.cab
+        w_try_cabextract -d "${W_TMP}" -L -F "fil3585cb2ea5db13cc0838f8d06b5c9679" "${W_CACHE}/${W_PACKAGE}/61d57a7a82309cd161a854a6f4619e52.cab"
+        w_try mv "${W_TMP}/fil3585cb2ea5db13cc0838f8d06b5c9679" "${W_SYSTEM64_DLLS}/d3dcompiler_47.dll"
     fi
 
     w_override_dlls native d3dcompiler_47
@@ -9842,23 +9852,23 @@ load_dotnetdesktop8()
 w_metadata dotnet9 dlls \
     title="MS .NET Runtime 9.0 LTS" \
     publisher="Microsoft" \
-    year="2024" \
+    year="2026" \
     media="download" \
-    file1="dotnet-runtime-9.0.7-win-x86.exe" \
+    file1="dotnet-runtime-9.0.14-win-x86.exe" \
     installed_file1="${W_PROGRAMS_WIN}/dotnet/dotnet.exe"
 
 load_dotnet9()
 {
     # Official version, see https://dotnet.microsoft.com/en-us/download/dotnet/9.0
-    w_download https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.7/dotnet-runtime-9.0.7-win-x86.exe a4d077890c9820d9968a3c310973dceeae6ce949f4af3dae50611c0457196c82
+    w_download https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.14/dotnet-runtime-9.0.14-win-x86.exe a99eb555e90eaa6703efa20f3b8fe676a9ba24bd24d439f016c20815d4ff815c
 
     w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
     w_try "${WINE}" "${file1}" ${W_OPT_UNATTENDED:+/quiet}
 
     if [ "${W_ARCH}" = "win64" ]; then
         # Also install the 64-bit version
-        w_download https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.7/dotnet-runtime-9.0.7-win-x64.exe 482a02fa01dd822d67d5286049ed7cc74fe8eda01848612cd070e0b0583de9c4
-        w_try "${WINE}" "dotnet-runtime-9.0.7-win-x64.exe" ${W_OPT_UNATTENDED:+/quiet}
+        w_download https://builds.dotnet.microsoft.com/dotnet/Runtime/9.0.14/dotnet-runtime-9.0.14-win-x64.exe 690f85d3592edb3e5810f8cd8b4a630bbaa2a8abc354061d44d7d6c0f0d8a0dd
+        w_try "${WINE}" "dotnet-runtime-9.0.14-win-x64.exe" ${W_OPT_UNATTENDED:+/quiet}
     fi
 }
 
@@ -11525,17 +11535,43 @@ w_metadata msls31 dlls \
     publisher="Microsoft" \
     year="2001" \
     media="download" \
+    file1="IE8-WindowsServer2003-x64-ENU.exe" \
+    installed_file1="${W_SYSTEM32_DLLS_WIN}/msls31.dll" \
+    installed_file2="${W_SYSTEM64_DLLS_WIN64}/msls31.dll"
+
+load_msls31()
+{
+    # Needed by native RichEdit and Internet Explorer
+    # Installs newer version of msls31.dll as well as both 32-bit and 64-bit versions as needed
+
+    w_download https://download.microsoft.com/download/7/5/4/754D6601-662D-4E39-9788-6F90D8E5C097/IE8-WindowsServer2003-x64-ENU.exe bcff753e92ceabf31cfefaa6def146335c7cb27a50b95cd4f4658a0c3326f499
+
+    w_try_cabextract --directory="${W_CACHE}"/msls31 "${W_CACHE}"/msls31/IE8-WindowsServer2003-x64-ENU.exe -F wow/wmsls31.dll
+    w_try_cp_dll "${W_CACHE}"/msls31/wow/wmsls31.dll "${W_SYSTEM32_DLLS}"/msls31.dll
+
+    if [ "${W_ARCH}" = "win64" ]; then
+        w_try_cabextract --directory="${W_SYSTEM64_DLLS}" "${W_CACHE}"/msls31/IE8-WindowsServer2003-x64-ENU.exe -F msls31.dll
+    fi
+}
+
+#----------------------------------------------------------------
+
+w_metadata msls31_nt4 dlls \
+    title="MS Line Services (32-bit only)" \
+    publisher="Microsoft" \
+    year="2001" \
+    media="download" \
     file1="InstMsiW.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/msls31.dll"
 
-load_msls31()
+load_msls31_nt4()
 {
     # Needed by native RichEdit and Internet Explorer
     # Originally at https://download.microsoft.com/download/WindowsInstaller/Install/2.0/NT45/EN-US/InstMsiW.exe
     # Old mirror at https://ftp.hp.com/pub/softlib/software/msi/InstMsiW.exe
     w_download https://web.archive.org/web/20160710055851if_/http://download.microsoft.com/download/WindowsInstaller/Install/2.0/NT45/EN-US/InstMsiW.exe 4c3516c0b5c2b76b88209b22e3bf1cb82d8e2de7116125e97e128952372eed6b
 
-    w_try_cabextract --directory="${W_TMP}" "${W_CACHE}"/msls31/InstMsiW.exe
+    w_try_cabextract --directory="${W_TMP}" "${W_CACHE}"/msls31_nt4/InstMsiW.exe
     w_try_cp_dll "${W_TMP}"/msls31.dll "${W_SYSTEM32_DLLS}"
 }
 
@@ -11740,17 +11776,24 @@ load_ogg()
 w_metadata ole32 dlls \
     title="MS ole32 Module (ole32.dll)" \
     publisher="Microsoft" \
-    year="2004" \
+    year="2015" \
     media="download" \
-    file1="../winxpsp3/WindowsXP-KB936929-SP3-x86-ENU.exe" \
+    file1="windowsserver2003-kb3072633-x64-enu_e3bee4ea9cab584b77067f26e4aeed5428436327.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/ole32.dll"
 
 load_ole32()
 {
     # Some applications need this, for example Wechat.
-    helper_winxpsp3 i386/ole32.dl_
-    w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_TMP}"/i386/ole32.dl_
-    w_override_dlls native,builtin ole32
+    w_download https://catalog.s.download.windowsupdate.com/d/msdownload/update/software/secu/2015/06/windowsserver2003-kb3072633-x64-enu_e3bee4ea9cab584b77067f26e4aeed5428436327.exe 1e0d4065f34bebd5bde679779ec7472cd7e0a285bc7209a50aae744d4849cbdf
+    w_try_cabextract --directory="${W_TMP}" "${W_CACHE}/${W_PACKAGE}/${file1}"
+
+    w_try_cp_dll "${W_TMP}"/SP2QFE/wow/wole32.dll "${W_SYSTEM32_DLLS}"/ole32.dll
+
+    if [ "${W_ARCH}" = "win64" ]; then
+        w_try_cp_dll "${W_TMP}"/SP2QFE/ole32.dll "${W_SYSTEM64_DLLS}"/ole32.dll
+    fi
+
+    w_override_dlls native ole32
 }
 
 #----------------------------------------------------------------
@@ -12475,7 +12518,7 @@ load_riched20()
     w_override_dlls native,builtin riched20
 
     # https://github.com/Winetricks/winetricks/issues/292
-    w_call msls31
+    w_call msls31_nt4
 }
 
 #----------------------------------------------------------------
@@ -12884,32 +12927,17 @@ load_vb5run()
 #----------------------------------------------------------------
 
 w_metadata vb6run dlls \
-    title="MS Visual Basic 6 runtime sp6" \
+    title="MS Visual Basic 6 runtime" \
     publisher="Microsoft" \
-    year="2004" \
+    year="2008" \
     media="download" \
-    file1="vbrun60sp6.exe" \
+    file1="../winxpsp3/WindowsXP-KB936929-SP3-x86-ENU.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/msvbvm60.dll"
 
 load_vb6run()
 {
-    # https://support.microsoft.com/kb/290887
-    if test ! -f "${W_CACHE}"/vb6run/vbrun60sp6.exe; then
-        w_download https://web.archive.org/web/20070204154430/https://download.microsoft.com/download/5/a/d/5ad868a0-8ecd-4bb0-a882-fe53eb7ef348/VB6.0-KB290887-X86.exe 467b5a10c369865f2021d379fc0933cb382146b702bbca4bcb703fc86f4322bb
-
-        w_try "${WINE}" "${W_CACHE}"/vb6run/VB6.0-KB290887-X86.exe "/T:${W_TMP_WIN}" /c ${W_OPT_UNATTENDED:+/q}
-        if test ! -f "${W_TMP}"/vbrun60sp6.exe; then
-            w_die vbrun60sp6.exe not found
-        fi
-        w_try mv "${W_TMP}"/vbrun60sp6.exe "${W_CACHE}"/vb6run
-    fi
-
-    # extract the files instead of using installer to avoid https://github.com/Winetricks/winetricks/issues/1806
-    w_try_cabextract -L "${W_CACHE}/${W_PACKAGE}/${file1}" -d "${W_TMP}"
-
-    for dll in asycfilt.dll comcat.dll msvbvm60.dll oleaut32.dll olepro32.dll stdole2.tlb; do
-        w_try mv "${W_TMP}/${dll}" "${W_SYSTEM32_DLLS}"
-    done
+    helper_winxpsp3 i386/msvbvm60.dl_
+    w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_TMP}"/i386/msvbvm60.dl_
 }
 
 #----------------------------------------------------------------
@@ -13701,7 +13729,7 @@ w_metadata vcrun2026 dlls \
     year="2026" \
     media="download" \
     conflicts="vcrun2015 vcrun2017 vcrun2019 vcrun2022" \
-    file1="VC_redist.x86.exe" \
+    file1="vc_redist.x86.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/vcruntime140.dll"
 
 load_vcrun2026()
@@ -13712,11 +13740,11 @@ load_vcrun2026()
 
     w_download https://aka.ms/vc14/vc_redist.x86.exe e7267c1bdf9237c0b4a28cf027c382b97aa909934f84f1c92d3fb9f04173b33e
     w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
-    w_try_ms_installer "${WINE}" VC_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
+    w_try_ms_installer "${WINE}" vc_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
 
     # Setup will refuse to install msvcp140 & msvcp140_2 because the builtin's version number is higher, so manually replace them
     # See https://bugs.winehq.org/show_bug.cgi?id=57518
-    w_try_cabextract --directory="${W_TMP}/win32"  "${W_CACHE}"/"${W_PACKAGE}"/VC_redist.x86.exe -F 'a2'
+    w_try_cabextract --directory="${W_TMP}/win32"  "${W_CACHE}"/"${W_PACKAGE}"/vc_redist.x86.exe -F 'a2'
     w_try_cabextract --directory="${W_TMP}/win32" "${W_TMP}/win32/a2"
     w_try mv -f "${W_TMP}/win32/msvcp140.dll_x86" "${W_SYSTEM32_DLLS}/msvcp140.dll"
     w_try mv -f "${W_TMP}/win32/msvcp140_2.dll_x86" "${W_SYSTEM32_DLLS}/msvcp140_2.dll"
@@ -13729,10 +13757,10 @@ load_vcrun2026()
             w_override_dlls native,builtin vcruntime140_1
 
             w_download https://aka.ms/vc14/vc_redist.x64.exe 8995548dfffcde7c49987029c764355612ba6850ee09a7b6f0fddc85bdc5c280
-            w_try_ms_installer "${WINE}" VC_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
+            w_try_ms_installer "${WINE}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
 
             # Also replace 64-bit msvcp140.dll, msvcp140_2.dll & vcruntime140_1.dll
-            w_try_cabextract --directory="${W_TMP}/win64"  "${W_CACHE}"/"${W_PACKAGE}"/VC_redist.x64.exe -F 'a4'
+            w_try_cabextract --directory="${W_TMP}/win64"  "${W_CACHE}"/"${W_PACKAGE}"/vc_redist.x64.exe -F 'a4'
             w_try_cabextract --directory="${W_TMP}/win64" "${W_TMP}/win64/a4"
             w_try mv -f "${W_TMP}/win64/msvcp140.dll_amd64" "${W_SYSTEM64_DLLS}/msvcp140.dll"
             w_try mv -f "${W_TMP}/win64/msvcp140_2.dll_amd64" "${W_SYSTEM64_DLLS}/msvcp140_2.dll"
@@ -13775,11 +13803,15 @@ load_vstools2019()
 {
     w_call dotnet472
 
-    # 2021/12/17: e653e715ddb8a08873e50a2fe091fca2ce77726b8b6ed2b99ed916d0e03c1fbe
-    # 2025/04/03: 0f0cc11f000593a064d419462a8467b529fed8075b21a605a40785baa3d2f611
-    w_download https://aka.ms/vs/16/release/installer 0f0cc11f000593a064d419462a8467b529fed8075b21a605a40785baa3d2f611 vstools2019.zip
-    w_try_unzip "${W_TMP}/vs_installer_16" "${W_CACHE}/${W_PACKAGE}/vstools2019.zip"
-    w_try "${WINE}" "${W_TMP}"/vs_installer_16/Contents/vs_installer.exe install \
+    if test ! "${W_OPT_UNATTENDED}"; then
+        # The installer GUI needs at least one registered font family for System.Windows.Media.FontFamily.get_FirstFontFamily()
+        w_call arial
+    fi
+
+    # 2026/02/09: b7a70e4acdf18aaaba4e13e17c7c157a12d6512458d60d5c2001a373741329cb
+    # Use a newer bootstrap binary to prevent hang during installer self-update
+    w_download https://aka.ms/vs/18/stable/vs_buildtools.exe b7a70e4acdf18aaaba4e13e17c7c157a12d6512458d60d5c2001a373741329cb vs_buildtools.exe
+    w_try "${WINE}" "${W_CACHE}/${W_PACKAGE}/vs_buildtools.exe" install \
         --channelId VisualStudio.16.Release \
         --channelUri "https://aka.ms/vs/16/release/channel" \
         --productId "Microsoft.VisualStudio.Product.BuildTools" \
@@ -13811,6 +13843,48 @@ load_webio()
     w_override_dlls native,builtin webio
 }
 
+#----------------------------------------------------------------
+
+w_metadata webview2 dlls \
+    title="Microsoft Edge WebView2 Evergreen Runtime" \
+    publisher="Microsoft" \
+    year="2020" \
+    media="download" \
+    file1="MicrosoftEdgeWebview2Setup.exe" \
+    installed_file1="${W_PROGRAMS_X86_WIN}/Microsoft/EdgeUpdate/MicrosoftEdgeUpdate.exe"
+
+load_webview2()
+{
+    # https://developer.microsoft.com/en-us/microsoft-edge/webview2/
+    # Evergreen Bootstrapper - downloads and installs appropriate architecture
+    # https://go.microsoft.com/fwlink/p/?LinkId=2124703
+    # Skip checksum verification since this file updates frequently
+    w_download https://go.microsoft.com/fwlink/p/?LinkId=2124703 "" MicrosoftEdgeWebview2Setup.exe
+
+    w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
+    w_try_ms_installer "${WINE}" MicrosoftEdgeWebview2Setup.exe ${W_OPT_UNATTENDED:+/silent /install}
+
+    if w_workaround_wine_bug 53925 "Setting edgeupdate service to manual startup"; then
+        cat > "${W_TMP}"/edgeupdate-service.reg <<_EOF_
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services\\edgeupdate]
+"Start"=dword:00000003
+
+_EOF_
+        w_try_regedit "${W_TMP_WIN}"\\edgeupdate-service.reg
+
+        # Kill the running service since it was started during installation
+        # Use pgrep -f to match full command line since process name is >15 chars
+        # shellcheck disable=SC2046,SC2086
+        sleep 5 # Make sure we don't accidentally kill any other MicrosoftEdgeUpdate instance (shouldn't be needed, but better safe than sorry)
+        kill -s KILL $(pgrep -f "MicrosoftEdgeUpdate.exe /c") 2>/dev/null || true
+    fi
+
+    if w_workaround_wine_bug 58921 "Setting Windows 7 mode"; then
+        w_set_app_winver msedgewebview2.exe win7
+    fi
+}
 
 #----------------------------------------------------------------
 
@@ -15847,7 +15921,7 @@ load_ie6()
     # the ie6 we use these days lacks pngfilt, so grab that
     w_call pngfilt
 
-    w_call msls31
+    w_call msls31_nt
 }
 
 #----------------------------------------------------------------
@@ -18973,6 +19047,33 @@ load_sandbox()
     w_call isolate_home
 }
 
+#----------------------------------------------------------------
+
+w_metadata showdotfiles=y settings \
+    title="Show dotfiles/folders (.foo) in Windows programs"
+w_metadata showdotfiles=n settings \
+    title="Hide dotfiles/folders (.foo) in Windows programs (default)"
+
+load_showdotfiles()
+{
+    case "$1" in
+        y|Y) arg="Y";;
+        n|N) arg="N";;
+        *) w_die "illegal value $1 for ShowDotFiles";;
+    esac
+
+    echo "Setting ShowDotFiles to ${arg}"
+    cat > "${W_TMP}/${W_PACKAGE}.reg" <<_EOF_
+REGEDIT4
+
+[HKEY_CURRENT_USER\\Software\\Wine]
+"ShowDotFiles"="${arg}"
+
+_EOF_
+    w_try_regedit "${W_TMP}/${W_PACKAGE}.reg"
+}
+
+
 ####
 # settings->sound
 
@@ -19462,10 +19563,10 @@ winetricks_stats_init()
                     declined="Надсилання звітності Winetricks вимкнено. Ви більше не отримуватиме це питання знову."
                     ;;
                 zh_CN*)
-                    title="有关是否协助 Winetricks 开发的一次性提问。"
+                    title="有关是否协助 Winetricks 开发的一次性询问。"
                     question="您是否愿意通过允许 winetricks 报告统计信息来协助 winetricks 的开发？您可以随时通过命令 'winetricks --optout' 关闭统计信息上报。"
-                    thanks="谢谢！您将不会被要求再次回答此问题。切记，您可随时使用命令 'winetricks --optout' 关闭统计信息上报功能。"
-                    declined="好的，winetricks 将不会报告统计信息。您将不会被要求再次回答此问题。"
+                    thanks="谢谢！此问题将不会再次出现。请注意，您可随时使用命令 'winetricks --optout' 关闭统计信息上报。"
+                    declined="好的，winetricks 将不会报告统计信息。此问题将不会再次出现。"
                     ;;
                 *)
                     title="One-time question about helping Winetricks development"
@@ -19777,7 +19878,7 @@ if ! test "${WINETRICKS_LIB}"; then
     case "$1" in
         die) w_die "we who are about to die salute you." ;;
         "")
-            if [ -z "${DISPLAY}" ]; then
+            if [ -z "${DISPLAY}" ] && [ -z "${WAYLAND_DISPLAY}" ]; then
                 if [ "$(uname -s)" = "Darwin" ]; then
                     echo "Running on OSX, but DISPLAY is not set...probably using Mac Driver."
                 else
