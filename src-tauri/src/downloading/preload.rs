@@ -5,7 +5,6 @@ use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::DiffGameFile, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon};
-use fischl::utils::free_space::available;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,AtomicU64,Ordering};
 use std::sync::{Arc, Mutex};
@@ -91,7 +90,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     } else {
                         let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
                         let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
-                        let available = available(install.directory.clone());
+                        let available = fischl::utils::available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
@@ -161,7 +160,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     } else {
                         let manifest = urls.get(0).unwrap();
                         let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
-                        let available = available(install.directory.clone());
+                        let available = fischl::utils::available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_RAW, total size: {}, available space: {:?}", install.name, total_size, available);

@@ -3,7 +3,6 @@ use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
 use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
-use fischl::utils::free_space::get_disk_space;
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -839,7 +838,7 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
         }
 
         let p = PathBuf::from(&path);
-        let (a, t) = get_disk_space(p);
+        let (a, t) = fischl::utils::get_disk_space(p);
         let stringified = serde_json::to_string(&DownloadSizesRsp {
             game_decompressed_size: prettify_bytes(fss),
             free_disk_space: prettify_bytes(a),

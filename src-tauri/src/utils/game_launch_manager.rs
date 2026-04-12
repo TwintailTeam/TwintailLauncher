@@ -115,33 +115,24 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let verb = if install.use_xxmi || install.use_fps_unlock { "run" } else { "waitforexitandrun" };
     let drive = if cpo.proton_compat_config.contains(&"gamedrive".to_string()) { format!("s:\\{game}") } else { format!("z:\\{dir}/{game}") };
+
+    let mut args = install.launch_args.clone();
+    let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
+    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+    if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
+    if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+
+    let default_command = if is_proton {
+        let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
+        if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
+    } else {
+        if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
+    };
+
     let rslt = if install.launch_command.is_empty() {
-        let mut args = install.launch_args.clone();
-        let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
-        if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
-        if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-
-        let mut command = if is_proton {
-            let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
-            if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
-        } else {
-            if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
-        };
-
-        if install.use_jadeite {
-            let jadeite_path = gs.jadeite_path.clone();
-            command = if is_proton {
-                let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} 'z:\\{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}");
-                if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
-            } else {
-                if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") } else { format!("'{runner}/{wine64}' '{jadeite_path}/jadeite.exe' '{dir}/{game}' -- {args}") }
-            };
-        }
-
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
-        cmd.arg(&command);
+        cmd.arg(&default_command);
 
         cmd.env("SteamOS", "1");
         cmd.env("WINEARCH", "win64");
@@ -190,30 +181,30 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", default_command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
-                    log::info!("Executing launch command: \"{}\"", command);
+                    log::info!("Executing launch command: \"{}\"", default_command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
         }
         true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let mut args = install.launch_args.clone();
-        let mut command = format!("{c}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let mut command = format!("{c}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
         if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("{c} {args}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
+        if !args.is_empty() { command = format!("{c} {args}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");

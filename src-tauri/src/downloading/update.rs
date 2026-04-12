@@ -5,7 +5,6 @@ use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, 
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
-use fischl::utils::free_space::available;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -323,7 +322,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     // we have diffs update the game
                     let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
                     let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
-                    let available = available(install.directory.clone());
+                    let available = fischl::utils::available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
                         log::debug!("Starting update of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
@@ -399,7 +398,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 } else {
                     // we have diffs update the game
                     let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
-                    let available = available(install.directory.clone());
+                    let available = fischl::utils::available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
                         #[cfg(target_os = "linux")]
