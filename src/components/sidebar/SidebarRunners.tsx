@@ -14,7 +14,7 @@ import {POPUPS} from "../popups/POPUPS.ts";
 import {PAGES} from "../pages/PAGES.ts";
 import {AtomIcon} from "lucide-react";
 
-export default function SidebarRunners({setOpenPopup, popup, currentPage, setCurrentPage}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS, currentPage?: PAGES, setCurrentPage?: (page: PAGES) => void}) {
+export default function SidebarRunners({popup, currentPage, setCurrentPage}: {popup: POPUPS, currentPage?: PAGES, setCurrentPage?: (page: PAGES) => void}) {
     const [isOpen, setIsOpen] = useState(false);
 
     const arrowRef = useRef(null);
@@ -45,9 +45,7 @@ export default function SidebarRunners({setOpenPopup, popup, currentPage, setCur
                 onClick={() => {
                     if (setCurrentPage) {
                         setCurrentPage(currentPage === PAGES.RUNNERS ? PAGES.NONE : PAGES.RUNNERS);
-                    } else {
-                        setOpenPopup(popup == POPUPS.NONE ? POPUPS.RUNNERMANAGER : POPUPS.NONE);
-                    }
+                    } else {/* No fallback page function must be set */}
                 }}
             >
                 <AtomIcon className="w-6 h-6" />

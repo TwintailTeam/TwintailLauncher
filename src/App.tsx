@@ -473,7 +473,7 @@ export default class App extends React.Component<any, any> {
                                 />,
                                 // Runners (Linux only)
                                 ...(window.navigator.platform.includes("Linux") ? [
-                                    <SidebarRunners key="runners" popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} currentPage={this.state.currentPage} setCurrentPage={this.setCurrentPage} />
+                                    <SidebarRunners key="runners" popup={this.state.openPopup} currentPage={this.state.currentPage} setCurrentPage={this.setCurrentPage} />
                                 ] : []),
                                 // Settings
                                 <SidebarSettings key="settings" popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} currentPage={this.state.currentPage} setCurrentPage={this.setCurrentPage} />,
