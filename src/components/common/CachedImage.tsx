@@ -78,5 +78,3 @@ export function CachedImage({ src, alt = "", className = "" }: CachedImageProps)
         </div>
     );
 }
-
-export default CachedImage;
