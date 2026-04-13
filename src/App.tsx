@@ -465,7 +465,6 @@ export default class App extends React.Component<any, any> {
                                 <SidebarDownloads
                                     key="downloads"
                                     popup={this.state.openPopup}
-                                    setOpenPopup={this.setOpenPopup}
                                     hasDownloads={hasDownloads}
                                     queueCount={downloadQueueCount}
                                     progressPercent={downloadsPercent}

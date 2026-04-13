@@ -15,7 +15,6 @@ import { PAGES } from "../pages/PAGES";
 import { DownloadIcon } from "lucide-react";
 
 export default function SidebarDownloads({
-  setOpenPopup,
   popup,
   hasDownloads,
   queueCount,
@@ -23,7 +22,6 @@ export default function SidebarDownloads({
   currentPage,
   setCurrentPage,
 }: {
-  setOpenPopup: (a: POPUPS) => void;
   popup: POPUPS;
   hasDownloads: boolean;
   queueCount: number;
@@ -111,9 +109,7 @@ export default function SidebarDownloads({
         onClick={() => {
           if (setCurrentPage) {
             setCurrentPage(currentPage === PAGES.DOWNLOADS ? PAGES.NONE : PAGES.DOWNLOADS);
-          } else {
-            setOpenPopup(popup === POPUPS.DOWNLOADS ? POPUPS.NONE : POPUPS.DOWNLOADS);
-          }
+          } else {/* No fallback page set function must be present */}
         }}
       >
         {ringPercent !== undefined && (
