@@ -19,7 +19,7 @@ import {
     X,
     FileCode2,
     LayoutDashboard,
-    Terminal, Settings2
+    Terminal, Settings2, Logs
 } from "lucide-react";
 import { SettingsLayout } from "../layout/SettingsLayout.tsx";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
@@ -606,8 +606,7 @@ export default function GameSettings({
                                             </div>
                                         </button>
                                     )}
-
-                                    {gameBiz && !gameBiz.startsWith("wuwa") && !gameBiz.startsWith("pgr") && !gameBiz.startsWith("endfield") && !gameBiz.startsWith("aethergazer") && (
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg")) && (
                                         <button
                                             onClick={async () => {
                                                 if (isAuthkeyCopying) { return; }
@@ -640,6 +639,25 @@ export default function GameSettings({
                                         </button>
                                     )}
 
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg") || gameBiz.startsWith("endfield") || gameBiz.startsWith("pgr")) && (
+                                        <button
+                                            onClick={() => {
+                                                setOpenPopup(POPUPS.NONE);
+                                                invoke("open_folder", {
+                                                    runnerVersion: "",
+                                                    manifestId: installSettings.manifest_id,
+                                                    installId: installSettings.id,
+                                                    pathType: "engine_log"
+                                                });
+                                            }}
+                                            className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
+                                            <Logs className="w-6 h-6 text-purple-400" />
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">Open Engine Log</span>
+                                                <span className="text-xs text-zinc-400">View game engine log</span>
+                                            </div>
+                                        </button>
+                                    )}
                                 </div>
                             </SettingsSection>
                             {window.navigator.platform.includes("Linux") && (

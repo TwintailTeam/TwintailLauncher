@@ -240,6 +240,39 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None, None); };
             }
         }
+        "engine_log" => {
+            let install = get_install_info_by_id(&app, install_id);
+            if install.is_some() {
+                let i = install.unwrap();
+                #[cfg(target_os = "linux")]
+                {
+                    let prefix = Path::new(&i.runner_prefix).to_path_buf();
+                    let prefix_exists = prefix.join("pfx/").exists();
+                    if prefix_exists {
+                        let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
+                        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), i.name, i.region_code));
+                        if engine_log.exists() {
+                            match app.opener().reveal_item_in_dir(engine_log.as_path()) {
+                                Ok(_) => {}
+                                Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
+                            }
+                        } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open game engine log directory, Is runner prefix initialized?", None, None); }
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None, None); }
+                }
+
+                #[cfg(target_os = "windows")]
+                {
+                    let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
+                    let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), i.name, i.region_code));
+                    if engine_log.exists() {
+                        match app.opener().reveal_item_in_dir(engine_log.as_path()) {
+                            Ok(_) => {}
+                            Err(_e) => { crate::utils::show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
+                        }
+                    } else { crate::utils::show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open game engine log directory, Is runner prefix initialized?", None, None); }
+                }
+            }
+        }
         _ => {}
     }
 }
