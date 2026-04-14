@@ -3,12 +3,12 @@ extern crate core;
 use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
-use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
 use crate::commands::install::{add_install, check_game_running, game_launch, get_download_sizes, get_resume_states, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install, set_installs_order, update_install_dxvk_path, update_install_dxvk_version, update_install_env_vars, update_install_fps_value, update_install_game_background, update_install_game_path, update_install_graphics_api, update_install_launch_args, update_install_launch_cmd, update_install_pre_launch_cmd, update_install_prefix_path, update_install_runner_path, update_install_runner_version, update_install_skip_hash_valid, update_install_skip_version_updates, update_install_use_fps_unlock, update_install_use_jadeite, update_install_use_xxmi, update_install_use_gamemode, update_install_use_mangohud, update_install_mangohud_config_path, add_shortcut, remove_shortcut, update_install_xxmi_config, update_install_show_drpc, update_install_disable_system_idle, copy_authkey};
 use crate::commands::queue::{pause_game_download, queue_move_up, queue_move_down, queue_remove, queue_set_paused, queue_activate_job, queue_reorder, queue_resume_job, get_download_queue_state, queue_clear_completed};
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled, get_game_manifest_by_manifest_id, list_compatibility_manifests, get_compatibility_manifest_by_manifest_id, override_manifest_url, clear_manifest_override};
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
-use crate::commands::settings::{empty_folder, list_settings, open_folder, open_in_prefix, open_uri, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_download_speed_limit_cmd, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
+use crate::commands::settings::{empty_folder, list_settings, open_folder, open_in_prefix, open_uri, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_download_speed_limit_cmd, update_settings_hide_app_tray, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
 use crate::downloading::download::register_download_handler;
 use crate::downloading::preload::register_preload_handler;
 use crate::downloading::repair::register_repair_handler;
@@ -155,7 +155,7 @@ pub fn run() {
                 }
             }
             Ok(())
-        }).invoke_handler(tauri::generate_handler![open_uri, open_folder, empty_folder, open_in_prefix, list_settings, update_settings_third_party_repo_updates, update_settings_default_game_path, update_settings_default_xxmi_path, update_settings_default_fps_unlock_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_dxvk_path, update_settings_default_mangohud_config_path, update_settings_download_speed_limit_cmd, update_settings_launcher_action, update_settings_manifests_hide,
+        }).invoke_handler(tauri::generate_handler![open_uri, open_folder, empty_folder, open_in_prefix, list_settings, update_settings_third_party_repo_updates, update_settings_default_game_path, update_settings_default_xxmi_path, update_settings_default_fps_unlock_path, update_settings_default_jadeite_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_dxvk_path, update_settings_default_mangohud_config_path, update_settings_download_speed_limit_cmd, update_settings_launcher_action, update_settings_manifests_hide, update_settings_hide_app_tray,
             remove_repository, add_repository, get_repository, list_repositories,
             get_manifest_by_id, get_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled,
             get_game_manifest_by_filename, list_game_manifests, get_game_manifest_by_manifest_id, override_manifest_url, clear_manifest_override,
@@ -171,7 +171,17 @@ pub fn run() {
         match &event {
             RunEvent::WindowEvent {event, ..} => {
                 match event {
-                    WindowEvent::CloseRequested { .. } => {}
+                    WindowEvent::CloseRequested { api, .. } => {
+                        let tray_minmize = utils::db_manager::get_settings(&app);
+                        if tray_minmize.is_some() {
+                            let sett = tray_minmize.unwrap();
+                            if sett.hide_app_to_tray {
+                                api.prevent_close();
+                                app.get_window("main").unwrap().hide().unwrap();
+                                app.emit("sync_tray_toggle", "Show").unwrap();
+                            }
+                        }
+                    }
                     _ => {}
                 }
             }

@@ -2,7 +2,13 @@ import {useEffect, useState} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Settings, Download, Folder, Info, Monitor, ArrowLeft, HeartIcon } from "lucide-react";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
-import { SettingsSection, ModernInput, ModernPathInput, ModernSelect } from "../common/SettingsComponents.tsx";
+import {
+    SettingsSection,
+    ModernInput,
+    ModernPathInput,
+    ModernSelect,
+    ModernToggle
+} from "../common/SettingsComponents.tsx";
 import { PAGES } from "./PAGES";
 import {getVersion} from "@tauri-apps/api/app";
 
@@ -104,6 +110,12 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                 >
                     {activeTab === "general" && (
                         <SettingsSection title="General Options">
+                            <ModernToggle
+                                label="Minimize application"
+                                description="Hide application to system tray instead of completely closing."
+                                checked={Boolean(settings.hide_app_to_tray)}
+                                onChange={(val) => updateSetting("hide_app_tray", val)}
+                            />
                             <ModernSelect
                                 label="After Game Launch"
                                 description="Choose what the launcher should do when a game starts."
