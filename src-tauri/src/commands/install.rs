@@ -98,7 +98,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     for ei in &existing_installs {
                         if ei.version == version && queue.has_job_for_id(ei.id.clone()) {
                             show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("{in} is already queued for download!", in = ei.name.clone()).as_str(), None, None);
-                            return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string() });
+                            return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string(), skip_dl: skip_game_dl, steam_imported: false });
                         }
                     }
                 }
@@ -216,10 +216,12 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     success: false,
                     install_id: "".to_string(),
                     background: "".to_string(),
+                    steam_imported: steam_import,
+                    skip_dl: skip_game_dl,
                 });
             }
         }
-        if !skip_game_dl {
+        if !skip_game_dl && !steam_import {
             let downloading_marker = install_location.join("downloading");
             if !downloading_marker.exists() { let _ = fs::create_dir(&downloading_marker); }
         }
@@ -229,6 +231,8 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             success: true,
             install_id: cuid.clone(),
             background: gbg,
+            steam_imported: steam_import,
+            skip_dl: skip_game_dl
         })
     }
 }

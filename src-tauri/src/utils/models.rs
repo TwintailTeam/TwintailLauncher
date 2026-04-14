@@ -333,6 +333,8 @@ pub struct AddInstallRsp {
     pub success: bool,
     pub install_id: String,
     pub background: String,
+    pub steam_imported: bool,
+    pub skip_dl: bool
 }
 
 #[derive(Serialize, Deserialize, Debug)]
