@@ -723,11 +723,11 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
                 if !running {
                     if install.show_discord_rpc { if let Some(ref mut client) = rpc_client { discord_rpc::terminate(client); } }
                     if install.disable_system_idle { drop(keepawake); }
+                    app.emit("game_closed", install_id.clone()).unwrap();
                     if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
                         if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("pkill").args(["-f", "3dmloader.exe"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed! 2nd case"); }
                         if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("pkill").args(["-f", "keqing_unlock.exe"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed! 2nd case"); }
                     }
-                    app.emit("game_closed", install_id.clone()).unwrap();
                     return;
                 }
                 last_db_write_elapsed = elapsed;
