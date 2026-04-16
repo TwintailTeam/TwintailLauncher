@@ -697,10 +697,8 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
     #[cfg(target_os = "linux")]
     let exe_name = { let stem = exe_name.split('.').next().unwrap_or(&exe_name); stem[..stem.len().min(15)].to_string() };
     std::thread::spawn(move || {
-        let poll_interval = std::time::Duration::from_secs(3);
-        let db_write_interval = 10u64;
         let mut last_db_write_elapsed: u64 = 0;
-        std::thread::sleep(std::time::Duration::from_secs(3));
+        std::thread::sleep(std::time::Duration::from_secs(5));
         if !is_process_running(&exe_name) {
             if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
                 if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed!"); }
@@ -714,23 +712,23 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
         if install.disable_system_idle { keepawake = prevent_system_idle(true); }
         let started = std::time::Instant::now();
         loop {
-            std::thread::sleep(poll_interval);
-            let elapsed = started.elapsed().as_secs();
+            std::thread::sleep(std::time::Duration::from_secs(3));
             let running = is_process_running(&exe_name);
-            if !running || elapsed - last_db_write_elapsed >= db_write_interval {
+            let elapsed = started.elapsed().as_secs();
+            if !running || elapsed - last_db_write_elapsed >= 10 {
                 let new_total = base_playtime + elapsed;
                 update_install_total_playtime_by_id(&app, install_id.clone(), new_total.to_string());
-                if !running {
-                    if install.show_discord_rpc { if let Some(ref mut client) = rpc_client { discord_rpc::terminate(client); } }
-                    if install.disable_system_idle { drop(keepawake); }
-                    app.emit("game_closed", install_id.clone()).unwrap();
-                    if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
-                        if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed! 2nd case"); }
-                        if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed! 2nd case"); }
-                    }
-                    return;
-                }
                 last_db_write_elapsed = elapsed;
+            }
+            if !running {
+                if install.show_discord_rpc { if let Some(ref mut client) = rpc_client { discord_rpc::terminate(client); } }
+                if install.disable_system_idle { drop(keepawake); }
+                app.emit("game_closed", install_id.clone()).unwrap();
+                if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
+                    if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed! 2nd case"); }
+                    if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed! 2nd case"); }
+                }
+                return;
             }
         }
     });
