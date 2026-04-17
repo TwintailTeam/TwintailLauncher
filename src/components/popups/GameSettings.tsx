@@ -810,7 +810,7 @@ export default function GameSettings({
 
                                         {isLinux && (
                                             <ModernToggle
-                                                label="Delete Prefix"
+                                                label="Delete prefix"
                                                 description="Also remove the Wine/Proton prefix associated with this installation."
                                                 checked={wipePrefixOnUninstall}
                                                 onChange={setWipePrefixOnUninstall}

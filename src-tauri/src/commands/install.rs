@@ -256,12 +256,15 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_
             let idp = Path::new(&installdir);
             let pdp = Path::new(&prefixdir);
             let gexe = idp.join(gm.paths.exe_filename.clone());
+            let dlp = idp.join("downloading/");
+            let dlpp = idp.join("patching/");
+            let dlr = idp.join("repairing/");
 
             if wipe_prefix {
                 if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); }
             }
             if !keep_game_data && !i.steam_imported {
-                if idp.exists() && gexe.exists() {
+                if idp.exists() && gexe.exists() || dlp.exists() || dlpp.exists() || dlr.exists() {
                     let r = fs::remove_dir_all(installdir.clone());
                     match r {
                         Ok(_) => {},
