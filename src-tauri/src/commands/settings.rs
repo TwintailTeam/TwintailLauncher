@@ -541,6 +541,93 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                 }
             }
         }
+        // Diagnostics and logs
+        "steamrt3" => {
+            #[cfg(target_os = "linux")]
+            {
+                let gs = get_settings(&app).unwrap();
+                let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
+                if fp.exists() {
+                    let steamrtp = fp.join("run");
+                    let steamrt = steamrtp.to_str().unwrap().to_string();
+
+                    let log_path = app.path().app_log_dir().unwrap().join("custom/");
+                    if !log_path.exists() { let _ = fs::create_dir_all(&log_path); }
+                    let log_path_file = log_path.join("steamrt3_diagnostics.log");
+                    if log_path_file.exists() { let _ = fs::remove_file(&log_path_file); }
+                    let log_file = fs::File::create(&log_path_file).expect("Failed to create log file");
+                    let log_file_stderr = log_file.try_clone().expect("Failed to clone log file handle");
+
+                    let command = format!("'{steamrt}' steam-runtime-system-info --verbose");
+                    let mut cmd = std::process::Command::new("bash");
+                    cmd.arg("-c");
+                    cmd.arg(&command);
+
+                    cmd.stdout(std::process::Stdio::from(log_file));
+                    cmd.stderr(std::process::Stdio::from(log_file_stderr));
+                    cmd.current_dir(fp.clone());
+                    cmd.process_group(0);
+
+                    match cmd.spawn() {
+                        Ok(mut child) => match child.try_wait() {
+                            Ok(Some(status)) => {
+                                if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to dump steamrt3 diagnostics! Please try again.", None, None); }
+                            }
+                            Ok(None) => {}
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Please try again or check the command correctness.", None, None); }
+                        },
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Something serious is wrong.", None, None); }
+                    }
+                    match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT3 log directory opening failed, try again later!", None, None); }
+                    }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute steam-runtime-system-info, Is steamrt3 downloaded properly?", None, None); };
+            }
+        }
+        "steamrt4" => {
+            #[cfg(target_os = "linux")]
+            {
+                let gs = get_settings(&app).unwrap();
+                let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
+                if fp.exists() {
+                    let steamrtp = fp.join("run");
+                    let steamrt = steamrtp.to_str().unwrap().to_string();
+
+                    let log_path = app.path().app_log_dir().unwrap().join("custom/");
+                    if !log_path.exists() { let _ = fs::create_dir_all(&log_path); }
+                    let log_path_file = log_path.join("steamrt4_diagnostics.log");
+                    if log_path_file.exists() { let _ = fs::remove_file(&log_path_file); }
+                    let log_file = fs::File::create(&log_path_file).expect("Failed to create log file");
+                    let log_file_stderr = log_file.try_clone().expect("Failed to clone log file handle");
+
+                    let command = format!("'{steamrt}' steam-runtime-system-info --verbose");
+                    let mut cmd = std::process::Command::new("bash");
+                    cmd.arg("-c");
+                    cmd.arg(&command);
+
+                    cmd.stdout(std::process::Stdio::from(log_file));
+                    cmd.stderr(std::process::Stdio::from(log_file_stderr));
+                    cmd.current_dir(fp.clone());
+                    cmd.process_group(0);
+
+                    match cmd.spawn() {
+                        Ok(mut child) => match child.try_wait() {
+                            Ok(Some(status)) => {
+                                if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to dump steamrt3 diagnostics! Please try again.", None, None); }
+                            }
+                            Ok(None) => {}
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Please try again or check the command correctness.", None, None); }
+                        },
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Something serious is wrong.", None, None); }
+                    }
+                    match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT4 log directory opening failed, try again later!", None, None); }
+                    }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute steam-runtime-system-info, Is steamrt3 downloaded properly?", None, None); };
+            }
+        }
         _ => {}
     }
 }

@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Settings, Download, Folder, Info, Monitor, ArrowLeft, HeartIcon } from "lucide-react";
+import {Settings, Download, Folder, Info, Monitor, ArrowLeft, HeartIcon, LogsIcon} from "lucide-react";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
 import {
     SettingsSection,
@@ -177,34 +177,48 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                     )}
 
                     {activeTab === "linux" && (
-                        <SettingsSection title="Linux Configuration">
-                            <ModernPathInput
-                                label="Default Runner Location"
-                                description="Base directory for Wine/Proton versions."
-                                value={`${settings.default_runner_path}`}
-                                onChange={(val) => updateSetting("default_runner_path", val)}
-                            />
-                            {/*<ModernPathInput
+                        <>
+                            <SettingsSection title="Linux Configuration">
+                                <ModernPathInput
+                                    label="Default Runner Location"
+                                    description="Base directory for Wine/Proton versions."
+                                    value={`${settings.default_runner_path}`}
+                                    onChange={(val) => updateSetting("default_runner_path", val)}
+                                />
+                                {/*<ModernPathInput
                                 label="Default DXVK Location"
                                 description="Base directory for DXVK versions."
                                 value={`${settings.default_dxvk_path}`}
                                 onChange={(val) => updateSetting("default_dxvk_path", val)}
                             />*/}
-                            <ModernPathInput
-                                label="Default Prefix Location"
-                                description="Base directory for Wine/Proton prefixes."
-                                value={`${settings.default_runner_prefix_path}`}
-                                onChange={(val) => updateSetting("default_prefix_path", val)}
-                            />
-                            <ModernPathInput
-                                label="MangoHUD Config"
-                                description="Default configuration file for MangoHUD."
-                                value={`${settings.default_mangohud_config_path}`}
-                                onChange={(val) => updateSetting("default_mangohud_config_path", val)}
-                                folder={false}
-                                extensions={["conf"]}
-                            />
-                        </SettingsSection>
+                                <ModernPathInput
+                                    label="Default Prefix Location"
+                                    description="Base directory for Wine/Proton prefixes."
+                                    value={`${settings.default_runner_prefix_path}`}
+                                    onChange={(val) => updateSetting("default_prefix_path", val)}
+                                />
+                                <ModernPathInput
+                                    label="MangoHUD Config"
+                                    description="Default configuration file for MangoHUD."
+                                    value={`${settings.default_mangohud_config_path}`}
+                                    onChange={(val) => updateSetting("default_mangohud_config_path", val)}
+                                    folder={false}
+                                    extensions={["conf"]}
+                                />
+                            </SettingsSection>
+                            <SettingsSection title="Debugging and Logs">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt3' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
+                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 3 diagnostics</span>
+                                    </button>
+                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt4' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
+                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 4 diagnostics</span>
+                                    </button>
+                                </div>
+                            </SettingsSection>
+                        </>
                     )}
                     {/*activeTab === "integrations" && (
                         <SettingsSection title="Integrations & Tools">
