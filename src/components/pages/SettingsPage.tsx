@@ -206,14 +206,14 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                                     extensions={["conf"]}
                                 />
                             </SettingsSection>
-                            <SettingsSection title="Debugging and Logs">
+                            <SettingsSection title="Debugging & Logs">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt3' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
-                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
+                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt3' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
+                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
                                         <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 3 diagnostics</span>
                                     </button>
-                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt4' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
-                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
+                                    <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt4' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
+                                        <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
                                         <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 4 diagnostics</span>
                                     </button>
                                 </div>
