@@ -623,32 +623,6 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
     } else { data }
 }
 
-#[cfg(target_os = "linux")]
-pub fn find_steamrt_version(file_path: PathBuf) -> io::Result<String> {
-    let file = fs::File::open(file_path);
-    match file {
-        Ok(file) => {
-            let reader = io::BufReader::new(file);
-            for line in reader.lines() {
-                let line = line?;
-                for token in line.split_whitespace() {
-                    if token.starts_with("3.") || token.starts_with("4.") && token.matches('.').count() >= 3 && token.chars().all(|c| c.is_ascii_digit() || c == '.') { return Ok(token.to_string()); }
-                }
-            }
-        }
-        Err(_) => { log::debug!("Could not find VERSIONS.txt in steamrt directory!"); }
-    }
-    Ok(String::new())
-}
-
-#[cfg(target_os = "linux")]
-pub fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
-    let parts1: Vec<u64> = v1.split('.').map(|v| v.parse().unwrap_or(0)).collect();
-    let parts2: Vec<u64> = v2.split('.').map(|v| v.parse().unwrap_or(0)).collect();
-    for (a, b) in parts1.iter().zip(parts2.iter()) { if a > b { return true; } else if a < b { return false; } }
-    parts1.len() > parts2.len()
-}
-
 pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
     fn parse(s: &str) -> (u64, u64, u64) {
         let ss = s.replace("-", ".");

@@ -14,7 +14,7 @@ use crate::downloading::{RunnerDownloadPayload,SteamrtDownloadPayload};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::update_installed_runner_is_installed_by_version;
 #[cfg(target_os = "linux")]
-use fischl::compat::{download_runner, check_steamrt_update, download_steamrt};
+use fischl::compat::{download_runner, download_steamrt};
 #[cfg(target_os = "linux")]
 use std::sync::{Arc,Mutex};
 
@@ -36,22 +36,16 @@ pub fn download_or_update_steamrt3(app: &AppHandle) {
             // Check for updates
             let vp = steamrt.join("VERSIONS.txt");
             if !vp.exists() { return; }
-            let cur_ver = crate::utils::find_steamrt_version(vp).unwrap();
-            if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("steamrt3".to_string(), "latest-public-beta".to_string());
-            if let Some(rv) = remote_ver {
-                if crate::utils::compare_steamrt_versions(&rv, &cur_ver) {
-                    empty_dir(steamrt.as_path()).unwrap();
-                    // Update - enqueue via queue system
-                    let state = app.state::<DownloadState>();
-                    let q = state.queue.lock().unwrap().clone();
-                    if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
-                } else {
-                    log::info!("SteamLinuxRuntime 3 is up to date!");
-                    #[cfg(debug_assertions)]
-                    println!("SteamLinuxRuntime 3 is up to date!");
-                }
+            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), "steamrt3".to_string(), "latest-public-beta".to_string()) == Some(true) {
+                log::info!("SteamLinuxRuntime 3 is up to date!");
+                #[cfg(debug_assertions)]
+                println!("SteamLinuxRuntime 3 is up to date!");
+                return;
             }
+            empty_dir(steamrt.as_path()).unwrap();
+            let state = app.state::<DownloadState>();
+            let q = state.queue.lock().unwrap().clone();
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
         }
     }
 }
@@ -143,22 +137,16 @@ pub fn download_or_update_steamrt4(app: &AppHandle) {
             // Check for updates
             let vp = steamrt.join("VERSIONS.txt");
             if !vp.exists() { return; }
-            let cur_ver = crate::utils::find_steamrt_version(vp).unwrap();
-            if cur_ver.is_empty() { return; }
-            let remote_ver = check_steamrt_update("steamrt4".to_string(), "latest-public-beta".to_string());
-            if let Some(rv) = remote_ver {
-                if crate::utils::compare_steamrt_versions(&rv, &cur_ver) {
-                    empty_dir(steamrt.as_path()).unwrap();
-                    // Update - enqueue via queue system
-                    let state = app.state::<DownloadState>();
-                    let q = state.queue.lock().unwrap().clone();
-                    if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
-                } else {
-                    log::info!("SteamLinuxRuntime 4 is up to date!");
-                    #[cfg(debug_assertions)]
-                    println!("SteamLinuxRuntime 4 is up to date!");
-                }
+            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), "steamrt4".to_string(), "latest-public-beta".to_string()) == Some(true) {
+                log::info!("SteamLinuxRuntime 4 is up to date!");
+                #[cfg(debug_assertions)]
+                println!("SteamLinuxRuntime 4 is up to date!");
+                return;
             }
+            empty_dir(steamrt.as_path()).unwrap();
+            let state = app.state::<DownloadState>();
+            let q = state.queue.lock().unwrap().clone();
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
         }
     }
 }
