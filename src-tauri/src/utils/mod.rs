@@ -120,6 +120,7 @@ pub fn register_listeners(app: &AppHandle) {
                     let steamrtpp = runnerp.join("steamrt/").join("steamrt4/");
                     let _ = empty_dir(&steamrtpp);
                 }
+                "dialog_steamrt_repair" => { h3.request_restart(); }
                 "dialog_runner_dl_fail" => { /* Empties the directory in its handler not here */ }
                 "dialog_extra_dl_fail" => { /* Handled in respective failure blocks */}
                 _ => {}

@@ -48,6 +48,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         major > 10 || (major == 10 && minor >= 32)
     };
 
+    if !steamrtp.exists() {
+        log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
+        show_dialog_with_callback(app, "error", "TwintailLauncher", &format!("Failed to launch {} due to possibly broken SteamLinuxRuntime! Please press Repair SteamLinuxRuntime button in application settings.", install.name), Some(vec!["I understand"]), None);
+        return Ok(false);
+    }
+
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
         show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);

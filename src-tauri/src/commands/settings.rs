@@ -290,6 +290,25 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None, None); };
             }
         }
+        "steamrt" => {
+            let gs = get_settings(&app).unwrap();
+            let steamrt3 = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
+            if steamrt3.exists() {
+                match crate::utils::empty_dir(steamrt3) {
+                    Ok(_) => {}
+                    Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT3 repair failed, try again later!", None, None); }
+                }
+            } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT3, Is it properly downloaded?", None, None); };
+
+            let steamrt4 = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
+            if steamrt4.exists() {
+                match crate::utils::empty_dir(steamrt4) {
+                    Ok(_) => {}
+                    Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT4 repair failed, try again later!", None, None); }
+                }
+            } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT4, Is it properly downloaded?", None, None); };
+            show_dialog_with_callback(&app, "info", "TwintailLauncher", "SteamRT has been set into repair state, please restart the application to redownload.", Some(vec!["Restart Now"]), Some("dialog_steamrt_repair"));
+        }
         _ => {}
     }
 }

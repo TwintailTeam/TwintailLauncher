@@ -1,15 +1,15 @@
 import {useEffect, useState} from "react";
-import { invoke } from "@tauri-apps/api/core";
-import {Settings, Download, Folder, Info, Monitor, ArrowLeft, HeartIcon, LogsIcon} from "lucide-react";
-import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
+import {invoke} from "@tauri-apps/api/core";
+import {ArrowLeft, Download, Folder, HeartIcon, Info, LogsIcon, Monitor, Settings, WrenchIcon} from "lucide-react";
+import {SettingsSidebar, SettingsTab} from "../sidebar/SettingsSidebar.tsx";
 import {
-    SettingsSection,
     ModernInput,
     ModernPathInput,
     ModernSelect,
-    ModernToggle
+    ModernToggle,
+    SettingsSection
 } from "../common/SettingsComponents.tsx";
-import { PAGES } from "./PAGES";
+import {PAGES} from "./PAGES";
 import {getVersion} from "@tauri-apps/api/app";
 
 interface SettingsPageProps {
@@ -206,7 +206,7 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                                     extensions={["conf"]}
                                 />
                             </SettingsSection>
-                            <SettingsSection title="Debugging & Logs">
+                            <SettingsSection title="Help & Debugging">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt3' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
                                         <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
@@ -215,6 +215,13 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                                     <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt4' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
                                         <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
                                         <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 4 diagnostics</span>
+                                    </button>
+                                    <button onClick={() => {
+                                        setCurrentPage(PAGES.NONE);
+                                        invoke("empty_folder", { installId: "", pathType: "steamrt"});
+                                    }} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
+                                        <WrenchIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">Repair SteamLinuxRuntime</span>
                                     </button>
                                 </div>
                             </SettingsSection>
