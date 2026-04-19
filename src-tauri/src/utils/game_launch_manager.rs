@@ -50,7 +50,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
-        show_dialog_with_callback(app, "error", "TwintailLauncher", &format!("Failed to launch {} due to possibly broken SteamLinuxRuntime! Please press Repair SteamLinuxRuntime button in application settings.", install.name), Some(vec!["I understand"]), None);
+        show_dialog_with_callback(app, "error", "TwintailLauncher", &format!("Failed to launch {} due to possibly broken SteamLinuxRuntime! Please open Launcher Settings -> Linux Options then press Repair SteamLinuxRuntime button.", install.name), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
