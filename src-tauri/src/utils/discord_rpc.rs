@@ -13,6 +13,8 @@ pub fn init(app: &AppHandle, install: LauncherInstall, gm: GameManifest) -> Opti
         "hkrpg_global" => "hkrpg_icon",
         "nap_global" => "nap_icon",
         "bh3_global" => "bh3_icon",
+        "abc_global" => "abc_icon",
+        "hyg_global" => "hyg_icon",
         "wuwa_global" => "aki_icon",
         "pgr_global" => "pgr_icon",
         "aethergazer_global" => "agzr_icon",

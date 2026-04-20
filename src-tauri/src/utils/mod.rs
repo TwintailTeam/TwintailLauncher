@@ -826,6 +826,7 @@ pub fn get_engine_log_from_game(base: String, game_name: String, region_code: St
         if region_code.to_ascii_lowercase().contains("jp_official") { return "miHoYo/崩壊3rd/Player.log".to_string() }
         return "miHoYo/Honkai Impact 3rd/Player.log".to_string()
     }
+    if game_name.to_ascii_lowercase().contains("petit") { return "miHoYo/PetitPlanet/Player.log".to_string() }
     if game_name.to_ascii_lowercase().contains("punishing") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
     if game_name.to_ascii_lowercase().contains("endfield") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()
