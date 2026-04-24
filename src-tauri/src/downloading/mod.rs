@@ -23,6 +23,7 @@ pub struct RunnerDownloadPayload {
     pub runner_version: String,
     pub runner_url: String,
     pub runner_path: String,
+    pub runner_hash: String
 }
 
 #[cfg(target_os = "linux")]

@@ -123,11 +123,19 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 
                 // Determine the download URL based on architecture
                 let mut dl_url = runnerp.url.clone();
-                if let Some(urls) = runnerp.urls {
+                if let Some(urls) = runnerp.urls.clone() {
                     #[cfg(target_arch = "x86_64")]
                     { dl_url = urls.x86_64; }
                     #[cfg(target_arch = "aarch64")]
                     { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
+                }
+
+                let mut dl_hash = runnerp.hash.clone();
+                if let Some(urls) = runnerp.urls.clone() {
+                    #[cfg(target_arch = "x86_64")]
+                    { dl_hash = urls.x86_64_hash; }
+                    #[cfg(target_arch = "aarch64")]
+                    { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash }; }
                 }
 
                 // Enqueue the download job
@@ -136,6 +144,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                             runner_version: runner_version.clone(),
                             runner_url: dl_url,
                             runner_path: runner_path.to_str().unwrap().to_string(),
+                            runner_hash: dl_hash
                     }));
                 }
                 // Create/update database entry (will be marked as installed by the download job on completion)

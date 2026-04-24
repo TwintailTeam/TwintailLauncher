@@ -704,7 +704,7 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
     let exe_name = { let stem = exe_name.split('.').next().unwrap_or(&exe_name); stem[..stem.len().min(15)].to_string() };
     std::thread::spawn(move || {
         let mut last_db_write_elapsed: u64 = 0;
-        std::thread::sleep(std::time::Duration::from_secs(5));
+        std::thread::sleep(std::time::Duration::from_secs(6));
         if !is_process_running(&exe_name) {
             if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
                 if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed!"); }
@@ -718,7 +718,6 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
         if install.disable_system_idle { keepawake = prevent_system_idle(true); }
         let started = std::time::Instant::now();
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(3));
             let running = is_process_running(&exe_name);
             let elapsed = started.elapsed().as_secs();
             if !running || elapsed - last_db_write_elapsed >= 10 {

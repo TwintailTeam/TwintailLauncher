@@ -240,7 +240,7 @@ pub fn run_runner_download(app: AppHandle, payload: RunnerDownloadPayload, job_i
 
     log::debug!("Starting download process for runner {}", runner_name);
     let success = run_async_command(async {
-        download_runner(payload.runner_url.clone(), payload.runner_path.clone(), true, {
+        download_runner(payload.runner_url.clone(), payload.runner_path.clone(), payload.runner_hash.clone(), true, {
             let app = app.clone();
             let dlpayload = dlpayload.clone();
             let job_id = job_id.clone();

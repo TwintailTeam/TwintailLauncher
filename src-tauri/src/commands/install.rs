@@ -175,11 +175,19 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     if fs::read_dir(rp.as_path()).map(|mut d| d.next().is_none()).unwrap_or(true) {
                         // Determine the download URL based on architecture
                         let mut dl_url = runnerp.url.clone();
-                        if let Some(ref urls) = runnerp.urls {
+                        if let Some(ref urls) = runnerp.urls.clone() {
                             #[cfg(target_arch = "x86_64")]
                             { dl_url = urls.x86_64.clone(); }
                             #[cfg(target_arch = "aarch64")]
                             { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64.clone() }; }
+                        }
+
+                        let mut dl_hash = runnerp.hash.clone();
+                        if let Some(ref urls) = runnerp.urls.clone() {
+                            #[cfg(target_arch = "x86_64")]
+                            { dl_hash = urls.x86_64_hash.clone(); }
+                            #[cfg(target_arch = "aarch64")]
+                            { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash.clone() }; }
                         }
 
                         // Create runner directory if needed
@@ -197,6 +205,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                                     runner_version: runv.to_string(),
                                     runner_url: dl_url,
                                     runner_path: rp.to_str().unwrap().to_string(),
+                                    runner_hash: dl_hash
                             }));
                         }
                     }
@@ -680,11 +689,19 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
                     // Determine the download URL based on architecture
                     let mut dl_url = runnerp.url.clone();
-                    if let Some(ref urls) = runnerp.urls {
+                    if let Some(ref urls) = runnerp.urls.clone() {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64.clone(); }
                         #[cfg(target_arch = "aarch64")]
                         { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64.clone() }; }
+                    }
+
+                    let mut dl_hash = runnerp.hash.clone();
+                    if let Some(ref urls) = runnerp.urls.clone() {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_hash = urls.x86_64_hash.clone(); }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash.clone() }; }
                     }
 
                     // Create/update database entry (will be marked as installed by download job on completion)
@@ -699,6 +716,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                                 runner_version: version.clone(),
                                 runner_url: dl_url,
                                 runner_path: rp.to_str().unwrap().to_string(),
+                                runner_hash: dl_hash,
                         }));
                     }
                 }

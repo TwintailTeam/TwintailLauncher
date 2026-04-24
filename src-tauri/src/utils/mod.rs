@@ -353,11 +353,19 @@ pub fn sync_installed_runners(app: &AppHandle) {
 
                 // Determine the download URL based on architecture
                 let mut dl_url = runner_ver.url.clone();
-                if let Some(ref urls) = runner_ver.urls {
+                if let Some(ref urls) = runner_ver.urls.clone() {
                     #[cfg(target_arch = "x86_64")]
                     { dl_url = urls.x86_64.clone(); }
                     #[cfg(target_arch = "aarch64")]
                     { dl_url = if urls.aarch64.is_empty() { runner_ver.url.clone() } else { urls.aarch64.clone() }; }
+                }
+
+                let mut dl_hash = runner_ver.hash.clone();
+                if let Some(ref urls) = runner_ver.urls.clone() {
+                    #[cfg(target_arch = "x86_64")]
+                    { dl_hash = urls.x86_64_hash.clone(); }
+                    #[cfg(target_arch = "aarch64")]
+                    { dl_hash = if urls.aarch64.is_empty() { runner_ver.hash.clone() } else { urls.aarch64_hash.clone() }; }
                 }
 
                 let runner_path = runners.join(rv);
@@ -372,6 +380,7 @@ pub fn sync_installed_runners(app: &AppHandle) {
                         runner_version: rv.clone(),
                         runner_url: dl_url,
                         runner_path: runner_path.to_str().unwrap().to_string(),
+                        runner_hash: dl_hash,
                     }));
                     queued_versions.insert(rv.clone());
                     log::debug!("Auto-redownloading missing runner: {}", rv);
