@@ -3,6 +3,7 @@ use crate::utils::db_manager::{
     get_installs, get_settings, update_install_runner_location_by_id,
     update_install_runner_version_by_id, update_installed_runner_is_installed_by_version,
 };
+use crate::utils::models::LauncherRunner;
 use std::fs;
 use std::path::Path;
 use tauri::AppHandle;
@@ -16,8 +17,6 @@ use crate::downloading::{QueueJobPayload, RunnerDownloadPayload};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::create_installed_runner;
 #[cfg(target_os = "linux")]
-use crate::utils::models::LauncherRunner;
-#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
@@ -26,16 +25,15 @@ use tauri::Manager;
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn list_installed_runners(app: AppHandle) -> Option<String> {
+pub fn list_installed_runners(app: AppHandle) -> Option<Vec<LauncherRunner>> {
     #[cfg(target_os = "linux")]
     {
         let repos = get_installed_runners(&app);
 
         if repos.is_some() {
             let repository = repos.unwrap();
-            let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect::<_>();
-            let stringified = serde_json::to_string(&d).unwrap();
-            Some(stringified)
+            let d: Vec<LauncherRunner> = repository.into_iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect();
+            Some(d)
         } else {
             None
         }
@@ -47,29 +45,13 @@ pub fn list_installed_runners(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_id(app: AppHandle, runner_id: String) -> Option<String> {
-    let repo = get_installed_runner_info_by_id(&app, runner_id);
-
-    if repo.is_some() {
-        let repository = repo.unwrap();
-        let stringified = serde_json::to_string(&repository).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_installed_runner_by_id(app: AppHandle, runner_id: String) -> Option<LauncherRunner> {
+    get_installed_runner_info_by_id(&app, runner_id)
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -> Option<String> {
-    let repo = get_installed_runner_info_by_version(&app, runner_version);
-
-    if repo.is_some() {
-        let repository = repo.unwrap();
-        let stringified = serde_json::to_string(&repository).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -> Option<LauncherRunner> {
+    get_installed_runner_info_by_version(&app, runner_version)
 }
 
 #[allow(unused_variables)]

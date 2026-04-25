@@ -779,12 +779,11 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchRepositories() {
-        return invoke("list_repositories").then(r => {
+        return invoke<any[] | null>("list_repositories").then(r => {
             if (r === null) {
                 console.error("Repository database table contains nothing, some serious fuck up happened!")
             } else {
-                let rr = JSON.parse(r as string);
-                this.pushGames(rr);
+                this.pushGames(r);
                 this.pushInstalls();
             }
         }).catch(e => {
@@ -794,11 +793,10 @@ export default class App extends React.Component<any, any> {
 
     pushGames(repos: { id: string; github_id: any; }[]) {
         repos.forEach((r: { id: string; github_id: any; }) => {
-            invoke("list_manifests_by_repository_id", { repositoryId: r.id }).then(m => {
-                if (m === null) {
+            invoke<any[] | null>("list_manifests_by_repository_id", { repositoryId: r.id }).then(g => {
+                if (g === null) {
                     console.error("Manifest database table contains nothing, some serious fuck up happened!")
                 } else {
-                    let g = JSON.parse(m as string);
                     this.pushGamesInfo(g);
                     let entries: any[] = [];
                     g.forEach((e: any) => entries.push(e));
@@ -813,11 +811,10 @@ export default class App extends React.Component<any, any> {
     }
 
     pushGamesInfo(games: { filename: any; display_name: string; id: string; enabled: boolean; }[]) {
-        invoke("list_game_manifests").then(m => {
-            if (m === null) {
+        invoke<any[] | null>("list_game_manifests").then(gi => {
+            if (gi === null) {
                 console.error("GameManifest repository fetch issue, some serious fuck up happened!")
             } else {
-                let gi = JSON.parse(m as string);
                 // Hacky way to pass some values from DB manifest data onto the list of games we use to render SideBarIcon components
                 gi.forEach((e: any) => {
                     let g = games.find(g => g.filename.toLowerCase().replace(".json", "") === e.biz.toLowerCase());
@@ -870,12 +867,11 @@ export default class App extends React.Component<any, any> {
     }
 
     pushInstalls() {
-        invoke("list_installs").then(m => {
-            if (m === null) {
+        invoke<any[] | null>("list_installs").then(gi => {
+            if (gi === null) {
                 // No installs left, set installs to empty array
                 this.setState(() => ({ installs: [] }));
             } else {
-                let gi = JSON.parse(m as string);
                 this.setState(() => ({ installs: gi }), () => {
                     // Also preload installed-specific assets (older/different versions)
                     try {
@@ -896,11 +892,10 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchSettings() {
-        return invoke("list_settings").then(data => {
-            if (data === null) {
+        return invoke<any | null>("list_settings").then(gs => {
+            if (gs === null) {
                 console.error("Settings database table contains nothing, some serious fuck up happened!")
             } else {
-                const gs = JSON.parse(data as string);
                 this.setState(() => ({
                     globalSettings: gs
                 }));
@@ -909,12 +904,11 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchInstallSettings(install: any) {
-        return invoke("get_install_by_id", { id: install }).then(async data => {
-            if (data === null) {
+        return invoke<any | null>("get_install_by_id", { id: install }).then(async parsed => {
+            if (parsed === null) {
                 console.error("Failed to fetch install settings!");
                 this.setState(() => ({ installSettings: null, gameManifest: null, preloadAvailable: false, installGameSwitches: {}, installGameFps: [], installGameGraphicsApi: null }));
             } else {
-                let parsed = JSON.parse(data as string);
                 let md = await this.fetchManifestById(parsed.manifest_id);
                 // @ts-ignore
                 let isPreload = md.extra.preload['metadata'] !== null;
@@ -948,11 +942,10 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchCompatibilityVersions() {
-        return invoke("list_compatibility_manifests", { biz: null }).then(data => {
-            if (data === null) {
+        return invoke<any[] | null>("list_compatibility_manifests", { biz: null }).then(r => {
+            if (r === null) {
                 console.error("Failed to get compatibility versions.");
             } else {
-                let r = JSON.parse(data as string);
                 let dxvks: any[] = [];
                 let wines: any[] = [];
                 // Bad but will work for now... DO NOT EVER FILTER LIKE THIS...
@@ -969,11 +962,10 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchCompatibilityVersionsFiltered() {
-        return invoke("list_compatibility_manifests", { biz: this.state.currentGame || null }).then(data => {
-            if (data === null) {
+        return invoke<any[] | null>("list_compatibility_manifests", { biz: this.state.currentGame || null }).then(r => {
+            if (r === null) {
                 console.error("Failed to get filtered compatibility versions.");
             } else {
-                let r = JSON.parse(data as string);
                 let dxvks: any[] = [];
                 let wines: any[] = [];
                 // Bad but will work for now... DO NOT EVER FILTER LIKE THIS...
@@ -990,11 +982,10 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchInstalledRunners() {
-        return invoke("list_installed_runners").then(data => {
-            if (data === null) {
+        return invoke<any[] | null>("list_installed_runners").then(r => {
+            if (r === null) {
                 console.error("Failed to get installed runners.");
             } else {
-                let r = JSON.parse(data as string);
                 let installed: any[] = [];
                 r.filter((e: any) => e.is_installed).forEach((e: any) => { installed.push(e); });
                 this.setState({ installedRunners: installed });
@@ -1017,11 +1008,10 @@ export default class App extends React.Component<any, any> {
     }
 
     fetchDownloadSizes(biz: any, version: any, lang: any, path: any, region_filter: any, callback: (data: any) => void) {
-        invoke("get_download_sizes", { biz: biz, version: version, path: path, lang: lang, region: region_filter }).then(data => {
-            if (data === null) {
+        invoke<any | null>("get_download_sizes", { biz: biz, version: version, path: path, lang: lang, region: region_filter }).then(parsed => {
+            if (parsed === null) {
                 console.error("Could not get download sizes!");
             } else {
-                const parsed = JSON.parse(data as string);
                 callback(parsed);
                 this.setState({ downloadSizes: parsed });
             }
@@ -1032,23 +1022,22 @@ export default class App extends React.Component<any, any> {
         // Use broad typing since manifest.extra may include optional fields like
         // switches, fps_unlock_options, preload, etc.
         let rslt: any;
-        let data = await invoke("get_game_manifest_by_manifest_id", { id: install });
+        let data = await invoke<any | null>("get_game_manifest_by_manifest_id", { id: install });
         if (data === null) {
             console.error("Failed to fetch game manifest info!");
             rslt = { latest_version: null, extra: { preload: { metadata: null } } };
         } else {
-            rslt = JSON.parse(data as string);
+            rslt = data;
         }
         return rslt;
     }
 
     fetchInstallResumeStates(install: any) {
-        return invoke("get_resume_states", { install: install }).then(async data => {
-            if (data === null) {
+        return invoke<any | null>("get_resume_states", { install: install }).then(async parsed => {
+            if (parsed === null) {
                 console.error("Failed to fetch install resume states!");
                 this.setState(() => ({ resumeStates: { downloading: false, updating: false, preloading: false, repairing: false } }));
             } else {
-                let parsed = JSON.parse(data as string);
                 this.setState(() => ({ resumeStates: parsed }));
             }
         });

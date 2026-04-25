@@ -1,6 +1,7 @@
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Manager};
 use crate::DownloadState;
+use crate::downloading::queue::QueueStatePayload;
 
 #[tauri::command]
 pub fn pause_game_download(app: AppHandle, install_id: String) -> bool {
@@ -95,12 +96,10 @@ pub fn queue_resume_job(app: AppHandle, install_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn get_download_queue_state(app: AppHandle) -> Option<String> {
+pub fn get_download_queue_state(app: AppHandle) -> Option<QueueStatePayload> {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
-    if let Some(ref queue_handle) = *queue_guard {
-        if let Some(payload) = queue_handle.get_state() { return serde_json::to_string(&payload).ok(); }
-    }
+    if let Some(ref queue_handle) = *queue_guard { return queue_handle.get_state(); }
     None
 }
 

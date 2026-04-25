@@ -2,7 +2,7 @@ use crate::utils::db_manager::{create_installation, delete_installation_by_id, g
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
-use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
+use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -33,29 +33,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use steam_shortcuts_util::{Shortcut, app_id_generator::calculate_app_id};
 
 #[tauri::command]
-pub async fn list_installs(app: AppHandle) -> Option<String> {
-    let installs = get_installs(&app);
-
-    if installs.is_some() {
-        let install = installs.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub async fn list_installs(app: AppHandle) -> Option<Vec<LauncherInstall>> {
+    get_installs(&app)
 }
 
 #[tauri::command]
-pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<String> {
-    let installs = get_installs_by_manifest_id(&app, manifest_id);
-
-    if installs.is_some() {
-        let install = installs.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<Vec<LauncherInstall>> {
+    get_installs_by_manifest_id(&app, manifest_id)
 }
 
 #[tauri::command]
@@ -64,16 +48,8 @@ pub fn set_installs_order(app: AppHandle, order: Vec<(String, i32)>) {
 }
 
 #[tauri::command]
-pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
-    let inst = get_install_info_by_id(&app, id);
-
-    if inst.is_some() {
-        let install = inst.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_install_by_id(app: AppHandle, id: String) -> Option<LauncherInstall> {
+    get_install_info_by_id(&app, id)
 }
 
 #[allow(unused_mut, unused_variables)]
@@ -846,7 +822,7 @@ pub fn check_game_running(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<String> {
+pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<DownloadSizesRsp> {
     let manifest = get_manifest(&app, biz + ".json");
 
     if manifest.is_some() {
@@ -864,22 +840,21 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
 
         let p = PathBuf::from(&path);
         let (a, t) = fischl::utils::get_disk_space(p);
-        let stringified = serde_json::to_string(&DownloadSizesRsp {
+        Some(DownloadSizesRsp {
             game_decompressed_size: prettify_bytes(fss),
             free_disk_space: prettify_bytes(a),
             total_disk_space: prettify_bytes(t),
             game_decompressed_size_raw: fss,
             free_disk_space_raw: a,
             total_disk_space_raw: t,
-        }).unwrap();
-        Some(stringified)
+        })
     } else {
         None
     }
 }
 
 #[tauri::command]
-pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
+pub fn get_resume_states(app: AppHandle, install: String) -> Option<ResumeStatesRsp> {
     let install = get_install_info_by_id(&app, install);
 
     if install.is_some() {
@@ -928,8 +903,7 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
                 repairing: false,
             };
         }
-        let stringified = serde_json::to_string(&frsp).unwrap();
-        Some(stringified)
+        Some(frsp)
     } else {
         None
     }
