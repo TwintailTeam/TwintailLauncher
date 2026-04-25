@@ -3,11 +3,9 @@ use crate::utils::repo_manager::get_manifest;
 use crate::utils::{get_mi_path_from_game, show_dialog_with_callback};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle};
+use tauri::{AppHandle,Manager};
 use tauri_plugin_opener::OpenerExt;
 
-#[cfg(target_os = "linux")]
-use tauri::Manager;
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 
