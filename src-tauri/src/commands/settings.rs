@@ -282,7 +282,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
                 let fp = Path::new(&i.runner_prefix);
                 if fp.exists() {
                     match crate::utils::empty_dir(fp) {
-                        Ok(_) => {}
+                        Ok(_) => { show_dialog_with_callback(&app, "info", "TwintailLauncher", "Runner prefix has been put into repair state. Please launch the game to regenerate the prefix.", None, None); }
                         Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Runner prefix repair failed, try again later!", None, None); }
                     }
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None, None); };
