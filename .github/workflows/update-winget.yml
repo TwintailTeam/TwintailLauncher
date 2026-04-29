@@ -34,7 +34,7 @@ jobs:
           RAW_VERSION: ${{ env.RAW_VERSION }}
         with:
           identifier: TwintailTeam.TTL
-          max-versions-to-keep: 3
+          max-versions-to-keep: 5
           version: '${{ env.VERSION }}'
           release-tag: '${{ env.RAW_VERSION }}'
           installers-regex: '\.exe$'
