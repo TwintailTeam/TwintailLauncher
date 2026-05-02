@@ -1083,6 +1083,8 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
 #[tauri::command]
 pub fn copy_authkey(app: AppHandle, id: String) -> bool {
     let install = get_install_info_by_id(&app, id).unwrap();
+    let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
+    let gm = get_manifest(&app, manifest.filename).unwrap();
 
     #[cfg(target_os = "linux")]
     {
@@ -1090,7 +1092,7 @@ pub fn copy_authkey(app: AppHandle, id: String) -> bool {
         let prefix_exists = prefix.join("pfx/").exists();
         if prefix_exists {
             let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
-            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), install.name, install.region_code));
+            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
             if engine_log.exists() {
                 let log_content = fs::read_to_string(engine_log);
                 return match log_content {
@@ -1107,7 +1109,7 @@ pub fn copy_authkey(app: AppHandle, id: String) -> bool {
     #[cfg(target_os = "windows")]
     {
         let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
-        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), install.name, install.region_code));
+        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
         if engine_log.exists() {
             let log_content = fs::read_to_string(engine_log);
             match log_content {

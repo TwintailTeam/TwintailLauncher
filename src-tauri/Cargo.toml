@@ -13,16 +13,15 @@ name = "twintaillauncher_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.6.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.10.3", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
+tauri = { version = "2.11.0", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.52", features = ["sync"] }
 sqlx = { version = "0.8.6", features = ["sqlite", "json", "time", "runtime-tokio"] }
 serde_json = "1"
 git2 = "0.20"
-
 cuid2 = "0.1"
 gumdrop = "0.8.1"
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }

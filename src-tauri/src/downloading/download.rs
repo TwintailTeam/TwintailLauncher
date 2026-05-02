@@ -92,9 +92,10 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 let mut ok = true;
                 for e in files.iter() {
                     let url = e.file_url.clone();
+                    let hash = e.file_hash.clone();
                     let cancel_token = cancel_token.clone();
                     let dl_ok = run_async_command(async {
-                        <Game as Zipped>::download(url.clone(), install.directory.clone(), false, false, {
+                        <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), false, false, {
                                 let dlpayload = dlpayload.clone();
                                 let h4 = h4.clone();
                                 let instn = instn.clone();
@@ -281,9 +282,10 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 let mut ok = true;
                 for (_file_idx, e) in files.iter().enumerate() {
                     let url = e.file_url.clone();
+                    let hash = e.file_hash.clone();
                     let cancel_token = cancel_token.clone();
                     let dl_ok = run_async_command(async {
-                        <Game as Zipped>::download(url.clone(), install.directory.clone(), false, false,{
+                        <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), false, false,{
                                 let dlpayload = dlpayload.clone();
                                 let h4 = h4.clone();
                                 let instn = instn.clone();

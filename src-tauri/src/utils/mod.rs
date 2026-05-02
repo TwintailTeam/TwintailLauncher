@@ -18,7 +18,7 @@ use std::sync::{Arc};
 use std::{fs, io};
 use std::hash::Hash;
 use tauri::{AppHandle, Emitter, Listener, Manager};
-
+use tauri_plugin_dialog::DialogExt;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
@@ -47,6 +47,15 @@ pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
 }
 
 pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String, install_name: String, install_type: String) -> io::Result<()> {
+    fn dir_size(path: &Path) -> io::Result<u64> {
+        let mut size = 0;
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let metadata = entry.metadata()?;
+            if metadata.is_dir() { size += dir_size(&entry.path())?; } else { size += metadata.len(); }
+        }
+        Ok(size)
+    }
     fs::create_dir_all(&dst)?;
     let totalsize = dir_size(src.as_ref())?;
     let tracker = Arc::new(AtomicU64::new(0));
@@ -184,16 +193,6 @@ pub fn get_mi_path_from_game(exe_name: String) -> Option<String> {
             _ => None,
         }
     }
-}
-
-fn dir_size(path: &Path) -> io::Result<u64> {
-    let mut size = 0;
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-        if metadata.is_dir() { size += dir_size(&entry.path())?; } else { size += metadata.len(); }
-    }
-    Ok(size)
 }
 
 pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
@@ -457,7 +456,7 @@ pub fn notify_update(app: &AppHandle) {
             let cfg = app.config();
             match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
                 std::cmp::Ordering::Less => {
-                    show_dialog_with_callback(&app, "warning", "TwintailLauncher", "You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.", Some(vec!["Continue anyway"]), None);
+                    app.dialog().message("You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("TwintailLauncher").kind(tauri_plugin_dialog::MessageDialogKind::Warning).show(move |_| {});
                     log::info!("You are running outdated version of TwintailLauncher!");
                 }
                 std::cmp::Ordering::Equal => {
@@ -823,21 +822,21 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
     None
 }
 
-pub fn get_engine_log_from_game(base: String, game_name: String, region_code: String) -> String {
-    if game_name.to_ascii_lowercase().contains("genshin") { return "miHoYo/Genshin Impact/output_log.txt".to_string() }
-    if game_name.to_ascii_lowercase().contains("starrail") { return "Cognosphere/Star Rail/Player.log".to_string() }
-    if game_name.to_ascii_lowercase().contains("zenless") { return "miHoYo/ZenlessZoneZero/Player.log".to_string() }
-    if game_name.to_ascii_lowercase().contains("honkai") {
-        if region_code.to_ascii_lowercase().contains("glb_official") { return "miHoYo/Honkai Impact 3rd/Player.log".to_string() }
-        if region_code.to_ascii_lowercase().contains("overseas_official") { return "miHoYo/Honkai Impact 3/Player.log".to_string() }
-        if region_code.to_ascii_lowercase().contains("kr_official") { return "miHoYo/붕괴3rd/Player.log".to_string() }
-        if region_code.to_ascii_lowercase().contains("asia_offcial") { return "miHoYo/崩壊3rd/Player.log".to_string() }
-        if region_code.to_ascii_lowercase().contains("jp_official") { return "miHoYo/崩壊3rd/Player.log".to_string() }
-        return "miHoYo/Honkai Impact 3rd/Player.log".to_string()
+pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: String) -> String {
+    if game_biz.to_ascii_lowercase().contains("hk4e_global") { return "miHoYo/Genshin Impact/output_log.txt".to_string() }
+    if game_biz.to_ascii_lowercase().contains("hkrpg_global") { return "Cognosphere/Star Rail/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("nap_global") { return "miHoYo/ZenlessZoneZero/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("bh3_global") {
+        if region_code.to_ascii_lowercase().contains("glb_official") { return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("overseas_official") { return "miHoYo/Honkai Impact 3/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("kr_official") { return "miHoYo/붕괴3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("asia_offcial") { return "miHoYo/崩壊3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("jp_official") { return "miHoYo/崩壊3rd/output_log.txt".to_string() }
+        return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string()
     }
-    if game_name.to_ascii_lowercase().contains("petit") { return "miHoYo/PetitPlanet/Player.log".to_string() }
-    if game_name.to_ascii_lowercase().contains("punishing") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
-    if game_name.to_ascii_lowercase().contains("endfield") { return "Gryphline/Endfield/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("hyg_global") { return "miHoYo/PetitPlanet/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
+    if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()
 }
 
