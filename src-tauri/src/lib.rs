@@ -41,25 +41,25 @@ pub fn run() {
         {
             utils::gpu::fuck_nvidia();
             utils::raise_fd_limit(999999);
-            tauri::Builder::default()
+            let base = tauri::Builder::default()
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: utils::repo_manager::RunnerLoader::default()})
                 .manage(DownloadState { tokens: Mutex::new(HashMap::new()), queue: Mutex::new(None), verified_files: Mutex::new(HashMap::new()) })
-                .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); }))
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_clipboard_manager::init())
-                .plugin(logger)
+                .plugin(logger);
+            if args::get_launch_install().is_none() { base.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); })) } else { base }
         }
         #[cfg(target_os = "windows")]
         {
-            tauri::Builder::default()
+            let base = tauri::Builder::default()
                 .manage(DownloadState { tokens: Mutex::new(HashMap::new()), queue: Mutex::new(None), verified_files: Mutex::new(HashMap::new()) })
                 .manage(ManifestLoaders {game: ManifestLoader::default()})
-                .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); }))
                 .plugin(tauri_plugin_dialog::init())
                 .plugin(tauri_plugin_opener::init())
                 .plugin(tauri_plugin_clipboard_manager::init())
-                .plugin(logger)
+                .plugin(logger);
+            if args::get_launch_install().is_none() { base.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| { let _ = app.get_window("main").expect("no main window").show(); let _ = app.get_window("main").expect("no main window").set_focus(); })) } else { base }
         }
     }.setup(|app| {
             let handle = app.handle();
