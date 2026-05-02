@@ -427,6 +427,18 @@ pub fn deprecate_jadeite(app: &AppHandle) {
     }
 }
 
+#[cfg(all(target_arch = "x86_64", target_os = "windows"))]
+pub fn is_windows_arm_translation() -> bool {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetCurrentProcess() -> *mut core::ffi::c_void;
+        fn IsWow64Process2(h_process: *mut core::ffi::c_void, p_process_machine: *mut u16, p_native_machine: *mut u16) -> i32;
+    }
+    let mut process_machine: u16 = 0;
+    let mut native_machine: u16 = 0;
+    unsafe { IsWow64Process2(GetCurrentProcess(), &mut process_machine, &mut native_machine) != 0 && native_machine == 0xAA64 }
+}
+
 #[cfg(target_os = "linux")]
 #[allow(non_camel_case_types)]
 pub fn raise_fd_limit(new_limit: i32) {

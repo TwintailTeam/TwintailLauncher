@@ -57,6 +57,8 @@ jobs:
         include:
           - platform: "ubuntu-22.04"
             args: ""
+          - platform: "ubuntu-22.04-arm"
+            args: ""
           - platform: "windows-latest"
             args: ""
 
@@ -77,7 +79,7 @@ jobs:
         with:
           version: 10
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -85,7 +87,7 @@ jobs:
         run: pnpm install
       - name: "Build app (Linux)"
         uses: tauri-apps/tauri-action@v0
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

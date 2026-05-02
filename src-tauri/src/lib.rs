@@ -63,15 +63,15 @@ pub fn run() {
         }
     }.setup(|app| {
             let handle = app.handle();
-            #[cfg(target_arch = "aarch64")]
-            {
+            #[cfg(all(target_arch = "x86_64", target_os = "windows"))]
+            if utils::is_windows_arm_translation() {
                 use tauri_plugin_dialog::DialogExt;
-                use tauri::Listener;
                 let h = handle.clone();
-                handle.dialog().message("TwintailLauncher does not support ARM based architectures. Flatpak required ARM builds to be provided but they are not supported!").kind(tauri_plugin_dialog::MessageDialogKind::Warning).title("Unsupported Architecture").show(move |_| { let h = h.clone();h.cleanup_before_exit();h.exit(0);std::process::exit(0); });
+                handle.dialog().message("TwintailLauncher does not support running under Windows ARM x86_64 emulation (Prism).").kind(tauri_plugin_dialog::MessageDialogKind::Warning).title("Unsupported Architecture").show(move |_| { let h = h.clone(); h.cleanup_before_exit(); h.exit(0); std::process::exit(0); });
+                return Ok(());
             }
 
-            #[cfg(target_arch = "x86_64")]
+            #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
             {
                 notify_update(handle);
                 run_async_command(async { init_db(handle).await; });

@@ -28,11 +28,14 @@ jobs:
           PKGV="${VERSION#ttl-v}"
           echo "VERSION is: $VERSION"
           echo "PKGVER is: $PKGV"
-          # Calculate checksum
+          # Calculate checksums
           x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGV}_amd64.deb"
-          echo "Downloading and calculating checksum..."
+          aarch64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGV}_arm64.deb"
+          echo "Downloading and calculating checksums..."
           curl -L "$x86_64_url" -o twintaillauncher-${PKGV}.deb
+          curl -L "$aarch64_url" -o twintaillauncher-${PKGV}-arm64.deb
           x86_64_sum=$(sha256sum twintaillauncher-${PKGV}.deb | cut -d' ' -f1)
+          aarch64_sum=$(sha256sum twintaillauncher-${PKGV}-arm64.deb | cut -d' ' -f1)
 
           mkdir ttl-bin/
           cat > ttl-bin/PKGBUILD << EOF
@@ -41,7 +44,7 @@ jobs:
           pkgver=${PKGV}
           pkgrel=1
           pkgdesc="A multi-platform launcher for your anime games"
-          arch=('x86_64')
+          arch=('x86_64' 'aarch64')
           url="https://github.com/TwintailTeam/TwintailLauncher"
           license=('GPL-3.0-only')
           depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator' 'mangohud')
@@ -49,8 +52,10 @@ jobs:
           options=('!debug')
           provides=("twintaillauncher")
           conflicts=("twintaillauncher-git" "twintaillauncher")
-          source=("\${_pkgname}-\${pkgver}.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_amd64.deb")
-          sha256sums=('$x86_64_sum')
+          source_x86_64=("\${_pkgname}-\${pkgver}-amd64.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_amd64.deb")
+          source_aarch64=("\${_pkgname}-\${pkgver}-arm64.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_arm64.deb")
+          sha256sums_x86_64=('$x86_64_sum')
+          sha256sums_aarch64=('$aarch64_sum')
           
           build() {
             bsdtar -x -f data.tar.gz
@@ -75,7 +80,7 @@ jobs:
           pkgrel=1
           _dirname="TwintailLauncher-ttl-v\${pkgver}"
           pkgdesc='A multi-platform launcher for your anime games'
-          arch=('x86_64')
+          arch=('x86_64' 'aarch64')
           license=('GPL-3.0-only')
           url=https://github.com/TwintailTeam/TwintailLauncher
           depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator' 'mangohud')
