@@ -56,13 +56,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
-        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);
+        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nGame will not start until this requirement is satisfied!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
     if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) && !endfield_can_bypass {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
-        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
+        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!\nGame will not start until this requirement is satisfied!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
