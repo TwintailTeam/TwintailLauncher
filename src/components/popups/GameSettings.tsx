@@ -151,7 +151,7 @@ export default function GameSettings({
     const banner = useMemo(() => {
         const installInfo = (installs || []).find((i: any) => i.id === installSettings.id);
         const gameInfo = (gamesinfo || []).find((g: any) => g.manifest_id === installSettings.manifest_id) || (gamesinfo || []).find((g: any) => g.biz === installSettings.manifest_id);
-        return gameInfo?.assets?.game_background || gameInfo?.background || installInfo?.game_background || installSettings.game_background;
+        return installSettings.game_background || gameInfo?.assets?.game_background || gameInfo?.background || installInfo?.game_background;
     }, [installs, gamesinfo, installSettings.id, installSettings.manifest_id, installSettings.game_background]);
 
     const icon = useMemo(() => {

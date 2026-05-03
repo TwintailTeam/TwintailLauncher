@@ -566,13 +566,13 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
                         "add" => {
                             let mut data = fs::read(&f).unwrap();
                             let from = b"KR_ChannelID=240";
-                            let to   = b"KR_ChannelID=205";
+                            let to = b"KR_ChannelID=205";
                             if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Applied AKI patch to {}", dir.display()); }
                         }
                         "remove" => {
                             let mut data = fs::read(&f).unwrap();
                             let from = b"KR_ChannelID=205";
-                            let to   = b"KR_ChannelID=240";
+                            let to = b"KR_ChannelID=240";
                             if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Removed AKI patch from {}", dir.display()); }
                         }
                         _ => {}
