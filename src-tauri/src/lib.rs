@@ -121,7 +121,7 @@ pub fn run() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
                     handle.get_window("main").unwrap().hide().unwrap();
-                    std::thread::sleep(std::time::Duration::from_secs(10));
+                    std::thread::sleep(std::time::Duration::from_secs(20));
                     handle.cleanup_before_exit();
                     handle.exit(0);
                     std::process::exit(0);
