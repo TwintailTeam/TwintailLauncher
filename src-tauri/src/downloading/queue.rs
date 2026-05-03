@@ -234,6 +234,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
 
                     match outcome {
                         QueueJobOutcome::Completed => {
+                            log::info!("Job {} ({:?}) completed for install {}", job_id, view.kind, view.install_id);
                             view.status = QueueJobStatus::Completed;
                             completed_views.push_front(view);
                             while completed_views.len() > 25 {
@@ -241,6 +242,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                             }
                         }
                         QueueJobOutcome::Failed => {
+                            log::warn!("Job {} ({:?}) failed for install {}", job_id, view.kind, view.install_id);
                             view.status = QueueJobStatus::Failed;
                             completed_views.push_front(view);
                             while completed_views.len() > 25 {
@@ -251,12 +253,14 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                             // When cancelled during activation, put the job back in queue
                             if activating {
                                 if let Some(job) = removed_job {
+                                    log::debug!("Job {} ({:?}) cancelled for requeue during activation", job_id, view.kind);
                                     // Put the cancelled job back at the front of the queue (after the activating job)
                                     view.status = QueueJobStatus::Queued;
                                     queued.insert(1.min(queued.len()), job);
                                     queued_views.insert(1.min(queued_views.len()), view);
                                 }
                             } else {
+                                log::info!("Job {} ({:?}) paused for install {}", job_id, view.kind, install_id);
                                 // Normal pause - move to paused_jobs for later resume
                                 paused = true;
                                 view.status = QueueJobStatus::Paused;
@@ -281,6 +285,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
 
                     view.status = QueueJobStatus::Running;
                     let job_id = job.id.clone();
+                    log::info!("Starting {:?} job {} for install {}", job.kind, job_id, view.install_id);
                     active.insert(job_id.clone(), view);
                     active_jobs.insert(job_id.clone(), QueueJob { id: job.id.clone(), kind: job.kind, payload: job.payload.clone() });
 
@@ -306,6 +311,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                     QueueCommand::Enqueue(job) => {
                         let install_id = job.payload.get_id();
                         let name = if let (QueueJobKind::GamePreload, QueueJobPayload::Game(p)) = (&job.kind, &job.payload) { get_install_info_by_id(&app, p.install.clone()).map(|install| { let fallback = install.name.clone(); let ver = install.version.clone(); get_manifest_info_by_id(&app, install.manifest_id.clone()).and_then(|gid| get_manifest(&app, gid.filename)).and_then(|gm| gm.extra.preload).and_then(|pl| pl.metadata).map(|pmd| fallback.replace(ver.as_str(), pmd.version.as_str())).unwrap_or(fallback) }) } else if let QueueJobPayload::Game(ref p) = job.payload { get_install_info_by_id(&app, p.install.clone()).map(|i| i.name) } else { None }.unwrap_or_else(|| job.payload.get_name());
+                        log::info!("Enqueued {:?} job {} for install {}", job.kind, job.id, install_id);
                         queued_views.push_back(QueueJobView {
                             id: job.id.clone(),
                             kind: job.kind,
@@ -321,6 +327,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                         emit_queue_state(&app, max_concurrent, paused, auto_paused, &active, &queued_views, &completed_views, &paused_jobs, &pausing_installs);
                     }
                     QueueCommand::SetPaused(p) => {
+                        log::info!("Queue {} manually", if p { "paused" } else { "resumed" });
                         paused = p;
                         // Clear auto_paused when user manually changes pause state
                         if !p { auto_paused = false; }
@@ -357,6 +364,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                     QueueCommand::Remove(job_id, reply) => {
                         let mut success = false;
                         if let Some(idx) = queued.iter().position(|j| j.id == job_id) {
+                            log::debug!("Removed queued job {} from queue", job_id);
                             queued.remove(idx);
                             queued_views.remove(idx);
                             success = true;
@@ -442,6 +450,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
 
                             let job = queued.remove(idx).unwrap();
                             let view = queued_views.remove(idx).unwrap();
+                            log::info!("Activating {:?} job {} for install {}", job.kind, job_id, view.install_id);
                             install_id = Some(view.install_id.clone());
                             queued.push_front(job);
                             queued_views.push_front(view);
@@ -470,6 +479,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                         let mut success = false;
                         if let Some(mut view) = paused_jobs.remove(&install_id) {
                             if let Some(job) = paused_jobs_data.remove(&install_id) {
+                                log::info!("Resumed paused {:?} job for install {}", view.kind, install_id);
                                 view.status = QueueJobStatus::Queued;
                                 queued.push_front(job);
                                 queued_views.push_front(view);
@@ -487,6 +497,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                     QueueCommand::AutoPause => {
                         // Auto-pause due to connection loss - only if not already paused
                         if !paused {
+                            log::info!("Queue auto-paused due to connection loss");
                             paused = true;
                             auto_paused = true;
                             emit_queue_state(&app, max_concurrent, paused, auto_paused, &active, &queued_views, &completed_views, &paused_jobs, &pausing_installs);
@@ -495,6 +506,7 @@ pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize
                     QueueCommand::AutoResume(reply) => {
                         // Only resume if we auto-paused (not manually paused)
                         let success = if auto_paused {
+                            log::info!("Queue auto-resumed after connection restored");
                             auto_paused = false;
                             paused = false;
                             emit_queue_state(&app, max_concurrent, paused, auto_paused, &active, &queued_views, &completed_views, &paused_jobs, &pausing_installs);

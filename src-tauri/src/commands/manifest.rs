@@ -67,6 +67,7 @@ pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Opt
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        log::debug!("Manifest {} {}", m.filename, if enabled { "enabled" } else { "disabled" });
         update_manifest_enabled_by_id(&app, m.id, enabled);
         Some(true)
     } else {

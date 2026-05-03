@@ -33,9 +33,10 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     let job_id = Arc::new(job_id);
     let install_id = payload.install.clone();
     let install = get_install_info_by_id(&h5, payload.install.clone());
-    if install.is_none() { eprintln!("Failed to find installation for repair!");return QueueJobOutcome::Failed; }
+    if install.is_none() { log::warn!("Cannot start repair: install {} not found", payload.install); return QueueJobOutcome::Failed; }
 
     let i = install.unwrap();
+    log::info!("Starting game repair for \"{}\" ({})", i.name, i.id);
     let lm = match get_manifest_info_by_id(&h5, i.manifest_id.clone()) {
         Some(v) => v,
         None => return QueueJobOutcome::Failed,
@@ -371,6 +372,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     }
 
     if cancelled {
+        log::info!("Repair cancelled for \"{}\"", i.name);
         let mut dlp = HashMap::new();
         dlp.insert("job_id", job_id.to_string());
         dlp.insert("name", i.name.clone());
@@ -378,9 +380,11 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         return QueueJobOutcome::Cancelled;
     }
     if success {
+        log::info!("Repair completed for \"{}\" ({})", i.name, i.id);
         { verified_files.lock().unwrap().clear(); }
         QueueJobOutcome::Completed
     } else {
+        log::warn!("Repair failed for \"{}\" ({})", i.name, i.id);
         { verified_files.lock().unwrap().clear(); }
         QueueJobOutcome::Failed
     }

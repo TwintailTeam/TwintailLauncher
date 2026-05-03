@@ -48,6 +48,7 @@ pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_game_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default game path to {}", path);
     Some(true)
 }
 
@@ -61,6 +62,7 @@ pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_xxmi_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default XXMI path to {}", path);
     Some(true)
 }
 
@@ -74,6 +76,7 @@ pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> 
     } else {
         update_settings_default_fps_unlock_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default FPS unlock path to {}", path);
     Some(true)
 }
 
@@ -87,6 +90,7 @@ pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Opt
     } else {
         update_settings_default_jadeite_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default Jadeite path to {}", path);
     Some(true)
 }
 
@@ -100,6 +104,7 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
     } else {
         update_settings_default_prefix_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default prefix path to {}", path);
     Some(true)
 }
 
@@ -113,6 +118,7 @@ pub fn update_settings_default_runner_path(app: AppHandle, path: String) -> Opti
     } else {
         update_settings_default_runner_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default runner path to {}", path);
     Some(true)
 }
 
@@ -126,6 +132,7 @@ pub fn update_settings_default_dxvk_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_dxvk_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default DXVK path to {}", path);
     Some(true)
 }
 
@@ -139,6 +146,7 @@ pub fn update_settings_default_mangohud_config_path(app: AppHandle, path: String
     } else {
         update_settings_default_mangohud_config_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default MangoHUD config path to {}", path);
     Some(true)
 }
 
@@ -162,6 +170,7 @@ pub fn update_settings_hide_app_tray(app: AppHandle, enabled: bool) -> Option<bo
 
 #[tauri::command]
 pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
+    log::debug!("Opening {} folder for install {}", path_type, install_id);
     match path_type.as_str() {
         "mods" => {
             let settings = get_settings(&app);
@@ -284,7 +293,10 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
                 let fp = Path::new(&i.runner_prefix);
                 if fp.exists() {
                     match crate::utils::empty_dir(fp) {
-                        Ok(_) => { show_dialog_with_callback(&app, "info", "TwintailLauncher", "Runner prefix has been put into repair state. Please launch the game to regenerate the prefix.", None, None); }
+                        Ok(_) => {
+                            log::info!("Cleared runner prefix for installation {}", i.id);
+                            show_dialog_with_callback(&app, "info", "TwintailLauncher", "Runner prefix has been put into repair state. Please launch the game to regenerate the prefix.", None, None);
+                        }
                         Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Runner prefix repair failed, try again later!", None, None); }
                     }
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None, None); };
@@ -295,7 +307,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
             let steamrt3 = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
             if steamrt3.exists() {
                 match crate::utils::empty_dir(steamrt3) {
-                    Ok(_) => {}
+                    Ok(_) => { log::info!("Cleared SteamRT3 for repair"); }
                     Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT3 repair failed, try again later!", None, None); }
                 }
             } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT3, Is it properly downloaded?", None, None); };
@@ -303,7 +315,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
             let steamrt4 = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
             if steamrt4.exists() {
                 match crate::utils::empty_dir(steamrt4) {
-                    Ok(_) => {}
+                    Ok(_) => { log::info!("Cleared SteamRT4 for repair"); }
                     Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT4 repair failed, try again later!", None, None); }
                 }
             } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT4, Is it properly downloaded?", None, None); };
@@ -316,6 +328,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
 #[allow(unused_variables)]
 #[tauri::command]
 pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
+    log::info!("Spawning {} in prefix for installation {}", path_type, install_id);
     match path_type.as_str() {
         "regedit.exe" => {
             #[cfg(target_os = "linux")] {
@@ -567,6 +580,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                 let gs = get_settings(&app).unwrap();
                 let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
                 if fp.exists() {
+                    log::info!("Running SteamRT3 diagnostics");
                     let steamrtp = fp.join("run");
                     let steamrt = steamrtp.to_str().unwrap().to_string();
 
@@ -610,6 +624,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                 let gs = get_settings(&app).unwrap();
                 let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
                 if fp.exists() {
+                    log::info!("Running SteamRT4 diagnostics");
                     let steamrtp = fp.join("run");
                     let steamrt = steamrtp.to_str().unwrap().to_string();
 

@@ -18,12 +18,15 @@ pub fn add_repository(app: AppHandle, url: String) -> Option<bool> {
     if url.is_empty() {
         None
     } else {
+        log::info!("Adding repository: {}", url);
         let path = app.path().app_data_dir().unwrap().join("manifests");
-        let rtn = clone_new_repository(&app, &path, url);
+        let rtn = clone_new_repository(&app, &path, url.clone());
 
         if rtn.is_ok() {
+            log::info!("Successfully added repository: {}", url);
             Some(rtn.unwrap())
         } else {
+            log::warn!("Failed to add repository: {}", url);
             None
         }
     }
@@ -34,11 +37,14 @@ pub fn remove_repository(app: AppHandle, id: String) -> Option<bool> {
     if id.is_empty() {
         None
     } else {
+        log::info!("Removing repository {}", id);
         // TODO: Properly delete repository bullshit and disallow if installation with ANY manifest of a repo exists
-        let rtn = delete_repository_by_id(&app, id);
+        let rtn = delete_repository_by_id(&app, id.clone());
         if rtn.is_ok() {
+            log::info!("Successfully removed repository {}", id);
             Some(rtn.unwrap())
         } else {
+            log::warn!("Failed to remove repository {}", id);
             None
         }
     }

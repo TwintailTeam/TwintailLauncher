@@ -61,6 +61,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         let gbiz = gm.biz.clone();
 
         let instn = Arc::new(install.name.clone());
+        log::info!("Starting game update for \"{}\" ({})", install.name, install.id);
         let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
         let mut dlp = dlpayload.lock().unwrap();
@@ -470,6 +471,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             tokens.remove(&install_id);
         }
         if cancelled {
+            log::info!("Update cancelled for \"{}\"", install.name);
             let mut dlp = HashMap::new();
             dlp.insert("job_id", job_id.to_string());
             dlp.insert("name", install.name.clone());
@@ -477,14 +479,16 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             return QueueJobOutcome::Cancelled;
         }
         if success {
+            log::info!("Update completed for \"{}\" ({})", install.name, install.id);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Completed
         } else {
+            log::warn!("Update failed for \"{}\" ({})", install.name, install.id);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Failed
         }
     } else {
-        log::debug!("Failed to update game, wtf??? we are SO FUCKED!");
+        log::warn!("Cannot start update: manifest not found for install {}", install_id);
         QueueJobOutcome::Failed
     }
 }

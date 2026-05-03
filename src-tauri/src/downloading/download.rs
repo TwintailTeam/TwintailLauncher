@@ -18,7 +18,7 @@ pub fn register_download_handler(app: &AppHandle) {
         let state = a.state::<DownloadState>();
         let q = state.queue.lock().unwrap().clone();
         if let Some(queue) = q {
-            if queue.has_job_for_id(payload.install.clone()) { show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for download!", None, None); return; }
+            if queue.has_job_for_id(payload.install.clone()) { log::warn!("Game {} is already queued for download, skipping", payload.install); show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for download!", None, None); return; }
             queue.enqueue(QueueJobKind::GameDownload, QueueJobPayload::Game(payload));
         } else {
             let h4 = a.clone();
@@ -34,7 +34,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
     let job_id = Arc::new(job_id);
     let install = match get_install_info_by_id(&h4, payload.install.clone()) {
         Some(v) => v,
-        None => return QueueJobOutcome::Failed,
+        None => { log::warn!("Cannot start download: install {} not found", payload.install); return QueueJobOutcome::Failed; }
     };
     let gid = match get_manifest_info_by_id(&h4, install.manifest_id) {
         Some(v) => v,
@@ -50,6 +50,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         };
 
         let instn = if payload.is_latest.is_some() { Arc::new(picked.metadata.versioned_name.clone()) } else { Arc::new(install.name.clone()) };
+        log::info!("Starting game download for \"{}\" ({})", instn, install.id);
         let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
         let mut dlp = dlpayload.lock().unwrap();
@@ -375,6 +376,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         }
 
         if cancelled {
+            log::info!("Download cancelled for \"{}\" ({})", instn, payload.install);
             let mut dlp = HashMap::new();
             dlp.insert("job_id", job_id.to_string());
             dlp.insert("name", instn.to_string());
@@ -382,14 +384,16 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
             return QueueJobOutcome::Cancelled;
         }
         if success {
+            log::info!("Download completed for \"{}\" ({})", instn, payload.install);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Completed
         } else {
+            log::warn!("Download failed for \"{}\" ({})", instn, payload.install);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Failed
         }
     } else {
-        log::debug!("Failed to download game, wtf??? we are SO FUCKED!");
+        log::warn!("Cannot start download: manifest not found for install {}", payload.install);
         QueueJobOutcome::Failed
     }
 }

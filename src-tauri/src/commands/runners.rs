@@ -98,6 +98,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let q = state.queue.lock().unwrap().clone();
                 if let Some(ref queue) = q {
                     if queue.has_job_for_id(runner_version.clone()) {
+                        log::warn!("Runner {} is already queued for download, skipping", runner_version);
                         crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None, None);
                         return Some(false);
                     }
@@ -122,6 +123,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 
                 // Enqueue the download job
                 if let Some(queue) = q {
+                    log::info!("Queuing download for runner {}", runner_version);
                     queue.enqueue(QueueJobKind::RunnerDownload, QueueJobPayload::Runner(RunnerDownloadPayload {
                             runner_version: runner_version.clone(),
                             runner_url: dl_url,
@@ -155,6 +157,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
 
         if fs::read_dir(runner_path.as_path()).unwrap().next().is_some() {
             fs::remove_dir_all(runner_path.as_path()).unwrap();
+            log::info!("Removed runner {} from {}", runner_version, runner_path.display());
             update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false);
 
             // Set installations using the removed runner to first available one as fallback
@@ -168,6 +171,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
                             let avr = available_runners.unwrap();
                             let filtered_runners = avr.iter().filter(|r| r.is_installed).collect::<Vec<_>>();
                             let first = filtered_runners.get(0).unwrap();
+                            log::debug!("Updating installation {} to fallback runner {} after removing {}", i.id, first.version, runner_version);
                             update_install_runner_version_by_id(&app, i.id.clone(), first.version.clone());
                             update_install_runner_location_by_id(&app, i.id, first.runner_path.clone());
                         }
