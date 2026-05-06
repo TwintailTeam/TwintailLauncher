@@ -212,35 +212,33 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 let fnn = first.file_url.split('/').last().unwrap_or_default().to_string();
                                 let archive_path = patching_path.join("staging").join(fnn);
                                 let far = archive_path.to_str().unwrap().to_string();
-                                let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
-                                    let dlpayload = dlpayload.clone();
-                                    let h5 = h5.clone();
-                                    let instn = instn.clone();
-                                    let job_id = job_id.clone();
-                                    move |current, total| {
-                                        let mut dlp = dlpayload.lock().unwrap();
-                                        dlp.insert("job_id", job_id.to_string());
-                                        dlp.insert("name", instn.to_string());
-                                        dlp.insert("install_progress", current.to_string());
-                                        dlp.insert("install_total", total.to_string());
-                                        dlp.insert("phase", "3".to_string());
-                                        h5.emit("update_progress", dlp.clone()).unwrap();
-                                    }
+                                let hash = first.file_hash.clone();
+                                let ext = run_async_command(async {
+                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), {
+                                        let dlpayload = dlpayload.clone();
+                                        let h5 = h5.clone();
+                                        let instn = instn.clone();
+                                        let job_id = job_id.clone();
+                                        move |_download_current, _download_total, install_current, install_total, _net_speed, _disk_speed, phase| {
+                                            let mut dlp = dlpayload.lock().unwrap();
+                                            dlp.insert("job_id", job_id.to_string());
+                                            dlp.insert("name", instn.to_string());
+                                            dlp.insert("install_progress", install_current.to_string());
+                                            dlp.insert("install_total", install_total.to_string());
+                                            dlp.insert("phase", phase.to_string());
+                                            h5.emit("update_progress", dlp.clone()).unwrap();
+                                        }
+                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                                 });
                                 ok = ext;
                                 if ok {
-                                    let delete_list = Path::new(&install.directory).join("delete_files.txt");
-                                    if delete_list.exists() {
-                                        if let Ok(contents) = fs::read_to_string(&delete_list) { for line in contents.lines() { let line = line.trim(); if !line.is_empty() { let _ = fs::remove_file(Path::new(&install.directory).join(line)); } } }
-                                        let _ = fs::remove_file(&delete_list);
-                                    }
                                     if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
                                     update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                                     h5.emit("update_complete", ()).unwrap();
                                     log::debug!("Successfully updated {} using DOWNLOAD_MODE_FILE (endfield_global), marking as complete", install.name);
+                                    success = true;
                                     #[cfg(target_os = "linux")]
                                     crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
-                                    success = true;
                                 } else {
                                     if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
                                     h5.emit("update_complete", ()).unwrap();
