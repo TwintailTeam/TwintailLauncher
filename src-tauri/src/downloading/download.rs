@@ -82,7 +82,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         match picked.metadata.download_mode.as_str() {
             "DOWNLOAD_MODE_FILE" => {
                 let install_dir = Path::new(&install.directory).to_path_buf();
-                if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
                 let files = picked.game.full.clone();
@@ -274,7 +274,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
             }
             "DOWNLOAD_MODE_MULTIFILE" => {
                 let install_dir = Path::new(&install.directory).to_path_buf();
-                if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
                 let files = picked.game.full.clone();

@@ -81,7 +81,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     match picked.metadata.download_mode.as_str() {
         "DOWNLOAD_MODE_FILE" => {
             let install_dir = std::path::Path::new(&i.directory).to_path_buf();
-            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
             let files = picked.game.full.clone();
@@ -270,7 +270,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         }
         "DOWNLOAD_MODE_MULTIFILE" => {
             let install_dir = std::path::Path::new(&i.directory).to_path_buf();
-            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
             let files = picked.game.full.clone();
