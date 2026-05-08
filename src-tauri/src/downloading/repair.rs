@@ -80,7 +80,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     let mut success = false;
     match picked.metadata.download_mode.as_str() {
         "DOWNLOAD_MODE_FILE" => {
-            let install_dir = std::path::Path::new(&i.directory);
+            let install_dir = std::path::Path::new(&i.directory).to_path_buf();
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
@@ -124,9 +124,8 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             if ok {
                 let first = urls.get(0).unwrap();
                 let fnn = first.split('/').last().unwrap_or_default().to_string();
-                let ap = std::path::Path::new(&i.directory).to_path_buf();
-                let downloading_path = ap.join("downloading");
-                let archive_path = downloading_path.join("staging").join(fnn.clone());
+                let repairing_path = install_dir.join("repairing");
+                let archive_path = repairing_path.join("staging").join(fnn.clone());
                 let far = archive_path.to_str().unwrap().to_string();
                 log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, i.directory);
                 let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
@@ -145,7 +144,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     }
                 });
                 if ext {
-                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                     h5.emit("repair_complete", ()).unwrap();
                     log::debug!("Extraction complete for {}, marking repair as complete", i.name);
                     success = true;
@@ -159,6 +158,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         "DOWNLOAD_MODE_CHUNK" => {
             let install_dir = std::path::Path::new(&i.directory);
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let repairing_path = install_dir.join("repairing");
 
             log::debug!("Starting repair for {} with DOWNLOAD_MODE_CHUNK", i.name);
             let urls = if gm.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == i.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
@@ -213,6 +213,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
             }
             if ok {
+                if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_CHUNK", i.name);
                 success = true;
@@ -225,6 +226,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         "DOWNLOAD_MODE_RAW" => {
             let install_dir = std::path::Path::new(&i.directory);
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let repairing_path = install_dir.join("repairing");
             #[cfg(target_os = "linux")]
             crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string());
 
@@ -254,6 +256,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     }, Some(cancel_token.clone()), Some(verified_files.clone())).await
             });
             if rslt {
+                if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_RAW", i.name);
                 success = true;
@@ -266,7 +269,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             }
         }
         "DOWNLOAD_MODE_MULTIFILE" => {
-            let install_dir = std::path::Path::new(&i.directory);
+            let install_dir = std::path::Path::new(&i.directory).to_path_buf();
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
@@ -309,12 +312,11 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
             }
             if ok {
-                let ap = std::path::Path::new(&i.directory).to_path_buf();
-                let downloading_path = ap.join("downloading");
+                let repairing_path = install_dir.join("repairing");
                 ok = true;
                 for (file_idx, e) in files.iter().enumerate() {
                     let fnn = e.file_url.split('/').last().unwrap_or_default().to_string();
-                    let archive_path = downloading_path.join("staging").join(&fnn);
+                    let archive_path = repairing_path.join("staging").join(&fnn);
                     let far = archive_path.to_str().unwrap().to_string();
                     let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                     if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
@@ -340,7 +342,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     cumulative_install.fetch_add(file_install_size, Ordering::SeqCst);
                 }
                 if ok {
-                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                     h5.emit("repair_complete", ()).unwrap();
                     log::debug!("All {} archives extracted for {}, marking repair as complete", total_files, i.name);
                     success = true;

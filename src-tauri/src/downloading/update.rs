@@ -148,7 +148,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             }
                         });
                         if ext {
-                            if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
+                            if patching_path.exists() { let _ = fs::remove_dir_all(&patching_path); }
                             update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_FILE (full), marking as complete", install.name);
@@ -232,7 +232,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 });
                                 ok = ext;
                                 if ok {
-                                    if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
+                                    if patching_path.exists() { let _ = fs::remove_dir_all(&patching_path); }
                                     update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                                     h5.emit("update_complete", ()).unwrap();
                                     log::debug!("Successfully updated {} using DOWNLOAD_MODE_FILE (endfield_global), marking as complete", install.name);
@@ -371,7 +371,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                         }
                         if ok {
-                            if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
+                            if patching_marker.exists() { let _ = fs::remove_dir_all(&patching_marker); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_CHUNK, marking as complete", install.name);
@@ -431,7 +431,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                         });
                         if rslt {
-                            if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
+                            if patching_marker.exists() { let _ = fs::remove_dir_all(&patching_marker); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_RAW, marking as complete", install.name);
