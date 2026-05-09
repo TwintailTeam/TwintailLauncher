@@ -69,7 +69,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: pnpm
       - name: Setup rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
