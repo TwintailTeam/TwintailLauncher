@@ -3,6 +3,7 @@ use crate::utils::db_manager::{
     get_installs, get_settings, update_install_runner_location_by_id,
     update_install_runner_version_by_id, update_installed_runner_is_installed_by_version,
 };
+use crate::utils::models::LauncherRunner;
 use std::fs;
 use std::path::Path;
 use tauri::AppHandle;
@@ -16,8 +17,6 @@ use crate::downloading::{QueueJobPayload, RunnerDownloadPayload};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::create_installed_runner;
 #[cfg(target_os = "linux")]
-use crate::utils::models::LauncherRunner;
-#[cfg(target_os = "linux")]
 use crate::utils::repo_manager::get_compatibility;
 #[cfg(target_os = "linux")]
 use crate::utils::runner_from_runner_version;
@@ -26,16 +25,15 @@ use tauri::Manager;
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn list_installed_runners(app: AppHandle) -> Option<String> {
+pub fn list_installed_runners(app: AppHandle) -> Option<Vec<LauncherRunner>> {
     #[cfg(target_os = "linux")]
     {
         let repos = get_installed_runners(&app);
 
         if repos.is_some() {
             let repository = repos.unwrap();
-            let d: Vec<&LauncherRunner> = repository.iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect::<_>();
-            let stringified = serde_json::to_string(&d).unwrap();
-            Some(stringified)
+            let d: Vec<LauncherRunner> = repository.into_iter().filter(|r| !r.version.to_ascii_lowercase().contains("dxvk")).collect();
+            Some(d)
         } else {
             None
         }
@@ -47,29 +45,13 @@ pub fn list_installed_runners(app: AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_id(app: AppHandle, runner_id: String) -> Option<String> {
-    let repo = get_installed_runner_info_by_id(&app, runner_id);
-
-    if repo.is_some() {
-        let repository = repo.unwrap();
-        let stringified = serde_json::to_string(&repository).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_installed_runner_by_id(app: AppHandle, runner_id: String) -> Option<LauncherRunner> {
+    get_installed_runner_info_by_id(&app, runner_id)
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -> Option<String> {
-    let repo = get_installed_runner_info_by_version(&app, runner_version);
-
-    if repo.is_some() {
-        let repository = repo.unwrap();
-        let stringified = serde_json::to_string(&repository).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -> Option<LauncherRunner> {
+    get_installed_runner_info_by_version(&app, runner_version)
 }
 
 #[allow(unused_variables)]
@@ -116,6 +98,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 let q = state.queue.lock().unwrap().clone();
                 if let Some(ref queue) = q {
                     if queue.has_job_for_id(runner_version.clone()) {
+                        log::warn!("Runner {} is already queued for download, skipping", runner_version);
                         crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None, None);
                         return Some(false);
                     }
@@ -123,19 +106,29 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 
                 // Determine the download URL based on architecture
                 let mut dl_url = runnerp.url.clone();
-                if let Some(urls) = runnerp.urls {
+                if let Some(urls) = runnerp.urls.clone() {
                     #[cfg(target_arch = "x86_64")]
                     { dl_url = urls.x86_64; }
                     #[cfg(target_arch = "aarch64")]
                     { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64 }; }
                 }
 
+                let mut dl_hash = runnerp.hash.clone();
+                if let Some(urls) = runnerp.urls.clone() {
+                    #[cfg(target_arch = "x86_64")]
+                    { dl_hash = urls.x86_64_hash; }
+                    #[cfg(target_arch = "aarch64")]
+                    { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash }; }
+                }
+
                 // Enqueue the download job
                 if let Some(queue) = q {
+                    log::info!("Queuing download for runner {}", runner_version);
                     queue.enqueue(QueueJobKind::RunnerDownload, QueueJobPayload::Runner(RunnerDownloadPayload {
                             runner_version: runner_version.clone(),
                             runner_url: dl_url,
                             runner_path: runner_path.to_str().unwrap().to_string(),
+                            runner_hash: dl_hash
                     }));
                 }
                 // Create/update database entry (will be marked as installed by the download job on completion)
@@ -164,6 +157,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
 
         if fs::read_dir(runner_path.as_path()).unwrap().next().is_some() {
             fs::remove_dir_all(runner_path.as_path()).unwrap();
+            log::info!("Removed runner {} from {}", runner_version, runner_path.display());
             update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false);
 
             // Set installations using the removed runner to first available one as fallback
@@ -177,6 +171,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
                             let avr = available_runners.unwrap();
                             let filtered_runners = avr.iter().filter(|r| r.is_installed).collect::<Vec<_>>();
                             let first = filtered_runners.get(0).unwrap();
+                            log::debug!("Updating installation {} to fallback runner {} after removing {}", i.id, first.version, runner_version);
                             update_install_runner_version_by_id(&app, i.id.clone(), first.version.clone());
                             update_install_runner_location_by_id(&app, i.id, first.runner_path.clone());
                         }

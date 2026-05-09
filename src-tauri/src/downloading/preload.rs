@@ -5,7 +5,6 @@ use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::DiffGameFile, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon};
-use fischl::utils::free_space::available;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,AtomicU64,Ordering};
 use std::sync::{Arc, Mutex};
@@ -48,6 +47,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
             let tmp = Arc::new(h5.clone());
 
             let pmd = picked.metadata.unwrap();
+            log::info!("Starting game preload for \"{}\" ({})", install.name, install.id);
             let instn = Arc::new(install.name.replace(install.version.as_str(), pmd.version.as_str()).clone());
             let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
@@ -91,7 +91,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     } else {
                         let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
                         let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
-                        let available = available(install.directory.clone());
+                        let available = fischl::utils::available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
@@ -161,7 +161,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                     } else {
                         let manifest = urls.get(0).unwrap();
                         let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
-                        let available = available(install.directory.clone());
+                        let available = fischl::utils::available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
                             log::debug!("Starting preload of {} using DOWNLOAD_MODE_RAW, total size: {}, available space: {:?}", install.name, total_size, available);
@@ -220,6 +220,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
             { let state = h5.state::<DownloadState>(); let tokens = state.tokens.lock().unwrap(); if let Some(token) = tokens.get(&install_id) { if token.load(Ordering::Relaxed) { cancelled = true; } } }
             { let state = h5.state::<DownloadState>(); let mut tokens = state.tokens.lock().unwrap(); tokens.remove(&install_id); }
             if cancelled {
+                log::info!("Preload cancelled for \"{}\"", install.name);
                 let mut dlp = HashMap::new();
                 dlp.insert("job_id", job_id.to_string());
                 dlp.insert("name", instn.to_string());
@@ -227,9 +228,11 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
                 return QueueJobOutcome::Cancelled;
             }
             if success {
+                log::info!("Preload completed for \"{}\" ({})", install.name, install.id);
                 { verified_files.lock().unwrap().clear(); }
                 QueueJobOutcome::Completed
             } else {
+                log::warn!("Preload failed for \"{}\" ({})", install.name, install.id);
                 { verified_files.lock().unwrap().clear(); }
                 QueueJobOutcome::Failed
             }
@@ -237,7 +240,7 @@ pub fn run_game_preload(h5: AppHandle, payload: DownloadGamePayload, job_id: Str
             QueueJobOutcome::Completed
         }
     } else {
-        log::debug!("Failed to preload game, wtf??? we are SO FUCKED!");
+        log::warn!("Cannot start preload: manifest not found for install {}", install_id);
         QueueJobOutcome::Failed
     }
 }

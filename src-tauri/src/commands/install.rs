@@ -2,8 +2,7 @@ use crate::utils::db_manager::{create_installation, delete_installation_by_id, g
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
-use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
-use fischl::utils::free_space::get_disk_space;
+use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -34,29 +33,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use steam_shortcuts_util::{Shortcut, app_id_generator::calculate_app_id};
 
 #[tauri::command]
-pub async fn list_installs(app: AppHandle) -> Option<String> {
-    let installs = get_installs(&app);
-
-    if installs.is_some() {
-        let install = installs.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub async fn list_installs(app: AppHandle) -> Option<Vec<LauncherInstall>> {
+    get_installs(&app)
 }
 
 #[tauri::command]
-pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<String> {
-    let installs = get_installs_by_manifest_id(&app, manifest_id);
-
-    if installs.is_some() {
-        let install = installs.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<Vec<LauncherInstall>> {
+    get_installs_by_manifest_id(&app, manifest_id)
 }
 
 #[tauri::command]
@@ -65,16 +48,8 @@ pub fn set_installs_order(app: AppHandle, order: Vec<(String, i32)>) {
 }
 
 #[tauri::command]
-pub fn get_install_by_id(app: AppHandle, id: String) -> Option<String> {
-    let inst = get_install_info_by_id(&app, id);
-
-    if inst.is_some() {
-        let install = inst.unwrap();
-        let stringified = serde_json::to_string(&install).unwrap();
-        Some(stringified)
-    } else {
-        None
-    }
+pub fn get_install_by_id(app: AppHandle, id: String) -> Option<LauncherInstall> {
+    get_install_info_by_id(&app, id)
 }
 
 #[allow(unused_mut, unused_variables)]
@@ -98,8 +73,9 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                 if let Some(ref queue) = q {
                     for ei in &existing_installs {
                         if ei.version == version && queue.has_job_for_id(ei.id.clone()) {
+                            log::warn!("Attempted to add duplicate install \"{}\", already queued for download", ei.name);
                             show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("{in} is already queued for download!", in = ei.name.clone()).as_str(), None, None);
-                            return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string() });
+                            return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string(), skip_dl: skip_game_dl, steam_imported: false });
                         }
                     }
                 }
@@ -176,11 +152,19 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     if fs::read_dir(rp.as_path()).map(|mut d| d.next().is_none()).unwrap_or(true) {
                         // Determine the download URL based on architecture
                         let mut dl_url = runnerp.url.clone();
-                        if let Some(ref urls) = runnerp.urls {
+                        if let Some(ref urls) = runnerp.urls.clone() {
                             #[cfg(target_arch = "x86_64")]
                             { dl_url = urls.x86_64.clone(); }
                             #[cfg(target_arch = "aarch64")]
                             { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64.clone() }; }
+                        }
+
+                        let mut dl_hash = runnerp.hash.clone();
+                        if let Some(ref urls) = runnerp.urls.clone() {
+                            #[cfg(target_arch = "x86_64")]
+                            { dl_hash = urls.x86_64_hash.clone(); }
+                            #[cfg(target_arch = "aarch64")]
+                            { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash.clone() }; }
                         }
 
                         // Create runner directory if needed
@@ -198,6 +182,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                                     runner_version: runv.to_string(),
                                     runner_url: dl_url,
                                     runner_path: rp.to_str().unwrap().to_string(),
+                                    runner_hash: dl_hash
                             }));
                         }
                     }
@@ -217,19 +202,24 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     success: false,
                     install_id: "".to_string(),
                     background: "".to_string(),
+                    steam_imported: steam_import,
+                    skip_dl: skip_game_dl,
                 });
             }
         }
-        if !skip_game_dl {
+        if !skip_game_dl && !steam_import {
             let downloading_marker = install_location.join("downloading");
             if !downloading_marker.exists() { let _ = fs::create_dir(&downloading_marker); }
         }
         let default_graphics_api = gm.extra.graphics_api_options.default.clone();
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api).unwrap();
+        log::info!("Created installation {} (\"{}\")", cuid, name);
         Some(AddInstallRsp {
             success: true,
             install_id: cuid.clone(),
             background: gbg,
+            steam_imported: steam_import,
+            skip_dl: skip_game_dl
         })
     }
 }
@@ -245,6 +235,7 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_
         let install = get_install_info_by_id(&app, id.clone());
         if install.is_some() {
             let i = install.unwrap();
+            log::info!("Removing installation {} (\"{}\")", id, i.name);
             let lm = get_manifest_info_by_id(&app, i.manifest_id.clone()).unwrap();
             let gm = get_manifest(&app, lm.filename.clone()).unwrap();
 
@@ -253,12 +244,15 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_
             let idp = Path::new(&installdir);
             let pdp = Path::new(&prefixdir);
             let gexe = idp.join(gm.paths.exe_filename.clone());
+            let dlp = idp.join("downloading/");
+            let dlpp = idp.join("patching/");
+            let dlr = idp.join("repairing/");
 
             if wipe_prefix {
                 if pdp.exists() { fs::remove_dir_all(prefixdir.clone()).unwrap(); }
             }
             if !keep_game_data && !i.steam_imported {
-                if idp.exists() && gexe.exists() {
+                if idp.exists() && gexe.exists() || dlp.exists() || dlpp.exists() || dlr.exists() {
                     let r = fs::remove_dir_all(installdir.clone());
                     match r {
                         Ok(_) => {},
@@ -291,6 +285,7 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
+                log::debug!("Moving game data for \"{}\" from {} to {}", install_name, op, path);
                 std::thread::spawn(move || {
                     let ap = Path::new(op.as_ref()).to_path_buf();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id.clone(), install_name.clone(), "Game".to_string()).unwrap();
@@ -321,6 +316,7 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
+                log::debug!("Moving runner data for \"{}\" from {} to {}", install_name, op, path);
                 std::thread::spawn(move || {
                     let ap = Path::new(op.as_ref()).to_path_buf();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id.clone(), install_name.clone(), "Runner".to_string()).unwrap();
@@ -351,6 +347,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
+                log::debug!("Moving DXVK data for \"{}\" from {} to {}", install_name, op, path);
                 std::thread::spawn(move || {
                     let ap = Path::new(op.as_ref()).to_path_buf();
                     copy_dir_all(&app1, ap, &path.clone(), installation_id.clone(), install_name.clone(), "DXVK".to_string()).unwrap();
@@ -394,13 +391,10 @@ pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool)
 #[tauri::command]
 pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
-    let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
-        let p = Path::new(&settings.jadeite_path).to_path_buf();
         update_install_use_jadeite_by_id(&app, m.id, enabled);
-        if enabled { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "jadeite".to_string(), "v5.0.1-hotfix".to_string(), false); }
         Some(true)
     } else {
         None
@@ -416,9 +410,10 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
         let m = manifest.unwrap();
         let p = Path::new(&settings.xxmi_path).to_path_buf();
         let ps = p.to_str().unwrap().to_string();
+        log::debug!("XXMI {} for install {}", if enabled { "enabled" } else { "disabled" }, m.id);
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
         if enabled {
-            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi"/*, "efmi"*/] { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); }
+            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi", "efmi"] { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); }
         }
         Some(true)
     } else {
@@ -434,6 +429,7 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
     if manifest.is_some() {
         let m = manifest.unwrap();
         let p = Path::new(&settings.fps_unlock_path).to_path_buf();
+        log::debug!("FPS unlock {} for install {}", if enabled { "enabled" } else { "disabled" }, m.id);
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
         if enabled { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); }
         Some(true)
@@ -629,6 +625,7 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
+                log::debug!("Moving prefix data for \"{}\" from {} to {}", install_name, op, path);
                 std::thread::spawn(move || {
                     let ap = Path::new(op.as_ref());
                     copy_dir_all(&app1, ap, &path.clone(), installation_id.clone(), install_name.clone(), "Prefix".to_string()).unwrap();
@@ -677,11 +674,19 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
                     // Determine the download URL based on architecture
                     let mut dl_url = runnerp.url.clone();
-                    if let Some(ref urls) = runnerp.urls {
+                    if let Some(ref urls) = runnerp.urls.clone() {
                         #[cfg(target_arch = "x86_64")]
                         { dl_url = urls.x86_64.clone(); }
                         #[cfg(target_arch = "aarch64")]
                         { dl_url = if urls.aarch64.is_empty() { runnerp.url.clone() } else { urls.aarch64.clone() }; }
+                    }
+
+                    let mut dl_hash = runnerp.hash.clone();
+                    if let Some(ref urls) = runnerp.urls.clone() {
+                        #[cfg(target_arch = "x86_64")]
+                        { dl_hash = urls.x86_64_hash.clone(); }
+                        #[cfg(target_arch = "aarch64")]
+                        { dl_hash = if urls.aarch64.is_empty() { runnerp.hash.clone() } else { urls.aarch64_hash.clone() }; }
                     }
 
                     // Create/update database entry (will be marked as installed by download job on completion)
@@ -689,6 +694,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                     if ir.is_some() { update_installed_runner_is_installed_by_version(&app, version.clone(), false); } else { let _ = create_installed_runner(&app, version.clone(), false, rp.to_str().unwrap().to_string()); }
 
                     // Enqueue the download job via the queue system
+                    log::debug!("Queuing runner {} download for installation {}", version, m.id);
                     let state = app.state::<DownloadState>();
                     let q = state.queue.lock().unwrap().clone();
                     if let Some(queue) = q {
@@ -696,11 +702,13 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
                                 runner_version: version.clone(),
                                 runner_url: dl_url,
                                 runner_path: rp.to_str().unwrap().to_string(),
+                                runner_hash: dl_hash,
                         }));
                     }
                 }
             }
         } else {}
+        log::info!("Updated runner for installation {} to {}", m.id, version);
         crate::utils::db_manager::update_install_runner_version_by_id(&app, m.id.clone(), version);
         crate::utils::db_manager::update_install_runner_location_by_id(&app, m.id, rpn);
         Some(true)
@@ -786,7 +794,7 @@ pub fn update_install_dxvk_version(_app: AppHandle, _id: String, _version: Strin
 
 #[tauri::command]
 pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
-    let install = get_install_info_by_id(&app, id);
+    let install = get_install_info_by_id(&app, id.clone());
     let global_settings = get_settings(&app).unwrap();
 
     if install.is_some() {
@@ -794,10 +802,12 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
         let gmm = get_manifest_info_by_id(&app, m.clone().manifest_id).unwrap();
         let gm = get_manifest(&app, gmm.filename).unwrap();
 
+        log::info!("Launching game \"{}\" ({})", m.name, m.id);
         let appc = app.clone();
         std::thread::spawn(move || { let app = appc.clone(); launch(&app, m.clone(), gm, global_settings).unwrap() });
         Some(true)
     } else {
+        log::warn!("Failed to find game installation with id {}", id);
         show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to find game installation!", None, None);
         None
     }
@@ -825,7 +835,7 @@ pub fn check_game_running(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<String> {
+pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<DownloadSizesRsp> {
     let manifest = get_manifest(&app, biz + ".json");
 
     if manifest.is_some() {
@@ -842,23 +852,22 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
         }
 
         let p = PathBuf::from(&path);
-        let (a, t) = get_disk_space(p);
-        let stringified = serde_json::to_string(&DownloadSizesRsp {
+        let (a, t) = fischl::utils::get_disk_space(p);
+        Some(DownloadSizesRsp {
             game_decompressed_size: prettify_bytes(fss),
             free_disk_space: prettify_bytes(a),
             total_disk_space: prettify_bytes(t),
             game_decompressed_size_raw: fss,
             free_disk_space_raw: a,
             total_disk_space_raw: t,
-        }).unwrap();
-        Some(stringified)
+        })
     } else {
         None
     }
 }
 
 #[tauri::command]
-pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
+pub fn get_resume_states(app: AppHandle, install: String) -> Option<ResumeStatesRsp> {
     let install = get_install_info_by_id(&app, install);
 
     if install.is_some() {
@@ -907,8 +916,7 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<String> {
                 repairing: false,
             };
         }
-        let stringified = serde_json::to_string(&frsp).unwrap();
-        Some(stringified)
+        Some(frsp)
     } else {
         None
     }
@@ -944,9 +952,10 @@ Type=Application
 
                 let status = add_desktop_shortcut(file.clone(), content);
                 if status {
+                    log::info!("Created desktop shortcut for \"{}\" at {}", install.name, file.display());
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string(), );
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully created {} desktop shortcut.", install.name.as_str()).as_str(), None, None);
-                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to create {} desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", install.name.as_str()).as_str(), None, None); }
+                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to create {} desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", install.name.as_str()).as_str(), None, None); }
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
@@ -979,17 +988,19 @@ Type=Application
                 if flatpak_steam.exists() {
                     let status = add_steam_shortcut(flatpak_steam, install.name.as_str(), shortcut.clone());
                     if status {
+                        log::info!("Added \"{}\" to Steam (Flatpak)", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
                         show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully added {} to Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
-                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam (Flatpak)!", install.name.as_str()).as_str(), None, None); }
+                    } else { log::warn!("Failed to add \"{}\" to Steam (Flatpak)", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam (Flatpak)!", install.name.as_str()).as_str(), None, None); }
                 }
 
                 if normal_steam.exists() {
                     let status = add_steam_shortcut(normal_steam, install.name.as_str(), shortcut);
                     if status {
+                        log::info!("Added \"{}\" to Steam", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
                         show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
-                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None, None); }
+                    } else { log::warn!("Failed to add \"{}\" to Steam", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None, None); }
                 }
             }
             _ => {}
@@ -1006,9 +1017,10 @@ Type=Application
                 let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
                 let r = sl.create_lnk(file.as_path());
                 if r.is_ok() {
+                    log::info!("Created desktop shortcut for \"{}\" at {}", install.name, file.display());
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully created desktop shortcut. Find it on your desktop.", None, None);
-                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to create launch shortcut!", None, None); }
+                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to create launch shortcut!", None, None); }
             }
             "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
             _ => {}
@@ -1025,12 +1037,14 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
             "desktop" => {
                 let base = app.path().home_dir().unwrap().join(".local/share/applications");
                 let file = base.join(format!("{}.desktop", install.name.as_str()));
+                if !file.exists() { fs::write(file.clone(), "").unwrap(); }
 
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
+                    log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully deleted {} desktop shortcut.", install.name.as_str()).as_str(), None, None);
-                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None, None); }
+                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None, None); }
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
@@ -1039,10 +1053,12 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 if flatpak_steam.exists() {
                     let status = remove_steam_shortcut(flatpak_steam, install.name.as_str());
                     if status {
+                        log::info!("Removed \"{}\" from Steam (Flatpak)", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully removed {} from Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
                     } else {
                         // If flatpak Steam somehow exists but has no shortcut this will trigger an edge case with DB state
+                        log::warn!("Failed to remove \"{}\" from Steam (Flatpak), shortcut may have been manually deleted", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to remove {} from Steam (Flatpak)! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None, None);
                     }
@@ -1051,10 +1067,12 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 if normal_steam.exists() {
                     let status = remove_steam_shortcut(normal_steam, install.name.as_str());
                     if status {
+                        log::info!("Removed \"{}\" from Steam", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
                     } else {
                         // If normal Steam somehow exists but has no shortcut this will trigger an edge case with DB state
+                        log::warn!("Failed to remove \"{}\" from Steam, shortcut may have been manually deleted", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
                         show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to remove {} from Steam! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None, None);
                     }
@@ -1073,9 +1091,10 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
 
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
+                    log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully deleted desktop shortcut.", None, None);
-                } else { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None, None); }
+                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None, None); }
             }
             "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
             _ => {}
@@ -1087,27 +1106,16 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
 #[tauri::command]
 pub fn copy_authkey(app: AppHandle, id: String) -> bool {
     let install = get_install_info_by_id(&app, id).unwrap();
-    fn get_engine_log_from_game(game_name: String, region_code: String) -> String {
-        if game_name.to_ascii_lowercase().contains("genshin") { return "miHoYo/Genshin Impact/output_log.txt".to_string() }
-        if game_name.to_ascii_lowercase().contains("starrail") { return "Cognosphere/Star Rail/Player.log".to_string() }
-        if game_name.to_ascii_lowercase().contains("zenless") { return "miHoYo/ZenlessZoneZero/Player.log".to_string() }
-        if game_name.to_ascii_lowercase().contains("honkai") {
-            if region_code.to_ascii_lowercase().contains("glb_official") { return "miHoYo/Honkai Impact 3rd/Player.log".to_string() }
-            if region_code.to_ascii_lowercase().contains("overseas_official") { return "miHoYo/Honkai Impact 3/Player.log".to_string() }
-            if region_code.to_ascii_lowercase().contains("kr_official") { return "miHoYo/붕괴3rd/Player.log".to_string() }
-            if region_code.to_ascii_lowercase().contains("asia_offcial") { return "miHoYo/崩壊3rd/Player.log".to_string() }
-            if region_code.to_ascii_lowercase().contains("jp_official") { return "miHoYo/崩壊3rd/Player.log".to_string() }
-            return "miHoYo/Honkai Impact 3rd/Player.log".to_string()
-        }
-        "".to_string()
-    }
+    let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
+    let gm = get_manifest(&app, manifest.filename).unwrap();
 
     #[cfg(target_os = "linux")]
     {
         let prefix = Path::new(&install.runner_prefix).to_path_buf();
         let prefix_exists = prefix.join("pfx/").exists();
         if prefix_exists {
-            let engine_log = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/").join(get_engine_log_from_game(install.name, install.region_code));
+            let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
+            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
             if engine_log.exists() {
                 let log_content = fs::read_to_string(engine_log);
                 return match log_content {
@@ -1124,7 +1132,7 @@ pub fn copy_authkey(app: AppHandle, id: String) -> bool {
     #[cfg(target_os = "windows")]
     {
         let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
-        let engine_log = base.join(get_engine_log_from_game(install.name, install.region_code));
+        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
         if engine_log.exists() {
             let log_content = fs::read_to_string(engine_log);
             match log_content {
@@ -1145,6 +1153,7 @@ fn enqueue_extras_download(app: &AppHandle, path: String, package_id: String, pa
 }
 
 pub fn cancel_download_for_install(app: &AppHandle, install_id: &str) {
+    log::debug!("Cancelling active download and queued jobs for install {}", install_id);
     let state = app.state::<DownloadState>();
     // 1. Signal any running download to stop
     {

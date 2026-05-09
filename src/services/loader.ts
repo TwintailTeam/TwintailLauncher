@@ -241,10 +241,9 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         // This ensures ongoing downloads are visible immediately after frontend reload
         try {
           const { invoke } = await import('@tauri-apps/api/core');
-          const currentQueueState = await invoke('get_download_queue_state');
+          const currentQueueState = await invoke<any | null>('get_download_queue_state');
           if (currentQueueState && !cancelled) {
-            const parsed = JSON.parse(currentQueueState as string);
-            opts.applyEventState({ downloadQueueState: parsed });
+            opts.applyEventState({ downloadQueueState: currentQueueState });
           }
         } catch (e) {
           console.warn("Could not fetch initial download queue state:", e);

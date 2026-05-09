@@ -210,6 +210,9 @@ export default function DownloadsPage({
     // Derive paused state - job is paused if it's in pausedJobs or queue is paused
     const isPaused = isQueuePaused || currentJob?.status === 'paused' || (pausedJob !== null && runningJobs.length === 0);
 
+    // Derive if job is pausable
+    const canPause = currentJob && !["runner_download", "steamrt_download", "steamrt4_download", "xxmi_download", "extras_download"].includes(currentJob.kind);
+
     // Calculate progress values
     const progressBytes = currentProgress?.progress ?? 0;
     const totalBytes = currentProgress?.total ?? 0;
@@ -828,24 +831,28 @@ export default function DownloadsPage({
                                                         ) : null
                                                     ) : null}
                                                 </div>
-                                                <button
-                                                    onClick={isPaused ? handleResume : handlePause}
-                                                    disabled={isPausing && !isPaused}
-                                                    className={`w-9 h-9 rounded-md flex items-center justify-center transition-colors shadow-sm ${isPausing && !isPaused
-                                                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                                        }`}
-                                                >
-                                                    {isPaused ? (
-                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M5 3v18l15-9L5 3z" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
-                                                        </svg>
+                                                <>
+                                                    {canPause && (
+                                                        <button
+                                                            onClick={isPaused ? handleResume : handlePause}
+                                                            disabled={isPausing && !isPaused}
+                                                            className={`w-9 h-9 rounded-md flex items-center justify-center transition-colors shadow-sm ${isPausing && !isPaused
+                                                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                            }`}
+                                                        >
+                                                            {isPaused ? (
+                                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M5 3v18l15-9L5 3z" />
+                                                                </svg>
+                                                            ) : (
+                                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                                                    <path d="M6 4h4v16H6zM14 4h4v16h-4z" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
                                                     )}
-                                                </button>
+                                                </>
                                             </div>
                                         </div>
                                     </div>

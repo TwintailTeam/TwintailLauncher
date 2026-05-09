@@ -103,7 +103,7 @@ export const ModernInput = ({ label, description, helpText, value, onChange, onB
                     onChange={(e) => setLocalValue(e.target.value)}
                     onBlur={handleSave}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter") {
+                        if (e.key === "Enter" || e.key === "Escape") {
                             handleSave();
                             (e.target as HTMLInputElement).blur();
                         }
@@ -165,7 +165,7 @@ export const ModernPathInput = ({ label, description, value, onChange, folder = 
                         onChange={(e) => setLocalValue(e.target.value)}
                         onBlur={handleSave}
                         onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                            if (e.key === "Enter" || e.key === "Escape") {
                                 handleSave();
                                 (e.target as HTMLInputElement).blur();
                             }

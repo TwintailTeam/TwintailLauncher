@@ -277,11 +277,13 @@ pub fn load_manifests(app: &AppHandle) {
                                                                         if installedr.is_none() { create_installed_runner(&app, first.version.clone(), true, np.clone()).unwrap(); } else { update_installed_runner_is_installed_by_version(&app, first.version.clone(), true); }
                                                                         let mut dl_url = first.url.clone();
                                                                         if let Some(ref urls) = first.urls { #[cfg(target_arch = "x86_64")] { dl_url = urls.x86_64.clone(); } #[cfg(target_arch = "aarch64")] { dl_url = if urls.aarch64.is_empty() { first.url.clone() } else { urls.aarch64.clone() }; } }
+                                                                        let mut dl_hash = first.hash.clone();
+                                                                        if let Some(ref urls) = first.urls { #[cfg(target_arch = "x86_64")] { dl_hash = urls.x86_64_hash.clone(); } #[cfg(target_arch = "aarch64")] { dl_hash = if urls.aarch64.is_empty() { first.hash.clone() } else { urls.aarch64_hash.clone() }; } }
                                                                         if !pp.exists() {
                                                                             fs::create_dir_all(&pp).unwrap();
-                                                                            run_async_command(async { fischl::compat::download_runner(dl_url.clone(), pp.to_str().unwrap().to_string(),true, move |_current, _total, _net, _disk| {}, move |_current, _total| {}).await });
+                                                                            run_async_command(async { fischl::compat::download_runner(dl_url.clone(), pp.to_str().unwrap().to_string(), dl_hash, true, move |_current, _total, _net, _disk| {}, move |_current, _total| {}).await });
                                                                         } else {
-                                                                            run_async_command(async { fischl::compat::download_runner(dl_url, pp.to_str().unwrap().to_string(),true, move |_current, _total, _net, _disk| {}, move |_current, _total| {}).await });
+                                                                            run_async_command(async { fischl::compat::download_runner(dl_url, pp.to_str().unwrap().to_string(), dl_hash, true, move |_current, _total, _net, _disk| {}, move |_current, _total| {}).await });
                                                                         }
                                                                         update_install_runner_location_by_id(&app, i.id.clone(), np.clone());
                                                                         update_install_runner_version_by_id(&app, i.id, first.version.clone());

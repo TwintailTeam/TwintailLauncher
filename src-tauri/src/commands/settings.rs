@@ -1,35 +1,24 @@
-use crate::utils::db_manager::{
-    get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id,
-    get_settings, update_settings_default_dxvk_location,
-    update_settings_default_fps_unlock_location, update_settings_default_game_location,
-    update_settings_default_jadeite_location, update_settings_default_mangohud_config_location,
-    update_settings_default_prefix_location, update_settings_default_runner_location,
-    update_settings_default_xxmi_location, update_settings_download_speed_limit,
-    update_settings_hide_manifests, update_settings_launch_action,
-    update_settings_third_party_repo_update
-};
+use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_download_speed_limit, update_settings_hide_app_to_tray, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
+use crate::utils::models::GlobalSettings;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{get_mi_path_from_game, show_dialog_with_callback};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle};
+use tauri::{AppHandle,Manager};
 use tauri_plugin_opener::OpenerExt;
 
-#[cfg(target_os = "linux")]
-use tauri::Manager;
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 
 #[tauri::command]
-pub async fn list_settings(app: AppHandle) -> Option<String> {
+pub async fn list_settings(app: AppHandle) -> Option<GlobalSettings> {
     let settings = get_settings(&app);
 
     if settings.is_some() {
         let s = settings.unwrap();
         // Ensure fischl's global limiter is synced with persisted settings (value in KB/s).
         fischl::utils::downloader::set_global_download_speed_limit_kb(s.download_speed_limit.max(0) as u64);
-        let stringified = serde_json::to_string(&s).unwrap();
-        Some(stringified)
+        Some(s)
     } else {
         None
     }
@@ -59,6 +48,7 @@ pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_game_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default game path to {}", path);
     Some(true)
 }
 
@@ -72,6 +62,7 @@ pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_xxmi_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default XXMI path to {}", path);
     Some(true)
 }
 
@@ -85,6 +76,7 @@ pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> 
     } else {
         update_settings_default_fps_unlock_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default FPS unlock path to {}", path);
     Some(true)
 }
 
@@ -98,6 +90,7 @@ pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Opt
     } else {
         update_settings_default_jadeite_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default Jadeite path to {}", path);
     Some(true)
 }
 
@@ -111,6 +104,7 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
     } else {
         update_settings_default_prefix_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default prefix path to {}", path);
     Some(true)
 }
 
@@ -124,6 +118,7 @@ pub fn update_settings_default_runner_path(app: AppHandle, path: String) -> Opti
     } else {
         update_settings_default_runner_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default runner path to {}", path);
     Some(true)
 }
 
@@ -137,6 +132,7 @@ pub fn update_settings_default_dxvk_path(app: AppHandle, path: String) -> Option
     } else {
         update_settings_default_dxvk_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default DXVK path to {}", path);
     Some(true)
 }
 
@@ -150,6 +146,7 @@ pub fn update_settings_default_mangohud_config_path(app: AppHandle, path: String
     } else {
         update_settings_default_mangohud_config_location(&app, p.to_str().unwrap().parse().unwrap());
     }
+    log::debug!("Updated default MangoHUD config path to {}", path);
     Some(true)
 }
 
@@ -166,7 +163,14 @@ pub fn update_settings_manifests_hide(app: AppHandle, enabled: bool) -> Option<b
 }
 
 #[tauri::command]
+pub fn update_settings_hide_app_tray(app: AppHandle, enabled: bool) -> Option<bool> {
+    update_settings_hide_app_to_tray(&app, enabled);
+    Some(true)
+}
+
+#[tauri::command]
 pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
+    log::debug!("Opening {} folder for install {}", path_type, install_id);
     match path_type.as_str() {
         "mods" => {
             let settings = get_settings(&app);
@@ -240,6 +244,41 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None, None); };
             }
         }
+        "engine_log" => {
+            let install = get_install_info_by_id(&app, install_id);
+            if install.is_some() {
+                let i = install.unwrap();
+                let manifest = get_manifest_info_by_id(&app, i.manifest_id).unwrap();
+                let gm = get_manifest(&app, manifest.filename).unwrap();
+                #[cfg(target_os = "linux")]
+                {
+                    let prefix = Path::new(&i.runner_prefix).to_path_buf();
+                    let prefix_exists = prefix.join("pfx/").exists();
+                    if prefix_exists {
+                        let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
+                        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, i.region_code));
+                        if engine_log.exists() {
+                            match app.opener().reveal_item_in_dir(engine_log.as_path()) {
+                                Ok(_) => {}
+                                Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
+                            }
+                        } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open game engine log directory, Is runner prefix initialized?", None, None); }
+                    } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open runner prefix directory, Is runner prefix initialized?", None, None); }
+                }
+
+                #[cfg(target_os = "windows")]
+                {
+                    let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
+                    let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, i.region_code));
+                    if engine_log.exists() {
+                        match app.opener().reveal_item_in_dir(engine_log.as_path()) {
+                            Ok(_) => {}
+                            Err(_e) => { crate::utils::show_dialog_with_callback(&app, "error", "TwintailLauncher", "Directory opening failed, try again later!", None, None); }
+                        }
+                    } else { crate::utils::show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not open game engine log directory, Is runner prefix initialized?", None, None); }
+                }
+            }
+        }
         _ => {}
     }
 }
@@ -254,11 +293,33 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
                 let fp = Path::new(&i.runner_prefix);
                 if fp.exists() {
                     match crate::utils::empty_dir(fp) {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            log::info!("Cleared runner prefix for installation {}", i.id);
+                            show_dialog_with_callback(&app, "info", "TwintailLauncher", "Runner prefix has been put into repair state. Please launch the game to regenerate the prefix.", None, None);
+                        }
                         Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Runner prefix repair failed, try again later!", None, None); }
                     }
                 } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair runner prefix directory, Is runner prefix initialized?", None, None); };
             }
+        }
+        "steamrt" => {
+            let gs = get_settings(&app).unwrap();
+            let steamrt3 = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
+            if steamrt3.exists() {
+                match crate::utils::empty_dir(steamrt3) {
+                    Ok(_) => { log::info!("Cleared SteamRT3 for repair"); }
+                    Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT3 repair failed, try again later!", None, None); }
+                }
+            } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT3, Is it properly downloaded?", None, None); };
+
+            let steamrt4 = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
+            if steamrt4.exists() {
+                match crate::utils::empty_dir(steamrt4) {
+                    Ok(_) => { log::info!("Cleared SteamRT4 for repair"); }
+                    Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT4 repair failed, try again later!", None, None); }
+                }
+            } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not repair SteamRT4, Is it properly downloaded?", None, None); };
+            show_dialog_with_callback(&app, "info", "TwintailLauncher", "SteamRT has been set into repair state, please restart the application to redownload.", Some(vec!["Restart Now"]), Some("dialog_steamrt_repair"));
         }
         _ => {}
     }
@@ -267,6 +328,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
 #[allow(unused_variables)]
 #[tauri::command]
 pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
+    log::info!("Spawning {} in prefix for installation {}", path_type, install_id);
     match path_type.as_str() {
         "regedit.exe" => {
             #[cfg(target_os = "linux")] {
@@ -509,6 +571,95 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                         }
                     } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute winecfg.exe, Is runner downloaded properly?", None, None); };
                 }
+            }
+        }
+        // Diagnostics and logs
+        "steamrt3" => {
+            #[cfg(target_os = "linux")]
+            {
+                let gs = get_settings(&app).unwrap();
+                let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt3/");
+                if fp.exists() {
+                    log::info!("Running SteamRT3 diagnostics");
+                    let steamrtp = fp.join("run");
+                    let steamrt = steamrtp.to_str().unwrap().to_string();
+
+                    let log_path = app.path().app_log_dir().unwrap().join("custom/");
+                    if !log_path.exists() { let _ = fs::create_dir_all(&log_path); }
+                    let log_path_file = log_path.join("steamrt3_diagnostics.log");
+                    if log_path_file.exists() { let _ = fs::remove_file(&log_path_file); }
+                    let log_file = fs::File::create(&log_path_file).expect("Failed to create log file");
+                    let log_file_stderr = log_file.try_clone().expect("Failed to clone log file handle");
+
+                    let command = format!("'{steamrt}' steam-runtime-system-info --verbose");
+                    let mut cmd = std::process::Command::new("bash");
+                    cmd.arg("-c");
+                    cmd.arg(&command);
+
+                    cmd.stdout(std::process::Stdio::from(log_file));
+                    cmd.stderr(std::process::Stdio::from(log_file_stderr));
+                    cmd.current_dir(fp.clone());
+                    cmd.process_group(0);
+
+                    match cmd.spawn() {
+                        Ok(mut child) => match child.try_wait() {
+                            Ok(Some(status)) => {
+                                if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to dump steamrt3 diagnostics! Please try again.", None, None); }
+                            }
+                            Ok(None) => {}
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Please try again or check the command correctness.", None, None); }
+                        },
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Something serious is wrong.", None, None); }
+                    }
+                    match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT3 log directory opening failed, try again later!", None, None); }
+                    }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute steam-runtime-system-info, Is steamrt3 downloaded properly?", None, None); };
+            }
+        }
+        "steamrt4" => {
+            #[cfg(target_os = "linux")]
+            {
+                let gs = get_settings(&app).unwrap();
+                let fp = Path::new(&gs.default_runner_path).join("steamrt/steamrt4/");
+                if fp.exists() {
+                    log::info!("Running SteamRT4 diagnostics");
+                    let steamrtp = fp.join("run");
+                    let steamrt = steamrtp.to_str().unwrap().to_string();
+
+                    let log_path = app.path().app_log_dir().unwrap().join("custom/");
+                    if !log_path.exists() { let _ = fs::create_dir_all(&log_path); }
+                    let log_path_file = log_path.join("steamrt4_diagnostics.log");
+                    if log_path_file.exists() { let _ = fs::remove_file(&log_path_file); }
+                    let log_file = fs::File::create(&log_path_file).expect("Failed to create log file");
+                    let log_file_stderr = log_file.try_clone().expect("Failed to clone log file handle");
+
+                    let command = format!("'{steamrt}' steam-runtime-system-info --verbose");
+                    let mut cmd = std::process::Command::new("bash");
+                    cmd.arg("-c");
+                    cmd.arg(&command);
+
+                    cmd.stdout(std::process::Stdio::from(log_file));
+                    cmd.stderr(std::process::Stdio::from(log_file_stderr));
+                    cmd.current_dir(fp.clone());
+                    cmd.process_group(0);
+
+                    match cmd.spawn() {
+                        Ok(mut child) => match child.try_wait() {
+                            Ok(Some(status)) => {
+                                if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to dump steamrt3 diagnostics! Please try again.", None, None); }
+                            }
+                            Ok(None) => {}
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Please try again or check the command correctness.", None, None); }
+                        },
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute steam-runtime-system-info command! Something serious is wrong.", None, None); }
+                    }
+                    match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
+                        Ok(_) => {}
+                        Err(_e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "SteamRT4 log directory opening failed, try again later!", None, None); }
+                    }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Can not execute steam-runtime-system-info, Is steamrt3 downloaded properly?", None, None); };
             }
         }
         _ => {}

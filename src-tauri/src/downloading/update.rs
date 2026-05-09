@@ -5,7 +5,6 @@ use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, 
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog_with_callback};
 use fischl::download::game::{Game, Kuro, Sophon, Zipped};
-use fischl::utils::free_space::available;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -62,6 +61,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         let gbiz = gm.biz.clone();
 
         let instn = Arc::new(install.name.clone());
+        log::info!("Starting game update for \"{}\" ({})", install.name, install.id);
         let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
         let mut dlp = dlpayload.lock().unwrap();
@@ -97,9 +97,10 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     let mut ok = true;
                     for e in files.iter() {
                         let url = e.file_url.clone();
+                        let hash = e.file_hash.clone();
                         let cancel_token = cancel_token.clone();
                         let dl_ok = run_async_command(async {
-                            <Game as Zipped>::download(url.clone(), install.directory.clone(), true, false, {
+                            <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), true, false, {
                                     let dlpayload = dlpayload.clone();
                                     let h5 = h5.clone();
                                     let instn = instn.clone();
@@ -147,7 +148,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             }
                         });
                         if ext {
-                            if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
+                            if patching_path.exists() { let _ = fs::remove_dir_all(&patching_path); }
                             update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_FILE (full), marking as complete", install.name);
@@ -176,9 +177,10 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             let mut ok = true;
                             for e in diff_files.iter() {
                                 let url = e.file_url.clone();
+                                let hash = e.file_hash.clone();
                                 let cancel_token = cancel_token.clone();
                                 let dl_ok = run_async_command(async {
-                                    <Game as Zipped>::download(url.clone(), install.directory.clone(), true, false,{
+                                    <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), true, false,{
                                             let dlpayload = dlpayload.clone();
                                             let h5 = h5.clone();
                                             let instn = instn.clone();
@@ -210,35 +212,33 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 let fnn = first.file_url.split('/').last().unwrap_or_default().to_string();
                                 let archive_path = patching_path.join("staging").join(fnn);
                                 let far = archive_path.to_str().unwrap().to_string();
-                                let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
-                                    let dlpayload = dlpayload.clone();
-                                    let h5 = h5.clone();
-                                    let instn = instn.clone();
-                                    let job_id = job_id.clone();
-                                    move |current, total| {
-                                        let mut dlp = dlpayload.lock().unwrap();
-                                        dlp.insert("job_id", job_id.to_string());
-                                        dlp.insert("name", instn.to_string());
-                                        dlp.insert("install_progress", current.to_string());
-                                        dlp.insert("install_total", total.to_string());
-                                        dlp.insert("phase", "3".to_string());
-                                        h5.emit("update_progress", dlp.clone()).unwrap();
-                                    }
+                                let hash = first.file_hash.clone();
+                                let ext = run_async_command(async {
+                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), {
+                                        let dlpayload = dlpayload.clone();
+                                        let h5 = h5.clone();
+                                        let instn = instn.clone();
+                                        let job_id = job_id.clone();
+                                        move |_download_current, _download_total, install_current, install_total, _net_speed, _disk_speed, phase| {
+                                            let mut dlp = dlpayload.lock().unwrap();
+                                            dlp.insert("job_id", job_id.to_string());
+                                            dlp.insert("name", instn.to_string());
+                                            dlp.insert("install_progress", install_current.to_string());
+                                            dlp.insert("install_total", install_total.to_string());
+                                            dlp.insert("phase", phase.to_string());
+                                            h5.emit("update_progress", dlp.clone()).unwrap();
+                                        }
+                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                                 });
                                 ok = ext;
                                 if ok {
-                                    let delete_list = Path::new(&install.directory).join("delete_files.txt");
-                                    if delete_list.exists() {
-                                        if let Ok(contents) = fs::read_to_string(&delete_list) { for line in contents.lines() { let line = line.trim(); if !line.is_empty() { let _ = fs::remove_file(Path::new(&install.directory).join(line)); } } }
-                                        let _ = fs::remove_file(&delete_list);
-                                    }
-                                    if patching_path.exists() { fs::remove_dir_all(&patching_path).unwrap_or_default(); }
+                                    if patching_path.exists() { let _ = fs::remove_dir_all(&patching_path); }
                                     update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
                                     h5.emit("update_complete", ()).unwrap();
                                     log::debug!("Successfully updated {} using DOWNLOAD_MODE_FILE (endfield_global), marking as complete", install.name);
+                                    success = true;
                                     #[cfg(target_os = "linux")]
                                     crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
-                                    success = true;
                                 } else {
                                     if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
                                     h5.emit("update_complete", ()).unwrap();
@@ -323,7 +323,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     // we have diffs update the game
                     let total_size: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
                     let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
-                    let available = available(install.directory.clone());
+                    let available = fischl::utils::available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
                         log::debug!("Starting update of {} using DOWNLOAD_MODE_CHUNK, total size: {}, available space: {:?}", install.name, total_size, available);
@@ -371,7 +371,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                         }
                         if ok {
-                            if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
+                            if patching_marker.exists() { let _ = fs::remove_dir_all(&patching_marker); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_CHUNK, marking as complete", install.name);
@@ -399,7 +399,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 } else {
                     // we have diffs update the game
                     let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
-                    let available = available(install.directory.clone());
+                    let available = fischl::utils::available(install.directory.clone());
                     let has_space = if let Some(av) = available { av >= total_size } else { false };
                     if has_space {
                         #[cfg(target_os = "linux")]
@@ -431,7 +431,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                         });
                         if rslt {
-                            if patching_marker.exists() { fs::remove_dir_all(&patching_marker).unwrap_or_default(); }
+                            if patching_marker.exists() { let _ = fs::remove_dir_all(&patching_marker); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Successfully updated {} using DOWNLOAD_MODE_RAW, marking as complete", install.name);
@@ -469,6 +469,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             tokens.remove(&install_id);
         }
         if cancelled {
+            log::info!("Update cancelled for \"{}\"", install.name);
             let mut dlp = HashMap::new();
             dlp.insert("job_id", job_id.to_string());
             dlp.insert("name", install.name.clone());
@@ -476,14 +477,16 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             return QueueJobOutcome::Cancelled;
         }
         if success {
+            log::info!("Update completed for \"{}\" ({})", install.name, install.id);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Completed
         } else {
+            log::warn!("Update failed for \"{}\" ({})", install.name, install.id);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Failed
         }
     } else {
-        log::debug!("Failed to update game, wtf??? we are SO FUCKED!");
+        log::warn!("Cannot start update: manifest not found for install {}", install_id);
         QueueJobOutcome::Failed
     }
 }

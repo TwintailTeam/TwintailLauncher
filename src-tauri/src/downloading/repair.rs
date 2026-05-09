@@ -33,9 +33,10 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     let job_id = Arc::new(job_id);
     let install_id = payload.install.clone();
     let install = get_install_info_by_id(&h5, payload.install.clone());
-    if install.is_none() { eprintln!("Failed to find installation for repair!");return QueueJobOutcome::Failed; }
+    if install.is_none() { log::warn!("Cannot start repair: install {} not found", payload.install); return QueueJobOutcome::Failed; }
 
     let i = install.unwrap();
+    log::info!("Starting game repair for \"{}\" ({})", i.name, i.id);
     let lm = match get_manifest_info_by_id(&h5, i.manifest_id.clone()) {
         Some(v) => v,
         None => return QueueJobOutcome::Failed,
@@ -79,8 +80,8 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     let mut success = false;
     match picked.metadata.download_mode.as_str() {
         "DOWNLOAD_MODE_FILE" => {
-            let install_dir = std::path::Path::new(&i.directory);
-            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let install_dir = std::path::Path::new(&i.directory).to_path_buf();
+            if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
             let files = picked.game.full.clone();
@@ -91,9 +92,10 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             let mut ok = true;
             for e in files.iter() {
                 let url = e.file_url.clone();
+                let hash = e.file_hash.clone();
                 let cancel_token = cancel_token.clone();
                 let dl_ok = run_async_command(async {
-                    <Game as Zipped>::download(url.clone(), i.directory.clone(), false, true, {
+                    <Game as Zipped>::download(url.clone(), hash.clone(), i.directory.clone(), false, true, {
                             let dlpayload = dlpayload.clone();
                             let h5 = h5.clone();
                             let instn = instn.clone();
@@ -122,9 +124,8 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             if ok {
                 let first = urls.get(0).unwrap();
                 let fnn = first.split('/').last().unwrap_or_default().to_string();
-                let ap = std::path::Path::new(&i.directory).to_path_buf();
-                let downloading_path = ap.join("downloading");
-                let archive_path = downloading_path.join("staging").join(fnn.clone());
+                let repairing_path = install_dir.join("repairing");
+                let archive_path = repairing_path.join("staging").join(fnn.clone());
                 let far = archive_path.to_str().unwrap().to_string();
                 log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, i.directory);
                 let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
@@ -143,7 +144,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     }
                 });
                 if ext {
-                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                     h5.emit("repair_complete", ()).unwrap();
                     log::debug!("Extraction complete for {}, marking repair as complete", i.name);
                     success = true;
@@ -157,6 +158,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         "DOWNLOAD_MODE_CHUNK" => {
             let install_dir = std::path::Path::new(&i.directory);
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let repairing_path = install_dir.join("repairing");
 
             log::debug!("Starting repair for {} with DOWNLOAD_MODE_CHUNK", i.name);
             let urls = if gm.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == i.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
@@ -211,6 +213,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
             }
             if ok {
+                if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_CHUNK", i.name);
                 success = true;
@@ -223,6 +226,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         "DOWNLOAD_MODE_RAW" => {
             let install_dir = std::path::Path::new(&i.directory);
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let repairing_path = install_dir.join("repairing");
             #[cfg(target_os = "linux")]
             crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string());
 
@@ -252,6 +256,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     }, Some(cancel_token.clone()), Some(verified_files.clone())).await
             });
             if rslt {
+                if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_RAW", i.name);
                 success = true;
@@ -264,8 +269,8 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             }
         }
         "DOWNLOAD_MODE_MULTIFILE" => {
-            let install_dir = std::path::Path::new(&i.directory);
-            if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+            let install_dir = std::path::Path::new(&i.directory).to_path_buf();
+            if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
             log::debug!("Starting game repair using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
             let files = picked.game.full.clone();
@@ -277,9 +282,10 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
             let mut ok = true;
             for (_file_idx, e) in files.iter().enumerate() {
                 let url = e.file_url.clone();
+                let hash = e.file_hash.clone();
                 let cancel_token = cancel_token.clone();
                 let dl_ok = run_async_command(async {
-                    <Game as Zipped>::download(url.clone(), i.directory.clone(), false, true,{
+                    <Game as Zipped>::download(url.clone(), hash.clone(), i.directory.clone(), false, true,{
                             let dlpayload = dlpayload.clone();
                             let h5 = h5.clone();
                             let instn = instn.clone();
@@ -306,12 +312,11 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
             }
             if ok {
-                let ap = std::path::Path::new(&i.directory).to_path_buf();
-                let downloading_path = ap.join("downloading");
+                let repairing_path = install_dir.join("repairing");
                 ok = true;
                 for (file_idx, e) in files.iter().enumerate() {
                     let fnn = e.file_url.split('/').last().unwrap_or_default().to_string();
-                    let archive_path = downloading_path.join("staging").join(&fnn);
+                    let archive_path = repairing_path.join("staging").join(&fnn);
                     let far = archive_path.to_str().unwrap().to_string();
                     let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                     if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
@@ -337,7 +342,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     cumulative_install.fetch_add(file_install_size, Ordering::SeqCst);
                 }
                 if ok {
-                    if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                    if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                     h5.emit("repair_complete", ()).unwrap();
                     log::debug!("All {} archives extracted for {}, marking repair as complete", total_files, i.name);
                     success = true;
@@ -369,6 +374,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
     }
 
     if cancelled {
+        log::info!("Repair cancelled for \"{}\"", i.name);
         let mut dlp = HashMap::new();
         dlp.insert("job_id", job_id.to_string());
         dlp.insert("name", i.name.clone());
@@ -376,9 +382,11 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
         return QueueJobOutcome::Cancelled;
     }
     if success {
+        log::info!("Repair completed for \"{}\" ({})", i.name, i.id);
         { verified_files.lock().unwrap().clear(); }
         QueueJobOutcome::Completed
     } else {
+        log::warn!("Repair failed for \"{}\" ({})", i.name, i.id);
         { verified_files.lock().unwrap().clear(); }
         QueueJobOutcome::Failed
     }

@@ -39,7 +39,8 @@ interface IProps {
 }
 
 export default function DownloadGame({ disk, setOpenPopup, displayName, settings, biz, versions, background, icon, pushInstalls, runnerVersions, dxvkVersions, setCurrentInstall, fetchDownloadSizes, openAsExisting, setCurrentPage, imageVersion = 0 }: IProps) {
-    const [skipGameDownload] = useState<boolean>(!!openAsExisting);
+    const [skipGameDownload, setSkipGameDownload] = useState(!!openAsExisting);
+    useEffect(() => { setSkipGameDownload(!!openAsExisting); }, [openAsExisting]);
     const [selectedGameVersion, setSelectedGameVersion] = useState(versions?.[0]?.value || "");
     const [isVersionOpen, setIsVersionOpen] = useState(false);
 
@@ -136,7 +137,6 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
             let vpp = selectedAudioLang;
             let rvv = selectedRunnerVersion || "none";
             let dvv = selectedDxvkVersion || "none";
-            let skipdl = skipGameDownload;
             invoke("add_install", {
                 manifestId: biz,
                 version: gvv,
@@ -160,7 +160,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 fpsValue: "60",
                 runnerPrefix: runnerPrefixPath,
                 launchArgs: "",
-                skipGameDl: skipdl,
+                skipGameDl: skipGameDownload,
                 regionCode: selectedRegionCode
             }).then((r: any) => {
                 if (r.success) {
@@ -169,7 +169,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                     setTimeout(() => {
                         let installui = document.getElementById(r.install_id);
                         if (installui) installui.focus();
-                        if (!skipdl) {
+                        if (!skipGameDownload && (!r.skip_dl || !r.steam_imported)) {
                             emit("start_game_download", { install: r.install_id, biz: biz, lang: vpp, region: selectedRegionCode }).then(() => { });
                         }
                     }, 20);

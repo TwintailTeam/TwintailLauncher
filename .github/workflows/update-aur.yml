@@ -1,0 +1,149 @@
+name: update-aur.yml
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. ttl-v0.6.9)"
+        required: true
+
+jobs:
+  update-aur-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          fi
+      - name: Generate PKGBUILD-s
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          PKGV="${VERSION#ttl-v}"
+          echo "VERSION is: $VERSION"
+          echo "PKGVER is: $PKGV"
+          # Calculate checksums
+          x86_64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGV}_amd64.deb"
+          aarch64_url="https://github.com/TwintailTeam/TwintailLauncher/releases/download/$VERSION/twintaillauncher_${PKGV}_arm64.deb"
+          echo "Downloading and calculating checksums..."
+          curl -L "$x86_64_url" -o twintaillauncher-${PKGV}.deb
+          curl -L "$aarch64_url" -o twintaillauncher-${PKGV}-arm64.deb
+          x86_64_sum=$(sha256sum twintaillauncher-${PKGV}.deb | cut -d' ' -f1)
+          aarch64_sum=$(sha256sum twintaillauncher-${PKGV}-arm64.deb | cut -d' ' -f1)
+
+          mkdir ttl-bin/
+          cat > ttl-bin/PKGBUILD << EOF
+          pkgname=twintaillauncher-bin
+          _pkgname="\${pkgname%-bin}"
+          pkgver=${PKGV}
+          pkgrel=1
+          pkgdesc="A multi-platform launcher for your anime games"
+          arch=('x86_64' 'aarch64')
+          url="https://github.com/TwintailTeam/TwintailLauncher"
+          license=('GPL-3.0-only')
+          depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator' 'mangohud')
+          optdepends=('gamemode: Feral Interactive gamemode utility')
+          options=('!debug')
+          provides=("twintaillauncher")
+          conflicts=("twintaillauncher-git" "twintaillauncher")
+          source_x86_64=("\${_pkgname}-\${pkgver}-amd64.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_amd64.deb")
+          source_aarch64=("\${_pkgname}-\${pkgver}-arm64.deb::\${url}/releases/download/ttl-v\${pkgver}/twintaillauncher_\${pkgver}_arm64.deb")
+          sha256sums_x86_64=('$x86_64_sum')
+          sha256sums_aarch64=('$aarch64_sum')
+          
+          build() {
+            bsdtar -x -f data.tar.gz
+          }
+  
+          package() {
+            install -Dm755 usr/bin/twintaillauncher -t "\$pkgdir/usr/bin"
+            install -Dm755 usr/lib/twintaillauncher/resources/reaper -t "\$pkgdir/usr/lib/twintaillauncher/resources"
+            install -Dm755 usr/lib/twintaillauncher/resources/winetricks -t "\$pkgdir/usr/lib/twintaillauncher/resources"
+            install -Dm644 usr/lib/twintaillauncher/resources/hkrpg_patch.dll -t "\$pkgdir/usr/lib/twintaillauncher/resources"
+            install -Dm644 usr/share/icons/hicolor/32x32/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/32x32/apps/\$_pkgname.png"
+            install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$_pkgname.png"
+            install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$_pkgname.png"
+            install -Dm644 usr/share/applications/twintaillauncher.desktop -t "\$pkgdir/usr/share/applications"
+          }
+          EOF
+
+          mkdir ttl-stable-src/
+          cat > ttl-stable-src/PKGBUILD << EOF
+          pkgname=twintaillauncher
+          pkgver=${PKGV}
+          pkgrel=1
+          _dirname="TwintailLauncher-ttl-v\${pkgver}"
+          pkgdesc='A multi-platform launcher for your anime games'
+          arch=('x86_64' 'aarch64')
+          license=('GPL-3.0-only')
+          url=https://github.com/TwintailTeam/TwintailLauncher
+          depends=('cairo' 'desktop-file-utils' 'gdk-pixbuf2' 'glib2' 'gtk3' 'hicolor-icon-theme' 'pango' 'webkit2gtk-4.1' 'libappindicator-gtk3' 'libayatana-appindicator' 'mangohud')
+          optdepends=('gamemode: Feral Interactive gamemode utility')
+          makedepends=('git' 'openssl' 'appmenu-gtk-module' 'libappindicator-gtk3' 'librsvg' 'cargo' 'pnpm' 'nodejs')
+          provides=("twintaillauncher")
+          conflicts=("twintaillauncher-git" "twintaillauncher-bin")
+          source=("\${pkgname}-\${pkgver}.tar.gz::\${url}/archive/refs/tags/ttl-v\${pkgver}.tar.gz")
+          sha256sums=('SKIP')
+          options=('!lto' '!debug')
+
+          prepare() {
+            cd \$_dirname
+            pnpm i
+          }
+
+          build() {
+            cd \$_dirname
+            pnpm build:native --no-bundle
+          }
+
+          package() {
+            install -Dm644 "\$_dirname/LICENSE" -t "\$pkgdir/usr/share/licenses/\$pkgname"
+            install -Dm755 "\$_dirname/src-tauri/target/release/resources/reaper" -t "\$pkgdir/usr/lib/twintaillauncher/resources/"
+            install -Dm755 "\$_dirname/src-tauri/target/release/resources/winetricks" -t "\$pkgdir/usr/lib/twintaillauncher/resources/"
+            install -Dm644 "\$_dirname/src-tauri/target/release/resources/hkrpg_patch.dll" -t "\$pkgdir/usr/lib/twintaillauncher/resources/"
+            install -Dm755 "\$_dirname/src-tauri/target/release/twintaillauncher" -t "\$pkgdir/usr/bin"
+            install -Dm644 "\$_dirname/twintaillauncher.desktop" -t "\$pkgdir/usr/share/applications"
+            install -Dm644 "\$_dirname/src-tauri/icons/32x32.png" "\$pkgdir/usr/share/icons/hicolor/32x32/apps/\$pkgname.png"
+            install -Dm644 "\$_dirname/src-tauri/icons/128x128.png" "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$pkgname.png"
+            install -Dm644 "\$_dirname/src-tauri/icons/128x128@2x.png" "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$pkgname.png"
+          }
+          EOF
+      - name: Test PKGBUILD (twintaillauncher-bin)
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        with:
+          pkgname: twintaillauncher-bin
+          pkgbuild: ./ttl-bin/PKGBUILD
+          test: true
+          commit_username: ${{ secrets.GIT_USER }}
+          commit_email: ${{ secrets.GIT_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ env.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Publish AUR package (twintaillauncher-bin)
+        if: success()
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        with:
+          pkgname: twintaillauncher-bin
+          pkgbuild: ./ttl-bin/PKGBUILD
+          commit_username: ${{ secrets.GIT_USER }}
+          commit_email: ${{ secrets.GIT_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ env.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+      - name: Publish AUR package (twintaillauncher)
+        if: success()
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.3
+        with:
+          pkgname: twintaillauncher
+          pkgbuild: ./ttl-stable-src/PKGBUILD
+          commit_username: ${{ secrets.GIT_USER }}
+          commit_email: ${{ secrets.GIT_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to version ${{ env.VERSION }}"
+          ssh_keyscan_types: rsa,ecdsa,ed25519

@@ -18,7 +18,7 @@ pub fn register_download_handler(app: &AppHandle) {
         let state = a.state::<DownloadState>();
         let q = state.queue.lock().unwrap().clone();
         if let Some(queue) = q {
-            if queue.has_job_for_id(payload.install.clone()) { show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for download!", None, None); return; }
+            if queue.has_job_for_id(payload.install.clone()) { log::warn!("Game {} is already queued for download, skipping", payload.install); show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for download!", None, None); return; }
             queue.enqueue(QueueJobKind::GameDownload, QueueJobPayload::Game(payload));
         } else {
             let h4 = a.clone();
@@ -34,7 +34,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
     let job_id = Arc::new(job_id);
     let install = match get_install_info_by_id(&h4, payload.install.clone()) {
         Some(v) => v,
-        None => return QueueJobOutcome::Failed,
+        None => { log::warn!("Cannot start download: install {} not found", payload.install); return QueueJobOutcome::Failed; }
     };
     let gid = match get_manifest_info_by_id(&h4, install.manifest_id) {
         Some(v) => v,
@@ -50,6 +50,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         };
 
         let instn = if payload.is_latest.is_some() { Arc::new(picked.metadata.versioned_name.clone()) } else { Arc::new(install.name.clone()) };
+        log::info!("Starting game download for \"{}\" ({})", instn, install.id);
         let dlpayload = Arc::new(Mutex::new(HashMap::new()));
 
         let mut dlp = dlpayload.lock().unwrap();
@@ -80,8 +81,8 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         let mut success = false;
         match picked.metadata.download_mode.as_str() {
             "DOWNLOAD_MODE_FILE" => {
-                let install_dir = Path::new(&install.directory);
-                if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                let install_dir = Path::new(&install.directory).to_path_buf();
+                if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_FILE with {} file(s)", picked.game.full.len());
                 let files = picked.game.full.clone();
@@ -92,9 +93,10 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 let mut ok = true;
                 for e in files.iter() {
                     let url = e.file_url.clone();
+                    let hash = e.file_hash.clone();
                     let cancel_token = cancel_token.clone();
                     let dl_ok = run_async_command(async {
-                        <Game as Zipped>::download(url.clone(), install.directory.clone(), false, false, {
+                        <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), false, false, {
                                 let dlpayload = dlpayload.clone();
                                 let h4 = h4.clone();
                                 let instn = instn.clone();
@@ -125,8 +127,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     let first = urls.get(0).unwrap();
                     let tmpf = first.split('/').collect::<Vec<&str>>();
                     let fnn = tmpf.last().unwrap().to_string();
-                    let ap = Path::new(&install.directory).to_path_buf();
-                    let downloading_path = ap.join("downloading");
+                    let downloading_path = install_dir.join("downloading");
                     let archive_path = downloading_path.join("staging").join(fnn.clone());
                     let far = archive_path.to_str().unwrap().to_string();
 
@@ -147,7 +148,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         }
                     });
                     if ext {
-                        if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                        if downloading_path.exists() { let _ = std::fs::remove_dir_all(&downloading_path); }
                         h4.emit("download_complete", ()).unwrap();
                         log::debug!("Extraction complete for {}, marking download as complete", install.name);
                         success = true;
@@ -161,6 +162,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
             "DOWNLOAD_MODE_CHUNK" => {
                 let install_dir = Path::new(&install.directory);
                 if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                let downloading_path = install_dir.join("downloading");
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_CHUNK with {} manifest(s)", picked.game.full.len());
                 let urls = if gm.biz == "bh3_global" { picked.game.full.clone().iter().filter(|e| e.region_code.clone() == install.region_code.clone()).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
@@ -215,6 +217,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                 }
                 if ok {
+                    if downloading_path.exists() { let _ = std::fs::remove_dir_all(&downloading_path); }
                     log::debug!("All manifests completed for {}, marking download as complete", install.name);
                     h4.emit("download_complete", ()).unwrap();
                     success = true;
@@ -227,6 +230,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
             "DOWNLOAD_MODE_RAW" => {
                 let install_dir = Path::new(&install.directory);
                 if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                let downloading_path = install_dir.join("downloading");
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_RAW with {} manifest(s)", picked.game.full.len());
                 let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
@@ -256,6 +260,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         }, Some(cancel_token.clone()), Some(verified_files.clone())).await
                 });
                 if rslt {
+                    if downloading_path.exists() { let _ = std::fs::remove_dir_all(&downloading_path); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Download complete for {}, marking as complete", install.name);
                     success = true;
@@ -268,8 +273,8 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 }
             }
             "DOWNLOAD_MODE_MULTIFILE" => {
-                let install_dir = Path::new(&install.directory);
-                if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
+                let install_dir = Path::new(&install.directory).to_path_buf();
+                if !install_dir.exists() { std::fs::create_dir_all(&install_dir).unwrap_or_default(); }
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_MULTIFILE with {} file(s)", picked.game.full.len());
                 let files = picked.game.full.clone();
@@ -281,9 +286,10 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                 let mut ok = true;
                 for (_file_idx, e) in files.iter().enumerate() {
                     let url = e.file_url.clone();
+                    let hash = e.file_hash.clone();
                     let cancel_token = cancel_token.clone();
                     let dl_ok = run_async_command(async {
-                        <Game as Zipped>::download(url.clone(), install.directory.clone(), false, false,{
+                        <Game as Zipped>::download(url.clone(), hash.clone(), install.directory.clone(), false, false,{
                                 let dlpayload = dlpayload.clone();
                                 let h4 = h4.clone();
                                 let instn = instn.clone();
@@ -310,8 +316,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
                 }
                 if ok {
-                    let ap = Path::new(&install.directory).to_path_buf();
-                    let downloading_path = ap.join("downloading");
+                    let downloading_path = install_dir.join("downloading");
                     ok = true;
                     for (file_idx, e) in files.iter().enumerate() {
                         let fnn = e.file_url.split('/').last().unwrap_or_default().to_string();
@@ -341,7 +346,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         cumulative_install.fetch_add(file_install_size, Ordering::SeqCst);
                     }
                     if ok {
-                        if downloading_path.exists() { std::fs::remove_dir_all(&downloading_path).unwrap_or_default(); }
+                        if downloading_path.exists() { let _ = std::fs::remove_dir_all(&downloading_path); }
                         h4.emit("download_complete", ()).unwrap();
                         log::debug!("All {} archives extracted for {}, marking download as complete", total_files, install.name);
                         success = true;
@@ -373,6 +378,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
         }
 
         if cancelled {
+            log::info!("Download cancelled for \"{}\" ({})", instn, payload.install);
             let mut dlp = HashMap::new();
             dlp.insert("job_id", job_id.to_string());
             dlp.insert("name", instn.to_string());
@@ -380,14 +386,16 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
             return QueueJobOutcome::Cancelled;
         }
         if success {
+            log::info!("Download completed for \"{}\" ({})", instn, payload.install);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Completed
         } else {
+            log::warn!("Download failed for \"{}\" ({})", instn, payload.install);
             { verified_files.lock().unwrap().clear(); }
             QueueJobOutcome::Failed
         }
     } else {
-        log::debug!("Failed to download game, wtf??? we are SO FUCKED!");
+        log::warn!("Cannot start download: manifest not found for install {}", payload.install);
         QueueJobOutcome::Failed
     }
 }

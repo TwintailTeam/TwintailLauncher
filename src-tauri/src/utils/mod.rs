@@ -18,7 +18,7 @@ use std::sync::{Arc};
 use std::{fs, io};
 use std::hash::Hash;
 use tauri::{AppHandle, Emitter, Listener, Manager};
-
+use tauri_plugin_dialog::DialogExt;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
@@ -47,6 +47,15 @@ pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
 }
 
 pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String, install_name: String, install_type: String) -> io::Result<()> {
+    fn dir_size(path: &Path) -> io::Result<u64> {
+        let mut size = 0;
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let metadata = entry.metadata()?;
+            if metadata.is_dir() { size += dir_size(&entry.path())?; } else { size += metadata.len(); }
+        }
+        Ok(size)
+    }
     fs::create_dir_all(&dst)?;
     let totalsize = dir_size(src.as_ref())?;
     let tracker = Arc::new(AtomicU64::new(0));
@@ -120,6 +129,7 @@ pub fn register_listeners(app: &AppHandle) {
                     let steamrtpp = runnerp.join("steamrt/").join("steamrt4/");
                     let _ = empty_dir(&steamrtpp);
                 }
+                "dialog_steamrt_repair" => { h3.request_restart(); }
                 "dialog_runner_dl_fail" => { /* Empties the directory in its handler not here */ }
                 "dialog_extra_dl_fail" => { /* Handled in respective failure blocks */}
                 _ => {}
@@ -183,16 +193,6 @@ pub fn get_mi_path_from_game(exe_name: String) -> Option<String> {
             _ => None,
         }
     }
-}
-
-fn dir_size(path: &Path) -> io::Result<u64> {
-    let mut size = 0;
-    for entry in fs::read_dir(path)? {
-        let entry = entry?;
-        let metadata = entry.metadata()?;
-        if metadata.is_dir() { size += dir_size(&entry.path())?; } else { size += metadata.len(); }
-    }
-    Ok(size)
 }
 
 pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
@@ -352,11 +352,19 @@ pub fn sync_installed_runners(app: &AppHandle) {
 
                 // Determine the download URL based on architecture
                 let mut dl_url = runner_ver.url.clone();
-                if let Some(ref urls) = runner_ver.urls {
+                if let Some(ref urls) = runner_ver.urls.clone() {
                     #[cfg(target_arch = "x86_64")]
                     { dl_url = urls.x86_64.clone(); }
                     #[cfg(target_arch = "aarch64")]
                     { dl_url = if urls.aarch64.is_empty() { runner_ver.url.clone() } else { urls.aarch64.clone() }; }
+                }
+
+                let mut dl_hash = runner_ver.hash.clone();
+                if let Some(ref urls) = runner_ver.urls.clone() {
+                    #[cfg(target_arch = "x86_64")]
+                    { dl_hash = urls.x86_64_hash.clone(); }
+                    #[cfg(target_arch = "aarch64")]
+                    { dl_hash = if urls.aarch64.is_empty() { runner_ver.hash.clone() } else { urls.aarch64_hash.clone() }; }
                 }
 
                 let runner_path = runners.join(rv);
@@ -371,6 +379,7 @@ pub fn sync_installed_runners(app: &AppHandle) {
                         runner_version: rv.clone(),
                         runner_url: dl_url,
                         runner_path: runner_path.to_str().unwrap().to_string(),
+                        runner_hash: dl_hash,
                     }));
                     queued_versions.insert(rv.clone());
                     log::debug!("Auto-redownloading missing runner: {}", rv);
@@ -418,6 +427,18 @@ pub fn deprecate_jadeite(app: &AppHandle) {
     }
 }
 
+#[cfg(all(target_arch = "x86_64", target_os = "windows"))]
+pub fn is_windows_arm_translation() -> bool {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetCurrentProcess() -> *mut core::ffi::c_void;
+        fn IsWow64Process2(h_process: *mut core::ffi::c_void, p_process_machine: *mut u16, p_native_machine: *mut u16) -> i32;
+    }
+    let mut process_machine: u16 = 0;
+    let mut native_machine: u16 = 0;
+    unsafe { IsWow64Process2(GetCurrentProcess(), &mut process_machine, &mut native_machine) != 0 && native_machine == 0xAA64 }
+}
+
 #[cfg(target_os = "linux")]
 #[allow(non_camel_case_types)]
 pub fn raise_fd_limit(new_limit: i32) {
@@ -447,7 +468,7 @@ pub fn notify_update(app: &AppHandle) {
             let cfg = app.config();
             match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
                 std::cmp::Ordering::Less => {
-                    show_dialog_with_callback(&app, "warning", "TwintailLauncher", "You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.", Some(vec!["Continue anyway"]), None);
+                    app.dialog().message("You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("TwintailLauncher").kind(tauri_plugin_dialog::MessageDialogKind::Warning).show(move |_| {});
                     log::info!("You are running outdated version of TwintailLauncher!");
                 }
                 std::cmp::Ordering::Equal => {
@@ -545,13 +566,13 @@ pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: Strin
                         "add" => {
                             let mut data = fs::read(&f).unwrap();
                             let from = b"KR_ChannelID=240";
-                            let to   = b"KR_ChannelID=205";
+                            let to = b"KR_ChannelID=205";
                             if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Applied AKI patch to {}", dir.display()); }
                         }
                         "remove" => {
                             let mut data = fs::read(&f).unwrap();
                             let from = b"KR_ChannelID=205";
-                            let to   = b"KR_ChannelID=240";
+                            let to = b"KR_ChannelID=240";
                             if let Some(pos) = data.windows(from.len()).position(|w| w == from) { data[pos..pos+to.len()].copy_from_slice(to); fs::write(&f, &data).unwrap(); log::debug!("Removed AKI patch from {}", dir.display()); }
                         }
                         _ => {}
@@ -621,32 +642,6 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
             data
         } else { data }
     } else { data }
-}
-
-#[cfg(target_os = "linux")]
-pub fn find_steamrt_version(file_path: PathBuf) -> io::Result<String> {
-    let file = fs::File::open(file_path);
-    match file {
-        Ok(file) => {
-            let reader = io::BufReader::new(file);
-            for line in reader.lines() {
-                let line = line?;
-                for token in line.split_whitespace() {
-                    if token.starts_with("3.") || token.starts_with("4.") && token.matches('.').count() >= 3 && token.chars().all(|c| c.is_ascii_digit() || c == '.') { return Ok(token.to_string()); }
-                }
-            }
-        }
-        Err(_) => { log::debug!("Could not find VERSIONS.txt in steamrt directory!"); }
-    }
-    Ok(String::new())
-}
-
-#[cfg(target_os = "linux")]
-pub fn compare_steamrt_versions(v1: &str, v2: &str) -> bool {
-    let parts1: Vec<u64> = v1.split('.').map(|v| v.parse().unwrap_or(0)).collect();
-    let parts2: Vec<u64> = v2.split('.').map(|v| v.parse().unwrap_or(0)).collect();
-    for (a, b) in parts1.iter().zip(parts2.iter()) { if a > b { return true; } else if a < b { return false; } }
-    parts1.len() > parts2.len()
 }
 
 pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
@@ -837,6 +832,24 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
         }
     }
     None
+}
+
+pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: String) -> String {
+    if game_biz.to_ascii_lowercase().contains("hk4e_global") { return "miHoYo/Genshin Impact/output_log.txt".to_string() }
+    if game_biz.to_ascii_lowercase().contains("hkrpg_global") { return "Cognosphere/Star Rail/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("nap_global") { return "miHoYo/ZenlessZoneZero/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("bh3_global") {
+        if region_code.to_ascii_lowercase().contains("glb_official") { return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("overseas_official") { return "miHoYo/Honkai Impact 3/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("kr_official") { return "miHoYo/붕괴3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("asia_offcial") { return "miHoYo/崩壊3rd/output_log.txt".to_string() }
+        if region_code.to_ascii_lowercase().contains("jp_official") { return "miHoYo/崩壊3rd/output_log.txt".to_string() }
+        return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string()
+    }
+    if game_biz.to_ascii_lowercase().contains("hyg_global") { return "miHoYo/PetitPlanet/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
+    if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
+    "".to_string()
 }
 
 // === LinkedHashMap ===

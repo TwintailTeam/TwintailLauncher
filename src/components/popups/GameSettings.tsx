@@ -19,7 +19,7 @@ import {
     X,
     FileCode2,
     LayoutDashboard,
-    Terminal, Settings2
+    Terminal, Settings2, Logs
 } from "lucide-react";
 import { SettingsLayout } from "../layout/SettingsLayout.tsx";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
@@ -151,7 +151,7 @@ export default function GameSettings({
     const banner = useMemo(() => {
         const installInfo = (installs || []).find((i: any) => i.id === installSettings.id);
         const gameInfo = (gamesinfo || []).find((g: any) => g.manifest_id === installSettings.manifest_id) || (gamesinfo || []).find((g: any) => g.biz === installSettings.manifest_id);
-        return gameInfo?.assets?.game_background || gameInfo?.background || installInfo?.game_background || installSettings.game_background;
+        return installSettings.game_background || gameInfo?.assets?.game_background || gameInfo?.background || installInfo?.game_background;
     }, [installs, gamesinfo, installSettings.id, installSettings.manifest_id, installSettings.game_background]);
 
     const icon = useMemo(() => {
@@ -348,7 +348,7 @@ export default function GameSettings({
                                     description="Override the default launch command."
                                     value={installSettings.launch_command || ""}
                                     onChange={(e) => handleUpdate("launch_cmd", e.target.value)}
-                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)`}
+                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)\n- %command% = Default launch command useful for command wrapping tools`}
                                 />
                             </div>
                         </SettingsSection>
@@ -606,8 +606,7 @@ export default function GameSettings({
                                             </div>
                                         </button>
                                     )}
-
-                                    {gameBiz && !gameBiz.startsWith("wuwa") && !gameBiz.startsWith("pgr") && !gameBiz.startsWith("endfield") && !gameBiz.startsWith("aethergazer") && (
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg")) && (
                                         <button
                                             onClick={async () => {
                                                 if (isAuthkeyCopying) { return; }
@@ -640,6 +639,25 @@ export default function GameSettings({
                                         </button>
                                     )}
 
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg") || gameBiz.startsWith("endfield") || gameBiz.startsWith("pgr")) && (
+                                        <button
+                                            onClick={() => {
+                                                setOpenPopup(POPUPS.NONE);
+                                                invoke("open_folder", {
+                                                    runnerVersion: "",
+                                                    manifestId: installSettings.manifest_id,
+                                                    installId: installSettings.id,
+                                                    pathType: "engine_log"
+                                                });
+                                            }}
+                                            className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
+                                            <Logs className="w-6 h-6 text-purple-400" />
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">Open Engine Log</span>
+                                                <span className="text-xs text-zinc-400">View game engine log</span>
+                                            </div>
+                                        </button>
+                                    )}
                                 </div>
                             </SettingsSection>
                             {window.navigator.platform.includes("Linux") && (
@@ -792,7 +810,7 @@ export default function GameSettings({
 
                                         {isLinux && (
                                             <ModernToggle
-                                                label="Delete Prefix"
+                                                label="Delete prefix"
                                                 description="Also remove the Wine/Proton prefix associated with this installation."
                                                 checked={wipePrefixOnUninstall}
                                                 onChange={setWipePrefixOnUninstall}

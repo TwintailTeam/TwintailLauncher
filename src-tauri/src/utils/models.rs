@@ -34,6 +34,7 @@ pub struct GlobalSettings {
     pub default_runner_path: String,
     pub default_dxvk_path: String,
     pub default_mangohud_config_path: String,
+    pub hide_app_to_tray: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -125,6 +126,8 @@ pub struct RunnerManifest {
 pub struct RunnerPlatformUrls {
     pub x86_64: String,
     pub aarch64: String,
+    pub x86_64_hash: String,
+    pub aarch64_hash: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -132,6 +135,7 @@ pub struct RunnerVersion {
     pub version: String,
     pub url: String,
     pub urls: Option<RunnerPlatformUrls>,
+    pub hash: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -333,6 +337,8 @@ pub struct AddInstallRsp {
     pub success: bool,
     pub install_id: String,
     pub background: String,
+    pub steam_imported: bool,
+    pub skip_dl: bool
 }
 
 #[derive(Serialize, Deserialize, Debug)]

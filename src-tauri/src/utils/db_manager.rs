@@ -188,6 +188,12 @@ pub async fn init_db(app: &AppHandle) {
             kind: MigrationKind::Up,
         },
         // === 2.0.0 migrations end ===
+        Migration {
+            version: 29,
+            description: "alter_settings_table_hide_app_to_tray210",
+            sql: r#"ALTER TABLE settings ADD COLUMN hide_app_to_tray bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -246,6 +252,7 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
             default_runner_path: rslt.get(0).unwrap().get("default_runner_path"),
             default_dxvk_path: rslt.get(0).unwrap().get("default_dxvk_path"),
             default_mangohud_config_path: rslt.get(0).unwrap().get("default_mangohud_config_path"),
+            hide_app_to_tray: rslt.get(0).unwrap().get("hide_app_to_tray"),
         };
         Some(rsltt)
     } else { None }
@@ -385,6 +392,14 @@ pub fn update_settings_hide_manifests(app: &AppHandle, enabled: bool) {
             .clone();
 
         let query = query("UPDATE settings SET 'hide_manifests' = $1 WHERE id = 1").bind(enabled);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_hide_app_to_tray(app: &AppHandle, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+        let query = query("UPDATE settings SET 'hide_app_to_tray' = $1 WHERE id = 1").bind(enabled);
         query.execute(&db).await.unwrap();
     });
 }
