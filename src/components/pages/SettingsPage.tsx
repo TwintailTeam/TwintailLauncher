@@ -69,7 +69,6 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
     };
 
     const [version, setVersion] = useState('');
-    const branch = import.meta.env.MODE || "unknown";
     useEffect(() => {
         getVersion().then(setVersion);
     }, []);
@@ -242,7 +241,7 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                             </h1>
                             <div className="mb-8">
                                 <span className="text-zinc-300">
-                                    Version: <span className={"text-purple-400 font-bold"}>{version}</span> | Branch: <span className={"text-orange-400 font-bold"}>{branch}</span> | Commit: <span className={"text-cyan-400 font-bold"}>{__COMMIT_HASH__}</span>
+                                    Version: <span className={"text-purple-400 font-bold"}>{version}</span> | Branch: <span className={"text-orange-400 font-bold"}>{__GIT_BRANCH__}</span> | Commit: <span className={"text-cyan-400 font-bold"}>{__COMMIT_HASH__}</span>
                                  </span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg w-full">

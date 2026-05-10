@@ -1,6 +1,5 @@
 use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
 use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog_with_callback};
-use std::path::{Path};
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter, Error};
 use crate::utils::db_manager::{update_install_last_played_by_id,update_install_total_playtime_by_id};
@@ -21,12 +20,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let mut compat_config = update_steam_compat_config(vec![]);
     let cpo = gm.extra.compat_overrides.clone();
 
-    let dirp = Path::new(install.directory.as_str());
+    let dirp = std::path::Path::new(install.directory.as_str());
     let dir = dirp.to_str().unwrap().to_string();
-    let prefixp = Path::new(install.runner_prefix.as_str()).to_path_buf();
+    let prefixp = std::path::Path::new(install.runner_prefix.as_str()).to_path_buf();
     let prefix = prefixp.to_str().unwrap().to_string();
-    let runnerp = Path::new(gs.default_runner_path.as_str()).to_path_buf();
-    let runnerpi = Path::new(install.runner_path.as_str()).to_path_buf();
+    let runnerp = std::path::Path::new(gs.default_runner_path.as_str()).to_path_buf();
+    let runnerpi = std::path::Path::new(install.runner_path.as_str()).to_path_buf();
     let runner = runnerpi.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
@@ -128,11 +127,17 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
     if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
+    let gamemode_ok = if install.use_gamemode && !crate::utils::is_flatpak() {
+        let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
+        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral GameMode is enabled but `gamemoderun` was not found in PATH. The game will launch without GameMode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None); }
+        found
+    } else { install.use_gamemode };
+
     let default_command = if is_proton {
         let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
-        if install.use_gamemode { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
+        if gamemode_ok { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
     } else {
-        if install.use_gamemode { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
+        if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
     };
 
     let rslt = if install.launch_command.is_empty() {
@@ -157,7 +162,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
         if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD", "1");
@@ -233,7 +238,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
         if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
         if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
+        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD", "1");
@@ -289,7 +294,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             let app = appc.clone();
             let xxmi_path = xxmi_path.clone();
             let mipath = get_mi_path_from_game(game.clone()).unwrap();
-            let mi_pathbuf = Path::new(&xxmi_path).join(&mipath);
+            let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
             let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
 
             // Apply the installation tweaks
@@ -704,8 +709,14 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
     let exe_name = { let stem = exe_name.split('.').next().unwrap_or(&exe_name); stem[..stem.len().min(15)].to_string() };
     std::thread::spawn(move || {
         let mut last_db_write_elapsed: u64 = 0;
-        std::thread::sleep(std::time::Duration::from_secs(6));
-        if !is_process_running(&exe_name) {
+        const POLL_MS: u64 = 500;
+        const MAX_WAIT_POLLS: u64 = 240;
+        let mut appeared = false;
+        for _ in 0..MAX_WAIT_POLLS {
+            if is_process_running(&exe_name) { appeared = true; break; }
+            std::thread::sleep(std::time::Duration::from_millis(POLL_MS));
+        }
+        if !appeared {
             if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
                 if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed!"); }
                 if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed!"); }
@@ -718,6 +729,7 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
         if install.disable_system_idle { keepawake = prevent_system_idle(true); }
         let started = std::time::Instant::now();
         loop {
+            std::thread::sleep(std::time::Duration::from_millis(POLL_MS));
             let running = is_process_running(&exe_name);
             let elapsed = started.elapsed().as_secs();
             if !running || elapsed - last_db_write_elapsed >= 10 {

@@ -6,10 +6,17 @@ import { execSync } from "child_process";
 // @ts-expect-error process is a Node.js global
 const host = process.env.TAURI_DEV_HOST;
 
-// Get git commit hash at build time
 const getCommitHash = () => {
     try {
         return execSync("git rev-parse --short HEAD").toString().trim();
+    } catch {
+        return "unknown";
+    }
+};
+
+const getBranch = () => {
+    try {
+        return execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
     } catch {
         return "unknown";
     }
@@ -42,5 +49,6 @@ export default defineConfig(async () => ({
     },
     define: {
         "__COMMIT_HASH__": JSON.stringify(getCommitHash()),
+        "__GIT_BRANCH__": JSON.stringify(getBranch()),
     },
 }));
