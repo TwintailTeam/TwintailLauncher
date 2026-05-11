@@ -662,7 +662,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
         let m = install.unwrap();
         let rp = m.runner_path.clone();
         let rpn = rp.replace(m.runner_version.as_str(), version.as_str());
-        if !Path::exists(rpn.as_ref()) { fs::create_dir_all(rpn.clone()).unwrap(); }
+        if !Path::exists(rpn.as_ref()) { if let Err(_) = fs::create_dir_all(rpn.clone()) { return Some(false); } }
 
         if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
             // Download runner via queue system (shows in downloads UI)
