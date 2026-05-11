@@ -30,6 +30,7 @@ pub struct RunnerDownloadPayload {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SteamrtDownloadPayload {
     pub steamrt_path: String,
+    pub version: String,
     pub is_update: bool,
 }
 
