@@ -478,7 +478,7 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
 
 #[cfg(target_os = "windows")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
-    let dirp = Path::new(&install.directory.clone()).to_path_buf();
+    let dirp = std::path::Path::new(&install.directory.clone()).to_path_buf();
     let dir = dirp.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
@@ -512,12 +512,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     load_fps_unlock(install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);
 
     let rslt = if install.launch_command.is_empty() {
-        let mut args= install.launch_args.clone();
+        let mut args = install.launch_args.clone();
         let dir = dir.trim_matches('\\');
         let game = game.trim_matches('\\');
         let tmp = game.replace("/", "\\");
 
-        let full_path = Path::new(dir).join(&tmp);
+        let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
@@ -543,7 +543,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     let mut tmp = env.splitn(2, "=");
                     match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
                 }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
@@ -569,7 +568,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let game = game.trim_matches('\\');
         let tmp = game.replace("/", "\\");
 
-        let full_path = Path::new(dir).join(&tmp);
+        let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let c = install.launch_command.clone();
         let mut args= install.launch_args.clone();
@@ -597,7 +596,6 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     let mut tmp = env.splitn(2, "=");
                     match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
                 }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-
             if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
         }
 
@@ -626,8 +624,8 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
     if install.use_xxmi {
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
-        let mi_pathbuf = Path::new(&xxmi_path).join(&mipath);
-        let loader_path = Path::new(xxmi_path).join("3dmloader.exe");
+        let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
+        let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
 
@@ -668,7 +666,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
 fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String) {
     if install.use_fps_unlock {
         let fpsunlock_path = fpsunlock_path.trim_matches('\\');
-        let loader_path = Path::new(fpsunlock_path).join("keqing_unlock.exe");
+        let loader_path = std::path::Path::new(fpsunlock_path).join("keqing_unlock.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let fpsv = install.fps_value.clone();
         let args = format!("run {} {} 2000 0 \"{}\"", biz, fpsv, game_path);
