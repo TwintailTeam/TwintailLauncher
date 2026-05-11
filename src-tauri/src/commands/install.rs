@@ -111,21 +111,18 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
             runner_prefix = prefix_loc.to_str().unwrap().to_string();
 
             // Remove prefix just in case
-            if prefix_loc.exists() { fs::remove_dir_all(runner_prefix.clone()).unwrap(); }
+            if prefix_loc.exists() { let _ = fs::remove_dir_all(runner_prefix.clone()); }
 
             runner_path = wine.join(runner_version.clone()).to_str().unwrap().to_string();
             dxvk_path = dxvk.join(dxvk_version.clone()).to_str().unwrap().to_string();
 
-            if !Path::exists(runner_path.as_ref()) { fs::create_dir_all(runner_path.clone()).unwrap(); }
-            //if !Path::exists(dxvk_path.as_ref()) { fs::create_dir_all(dxvk_path.clone()).unwrap(); }
-            if !prefix_loc.exists() { fs::create_dir_all(runner_prefix.clone()).unwrap(); }
+            if !Path::exists(runner_path.as_ref()) { let _ = fs::create_dir_all(runner_path.clone()); }
+            if !prefix_loc.exists() { let _ = fs::create_dir_all(runner_prefix.clone()); }
 
             let archandle = Arc::new(app.clone());
             let mut runv = Arc::new(runner_version.clone());
             let mut runpp = Arc::new(runner_path.clone());
             let rpp = Arc::new(runner_prefix.clone());
-            //let dxvkpp = Arc::new(dxvk_path.clone());
-            //let dxvkv = Arc::new(dxvk_version.clone());
 
             // Apply compatibility overrides
             let co = gm.extra.compat_overrides;
@@ -280,7 +277,7 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
+        if !Path::exists(path.as_ref()) { if let Err(_) = fs::create_dir_all(path.clone()) { return Some(false) } }
         // Initialize move only IF old path has files AND new path is empty directory
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
@@ -312,7 +309,7 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
+        if !Path::exists(path.as_ref()) { if let Err(_) = fs::create_dir_all(path.clone()) { return Some(false) } }
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
@@ -343,7 +340,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
+        if !Path::exists(path.as_ref()) { if let Err(_) = fs::create_dir_all(path.clone()) { return Some(false) } }
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
@@ -621,7 +618,7 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
         let installation_id = m.id.clone();
         let install_name = m.name.clone();
 
-        if !Path::exists(path.as_ref()) { fs::create_dir_all(path.clone()).unwrap(); }
+        if !Path::exists(path.as_ref()) { if let Err(_) = fs::create_dir_all(path.clone()) { return Some(false) } }
         if Path::exists(oldpath.as_ref().to_string().as_ref()) {
             if fs::read_dir(oldpath.as_ref()).unwrap().next().is_some() && fs::read_dir(&path).unwrap().next().is_none() {
                 let op = oldpath.clone();
@@ -662,7 +659,7 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
         let m = install.unwrap();
         let rp = m.runner_path.clone();
         let rpn = rp.replace(m.runner_version.as_str(), version.as_str());
-        if !Path::exists(rpn.as_ref()) { fs::create_dir_all(rpn.clone()).unwrap(); }
+        if !Path::exists(rpn.as_ref()) { if let Err(_) = fs::create_dir_all(rpn.clone()) { return Some(false); } }
 
         if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
             // Download runner via queue system (shows in downloads UI)

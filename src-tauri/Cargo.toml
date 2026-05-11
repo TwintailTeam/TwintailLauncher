@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "2.1.0"
+version = "2.1.1"
 description = "A multi-platform launcher for your anime games"
 authors = ["TwintailTeam"]
 edition = "2024"

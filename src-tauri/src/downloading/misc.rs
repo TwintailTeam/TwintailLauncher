@@ -26,18 +26,19 @@ pub fn download_or_update_steamrt3(app: &AppHandle) {
         let steamrt = rp.join("steamrt").join("steamrt3");
         if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to prepare SteamLinuxRuntime 3 directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None, None); return; } }
         let steamrt_path = steamrt.to_str().unwrap().to_string();
+        let remote_version = match run_async_command(fischl::compat::get_steamrt_version("steamrt3".to_string(), "latest-public-beta".to_string())) { Some(v) => v, None => return };
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             // Fresh download - enqueue via queue system
             log::info!("Queuing SteamLinuxRuntime 3 download");
             let state = app.state::<DownloadState>();
             let q = state.queue.lock().unwrap().clone();
-            if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, is_update: false })); }
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, version: remote_version, is_update: false })); }
         } else {
             // Check for updates
             let vp = steamrt.join("VERSIONS.txt");
             if !vp.exists() { return; }
-            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), "steamrt3".to_string(), "latest-public-beta".to_string()) == Some(true) {
+            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), &remote_version) == Some(true) {
                 log::info!("SteamLinuxRuntime 3 is up to date!");
                 #[cfg(debug_assertions)]
                 println!("SteamLinuxRuntime 3 is up to date!");
@@ -47,7 +48,7 @@ pub fn download_or_update_steamrt3(app: &AppHandle) {
             empty_dir(steamrt.as_path()).unwrap();
             let state = app.state::<DownloadState>();
             let q = state.queue.lock().unwrap().clone();
-            if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::SteamrtDownload, QueueJobPayload::Steamrt(SteamrtDownloadPayload { steamrt_path, version: remote_version, is_update: true })); }
         }
     }
 }
@@ -74,7 +75,7 @@ pub fn run_steamrt3_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
 
     log::debug!("Starting SteamLinuxRuntime 3 {} process", if payload.is_update { "update" } else { "download" });
     let success = run_async_command(async {
-        download_steamrt(steamrt_path.clone(), steamrt_path.clone(), "steamrt3".to_string(), "latest-public-beta".to_string(), {
+        download_steamrt(steamrt_path.clone(), steamrt_path.clone(), "steamrt3".to_string(), payload.version, {
             let app = app.clone();
             let dlpayload = dlpayload.clone();
             let job_id = job_id.clone();
@@ -129,18 +130,19 @@ pub fn download_or_update_steamrt4(app: &AppHandle) {
         let steamrt = rp.join("steamrt").join("steamrt4");
         if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to prepare SteamLinuxRuntime 4 directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None, None); return; } }
         let steamrt_path = steamrt.to_str().unwrap().to_string();
+        let remote_version = match run_async_command(fischl::compat::get_steamrt_version("steamrt4".to_string(), "latest-public-beta".to_string())) { Some(v) => v, None => return };
 
         if fs::read_dir(&steamrt).unwrap().next().is_none() {
             // Fresh download - enqueue via queue system
             log::info!("Queuing SteamLinuxRuntime 4 download");
             let state = app.state::<DownloadState>();
             let q = state.queue.lock().unwrap().clone();
-            if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, is_update: false })); }
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, version: remote_version, is_update: false })); }
         } else {
             // Check for updates
             let vp = steamrt.join("VERSIONS.txt");
             if !vp.exists() { return; }
-            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), "steamrt4".to_string(), "latest-public-beta".to_string()) == Some(true) {
+            if fischl::utils::steamrt_up_to_date(steamrt.as_path(), &remote_version) == Some(true) {
                 log::info!("SteamLinuxRuntime 4 is up to date!");
                 #[cfg(debug_assertions)]
                 println!("SteamLinuxRuntime 4 is up to date!");
@@ -150,7 +152,7 @@ pub fn download_or_update_steamrt4(app: &AppHandle) {
             empty_dir(steamrt.as_path()).unwrap();
             let state = app.state::<DownloadState>();
             let q = state.queue.lock().unwrap().clone();
-            if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, is_update: true })); }
+            if let Some(queue) = q { queue.enqueue(QueueJobKind::Steamrt4Download, QueueJobPayload::Steamrt4(SteamrtDownloadPayload { steamrt_path, version: remote_version, is_update: true })); }
         }
     }
 }
@@ -177,7 +179,7 @@ pub fn run_steamrt4_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
 
     log::debug!("Starting SteamLinuxRuntime 4 {} process", if payload.is_update { "update" } else { "download" });
     let success = run_async_command(async {
-        download_steamrt(steamrt_path.clone(), steamrt_path.clone(), "steamrt4".to_string(), "latest-public-beta".to_string(), {
+        download_steamrt(steamrt_path.clone(), steamrt_path.clone(), "steamrt4".to_string(), payload.version, {
             let app = app.clone();
             let dlpayload = dlpayload.clone();
             let job_id = job_id.clone();
