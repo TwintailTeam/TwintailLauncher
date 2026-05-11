@@ -88,7 +88,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
             let rv = rm.versions.into_iter().filter(|v| v.version.as_str() == runner_version.as_str()).collect::<Vec<_>>();
             let runnerp = rv.get(0).unwrap().to_owned();
             let runner_path = Path::new(&gs.default_runner_path).join(runner_version.clone());
-            if !runner_path.exists() { fs::create_dir_all(&runner_path).unwrap(); }
+            if !runner_path.exists() { if let Err(_) = fs::create_dir_all(&runner_path) { return Some(false) } }
             let ir = get_installed_runner_info_by_version(&app, runner_version.clone());
 
             // Empty folder download
@@ -153,7 +153,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
     } else {
         let gs = get_settings(&app).unwrap();
         let runner_path = Path::new(&gs.default_runner_path).join(runner_version.clone());
-        if !runner_path.exists() { fs::create_dir_all(&runner_path).unwrap(); }
+        if !runner_path.exists() { if let Err(_) = fs::create_dir_all(&runner_path) { return Some(false) } }
 
         if fs::read_dir(runner_path.as_path()).unwrap().next().is_some() {
             fs::remove_dir_all(runner_path.as_path()).unwrap();
