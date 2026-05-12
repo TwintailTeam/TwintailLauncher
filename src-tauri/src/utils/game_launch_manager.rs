@@ -129,7 +129,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let gamemode_ok = if install.use_gamemode && !crate::utils::is_flatpak() {
         let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
-        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral GameMode is enabled but `gamemoderun` was not found in PATH. The game will launch without GameMode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None); }
+        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral Gamemode is enabled but `gamemoderun` was not found in PATH. The game will launch without Gamemode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None); }
         found
     } else { install.use_gamemode };
 
