@@ -1,22 +1,42 @@
+use crate::utils::db_manager::{
+    update_install_last_played_by_id, update_install_total_playtime_by_id,
+};
+use crate::utils::discord_rpc;
 use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
-use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog_with_callback};
+use crate::utils::{
+    apply_xxmi_tweaks, get_mi_path_from_game, prevent_system_idle, show_dialog_with_callback,
+};
+use fischl::utils::is_process_running;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter, Error};
-use crate::utils::db_manager::{update_install_last_played_by_id,update_install_total_playtime_by_id};
-use crate::utils::discord_rpc;
-use fischl::utils::is_process_running;
 
 #[cfg(target_os = "linux")]
-use crate::utils::{get_steam_appid, get_steam_tool_appid, is_runner_lower, is_using_overriden_runner, runner_from_runner_version, update_steam_compat_config, repo_manager::get_compatibility};
+use crate::utils::{
+    get_steam_appid, get_steam_tool_appid, is_runner_lower, is_using_overriden_runner,
+    repo_manager::get_compatibility, runner_from_runner_version, update_steam_compat_config,
+};
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 #[cfg(target_os = "linux")]
 use tauri::Manager;
 
 #[cfg(target_os = "linux")]
-pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
-    let Some(rm) = get_compatibility(&app, &runner_from_runner_version(app, install.runner_version.clone()).unwrap_or_default()) else { return Ok(false); };
-    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+pub fn launch(
+    app: &AppHandle,
+    install: LauncherInstall,
+    gm: GameManifest,
+    gs: GlobalSettings,
+) -> Result<bool, Error> {
+    let Some(rm) = get_compatibility(
+        &app,
+        &runner_from_runner_version(app, install.runner_version.clone()).unwrap_or_default(),
+    ) else {
+        return Ok(false);
+    };
+    let is_proton = rm.display_name.to_ascii_lowercase().contains("proton")
+        && !rm.display_name.to_ascii_lowercase().contains("wine");
     let mut compat_config = update_steam_compat_config(vec![]);
     let cpo = gm.extra.compat_overrides.clone();
 
@@ -28,24 +48,57 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     let runnerpi = std::path::Path::new(install.runner_path.as_str()).to_path_buf();
     let runner = runnerpi.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
-    let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+    let exe = gm
+        .paths
+        .exe_filename
+        .clone()
+        .split('/')
+        .last()
+        .unwrap()
+        .to_string();
     let toolid = get_steam_tool_appid(runnerpi);
     let steamrtpp = runnerp.join("steamrt/").join(toolid.clone());
     let steamrt_path = steamrtpp.to_str().unwrap().to_string();
     let steamrtp = steamrtpp.join("_v2-entry-point");
     let steamrt = steamrtp.to_str().unwrap().to_string();
     #[cfg(not(debug_assertions))]
-    let reaper = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
-    #[cfg(debug_assertions)]
-    let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
-    let appid = get_steam_appid();
-    let endfield_can_bypass = gm.biz == "endfield_global" && install.runner_version.ends_with("-proton-ge") && {
-        let v = install.runner_version.strip_suffix("-proton-ge").unwrap_or("");
-        let parts: Vec<&str> = v.split('.').collect();
-        let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
-        let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
-        major > 10 || (major == 10 && minor >= 32)
+    let reaper = if crate::utils::is_flatpak() {
+        app.path()
+            .resource_dir()?
+            .join("resources/reaper")
+            .to_str()
+            .unwrap()
+            .to_string()
+            .replace("/app/lib/", "/run/parent/app/lib/")
+    } else {
+        app.path()
+            .resource_dir()?
+            .join("resources/reaper")
+            .to_str()
+            .unwrap()
+            .to_string()
+            .replace("/usr/lib/", "/run/host/usr/lib/")
     };
+    #[cfg(debug_assertions)]
+    let reaper = app
+        .path()
+        .resource_dir()?
+        .join("resources/reaper")
+        .to_str()
+        .unwrap()
+        .to_string();
+    let appid = get_steam_appid();
+    let endfield_can_bypass =
+        gm.biz == "endfield_global" && install.runner_version.ends_with("-proton-ge") && {
+            let v = install
+                .runner_version
+                .strip_suffix("-proton-ge")
+                .unwrap_or("");
+            let parts: Vec<&str> = v.split('.').collect();
+            let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
+            let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
+            major > 10 || (major == 10 && minor >= 32)
+        };
 
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
@@ -53,13 +106,24 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         return Ok(false);
     }
 
-    if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
+    if is_runner_lower(
+        cpo.min_runner_versions.clone(),
+        install.clone().runner_version,
+    ) && !cpo.min_runner_versions.is_empty()
+    {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
         show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nGame will not start until this requirement is satisfied!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);
         return Ok(false);
     }
 
-    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) && !endfield_can_bypass {
+    if cpo.override_runner.linux.enabled
+        && !cpo.override_runner.linux.runner_version.is_empty()
+        && !is_using_overriden_runner(
+            install.runner_version.clone(),
+            cpo.override_runner.linux.runner_version.clone(),
+        )
+        && !endfield_can_bypass
+    {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
         show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!\nGame will not start until this requirement is satisfied!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
         return Ok(false);
@@ -68,21 +132,58 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     // If prefix folder somehow does not exist remake it
     if !prefixp.exists() {
         if let Err(e) = std::fs::create_dir_all(&prefixp) {
-            log::error!("Failed to create missing runner prefix folder at {}! Error: {}", prefixp.to_str().unwrap(), e.to_string());
+            log::error!(
+                "Failed to create missing runner prefix folder at {}! Error: {}",
+                prefixp.to_str().unwrap(),
+                e.to_string()
+            );
             show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Encountered an error while trying to reinitialize your runner prefix! - {err}!", err = e.to_string()), Some(vec!["I understand"]), None);
             return Ok(false);
         };
     }
 
     let pre_launch = install.pre_launch_command.clone();
-    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32.clone() } else { rm.paths.wine64.clone() };
-    let can_game_launch: Option<std::thread::JoinHandle<bool>> = if !prefixp.join("pfx").join("drive_c").exists() && !cpo.winetricks_verbs.is_empty() { Some(run_winetricks(app, install.clone(), steamrt.clone(), reaper.clone(), appid, runner.clone(), wine64.clone(), prefix.clone(), dir.clone(), cpo.winetricks_verbs.clone())) } else { None };
+    let wine64 = if rm.paths.wine64.is_empty() {
+        rm.paths.wine32.clone()
+    } else {
+        rm.paths.wine64.clone()
+    };
+    let can_game_launch: Option<std::thread::JoinHandle<bool>> =
+        if !prefixp.join("pfx").join("drive_c").exists() && !cpo.winetricks_verbs.is_empty() {
+            Some(run_winetricks(
+                app,
+                install.clone(),
+                steamrt.clone(),
+                reaper.clone(),
+                appid,
+                runner.clone(),
+                wine64.clone(),
+                prefix.clone(),
+                dir.clone(),
+                cpo.winetricks_verbs.clone(),
+            ))
+        } else {
+            None
+        };
 
     // Wait for winetricks to fully exit before proceeding to game launch
-    if let Some(handle) = can_game_launch { if !handle.join().unwrap_or(false) { return Ok(false); } }
+    if let Some(handle) = can_game_launch {
+        if !handle.join().unwrap_or(false) {
+            return Ok(false);
+        }
+    }
 
     if !pre_launch.is_empty() {
-        let command = format!("{pre_launch}").replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let command = format!("{pre_launch}")
+            .replace("%appid%", appid.clone().to_string().as_str())
+            .replace("%reaper%", reaper.clone().as_str())
+            .replace("%steamrt_path%", steamrt_path.clone().as_str())
+            .replace("%steamrt%", steamrt.clone().as_str())
+            .replace("%prefix%", prefix.clone().as_str())
+            .replace("%runner_dir%", runner.clone().as_str())
+            .replace("%runner%", &*(runner.clone() + "/" + wine64.as_str()))
+            .replace("%install_dir%", dir.clone().as_str())
+            .replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -97,9 +198,15 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_TOOL_PATHS", runner.clone());
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
-        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store.clone()); }
-        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id.clone()); }
+        if cpo.disable_protonfixes {
+            cmd.env("PROTONFIXES_DISABLE", "1");
+        }
+        if !cpo.protonfixes_store.is_empty() {
+            cmd.env("STORE", cpo.protonfixes_store.clone());
+        }
+        if !cpo.protonfixes_id.is_empty() {
+            cmd.env("UMU_ID", cpo.protonfixes_id.clone());
+        }
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -109,35 +216,130 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
+                    if !status.success() {
+                        log::info!(
+                            "Executing prelaunch command: \"{}\" failed with status: {}",
+                            command,
+                            status.code().unwrap()
+                        );
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None);
+                    }
                 }
-                Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", command); }
-                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
+                Ok(None) => {
+                    log::info!("Executing prelaunch command: \"{}\"", command);
+                }
+                Err(_) => {
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None);
+                }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
+            Err(e) => {
+                log::error!(
+                    "Executing launch command \"{}\" failed catastrophically: {}",
+                    command,
+                    e
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute prelaunch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
     }
 
-    let verb = if install.use_xxmi || install.use_fps_unlock { "run" } else { "waitforexitandrun" };
-    let drive = if cpo.proton_compat_config.contains(&"gamedrive".to_string()) { format!("s:\\{game}") } else { format!("z:\\{dir}/{game}") };
+    let verb = if install.use_xxmi || install.use_fps_unlock {
+        "run"
+    } else {
+        "waitforexitandrun"
+    };
+    let drive = if cpo.proton_compat_config.contains(&"gamedrive".to_string()) {
+        format!("s:\\{game}")
+    } else {
+        format!("z:\\{dir}/{game}")
+    };
 
     let mut args = install.launch_args.clone();
     let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
-    if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
-    if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+    if install.use_xxmi && gm.biz == "wuwa_global" {
+        args = args
+            .split_whitespace()
+            .filter(|a| {
+                gm.extra
+                    .graphics_api_options
+                    .options
+                    .iter()
+                    .all(|o| o.value.as_str() != *a)
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        if !args.is_empty() {
+            args += " ";
+        }
+        args += "-dx11";
+    }
+    if install.use_xxmi && gm.biz == "endfield_global" {
+        args = args
+            .split_whitespace()
+            .filter(|a| {
+                gm.extra
+                    .graphics_api_options
+                    .options
+                    .iter()
+                    .all(|o| o.value.as_str() != *a)
+            })
+            .collect::<Vec<_>>()
+            .join(" ");
+        if !args.is_empty() {
+            args += " ";
+        }
+        args += "-force-d3d11";
+    }
+    if gm.extra.switches.graphics_api
+        && !xxmi_forced
+        && !args.split_whitespace().any(|a| {
+            gm.extra
+                .graphics_api_options
+                .options
+                .iter()
+                .any(|o| o.value.as_str() == a)
+        })
+        && !install.graphics_api.is_empty()
+    {
+        if !args.is_empty() {
+            args += " ";
+        }
+        args += &install.graphics_api;
+    }
 
     let gamemode_ok = if install.use_gamemode && !crate::utils::is_flatpak() {
-        let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
-        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral GameMode is enabled but `gamemoderun` was not found in PATH. The game will launch without GameMode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None); }
+        let found = std::env::var("PATH")
+            .unwrap_or_default()
+            .split(':')
+            .any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
+        if !found {
+            show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral GameMode is enabled but `gamemoderun` was not found in PATH. The game will launch without GameMode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None);
+        }
         found
-    } else { install.use_gamemode };
+    } else {
+        install.use_gamemode
+    };
 
     let default_command = if is_proton {
         let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
-        if gamemode_ok { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
+        if gamemode_ok {
+            format!("gamemoderun {steamrt_run}")
+        } else {
+            format!("{steamrt_run}")
+        }
     } else {
-        if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
+        if gamemode_ok {
+            format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}")
+        } else {
+            format!("'{runner}/{wine64}' '{dir}/{game}' {args}")
+        }
     };
 
     let rslt = if install.launch_command.is_empty() {
@@ -156,17 +358,63 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if cpo.stub_wintrust { cmd.env("STUB_WINTRUST", "1"); }
-        if cpo.block_first_req { cmd.env("BLOCK_FIRST_REQ", "1"); }
-        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
-        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
-        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
-        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
+        if cpo.stub_wintrust {
+            cmd.env("STUB_WINTRUST", "1");
+        }
+        if cpo.block_first_req {
+            cmd.env("BLOCK_FIRST_REQ", "1");
+        }
+        if cpo.disable_protonfixes {
+            cmd.env("PROTONFIXES_DISABLE", "1");
+        }
+        if !cpo.protonfixes_store.is_empty() {
+            cmd.env("STORE", cpo.protonfixes_store);
+        }
+        if !cpo.protonfixes_id.is_empty() {
+            cmd.env("UMU_ID", cpo.protonfixes_id);
+        }
+        if !cpo.proton_compat_config.is_empty() {
+            compat_config = update_steam_compat_config(
+                cpo.proton_compat_config
+                    .iter()
+                    .map(String::as_str)
+                    .collect(),
+            );
+        }
+        if cpo.stub_wintrust || cpo.block_first_req {
+            cmd.env(
+                "WINEDLLOVERRIDES",
+                "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b",
+            );
+            crate::utils::apply_patch(
+                app,
+                std::path::Path::new(&dir.clone())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                "sparkle".to_string(),
+                "add".to_string(),
+            );
+        } else if !cpo.stub_wintrust && !cpo.block_first_req {
+            crate::utils::apply_patch(
+                app,
+                std::path::Path::new(&dir.clone())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                "sparkle".to_string(),
+                "remove".to_string(),
+            );
+        }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD", "1");
-            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+            if install.mangohud_config_path != "" {
+                cmd.env(
+                    "MANGOHUD_CONFIGFILE",
+                    format!("{}", install.clone().mangohud_config_path).as_str(),
+                );
+            }
         }
 
         cmd.stdout(Stdio::inherit());
@@ -177,45 +425,178 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
                     let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         // Load before we spawn the game
-        load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), is_proton);
+        load_xxmi(
+            app,
+            install.clone(),
+            prefix.clone(),
+            gs.xxmi_path.clone(),
+            runner.clone(),
+            wine64.clone(),
+            exe.clone(),
+            is_proton,
+        );
+        load_fps_unlock(
+            app,
+            install.clone(),
+            gm.biz.clone(),
+            prefix.clone(),
+            gs.fps_unlock_path.clone(),
+            dir.clone(),
+            runner.clone(),
+            wine64.clone(),
+            is_proton,
+        );
 
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", default_command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() {
+                        log::info!(
+                            "Executing launch command: \"{}\" failed with status: {}",
+                            default_command,
+                            status.code().unwrap()
+                        );
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None);
+                    }
                 }
                 Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
+                    let time = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string();
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", default_command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => {
+                    log::error!(
+                        "Executing launch command: \"{}\" failed! Is command correct?",
+                        default_command
+                    );
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None);
+                }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(e) => {
+                log::error!(
+                    "Executing launch command \"{}\" failed catastrophically: {}",
+                    command,
+                    e
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute launch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
         true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
         let c = install.launch_command.clone();
         let mut args = install.launch_args.clone();
-        let mut command = format!("{c}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        let mut command = format!("{c}")
+            .replace("%command%", default_command.clone().to_string().as_str())
+            .replace("%appid%", appid.clone().to_string().as_str())
+            .replace("%reaper%", reaper.clone().as_str())
+            .replace("%steamrt_path%", steamrt_path.clone().as_str())
+            .replace("%steamrt%", steamrt.clone().as_str())
+            .replace("%prefix%", prefix.clone().as_str())
+            .replace("%runner_dir%", runner.clone().as_str())
+            .replace("%runner%", &*(runner.clone() + "/" + wine64.as_str()))
+            .replace("%install_dir%", dir.clone().as_str())
+            .replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
-        let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
-        if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
-        if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("{c} {args}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
+        let xxmi_forced =
+            install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
+        if install.use_xxmi && gm.biz == "wuwa_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-dx11";
+        }
+        if install.use_xxmi && gm.biz == "endfield_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-force-d3d11";
+        }
+        if gm.extra.switches.graphics_api
+            && !xxmi_forced
+            && !args.split_whitespace().any(|a| {
+                gm.extra
+                    .graphics_api_options
+                    .options
+                    .iter()
+                    .any(|o| o.value.as_str() == a)
+            })
+            && !install.graphics_api.is_empty()
+        {
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += &install.graphics_api;
+        }
+        if !args.is_empty() {
+            command = format!("{c} {args}")
+                .replace("%command%", default_command.clone().to_string().as_str())
+                .replace("%appid%", appid.clone().to_string().as_str())
+                .replace("%reaper%", reaper.clone().as_str())
+                .replace("%steamrt_path%", steamrt_path.clone().as_str())
+                .replace("%steamrt%", steamrt.clone().as_str())
+                .replace("%prefix%", prefix.clone().as_str())
+                .replace("%runner_dir%", runner.clone().as_str())
+                .replace("%runner%", &*(runner.clone() + "/" + wine64.as_str()))
+                .replace("%install_dir%", dir.clone().as_str())
+                .replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
+        }
 
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
@@ -232,17 +613,63 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.env("STEAM_COMPAT_LIBRARY_PATHS", format!("{dir}:{prefix}/pfx"));
         cmd.env("STEAM_COMPAT_SHADER_PATH", prefix.clone() + "/shadercache");
         cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d");
-        if cpo.stub_wintrust { cmd.env("STUB_WINTRUST", "1"); }
-        if cpo.block_first_req { cmd.env("BLOCK_FIRST_REQ", "1"); }
-        if cpo.disable_protonfixes { cmd.env("PROTONFIXES_DISABLE", "1"); }
-        if !cpo.protonfixes_store.is_empty() { cmd.env("STORE", cpo.protonfixes_store); }
-        if !cpo.protonfixes_id.is_empty() { cmd.env("UMU_ID", cpo.protonfixes_id); }
-        if !cpo.proton_compat_config.is_empty() { compat_config = update_steam_compat_config(cpo.proton_compat_config.iter().map(String::as_str).collect()); }
-        if cpo.stub_wintrust || cpo.block_first_req { cmd.env("WINEDLLOVERRIDES", "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b"); crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "add".to_string()); } else if !cpo.stub_wintrust && !cpo.block_first_req { crate::utils::apply_patch(app, std::path::Path::new(&dir.clone()).to_str().unwrap().to_string(), "sparkle".to_string(), "remove".to_string()); }
+        if cpo.stub_wintrust {
+            cmd.env("STUB_WINTRUST", "1");
+        }
+        if cpo.block_first_req {
+            cmd.env("BLOCK_FIRST_REQ", "1");
+        }
+        if cpo.disable_protonfixes {
+            cmd.env("PROTONFIXES_DISABLE", "1");
+        }
+        if !cpo.protonfixes_store.is_empty() {
+            cmd.env("STORE", cpo.protonfixes_store);
+        }
+        if !cpo.protonfixes_id.is_empty() {
+            cmd.env("UMU_ID", cpo.protonfixes_id);
+        }
+        if !cpo.proton_compat_config.is_empty() {
+            compat_config = update_steam_compat_config(
+                cpo.proton_compat_config
+                    .iter()
+                    .map(String::as_str)
+                    .collect(),
+            );
+        }
+        if cpo.stub_wintrust || cpo.block_first_req {
+            cmd.env(
+                "WINEDLLOVERRIDES",
+                "lsteamclient=d;KRSDKExternal.exe=d;jsproxy=n,b",
+            );
+            crate::utils::apply_patch(
+                app,
+                std::path::Path::new(&dir.clone())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                "sparkle".to_string(),
+                "add".to_string(),
+            );
+        } else if !cpo.stub_wintrust && !cpo.block_first_req {
+            crate::utils::apply_patch(
+                app,
+                std::path::Path::new(&dir.clone())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                "sparkle".to_string(),
+                "remove".to_string(),
+            );
+        }
         cmd.env("STEAM_COMPAT_CONFIG", compat_config);
         if install.use_mangohud {
             cmd.env("MANGOHUD", "1");
-            if install.mangohud_config_path != "" { cmd.env("MANGOHUD_CONFIGFILE", format!("{}", install.clone().mangohud_config_path).as_str()); }
+            if install.mangohud_config_path != "" {
+                cmd.env(
+                    "MANGOHUD_CONFIGFILE",
+                    format!("{}", install.clone().mangohud_config_path).as_str(),
+                );
+            }
         }
 
         cmd.stdout(Stdio::inherit());
@@ -253,40 +680,115 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
                     let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         // Load before we spawn the game
-        load_xxmi(app, install.clone(), prefix.clone(), gs.xxmi_path.clone(), runner.clone(), wine64.clone(), exe.clone(), is_proton);
-        load_fps_unlock(app, install.clone(), gm.biz.clone(), prefix.clone(), gs.fps_unlock_path.clone(), dir.clone(), runner.clone(), wine64.clone(), is_proton);
+        load_xxmi(
+            app,
+            install.clone(),
+            prefix.clone(),
+            gs.xxmi_path.clone(),
+            runner.clone(),
+            wine64.clone(),
+            exe.clone(),
+            is_proton,
+        );
+        load_fps_unlock(
+            app,
+            install.clone(),
+            gm.biz.clone(),
+            prefix.clone(),
+            gs.fps_unlock_path.clone(),
+            dir.clone(),
+            runner.clone(),
+            wine64.clone(),
+            is_proton,
+        );
 
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check install settings.", None, None); }
+                    if !status.success() {
+                        log::info!(
+                            "Executing launch command: \"{}\" failed with status: {}",
+                            command,
+                            status.code().unwrap()
+                        );
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check install settings.", None, None);
+                    }
                 }
                 Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
+                    let time = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string();
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => {
+                    log::error!(
+                        "Executing launch command: \"{}\" failed! Is command correct?",
+                        command
+                    );
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None);
+                }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => {
+                log::error!(
+                    "Executing launch command \"{}\" failed catastrophically!",
+                    command
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute launch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
         true
     };
-    if rslt { Ok(true) } else { Ok(false) }
+    if rslt {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
+fn load_xxmi(
+    app: &AppHandle,
+    install: LauncherInstall,
+    prefix: String,
+    xxmi_path: String,
+    runner: String,
+    wine64: String,
+    game: String,
+    is_proton: bool,
+) {
     if install.use_xxmi {
         let appc = app.clone();
         // Prevent "App is not responding" by waiting in a separate thread
@@ -295,7 +797,11 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             let xxmi_path = xxmi_path.clone();
             let mipath = get_mi_path_from_game(game.clone()).unwrap();
             let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
-            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
+            let command = if is_proton {
+                format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
+            } else {
+                format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}")
+            };
 
             // Apply the installation tweaks
             let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
@@ -325,30 +831,90 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             if !install.env_vars.is_empty() {
                 let envs = install.env_vars.clone();
                 let splitted = envs.split(";").collect::<Vec<&str>>();
-                let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
-                    let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-                if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                let parsed: Option<Vec<(&str, String)>> = splitted
+                    .iter()
+                    .map(|env| {
+                        if env.is_empty() {
+                            return Some(None);
+                        }
+                        let mut tmp = env.splitn(2, "=");
+                        match (tmp.next(), tmp.next()) {
+                            (Some(k), Some(v)) if !k.is_empty() => {
+                                Some(Some((k, v.replace("\"", ""))))
+                            }
+                            _ => None,
+                        }
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+                if let Some(env_vars) = parsed {
+                    for (k, v) in env_vars {
+                        cmd.env(k, v);
+                    }
+                }
             }
 
             match cmd.spawn() {
                 Ok(mut child) => match child.try_wait() {
                     Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing XXMI command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None, None); }
+                        if !status.success() {
+                            log::info!(
+                                "Executing XXMI command: \"{}\" failed with status: {}",
+                                command,
+                                status.code().unwrap()
+                            );
+                            show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None, None);
+                        }
                     }
-                    Ok(None) => { log::info!("Executing XXMI command: \"{}\"", command); }
-                    Err(_) => { log::error!("Executing XXMI command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again later!", None, None); }
+                    Ok(None) => {
+                        log::info!("Executing XXMI command: \"{}\"", command);
+                    }
+                    Err(_) => {
+                        log::error!(
+                            "Executing XXMI command: \"{}\" failed! Is command correct?",
+                            command
+                        );
+                        show_dialog_with_callback(
+                            &app,
+                            "error",
+                            "TwintailLauncher",
+                            "Failed to run XXMI! Please try again later!",
+                            None,
+                            None,
+                        );
+                    }
                 },
-                Err(_) => { log::error!("Executing XXMI command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Something serious is wrong.", None, None); }
+                Err(_) => {
+                    log::error!(
+                        "Executing XXMI command \"{}\" failed catastrophically!",
+                        command
+                    );
+                    show_dialog_with_callback(
+                        &app,
+                        "error",
+                        "TwintailLauncher",
+                        "Failed to run XXMI! Something serious is wrong.",
+                        None,
+                        None,
+                    );
+                }
             }
         });
     }
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefix: String, fpsunlock_path: String, game_path: String, runner: String, wine64: String, is_proton: bool) {
+fn load_fps_unlock(
+    app: &AppHandle,
+    install: LauncherInstall,
+    biz: String,
+    prefix: String,
+    fpsunlock_path: String,
+    game_path: String,
+    runner: String,
+    wine64: String,
+    is_proton: bool,
+) {
     if install.use_fps_unlock {
         let appc = app.clone();
         // Prevent "App is not responding" by waiting in a separate thread
@@ -356,7 +922,11 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             let app = appc.clone();
             let fpsunlock_path = fpsunlock_path.clone();
             let fpsv = install.fps_value.clone();
-            let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 2000 600 '{game_path}'") } else { format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 2000 600 '{game_path}'") };
+            let command = if is_proton {
+                format!("'{runner}/{wine64}' run 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 2000 600 '{game_path}'")
+            } else {
+                format!("'{runner}/{wine64}' 'z:\\{fpsunlock_path}/keqing_unlock.exe' run {biz} {fpsv} 2000 600 '{game_path}'")
+            };
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -380,30 +950,90 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             if !install.env_vars.is_empty() {
                 let envs = install.env_vars.clone();
                 let splitted = envs.split(";").collect::<Vec<&str>>();
-                let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
-                    let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-                if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                let parsed: Option<Vec<(&str, String)>> = splitted
+                    .iter()
+                    .map(|env| {
+                        if env.is_empty() {
+                            return Some(None);
+                        }
+                        let mut tmp = env.splitn(2, "=");
+                        match (tmp.next(), tmp.next()) {
+                            (Some(k), Some(v)) if !k.is_empty() => {
+                                Some(Some((k, v.replace("\"", ""))))
+                            }
+                            _ => None,
+                        }
+                    })
+                    .collect::<Option<Vec<_>>>()
+                    .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+                if let Some(env_vars) = parsed {
+                    for (k, v) in env_vars {
+                        cmd.env(k, v);
+                    }
+                }
             }
 
             match cmd.spawn() {
-                Ok(mut child) => match child.try_wait() {
-                    Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing FPS Unlocker command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None, None); }
+                Ok(mut child) => {
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            if !status.success() {
+                                log::info!(
+                                    "Executing FPS Unlocker command: \"{}\" failed with status: {}",
+                                    command,
+                                    status.code().unwrap()
+                                );
+                                show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None, None);
+                            }
+                        }
+                        Ok(None) => {
+                            log::info!("Executing FPS Unlocker command: \"{}\"", command);
+                        }
+                        Err(_) => {
+                            log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command);
+                            show_dialog_with_callback(
+                                &app,
+                                "error",
+                                "TwintailLauncher",
+                                "Failed to run FPS Unlocker! Please try again later!",
+                                None,
+                                None,
+                            );
+                        }
                     }
-                    Ok(None) => { log::info!("Executing FPS Unlocker command: \"{}\"", command); }
-                    Err(_) => { log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again later!", None, None); }
-                },
-                Err(_) => { log::error!("Executing FPS Unlocker command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Something serious is wrong.", None, None); }
+                }
+                Err(_) => {
+                    log::error!(
+                        "Executing FPS Unlocker command \"{}\" failed catastrophically!",
+                        command
+                    );
+                    show_dialog_with_callback(
+                        &app,
+                        "error",
+                        "TwintailLauncher",
+                        "Failed to run FPS Unlocker! Something serious is wrong.",
+                        None,
+                        None,
+                    );
+                }
             }
         });
     }
 }
 
 #[cfg(target_os = "linux")]
-fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, reaper: String, appid: u32, runner: String, wine64: String, prefix: String, install_dir: String, verbs: Vec<String>) -> std::thread::JoinHandle<bool> {
+fn run_winetricks(
+    app: &AppHandle,
+    install: LauncherInstall,
+    steamrt: String,
+    reaper: String,
+    appid: u32,
+    runner: String,
+    wine64: String,
+    prefix: String,
+    install_dir: String,
+    verbs: Vec<String>,
+) -> std::thread::JoinHandle<bool> {
     let appc = app.clone();
     // Prevent "App is not responding" by waiting in a separate thread
     std::thread::spawn(move || {
@@ -411,14 +1041,43 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
         let install_dir = install_dir.clone();
         let winetricks_cache = app.path().app_cache_dir().unwrap().join("winetricks");
         let winetricks_cache_str = winetricks_cache.to_str().unwrap().to_string();
-        if !winetricks_cache.exists() { let _ = std::fs::create_dir_all(&winetricks_cache); }
+        if !winetricks_cache.exists() {
+            let _ = std::fs::create_dir_all(&winetricks_cache);
+        }
 
         #[cfg(not(debug_assertions))]
-        let winetricks_bin = if crate::utils::is_flatpak() { app.path().resource_dir().unwrap().join("resources/winetricks").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir().unwrap().join("resources/winetricks").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
+        let winetricks_bin = if crate::utils::is_flatpak() {
+            app.path()
+                .resource_dir()
+                .unwrap()
+                .join("resources/winetricks")
+                .to_str()
+                .unwrap()
+                .to_string()
+                .replace("/app/lib/", "/run/parent/app/lib/")
+        } else {
+            app.path()
+                .resource_dir()
+                .unwrap()
+                .join("resources/winetricks")
+                .to_str()
+                .unwrap()
+                .to_string()
+                .replace("/usr/lib/", "/run/host/usr/lib/")
+        };
         #[cfg(debug_assertions)]
-        let winetricks_bin = app.path().resource_dir().unwrap().join("resources/winetricks").to_str().unwrap().to_string();
+        let winetricks_bin = app
+            .path()
+            .resource_dir()
+            .unwrap()
+            .join("resources/winetricks")
+            .to_str()
+            .unwrap()
+            .to_string();
 
-        if verbs.is_empty() { return true; }
+        if verbs.is_empty() {
+            return true;
+        }
         let verbs_str = verbs.join(" ");
         let command = format!("'{steamrt}' --verb=waitforexitandrun -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' waitforexitandrun '{winetricks_bin}' -q -f {verbs_str}");
 
@@ -452,12 +1111,25 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                if env.is_empty() { return Some(None); }
-                let mut tmp = env.splitn(2, "=");
-                match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
+                    let mut tmp = env.splitn(2, "=");
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         match cmd.spawn() {
@@ -465,31 +1137,84 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
                 let status = child.wait();
                 match status {
                     Ok(s) => {
-                        if !s.success() { log::info!("Executing WineTricks command: \"{}\" failed with status: {}", command, s.code().unwrap()); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! The game will still attempt to launch.", Some(vec!["I understand"]), None); }
+                        if !s.success() {
+                            log::info!(
+                                "Executing WineTricks command: \"{}\" failed with status: {}",
+                                command,
+                                s.code().unwrap()
+                            );
+                            show_dialog_with_callback(
+                                &app,
+                                "warning",
+                                "TwintailLauncher",
+                                "Winetricks setup failed! The game will still attempt to launch.",
+                                Some(vec!["I understand"]),
+                                None,
+                            );
+                        }
                         s.success()
                     }
-                    Err(_) => { log::error!("Executing WineTricks command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! Please try again later!", Some(vec!["I understand"]), None); false }
+                    Err(_) => {
+                        log::error!(
+                            "Executing WineTricks command: \"{}\" failed! Is command correct?",
+                            command
+                        );
+                        show_dialog_with_callback(
+                            &app,
+                            "warning",
+                            "TwintailLauncher",
+                            "Winetricks setup failed! Please try again later!",
+                            Some(vec!["I understand"]),
+                            None,
+                        );
+                        false
+                    }
                 }
             }
-            Err(_) => { log::error!("Executing WineTricks command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Failed to execute winetricks for setup! Something serious is wrong.", Some(vec!["I understand"]), None); false }
+            Err(_) => {
+                log::error!(
+                    "Executing WineTricks command \"{}\" failed catastrophically!",
+                    command
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "warning",
+                    "TwintailLauncher",
+                    "Failed to execute winetricks for setup! Something serious is wrong.",
+                    Some(vec!["I understand"]),
+                    None,
+                );
+                false
+            }
         }
     })
 }
 
 #[cfg(target_os = "windows")]
-pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
+pub fn launch(
+    app: &AppHandle,
+    install: LauncherInstall,
+    gm: GameManifest,
+    gs: GlobalSettings,
+) -> Result<bool, Error> {
     let dirp = std::path::Path::new(&install.directory.clone()).to_path_buf();
     let dir = dirp.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
-    let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
+    let exe = gm
+        .paths
+        .exe_filename
+        .clone()
+        .split('/')
+        .last()
+        .unwrap()
+        .to_string();
 
     let pre_launch = install.pre_launch_command.clone();
     if !pre_launch.is_empty() {
-        let command = format!("Start-Process -FilePath '{pre_launch}' -WorkingDirectory '{dir}' -Verb RunAs");
-
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
+        cmd.arg(&pre_launch);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -498,18 +1223,52 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
+                    if !status.success() {
+                        log::info!(
+                            "Executing prelaunch command: \"{}\" failed with status: {}",
+                            pre_launch,
+                            status.code().unwrap()
+                        );
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None);
+                    }
                 }
-                Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", command); }
-                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
+                Ok(None) => {
+                    log::info!("Executing prelaunch command: \"{}\"", pre_launch);
+                }
+                Err(_) => {
+                    log::error!(
+                        "Executing prelaunch command: \"{}\" failed! Is command correct?",
+                        pre_launch
+                    );
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None);
+                }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
+            Err(e) => {
+                log::error!(
+                    "Executing prelaunch command \"{}\" failed catastrophically: {}",
+                    pre_launch,
+                    e
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute prelaunch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
     }
 
     // Run xxmi first
     load_xxmi(app, install.clone(), gs.xxmi_path, exe.clone());
-    load_fps_unlock(install.clone(), gm.biz.clone(), dir.clone(), gs.fps_unlock_path);
+    load_fps_unlock(
+        install.clone(),
+        gm.biz.clone(),
+        dir.clone(),
+        gs.fps_unlock_path,
+    );
 
     let rslt = if install.launch_command.is_empty() {
         let mut args = install.launch_args.clone();
@@ -519,47 +1278,153 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
-        let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
-        let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
-        if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
-        if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs"); }
+        let xxmi_forced =
+            install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
+        if install.use_xxmi && gm.biz == "wuwa_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-dx11";
+        }
+        if install.use_xxmi && gm.biz == "endfield_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-force-d3d11";
+        }
+        if gm.extra.switches.graphics_api
+            && !xxmi_forced
+            && !args.split_whitespace().any(|a| {
+                gm.extra
+                    .graphics_api_options
+                    .options
+                    .iter()
+                    .any(|o| o.value.as_str() == a)
+            })
+            && !install.graphics_api.is_empty()
+        {
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += &install.graphics_api;
+        }
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
+        cmd.arg("start");
+        cmd.arg("");
+        cmd.arg(&full_path_str);
+        if !args.is_empty() {
+            cmd.args(args.split_whitespace().collect::<Vec<_>>());
+        }
+
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
         cmd.current_dir(dir);
 
+        let command_display = if args.is_empty() {
+            format!("start \"\" \"{}\"", full_path_str)
+        } else {
+            format!("start \"\" \"{}\" {}", full_path_str, args)
+        };
+
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
                     let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         match cmd.spawn() {
-            Ok(mut child) => match child.try_wait() {
-                Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None, None); }
-                }
-                Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
-                    update_install_last_played_by_id(app, install.id.clone(), time);
-                    start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
-                    log::info!("Executing launch command: \"{}\"", command);
-                }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check the command correctness.", None, None); }
-            },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Ok(mut child) => {
+                let time = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    .to_string();
+                update_install_last_played_by_id(app, install.id.clone(), time);
+                start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
+                log::info!("Executing launch command: \"{}\"", command_display);
+                // Spawn background thread to check cmd exit status for error reporting
+                let app_clone = app.clone();
+                let display_clone = command_display.clone();
+                std::thread::spawn(move || match child.wait() {
+                    Ok(status) => {
+                        if !status.success() {
+                            log::info!(
+                                "Executing launch command: \"{}\" failed with status: {}",
+                                display_clone,
+                                status.code().unwrap()
+                            );
+                            show_dialog_with_callback(&app_clone, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None, None);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Executing launch command: \"{}\" failed! Is command correct? {}",
+                            display_clone,
+                            e
+                        );
+                    }
+                });
+            }
+            Err(e) => {
+                log::error!(
+                    "Executing launch command \"{}\" failed catastrophically: {}",
+                    command_display,
+                    e
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute launch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
         true
     } else {
@@ -571,18 +1436,72 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let c = install.launch_command.clone();
-        let mut args= install.launch_args.clone();
-        let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
+        let mut args = install.launch_args.clone();
 
-        let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
-        if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
-        if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str()); }
+        let xxmi_forced =
+            install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
+        if install.use_xxmi && gm.biz == "wuwa_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-dx11";
+        }
+        if install.use_xxmi && gm.biz == "endfield_global" {
+            args = args
+                .split_whitespace()
+                .filter(|a| {
+                    gm.extra
+                        .graphics_api_options
+                        .options
+                        .iter()
+                        .all(|o| o.value.as_str() != *a)
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += "-force-d3d11";
+        }
+        if gm.extra.switches.graphics_api
+            && !xxmi_forced
+            && !args.split_whitespace().any(|a| {
+                gm.extra
+                    .graphics_api_options
+                    .options
+                    .iter()
+                    .any(|o| o.value.as_str() == a)
+            })
+            && !install.graphics_api.is_empty()
+        {
+            if !args.is_empty() {
+                args += " ";
+            }
+            args += &install.graphics_api;
+        }
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
+        let mut command = c
+            .replace("%install_dir%", dir)
+            .replace("%game_exe%", full_path_str.as_str());
+        if !args.is_empty() {
+            command = format!("{} {}", command, args);
+        }
+
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -591,28 +1510,71 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                    if env.is_empty() { return Some(None); }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
                     let mut tmp = env.splitn(2, "=");
-                    match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-                }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() {
+                        log::info!(
+                            "Executing launch command: \"{}\" failed with status: {}",
+                            command,
+                            status.code().unwrap()
+                        );
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None);
+                    }
                 }
                 Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
+                    let time = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string();
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => {
+                    log::error!(
+                        "Executing launch command: \"{}\" failed! Is command correct?",
+                        command
+                    );
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None);
+                }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => {
+                log::error!(
+                    "Executing launch command \"{}\" failed catastrophically!",
+                    command
+                );
+                show_dialog_with_callback(
+                    &app,
+                    "error",
+                    "TwintailLauncher",
+                    "Failed to execute launch command! Something serious is wrong.",
+                    None,
+                    None,
+                );
+            }
         }
         true
     };
@@ -627,15 +1589,13 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
         let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
-        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
 
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
         crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new(&loader_path_str);
+        cmd.arg(&mipath);
 
         let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
         cmd.env("LOADER_MODE", loader_mode);
@@ -646,35 +1606,61 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                if env.is_empty() { return Some(None); }
-                let mut tmp = env.splitn(2, "=");
-                match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
+                    let mut tmp = env.splitn(2, "=");
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
-            log::info!("Executing XXMI command: \"{}\"", command);
+            log::info!("Executing XXMI command: \"{}\"", loader_path_str);
             spawned.unwrap();
+        } else {
+            log::error!(
+                "Executing XXMI command \"{}\" failed: {}",
+                loader_path_str,
+                spawned.unwrap_err()
+            );
         }
     }
 }
 
 #[cfg(target_os = "windows")]
-fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fpsunlock_path: String) {
+fn load_fps_unlock(
+    install: LauncherInstall,
+    biz: String,
+    game_path: String,
+    fpsunlock_path: String,
+) {
     if install.use_fps_unlock {
         let fpsunlock_path = fpsunlock_path.trim_matches('\\');
         let loader_path = std::path::Path::new(fpsunlock_path).join("keqing_unlock.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let fpsv = install.fps_value.clone();
-        let args = format!("run {} {} 2000 0 \"{}\"", biz, fpsv, game_path);
-        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, args, fpsunlock_path);
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new(&loader_path_str);
+        cmd.arg("run");
+        cmd.arg(&biz);
+        cmd.arg(&fpsv);
+        cmd.arg("2000");
+        cmd.arg("0");
+        cmd.arg(&game_path);
 
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
@@ -683,48 +1669,98 @@ fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fps
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                if env.is_empty() { return Some(None); }
-                let mut tmp = env.splitn(2, "=");
-                match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+            let parsed: Option<Vec<(&str, String)>> = splitted
+                .iter()
+                .map(|env| {
+                    if env.is_empty() {
+                        return Some(None);
+                    }
+                    let mut tmp = env.splitn(2, "=");
+                    match (tmp.next(), tmp.next()) {
+                        (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))),
+                        _ => None,
+                    }
+                })
+                .collect::<Option<Vec<_>>>()
+                .and_then(|vec| Some(vec.into_iter().flatten().collect()));
+            if let Some(env_vars) = parsed {
+                for (k, v) in env_vars {
+                    cmd.env(k, v);
+                }
+            }
         }
 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
-            log::info!("Executing FPS Unlocker command: \"{}\"", command);
+            log::info!("Executing FPS Unlocker command: \"{}\"", loader_path_str);
             spawned.unwrap();
+        } else {
+            log::error!(
+                "Executing FPS Unlocker command \"{}\" failed: {}",
+                loader_path_str,
+                spawned.unwrap_err()
+            );
         }
     }
 }
 
-fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameManifest, exe_name: String) {
+fn start_playtime_tracker(
+    app: &AppHandle,
+    install: LauncherInstall,
+    gm: GameManifest,
+    exe_name: String,
+) {
     let app = app.clone();
     let install_id = install.id.clone();
     let base_playtime = install.total_playtime as u64;
     #[cfg(target_os = "linux")]
-    let exe_name = { let stem = exe_name.split('.').next().unwrap_or(&exe_name); stem[..stem.len().min(15)].to_string() };
+    let exe_name = {
+        let stem = exe_name.split('.').next().unwrap_or(&exe_name);
+        stem[..stem.len().min(15)].to_string()
+    };
     std::thread::spawn(move || {
         let mut last_db_write_elapsed: u64 = 0;
         const POLL_MS: u64 = 500;
         const MAX_WAIT_POLLS: u64 = 240;
         let mut appeared = false;
         for _ in 0..MAX_WAIT_POLLS {
-            if is_process_running(&exe_name) { appeared = true; break; }
+            if is_process_running(&exe_name) {
+                appeared = true;
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_millis(POLL_MS));
         }
         if !appeared {
             if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
-                if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed!"); }
-                if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed!"); }
+                if install.use_xxmi && is_process_running("3dmloader.exe") {
+                    let _ = Command::new("bash")
+                        .args([
+                            "-c",
+                            "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done",
+                        ])
+                        .spawn();
+                    log::debug!("Killing 3dmloader.exe as game crashed!");
+                }
+                if install.use_fps_unlock && is_process_running("keqing_unlock.exe") {
+                    let _ = Command::new("bash")
+                        .args([
+                            "-c",
+                            "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done",
+                        ])
+                        .spawn();
+                    log::debug!("Killing keqing_unlock.exe as game crashed!");
+                }
             }
             return;
         }
         let mut rpc_client = None;
-        if install.show_discord_rpc { rpc_client = discord_rpc::init(&app, install.clone(), gm.clone()); }
+        if install.show_discord_rpc {
+            rpc_client = discord_rpc::init(&app, install.clone(), gm.clone());
+        }
         let mut keepawake = None;
-        if install.disable_system_idle { keepawake = prevent_system_idle(true); }
+        if install.disable_system_idle {
+            keepawake = prevent_system_idle(true);
+        }
         let started = std::time::Instant::now();
         loop {
             std::thread::sleep(std::time::Duration::from_millis(POLL_MS));
@@ -732,16 +1768,42 @@ fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameMan
             let elapsed = started.elapsed().as_secs();
             if !running || elapsed - last_db_write_elapsed >= 10 {
                 let new_total = base_playtime + elapsed;
-                update_install_total_playtime_by_id(&app, install_id.clone(), new_total.to_string());
+                update_install_total_playtime_by_id(
+                    &app,
+                    install_id.clone(),
+                    new_total.to_string(),
+                );
                 last_db_write_elapsed = elapsed;
             }
             if !running {
-                if install.show_discord_rpc { if let Some(ref mut client) = rpc_client { discord_rpc::terminate(client); } }
-                if install.disable_system_idle { drop(keepawake); }
+                if install.show_discord_rpc {
+                    if let Some(ref mut client) = rpc_client {
+                        discord_rpc::terminate(client);
+                    }
+                }
+                if install.disable_system_idle {
+                    drop(keepawake);
+                }
                 app.emit("game_closed", install_id.clone()).unwrap();
                 if cfg!(target_os = "linux") && gm.biz != "wuwa_global" {
-                    if install.use_xxmi && is_process_running("3dmloader.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing 3dmloader.exe as game crashed! 2nd case"); }
-                    if install.use_fps_unlock && is_process_running("keqing_unlock.exe") { let _ = Command::new("bash").args(["-c", "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done"]).spawn(); log::debug!("Killing keqing_unlock.exe as game crashed! 2nd case"); }
+                    if install.use_xxmi && is_process_running("3dmloader.exe") {
+                        let _ = Command::new("bash")
+                            .args([
+                                "-c",
+                                "for pid in $(pgrep -f 3dmloader.exe); do kill -9 -$pid; done",
+                            ])
+                            .spawn();
+                        log::debug!("Killing 3dmloader.exe as game crashed! 2nd case");
+                    }
+                    if install.use_fps_unlock && is_process_running("keqing_unlock.exe") {
+                        let _ = Command::new("bash")
+                            .args([
+                                "-c",
+                                "for pid in $(pgrep -f keqing_unlock.exe); do kill -9 -$pid; done",
+                            ])
+                            .spawn();
+                        log::debug!("Killing keqing_unlock.exe as game crashed! 2nd case");
+                    }
                 }
                 return;
             }
