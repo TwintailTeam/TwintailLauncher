@@ -18,14 +18,15 @@ const getBranch = () => {
     try {
         const branch = execSync("git rev-parse --abbrev-ref HEAD").toString().trim();
         if (branch !== "HEAD") return branch;
-        // Detached HEAD (e.g. Flatpak building from a release tag) — find the source branch
+        // Detached HEAD (CI checkout or building from a release tag) — find the source branch
         const remoteBranches = execSync("git branch -r --contains HEAD 2>/dev/null").toString();
         for (const candidate of ["stable", "master", "main"]) {
             if (remoteBranches.includes(candidate)) return candidate;
         }
         return "stable";
     } catch {
-        return "unknown";
+        // No git available (tarball/archive build) — all releases come from stable
+        return "stable";
     }
 };
 
