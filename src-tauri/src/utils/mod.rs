@@ -1,8 +1,7 @@
 use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{
-    create_installed_runner, get_installed_runner_info_by_version, get_installed_runners,
-    update_install_use_jadeite_by_id, update_installed_runner_is_installed_by_version,
+    create_installed_runner, get_installed_runner_info_by_version, get_installed_runners, update_installed_runner_is_installed_by_version,
     update_settings_default_dxvk_location, update_settings_default_jadeite_location,
     update_settings_default_prefix_location, update_settings_default_runner_location,
 };
@@ -406,24 +405,6 @@ pub fn sync_install_backgrounds(app: &AppHandle) {
             }
         }
         log::debug!("Finished background sync for all installs");
-    }
-}
-
-#[cfg(target_os = "linux")]
-pub fn deprecate_jadeite(app: &AppHandle) {
-    let installs = get_installs(app);
-    if installs.is_some() {
-        let i = installs.unwrap();
-        for ci in i {
-            let im = get_manifest_info_by_id(&app, ci.manifest_id);
-            if im.is_some() {
-                let lm = im.unwrap();
-                // Shit validation but will work
-                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-                if lm.display_name.to_ascii_lowercase().contains("starrail") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-                if lm.display_name.to_ascii_lowercase().contains("honkaiimpact") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-            }
-        }
     }
 }
 

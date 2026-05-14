@@ -121,10 +121,7 @@ pub fn run() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
                     handle.get_window("main").unwrap().hide().unwrap();
-                    std::thread::sleep(std::time::Duration::from_secs(20));
-                    handle.cleanup_before_exit();
-                    handle.exit(0);
-                    std::process::exit(0);
+                    app.emit("sync_tray_toggle", "Show").unwrap();
                 }
 
                 // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
@@ -143,15 +140,9 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     utils::fix_window_decorations(handle);
-                    utils::deprecate_jadeite(handle);
                     utils::sync_installed_runners(handle);
                     downloading::misc::download_or_update_steamrt3(handle);
                     downloading::misc::download_or_update_steamrt4(handle);
-                }
-                // Delete deprecated resource files (PS: reaper binary is executable in resources dir so useless to copy)
-                for df in ["7zr", "7zr.exe", "krpatchz", "krpatchz.exe", "reaper", "hpatchz", "hpatchz.exe"] {
-                    let fd = data_dir.join(df);
-                    if fd.exists() { std::fs::remove_file(fd).unwrap(); }
                 }
             }
             Ok(())
