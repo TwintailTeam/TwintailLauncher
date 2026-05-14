@@ -1034,14 +1034,14 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
             "desktop" => {
                 let base = app.path().home_dir().unwrap().join(".local/share/applications");
                 let file = base.join(format!("{}.desktop", install.name.as_str()));
-                if !file.exists() { fs::write(file.clone(), "").unwrap(); }
-
-                let status = remove_desktop_shortcut(file.clone());
-                if status {
+                if !file.exists() {
+                    log::warn!("Desktop shortcut for \"{}\" does not exist, clearing DB record", install.name);
+                    update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
+                } else if remove_desktop_shortcut(file.clone()) {
                     log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully deleted {} desktop shortcut.", install.name.as_str()).as_str(), None, None);
-                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None, None); }
+                } else { log::warn!("Failed to delete desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Could not delete {} desktop shortcut, please try again by deleting it manually.", install.name.as_str()).as_str(), None, None); }
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
@@ -1086,12 +1086,14 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 let base = app.path().desktop_dir().unwrap();
                 let file = base.join(format!("{}.lnk", install.name.as_str()));
 
-                let status = remove_desktop_shortcut(file.clone());
-                if status {
+                if !file.exists() {
+                    log::warn!("Desktop shortcut for \"{}\" does not exist, clearing DB record", install.name);
+                    update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
+                } else if remove_desktop_shortcut(file.clone()) {
                     log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
                     show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully deleted desktop shortcut.", None, None);
-                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None, None); }
+                } else { log::warn!("Failed to delete desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Could not delete desktop shortcut, please try again by deleting it manually.", None, None); }
             }
             "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
             _ => {}
