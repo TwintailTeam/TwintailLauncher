@@ -250,9 +250,9 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 let i = install.unwrap();
                 let manifest = get_manifest_info_by_id(&app, i.manifest_id).unwrap();
                 let gm = get_manifest(&app, manifest.filename).unwrap();
+                let game_dir = Path::new(&i.directory).to_path_buf();
                 #[cfg(target_os = "linux")]
                 {
-                    let game_dir = Path::new(&i.directory).to_path_buf();
                     let prefix = Path::new(&i.runner_prefix).to_path_buf();
                     let prefix_exists = prefix.join("pfx/").exists();
                     if prefix_exists {
@@ -269,7 +269,7 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
 
                 #[cfg(target_os = "windows")]
                 {
-                    let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
+                    let base = if gm.biz != "wuwa_global" { app.path().home_dir().unwrap().join("AppData/LocalLow/") } else { game_dir };
                     let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, i.region_code));
                     if engine_log.exists() {
                         match app.opener().reveal_item_in_dir(engine_log.as_path()) {
