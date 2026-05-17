@@ -252,10 +252,11 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
                 let gm = get_manifest(&app, manifest.filename).unwrap();
                 #[cfg(target_os = "linux")]
                 {
+                    let game_dir = Path::new(&i.directory).to_path_buf();
                     let prefix = Path::new(&i.runner_prefix).to_path_buf();
                     let prefix_exists = prefix.join("pfx/").exists();
                     if prefix_exists {
-                        let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
+                        let base = if gm.biz != "wuwa_global" { prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/") } else { game_dir };
                         let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, i.region_code));
                         if engine_log.exists() {
                             match app.opener().reveal_item_in_dir(engine_log.as_path()) {

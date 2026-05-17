@@ -463,40 +463,28 @@ pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
     let mut cmdline_appends: Vec<String> = Vec::new();
     let mut config = existing.as_str();
     while !config.is_empty() {
-        let (cur, remainder) = match config.split_once(',') {
-            Some((c, r)) => (c, r),
-            None => (config, ""),
-        };
+        let (cur, remainder) = match config.split_once(',') { Some((c, r)) => (c, r), None => (config, "") };
         if cur.starts_with("cmdlineappend:") {
             let mut full_arg = cur.to_string();
             let mut remaining = remainder;
             while full_arg.ends_with('\\') && !remaining.is_empty() {
-                let (next_part, new_remainder) = match remaining.split_once(',') {
-                    Some((n, r)) => (n, r),
-                    None => (remaining, ""),
-                };
+                let (next_part, new_remainder) = match remaining.split_once(',') { Some((n, r)) => (n, r), None => (remaining, "") };
                 full_arg = format!("{}{}", &full_arg[..full_arg.len() - 1], next_part);
                 remaining = new_remainder;
             }
             let arg = full_arg[14..].replace("\\\\", "\\");
             cmdline_appends.push(arg);
-        } else if !cur.trim().is_empty() {
-            compat_flags.push(cur.to_string());
-        }
+        } else if !cur.trim().is_empty() { compat_flags.push(cur.to_string()); }
         config = remainder;
     }
     for item in append_items.iter() {
         if item.starts_with("cmdlineappend:") {
             let arg = item[14..].replace("\\\\", "\\");
             cmdline_appends.push(arg);
-        } else {
-            compat_flags.push(item.to_string());
-        }
+        } else { compat_flags.push(item.to_string()); }
     }
     let mut new_parts: Vec<String> = Vec::new();
-    for flag in &compat_flags {
-        new_parts.push(flag.clone());
-    }
+    for flag in &compat_flags { new_parts.push(flag.clone()); }
     for append_arg in &cmdline_appends {
         let mut escaped_arg = append_arg.replace('\\', "\\\\");
         escaped_arg = escaped_arg.replace(',', "\\,");
@@ -799,6 +787,7 @@ pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: Str
         return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string()
     }
     if game_biz.to_ascii_lowercase().contains("hyg_global") { return "miHoYo/PetitPlanet/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("wuwa_global") { return "Client/Saved/Logs/Client.log".to_string() }
     if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
     if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()
