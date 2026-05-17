@@ -145,6 +145,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&default_command);
 
+        cmd.env("SteamGameId", appid.clone().to_string());
         cmd.env("SteamOS", "1");
         cmd.env("WINEARCH", "win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
@@ -221,6 +222,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamGameId", appid.clone().to_string());
         cmd.env("SteamOS", "1");
         cmd.env("WINEARCH", "win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
