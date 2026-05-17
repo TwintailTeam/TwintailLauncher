@@ -7,7 +7,6 @@ use crate::utils::db_manager::{
 };
 use crate::utils::models::{DialogResponse,XXMISettings};
 use crate::utils::repo_manager::get_manifest;
-use fischl::utils::get_github_release;
 use sqlx::types::Json;
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -17,7 +16,6 @@ use std::sync::{Arc};
 use std::{fs, io};
 use std::hash::Hash;
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use tauri_plugin_dialog::DialogExt;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
@@ -439,33 +437,6 @@ pub fn raise_fd_limit(new_limit: i32) {
     unsafe { setrlimit(RLIMIT_NOFILE, &mut new); };
 }
 
-pub fn notify_update(app: &AppHandle) {
-    let ttl = get_github_release("TwintailTeam/TwintailLauncher".to_string());
-    if ttl.is_some() {
-        let r = ttl.unwrap();
-        let v = r.tag_name.unwrap().replace("ttl-v", "");
-        let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
-        if !suppressed.exists() {
-            let cfg = app.config();
-            match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
-                std::cmp::Ordering::Less => {
-                    app.dialog().message("You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("TwintailLauncher").kind(tauri_plugin_dialog::MessageDialogKind::Warning).show(move |_| {});
-                    log::info!("You are running outdated version of TwintailLauncher!");
-                }
-                std::cmp::Ordering::Equal => {
-                    log::info!("You are running up to date version of TwintailLauncher!");
-                    #[cfg(debug_assertions)]
-                    println!("You are running up to date version of TwintailLauncher!");
-                }
-                std::cmp::Ordering::Greater => {
-                    log::info!("You are running newer version of TwintailLauncher! Is it dev build?");
-                    #[cfg(debug_assertions)]
-                    println!("You are running newer version of TwintailLauncher! Is it dev build?");
-                }
-            }
-        }
-    }
-}
 
 pub fn prevent_system_idle(is_idle: bool) -> Option<keepawake::KeepAwake> {
     keepawake::Builder::default().display(false).sleep(false).idle(is_idle).reason("TwintailLauncher requested action").app_name("TwintailLauncher").app_reverse_domain("app.twintaillauncher.ttl").create().ok()

@@ -134,13 +134,15 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       }
 
       if (cancelled) return;
-
-      if (limitedMode) {
-        opts.setProgress(5, "Loading (limited mode)...");
-      }
+      if (limitedMode) {opts.setProgress(5, "Loading (limited mode)...");}
 
       if (cancelled) return;
       opts.setProgress(5, "Loading settings and repositories...");
+
+      // Check if we should update the app
+      invoke<boolean>("check_app_update").then(updateAvailable => {
+        if (updateAvailable) opts.applyEventState({ updateAvailable: true });
+      }).catch(() => {});
 
       // Step 1+2: Settings and repositories in parallel (independent data)
       try {

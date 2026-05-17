@@ -132,6 +132,7 @@ export default class App extends React.Component<any, any> {
             availableBackgrounds: [] as { src: string; label: string; isDynamic: boolean }[],
             limitedMode: false,
             networkStatus: "online" as "online" | "slow" | "offline",
+            updateAvailable: false,
             recoveryProgress: null as RecoveryProgress | null,
             imageVersion: 0, // Increments on recovery to force image re-loads
             // Drag and drop state for sidebar installs
@@ -267,6 +268,17 @@ export default class App extends React.Component<any, any> {
                                         Retry
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Update Available Banner */}
+                    {this.state.updateAvailable && !this.state.limitedMode && (
+                        <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+                            <div className="mt-2 px-5 py-2.5 bg-purple-600 rounded-lg shadow-[0_0_20px_3px_rgba(147,51,234,0.45)] pointer-events-auto flex items-center gap-2.5 animate-fadeIn border border-purple-400/40">
+                                <svg className="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span className="text-[0.9rem] font-semibold text-white">New version of TwintailLauncher available! Please update for the best experience!</span>
                             </div>
                         </div>
                     )}

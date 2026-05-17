@@ -1,7 +1,7 @@
 use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_download_speed_limit, update_settings_hide_app_to_tray, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::models::GlobalSettings;
 use crate::utils::repo_manager::get_manifest;
-use crate::utils::{get_mi_path_from_game, show_dialog_with_callback};
+use crate::utils::{compare_version, get_mi_path_from_game, show_dialog_with_callback};
 use std::fs;
 use std::path::Path;
 use tauri::{AppHandle,Manager};
@@ -664,6 +664,20 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
         }
         _ => {}
     }
+}
+
+#[tauri::command]
+pub async fn check_app_update(app: AppHandle) -> bool {
+    tokio::task::spawn_blocking(move || {
+        let Some(r) = fischl::utils::get_github_release("TwintailTeam/TwintailLauncher".to_string()) else { return false; };
+        let v = r.tag_name.unwrap_or_default().replace("ttl-v", "");
+        let cfg = app.config();
+        match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
+            std::cmp::Ordering::Less => { log::info!("You are running outdated version of TwintailLauncher!"); true }
+            std::cmp::Ordering::Equal => { log::info!("You are running up to date version of TwintailLauncher!"); false }
+            std::cmp::Ordering::Greater => { log::info!("You are running newer version of TwintailLauncher! Is it dev build?"); false }
+        }
+    }).await.unwrap_or(false)
 }
 
 #[tauri::command]
