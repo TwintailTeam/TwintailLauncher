@@ -2,6 +2,8 @@ use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
 use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog_with_callback};
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Emitter, Error};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use crate::utils::db_manager::{update_install_last_played_by_id,update_install_total_playtime_by_id};
 use crate::utils::discord_rpc;
 use fischl::utils::is_process_running;
@@ -489,11 +491,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let pre_launch = install.pre_launch_command.clone();
     if !pre_launch.is_empty() {
-        let command = format!("Start-Process -FilePath '{pre_launch}' -WorkingDirectory '{dir}' -Verb RunAs");
-
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
+        cmd.arg(&pre_launch);
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -502,12 +502,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", pre_launch, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
                 }
-                Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", command); }
-                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
+                Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", pre_launch); }
+                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", pre_launch); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
+            Err(e) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically: {}", pre_launch, e); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
         }
     }
 
@@ -523,17 +523,21 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
-        let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
         if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs"); }
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
+        cmd.arg("start");
+        cmd.arg("");
+        cmd.arg(&full_path_str);
+        if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
+        cmd.creation_flags(0x08000000);
+
+        let display = if args.is_empty() { format!("start \"\" \"{}\"", full_path_str) } else { format!("start \"\" \"{}\" {}", full_path_str, args) };
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -551,19 +555,21 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         }
 
         match cmd.spawn() {
-            Ok(mut child) => match child.try_wait() {
-                Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None, None); }
-                }
-                Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
-                    update_install_last_played_by_id(app, install.id.clone(), time);
-                    start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
-                    log::info!("Executing launch command: \"{}\"", command);
-                }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check the command correctness.", None, None); }
+            Ok(mut child) => {
+                let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
+                update_install_last_played_by_id(app, install.id.clone(), time);
+                start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
+                log::info!("Executing launch command: \"{}\"", display);
+                let app_clone = app.clone();
+                let display_clone = display.clone();
+                std::thread::spawn(move || match child.wait() {
+                    Ok(status) => {
+                        if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", display_clone, status.code().unwrap()); show_dialog_with_callback(&app_clone, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None, None); }
+                    }
+                    Err(e) => { log::error!("Executing launch command: \"{}\" failed! Is command correct? {}", display_clone, e); }
+                });
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(e) => { log::error!("Executing launch command \"{}\" failed catastrophically: {}", display, e); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
         }
         true
     } else {
@@ -576,17 +582,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
         let c = install.launch_command.clone();
         let mut args= install.launch_args.clone();
-        let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
         if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
-        if !args.is_empty() { command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str()); }
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
+        let mut command = c.replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
+        if !args.is_empty() { command = format!("{} {}", command, args); }
+
+        let mut cmd = Command::new("cmd");
+        cmd.arg("/c");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000);
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -605,18 +613,18 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
-                Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
-                }
-                Ok(None) => {
-                    let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
-                    update_install_last_played_by_id(app, install.id.clone(), time);
-                    start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
-                    log::info!("Executing launch command: \"{}\"", command);
-                }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
-            },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+                        Ok(Some(status)) => {
+                            if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                        }
+                        Ok(None) => {
+                            let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
+                            update_install_last_played_by_id(app, install.id.clone(), time);
+                            start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
+                            log::info!("Executing launch command: \"{}\"", command);
+                        }
+                        Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                    },
+                    Err(e) => { log::error!("Executing launch command \"{}\" failed catastrophically: {}", command, e); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
         }
         true
     };
@@ -632,16 +640,14 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         let game_dir = std::path::PathBuf::from(&install.directory);
         let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
-        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
 
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
         crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
         if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new(&loader_path_str);
+        cmd.arg(&mipath);
 
         let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
         cmd.env("LOADER_MODE", loader_mode);
@@ -652,19 +658,21 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                if env.is_empty() { return Some(None); }
+            for env in splitted {
+                if env.is_empty() { continue; }
                 let mut tmp = env.splitn(2, "=");
-                match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => { cmd.env(k, v.replace("\"", "")); }
+                    _ => {}
+                }
+            }
         }
 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
-            log::info!("Executing XXMI command: \"{}\"", command);
+            log::info!("Executing XXMI command: {}", loader_path_str);
             spawned.unwrap();
-        }
+        } else { log::error!("Executing XXMI command {} failed: {}", loader_path_str, spawned.unwrap_err()); }
     }
 }
 
@@ -675,12 +683,14 @@ fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fps
         let loader_path = std::path::Path::new(fpsunlock_path).join("keqing_unlock.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let fpsv = install.fps_value.clone();
-        let args = format!("run {} {} 2000 0 \"{}\"", biz, fpsv, game_path);
-        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, args, fpsunlock_path);
 
-        let mut cmd = Command::new("powershell");
-        cmd.arg("-Command");
-        cmd.arg(&command);
+        let mut cmd = Command::new(&loader_path_str);
+        cmd.arg("run");
+        cmd.arg(&biz);
+        cmd.arg(&fpsv);
+        cmd.arg("2000");
+        cmd.arg("0");
+        cmd.arg(&game_path);
 
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
@@ -689,19 +699,21 @@ fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fps
         if !install.env_vars.is_empty() {
             let envs = install.env_vars.clone();
             let splitted = envs.split(";").collect::<Vec<&str>>();
-            let parsed: Option<Vec<(&str, String)>> = splitted.iter().map(|env| {
-                if env.is_empty() { return Some(None); }
+            for env in splitted {
+                if env.is_empty() { continue; }
                 let mut tmp = env.splitn(2, "=");
-                match (tmp.next(), tmp.next()) { (Some(k), Some(v)) if !k.is_empty() => Some(Some((k, v.replace("\"", "")))), _ => None }
-            }).collect::<Option<Vec<_>>>().and_then(|vec| Some(vec.into_iter().flatten().collect()));
-            if let Some(env_vars) = parsed { for (k, v) in env_vars { cmd.env(k, v); } }
+                match (tmp.next(), tmp.next()) {
+                    (Some(k), Some(v)) if !k.is_empty() => { cmd.env(k, v.replace("\"", "")); }
+                    _ => {}
+                }
+            }
         }
 
         let spawned = cmd.spawn();
         if spawned.is_ok() {
-            log::info!("Executing FPS Unlocker command: \"{}\"", command);
+            log::info!("Executing FPS Unlocker command: {}", loader_path_str);
             spawned.unwrap();
-        }
+        } else { log::error!("Executing FPS Unlocker command {} failed: {}", loader_path_str, spawned.unwrap_err()); }
     }
 }
 
