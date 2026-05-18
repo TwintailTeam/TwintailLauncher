@@ -123,7 +123,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let mut args = install.launch_args.clone();
     let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
     if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
     if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
@@ -213,7 +213,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("{c}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("{c} {args}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
@@ -297,11 +297,13 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             let xxmi_path = xxmi_path.clone();
             let mipath = get_mi_path_from_game(game.clone()).unwrap();
             let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
+            let game_dir = std::path::PathBuf::from(&install.directory);
             let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
 
             // Apply the installation tweaks
             let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
             crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
+            if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -524,7 +526,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs"); }
@@ -577,7 +579,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str()); }
@@ -627,6 +629,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
         let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
+        let game_dir = std::path::PathBuf::from(&install.directory);
         let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
@@ -634,6 +637,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
         crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
+        if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
