@@ -24,7 +24,7 @@ pub fn download_or_update_steamrt3(app: &AppHandle) {
     if let Some(s) = gs {
         let rp = Path::new(&s.default_runner_path);
         let steamrt = rp.join("steamrt").join("steamrt3");
-        if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to prepare SteamLinuxRuntime 3 directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None, None); return; } }
+        if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { let err = e.to_string(); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt3_dir_prepare_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))); return; } }
         let steamrt_path = steamrt.to_str().unwrap().to_string();
         let remote_version = match run_async_command(fischl::compat::get_steamrt_version("steamrt3".to_string(), "latest-public-beta".to_string())) { Some(v) => v, None => return };
 
@@ -115,7 +115,7 @@ pub fn run_steamrt3_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
         log::info!("Finished {} SteamLinuxRuntime 3", if payload.is_update { "updating" } else { "downloading" });
         QueueJobOutcome::Completed
     } else {
-        show_dialog_with_callback(&app, "error", "TwintailLauncher", if payload.is_update { "Error occurred while trying to update SteamLinuxRuntime 3! Please restart the application to retry." } else { "Error occurred while trying to download SteamLinuxRuntime 3! Please restart the application to retry." }, Some(vec!["Ok"]), Some("dialog_steamrt3_dl_fail"));
+        show_dialog_with_callback(&app, "error", "TwintailLauncher", if payload.is_update { "dialogs.steamrt3_update_error" } else { "dialogs.steamrt3_dl_error" }, Some(vec!["dialogs.buttons.ok"]), Some("dialog_steamrt3_dl_fail"), None);
         app.emit(complete_event, String::from("SteamLinuxRuntime 3")).unwrap();
         log::warn!("Failed to {} SteamLinuxRuntime 3", if payload.is_update { "update" } else { "download" });
         QueueJobOutcome::Failed
@@ -128,7 +128,7 @@ pub fn download_or_update_steamrt4(app: &AppHandle) {
     if let Some(s) = gs {
         let rp = Path::new(&s.default_runner_path);
         let steamrt = rp.join("steamrt").join("steamrt4");
-        if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to prepare SteamLinuxRuntime 4 directory. {} - Please fix the error and restart the app!", e.to_string()).as_str(), None, None); return; } }
+        if !steamrt.exists() { if let Err(e) = fs::create_dir_all(&steamrt) { let err = e.to_string(); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt4_dir_prepare_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))); return; } }
         let steamrt_path = steamrt.to_str().unwrap().to_string();
         let remote_version = match run_async_command(fischl::compat::get_steamrt_version("steamrt4".to_string(), "latest-public-beta".to_string())) { Some(v) => v, None => return };
 
@@ -219,7 +219,7 @@ pub fn run_steamrt4_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
         log::info!("Finished {} SteamLinuxRuntime 4", if payload.is_update { "updating" } else { "downloading" });
         QueueJobOutcome::Completed
     } else {
-        show_dialog_with_callback(&app, "error", "TwintailLauncher", if payload.is_update { "Error occurred while trying to update SteamLinuxRuntime 4! Please restart the application to retry." } else { "Error occurred while trying to download SteamLinuxRuntime 4! Please restart the application to retry." }, Some(vec!["Ok"]), Some("dialog_steamrt4_dl_fail"));
+        show_dialog_with_callback(&app, "error", "TwintailLauncher", if payload.is_update { "dialogs.steamrt4_update_error" } else { "dialogs.steamrt4_dl_error" }, Some(vec!["dialogs.buttons.ok"]), Some("dialog_steamrt4_dl_fail"), None);
         app.emit(complete_event, String::from("SteamLinuxRuntime 4")).unwrap();
         log::warn!("Failed to {} SteamLinuxRuntime 4", if payload.is_update { "update" } else { "download" });
         QueueJobOutcome::Failed
@@ -287,7 +287,7 @@ pub fn run_runner_download(app: AppHandle, payload: RunnerDownloadPayload, job_i
         log::info!("Finished downloading and extracting runner {}", runner_name);
         QueueJobOutcome::Completed
     } else {
-        show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Error occurred while trying to download {runner_name}! Please retry later.").as_str(), Some(vec!["Ok"]), Some("dialog_runner_dl_fail"));
+        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.runner_download_error", Some(vec!["dialogs.buttons.ok"]), Some("dialog_runner_dl_fail"), Some(std::collections::HashMap::from([("runner_name", runner_name.as_str())])));
         app.emit("download_complete", payload.runner_version.clone()).unwrap();
         let _ = empty_dir(payload.runner_path.clone());
         log::warn!("Failed to download runner {}", runner_name);
@@ -395,7 +395,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                 let manifest = Extras::fetch_ttl_manifest(package_id.clone());
                 if let Some(m) = manifest {
                     if m.retcode != 0 {
-                        show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Error occurred while trying to update {package_id}! Please retry later.").as_str(), Some(vec!["Ok"]), Some("dialog_extra_dl_fail"));
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.package_update_error", Some(vec!["dialogs.buttons.ok"]), Some("dialog_extra_dl_fail"), Some(std::collections::HashMap::from([("package_id", package_id.as_str())])));
                         app.emit("update_complete", package_id.clone()).unwrap();
                         log::debug!("Failed to fetch TTL manifest for {package_id} during update check");
                         return false;
@@ -449,7 +449,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                                         log::debug!("Successfully updated {package_id} to version {}", p.version);
                                         return true;
                                     } else {
-                                        show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Error occurred while trying to update {package_id}! Please retry later.").as_str(), Some(vec!["Ok"]), Some("dialog_extra_dl_fail"));
+                                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.package_update_error", Some(vec!["dialogs.buttons.ok"]), Some("dialog_extra_dl_fail"), Some(std::collections::HashMap::from([("package_id", package_id.as_str())])));
                                         app.emit("update_complete", package_id.clone()).unwrap();
                                         empty_dir(&path).unwrap();
                                         log::debug!("Failed to update {package_id} to version {}", p.version);
@@ -511,7 +511,7 @@ pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: Stri
                     log::debug!("Finished downloading {package_id}");
                     return true;
                 } else {
-                    show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Error occurred while trying to download {package_id}! Please retry later.").as_str(), Some(vec!["Ok"]), Some("dialog_extra_dl_fail"));
+                    show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.package_download_error", Some(vec!["dialogs.buttons.ok"]), Some("dialog_extra_dl_fail"), Some(std::collections::HashMap::from([("package_id", package_id.as_str())])));
                     app.emit("download_complete", package_id.clone()).unwrap();
                     empty_dir(&path).unwrap();
                     log::debug!("Failed downloading {package_id}");

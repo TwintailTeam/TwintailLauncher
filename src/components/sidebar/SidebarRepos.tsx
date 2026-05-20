@@ -12,6 +12,7 @@ import {
 } from "@floating-ui/react";
 import {POPUPS} from "../popups/POPUPS.ts";
 import {Boxes} from "lucide-react";
+import { translate } from "../../utils/i18n";
 
 export default function SidebarRepos({setOpenPopup, popup}: {setOpenPopup: (a: POPUPS) => void, popup: POPUPS}) {
     const [isOpen, setIsOpen] = useState(false);
@@ -42,7 +43,7 @@ export default function SidebarRepos({setOpenPopup, popup}: {setOpenPopup: (a: P
             {(isOpen && popup == POPUPS.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">Repositories</span>
+                    <span className="text-white z-50">{translate("sidebar.repositories")}</span>
                 </div>
             )}
         </React.Fragment>

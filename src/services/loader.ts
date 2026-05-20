@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { Events } from "../constants/events.ts";
 import { registerEvents } from "./events.ts";
+import { translate } from "../utils/i18n";
 import { isLinux, clearFailedImages, getFailedImageCount, isImagePreloaded } from "../utils/imagePreloader.ts";
 import { showDialogAsync } from "../context/DialogContext.tsx";
 
@@ -29,18 +30,16 @@ export async function checkNetworkConnectivity(): Promise<NetworkStatus> {
  */
 export async function handleNetworkIssue(status: NetworkStatus): Promise<boolean> {
   const isOffline = status.status === "offline";
-  const title = isOffline ? "No Internet Connection" : "Slow Internet Connection";
-  const message = isOffline
-    ? "Unable to connect to the internet. You can continue with limited functionality - you'll be able to launch installed games but won't be able to download or update."
-    : "Your internet connection appears to be slow. Downloads and updates may take longer than expected. You can continue with limited functionality or retry the connection.";
+  const title = isOffline ? translate("network.no_internet_title") : translate("network.slow_internet_title");
+  const message = isOffline ? translate("network.no_internet_message") : translate("network.slow_internet_message");
 
   const buttonIndex = await showDialogAsync({
     type: "warning",
     title,
     message,
     buttons: [
-      { label: "Retry", variant: "secondary" },
-      { label: "Continue (Limited)", variant: "primary" },
+      { label: translate("network.retry"), variant: "secondary" },
+      { label: translate("network.continue_limited"), variant: "primary" },
     ],
   });
 
@@ -101,7 +100,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       if (cancelled) return;
-      opts.setProgress(0, "Checking network connectivity...");
+      opts.setProgress(0, translate("network.checking"));
 
       // Step 0: Network connectivity check with retry support
       let networkCheckPassed = false;
@@ -134,10 +133,10 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       }
 
       if (cancelled) return;
-      if (limitedMode) {opts.setProgress(5, "Loading (limited mode)...");}
+      if (limitedMode) {opts.setProgress(5, translate("network.limited_mode") + "...");}
 
       if (cancelled) return;
-      opts.setProgress(5, "Loading settings and repositories...");
+      opts.setProgress(5, translate("loading_screen.initializing"));
 
       // Check if we should update the app
       invoke<boolean>("check_app_update").then(updateAvailable => {
@@ -160,10 +159,10 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
           ]);
         }
         if (cancelled) return;
-        opts.setProgress(50, "Loading game data...");
+        opts.setProgress(50, translate("loading_screen.initializing"));
       } catch (e) {
         console.error("Error during initial data load:", e);
-        opts.setProgress(50, "Error loading data...");
+        opts.setProgress(50, translate("loading_screen.initializing"));
       }
 
       // Step 3: Wait for gamesinfo to be populated (polling)
@@ -173,7 +172,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         tries++;
       }
       if (cancelled) return;
-      opts.setProgress(75, "Preloading images...");
+      opts.setProgress(75, translate("loading_screen.preloading_assets"));
 
       // Step 4: Preload images (backgrounds + icons) including installed assets for older/different versions
       // Also preload live/dynamic backgrounds for smooth transitions
@@ -200,7 +199,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
             (loaded, total) => {
               if (cancelled) return;
               const progress = 75 + Math.round((loaded / total) * 25);
-              opts.setProgress(progress, `Preloading images... (${loaded}/${total})`);
+              opts.setProgress(progress, `${translate("loading_screen.preloading_assets")} (${loaded}/${total})`);
             },
             opts.preloadedBackgrounds
           ),
@@ -214,7 +213,7 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         ]);
       } catch (e) { console.error("Error during image preloading:", e); }
       if (cancelled) return;
-      opts.setProgress(100, "Almost ready...");
+      opts.setProgress(100, translate("loading_screen.initializing"));
 
       // Complete loading visuals immediately
       opts.completeInitialLoading();
@@ -367,13 +366,13 @@ export class NetworkMonitor {
     if (this.isRecovering || !this.recoveryOpts) return false;
 
     this.isRecovering = true;
-    this.onRecoveryProgress({ phase: "checking", current: 0, total: 0, message: "Checking connection..." });
+    this.onRecoveryProgress({ phase: "checking", current: 0, total: 0, message: translate("network.checking") });
 
     try {
       // Check connectivity first
       const status = await checkNetworkConnectivity();
       if (status.status !== "online") {
-        this.onRecoveryProgress({ phase: "idle", current: 0, total: 0, message: "Still offline" });
+        this.onRecoveryProgress({ phase: "idle", current: 0, total: 0, message: translate("network.still_offline") });
         this.isRecovering = false;
         return false;
       }
@@ -386,7 +385,7 @@ export class NetworkMonitor {
       }
 
       // Reload repositories
-      this.onRecoveryProgress({ phase: "loading_repos", current: 0, total: 1, message: "Loading repositories..." });
+      this.onRecoveryProgress({ phase: "loading_repos", current: 0, total: 1, message: translate("network.loading_repos") });
       try {
         await this.recoveryOpts.fetchRepositories();
         if (window.navigator.platform.includes("Linux")) {
@@ -433,7 +432,7 @@ export class NetworkMonitor {
           phase: "loading_images",
           current: 0,
           total: imagesToLoad.length,
-          message: `Loading images... (0/${imagesToLoad.length})`
+          message: `${translate("network.loading_images")} (0/${imagesToLoad.length})`
         });
 
         try {
@@ -445,7 +444,7 @@ export class NetworkMonitor {
                   phase: "loading_images",
                   current: loaded,
                   total,
-                  message: `Loading images... (${loaded}/${total})`
+                  message: `${translate("network.loading_images")} (${loaded}/${total})`
                 });
               },
               this.recoveryOpts.preloadedBackgrounds
@@ -463,7 +462,7 @@ export class NetworkMonitor {
       }
 
       // Recovery complete
-      this.onRecoveryProgress({ phase: "complete", current: 0, total: 0, message: "Connected!" });
+      this.onRecoveryProgress({ phase: "complete", current: 0, total: 0, message: translate("network.connected") });
       this.recoveryOpts.applyEventState({ limitedMode: false, networkStatus: "online" });
 
       // Reset to idle after a short delay
@@ -475,7 +474,7 @@ export class NetworkMonitor {
       return true;
     } catch (e) {
       console.error("Recovery failed:", e);
-      this.onRecoveryProgress({ phase: "idle", current: 0, total: 0, message: "Recovery failed" });
+      this.onRecoveryProgress({ phase: "idle", current: 0, total: 0, message: translate("network.recovery_failed") });
       this.isRecovering = false;
       return false;
     }

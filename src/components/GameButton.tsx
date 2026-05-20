@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { translate } from "../utils/i18n";
 import { DownloadIcon, HardDriveDownloadIcon, RefreshCcwIcon, Play, PauseIcon, Clock, FolderOpen } from "lucide-react";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
@@ -157,19 +158,19 @@ export default function GameButton({ currentInstall, globalSettings, buttonType,
 
     const getLaunchLabel = (): string => {
         switch (gameStatus) {
-            case "preparing": return "PREPARING...";
-            case "launching": return "LAUNCHING...";
-            case "running": return "RUNNING";
-            default: return "PLAY";
+            case "preparing": return translate("game_button.preparing");
+            case "launching": return translate("game_button.launching");
+            case "running": return translate("game_button.running");
+            default: return translate("game_button.play");
         }
     };
 
     const label = buttonType === "launch" ? getLaunchLabel()
-        : buttonType === "download" ? "INSTALL"
-            : buttonType === "update" ? "UPDATE"
-                : buttonType === "pause" ? (isPausing ? "PAUSING..." : "PAUSE")
-                    : buttonType === "queued" ? "QUEUED"
-                        : "RESUME";
+        : buttonType === "download" ? translate("game_button.install")
+            : buttonType === "update" ? translate("game_button.update")
+                : buttonType === "pause" ? (isPausing ? translate("game_button.pausing") : translate("game_button.pause"))
+                    : buttonType === "queued" ? translate("game_button.queued")
+                        : translate("game_button.resume");
 
     const Icon = buttonType === "launch" ? Play
         : buttonType === "download" ? HardDriveDownloadIcon
@@ -270,7 +271,7 @@ export default function GameButton({ currentInstall, globalSettings, buttonType,
                     onClick={() => refreshDownloadButtonInfo(true)}
                 >
                     <FolderOpen className="w-3.5 h-3.5" />
-                    <span className="uppercase tracking-wider group-hover:underline underline-offset-2">Use existing install</span>
+                    <span className="uppercase tracking-wider group-hover:underline underline-offset-2">{translate("game_button.use_existing_install")}</span>
                 </button>
             )}
         </div>

@@ -194,6 +194,12 @@ pub async fn init_db(app: &AppHandle) {
             sql: r#"ALTER TABLE settings ADD COLUMN hide_app_to_tray bool DEFAULT false NOT NULL;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 30,
+            description: "alter_settings_table_app_lang",
+            sql: r#"ALTER TABLE settings ADD COLUMN app_lang TEXT DEFAULT 'en_US' NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -253,6 +259,7 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
             default_dxvk_path: rslt.get(0).unwrap().get("default_dxvk_path"),
             default_mangohud_config_path: rslt.get(0).unwrap().get("default_mangohud_config_path"),
             hide_app_to_tray: rslt.get(0).unwrap().get("hide_app_to_tray"),
+            app_lang: rslt.get(0).unwrap().get("app_lang"),
         };
         Some(rsltt)
     } else { None }
@@ -400,6 +407,14 @@ pub fn update_settings_hide_app_to_tray(app: &AppHandle, enabled: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'hide_app_to_tray' = $1 WHERE id = 1").bind(enabled);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_settings_app_lang(app: &AppHandle, lang: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+        let query = query("UPDATE settings SET 'app_lang' = $1 WHERE id = 1").bind(lang);
         query.execute(&db).await.unwrap();
     });
 }

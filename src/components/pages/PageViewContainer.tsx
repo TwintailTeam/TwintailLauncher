@@ -39,6 +39,7 @@ interface PageViewContainerProps {
     // Settings props
     globalSettings: any;
     fetchSettings: () => void;
+    availableLocales: string[];
 
     // Downloads props
     downloadQueueState: DownloadQueueStatePayload | null;
@@ -64,6 +65,7 @@ export default function PageViewContainer({
     setCurrentPage,
     globalSettings,
     fetchSettings,
+    availableLocales,
     downloadQueueState,
     downloadProgressByJobId,
     installs,
@@ -121,6 +123,7 @@ export default function PageViewContainer({
                         settings={globalSettings}
                         fetchSettings={fetchSettings}
                         setCurrentPage={setCurrentPage}
+                        availableLocales={availableLocales}
                     />
                 )}
                 {currentPage === PAGES.DOWNLOADS && (

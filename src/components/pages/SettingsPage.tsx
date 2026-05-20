@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react";
+import { translate } from "../../utils/i18n";
 import {invoke} from "@tauri-apps/api/core";
 import {ArrowLeft, Download, Folder, HeartIcon, Info, LogsIcon, Monitor, Settings, WrenchIcon} from "lucide-react";
 import {SettingsSidebar, SettingsTab} from "../sidebar/SettingsSidebar.tsx";
@@ -16,18 +17,19 @@ interface SettingsPageProps {
     settings: any;
     fetchSettings: () => void;
     setCurrentPage: (page: PAGES) => void;
+    availableLocales: { value: string; label: string }[];
 }
 
-export default function SettingsPage({ settings, fetchSettings, setCurrentPage }: SettingsPageProps) {
+export default function SettingsPage({ settings, fetchSettings, setCurrentPage, availableLocales }: SettingsPageProps) {
     const [activeTab, setActiveTab] = useState("general");
 
     const tabs: SettingsTab[] = [
-        { id: "general", label: "General", icon: Settings, color: "blue" },
-        { id: "downloads", label: "Downloads", icon: Download, color: "green" },
-        { id: "files", label: "Files & Paths", icon: Folder, color: "yellow" },
+        { id: "general", label: translate("launcher_settings.tabs.general"), icon: Settings, color: "blue" },
+        { id: "downloads", label: translate("launcher_settings.tabs.downloads"), icon: Download, color: "green" },
+        { id: "files", label: translate("launcher_settings.tabs.files"), icon: Folder, color: "yellow" },
         ...(window.navigator.platform.includes("Linux") ? [/*{ id: "integrations", label: "Integrations & Tools", icon: Box, color: "purple" }*/] : []),
-        ...(window.navigator.platform.includes("Linux") ? [{ id: "linux", label: "Linux Options", icon: Monitor, color: "orange" }] : []),
-        { id: "about", label: "About", icon: Info, color: "pink" },
+        ...(window.navigator.platform.includes("Linux") ? [{ id: "linux", label: translate("launcher_settings.tabs.linux"), icon: Monitor, color: "orange" }] : []),
+        { id: "about", label: translate("launcher_settings.tabs.about"), icon: Info, color: "pink" },
     ];
 
     // Helper to update settings
@@ -38,6 +40,8 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
             } else if (typeof value === "string" || typeof value === "number") {
                 if (key === "download_speed_limit") {
                     await invoke("update_settings_download_speed_limit_cmd", { speedLimit: Number(value) });
+                } else if (key === "app_lang") {
+                    await invoke("update_settings_app_lang_cmd", { lang: value });
                 } else if (key === "launcher_action") {
                     await invoke(`update_settings_${key}`, { action: value });
                 } else if (key === "xxmi_path") {
@@ -91,9 +95,9 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                            Launcher Settings
+                            {translate("launcher_settings.title")}
                         </h1>
-                        <p className="text-sm text-white/50">Configure your launcher preferences</p>
+                        <p className="text-sm text-white/50">{translate("launcher_settings.subtitle")}</p>
                     </div>
                 </div>
             </div>
@@ -108,23 +112,30 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                     className={`flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${animClass}`}
                 >
                     {activeTab === "general" && (
-                        <SettingsSection title="General Options">
+                        <SettingsSection title={translate("launcher_settings.general.title")}>
                             <ModernToggle
-                                label="Minimize application"
-                                description="Hide application to system tray instead of completely closing."
+                                label={translate("launcher_settings.general.hide_app_to_tray.label")}
+                                description={translate("launcher_settings.general.hide_app_to_tray.description")}
                                 checked={Boolean(settings.hide_app_to_tray)}
                                 onChange={(val) => updateSetting("hide_app_tray", val)}
                             />
                             <ModernSelect
-                                label="After Game Launch"
-                                description="Choose what the launcher should do when a game starts."
+                                label={translate("launcher_settings.general.launcher_action.label")}
+                                description={translate("launcher_settings.general.launcher_action.description")}
                                 value={`${settings.launcher_action}`}
                                 options={[
-                                    { value: "exit", label: "Close launcher" },
-                                    { value: "keep", label: "Keep launcher open" },
-                                    { value: "minimize", label: "Minimize to system tray" }
+                                    { value: "exit", label: translate("launcher_settings.general.launcher_action.exit") },
+                                    { value: "keep", label: translate("launcher_settings.general.launcher_action.keep") },
+                                    { value: "minimize", label: translate("launcher_settings.general.launcher_action.minimize") }
                                 ]}
                                 onChange={(val) => updateSetting("launcher_action", val)}
+                            />
+                            <ModernSelect
+                                label={translate("launcher_settings.general.language.label")}
+                                description={translate("launcher_settings.general.language.description")}
+                                value={`${settings.app_lang ?? "en_US"}`}
+                                options={availableLocales}
+                                onChange={(val) => updateSetting("app_lang", val)}
                             />
                             {/*<ModernToggle
                                 label="Auto-update 3rd Party Repos"
@@ -136,10 +147,10 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                     )}
 
                     {activeTab === "downloads" && (
-                        <SettingsSection title="Download Manager">
+                        <SettingsSection title={translate("launcher_settings.downloads.title")}>
                             <ModernInput
-                                label="Download Speed Limit (KB/s)"
-                                description="Limit the total download bandwidth. Set to 0 for unlimited."
+                                label={translate("launcher_settings.downloads.speed_limit.label")}
+                                description={translate("launcher_settings.downloads.speed_limit.description")}
                                 type="number"
                                 min={0}
                                 value={settings.download_speed_limit ?? 0}
@@ -150,24 +161,24 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
 
                     {activeTab === "files" && (
                         <>
-                            <SettingsSection title="Games">
+                            <SettingsSection title={translate("launcher_settings.files.games_title")}>
                                 <ModernPathInput
-                                    label="Default Game Install Location"
-                                    description="Default base directory where new games will be installed."
+                                    label={translate("launcher_settings.files.default_game_path.label")}
+                                    description={translate("launcher_settings.files.default_game_path.description")}
                                     value={`${settings.default_game_path}`}
                                     onChange={(val) => updateSetting("default_game_path", val)}
                                 />
                             </SettingsSection>
-                            <SettingsSection title="External Tools">
+                            <SettingsSection title={translate("launcher_settings.files.tools_title")}>
                                 <ModernPathInput
-                                    label="XXMI Location"
-                                    description="Directory for XXMI modding tool files."
+                                    label={translate("launcher_settings.files.xxmi_path.label")}
+                                    description={translate("launcher_settings.files.xxmi_path.description")}
                                     value={`${settings.xxmi_path}`}
                                     onChange={(val) => updateSetting("xxmi_path", val)}
                                 />
                                 <ModernPathInput
-                                    label="FPS Unlocker Location"
-                                    description="Directory where the FPS unlocker is stored."
+                                    label={translate("launcher_settings.files.fps_unlock_path.label")}
+                                    description={translate("launcher_settings.files.fps_unlock_path.description")}
                                     value={`${settings.fps_unlock_path}`}
                                     onChange={(val) => updateSetting("fps_unlock_path", val)}
                                 />
@@ -177,10 +188,10 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
 
                     {activeTab === "linux" && (
                         <>
-                            <SettingsSection title="Linux Configuration">
+                            <SettingsSection title={translate("launcher_settings.linux.title")}>
                                 <ModernPathInput
-                                    label="Default Runner Location"
-                                    description="Base directory for Wine/Proton versions."
+                                    label={translate("launcher_settings.linux.default_runner_path.label")}
+                                    description={translate("launcher_settings.linux.default_runner_path.description")}
                                     value={`${settings.default_runner_path}`}
                                     onChange={(val) => updateSetting("default_runner_path", val)}
                                 />
@@ -191,36 +202,36 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                                 onChange={(val) => updateSetting("default_dxvk_path", val)}
                             />*/}
                                 <ModernPathInput
-                                    label="Default Prefix Location"
-                                    description="Base directory for Wine/Proton prefixes."
+                                    label={translate("launcher_settings.linux.default_prefix_path.label")}
+                                    description={translate("launcher_settings.linux.default_prefix_path.description")}
                                     value={`${settings.default_runner_prefix_path}`}
                                     onChange={(val) => updateSetting("default_prefix_path", val)}
                                 />
                                 <ModernPathInput
-                                    label="MangoHUD Config"
-                                    description="Default configuration file for MangoHUD."
+                                    label={translate("launcher_settings.linux.mangohud_config.label")}
+                                    description={translate("launcher_settings.linux.mangohud_config.description")}
                                     value={`${settings.default_mangohud_config_path}`}
                                     onChange={(val) => updateSetting("default_mangohud_config_path", val)}
                                     folder={false}
                                     extensions={["conf"]}
                                 />
                             </SettingsSection>
-                            <SettingsSection title="Help & Debugging">
+                            <SettingsSection title={translate("launcher_settings.linux.debug_title")}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt3' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
                                         <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
-                                        <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 3 diagnostics</span>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">{translate("launcher_settings.linux.steamrt3_diagnostics")}</span>
                                     </button>
                                     <button onClick={() => invoke('open_in_prefix', { installId: "", pathType: 'steamrt4' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-purple-400/20 border border-white/5 hover:border-purple-600/50 rounded-xl transition-all group cursor-pointer">
                                         <LogsIcon className="w-5 h-5 text-zinc-400 group-hover:text-purple-500"/>
-                                        <span className="text-zinc-300 group-hover:text-white font-medium">SteamLinuxRuntime 4 diagnostics</span>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">{translate("launcher_settings.linux.steamrt4_diagnostics")}</span>
                                     </button>
                                     <button onClick={() => {
                                         setCurrentPage(PAGES.NONE);
                                         invoke("empty_folder", { installId: "", pathType: "steamrt"});
                                     }} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-orange-400/20 border border-white/5 hover:border-orange-600/50 rounded-xl transition-all group cursor-pointer">
                                         <WrenchIcon className="w-5 h-5 text-zinc-400 group-hover:text-orange-500"/>
-                                        <span className="text-zinc-300 group-hover:text-white font-medium">Repair SteamLinuxRuntime</span>
+                                        <span className="text-zinc-300 group-hover:text-white font-medium">{translate("launcher_settings.linux.repair_steamrt")}</span>
                                     </button>
                                 </div>
                             </SettingsSection>
@@ -241,7 +252,7 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                             </h1>
                             <div className="mb-8">
                                 <span className="text-zinc-300">
-                                    Version: <span className={"text-purple-400 font-bold"}>{version}</span> | Branch: <span className={"text-orange-400 font-bold"}>{__GIT_BRANCH__}</span> | Commit: <span className={"text-cyan-400 font-bold"}>{__COMMIT_HASH__}</span>
+                                    {translate("launcher_settings.about.version_label")}: <span className={"text-purple-400 font-bold"}>{version}</span> | {translate("launcher_settings.about.branch_label")}: <span className={"text-orange-400 font-bold"}>{__GIT_BRANCH__}</span> | {translate("launcher_settings.about.commit_label")}: <span className={"text-cyan-400 font-bold"}>{__COMMIT_HASH__}</span>
                                  </span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg w-full">
@@ -249,13 +260,13 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage }
                                     <svg className="w-5 h-5 text-zinc-400 group-hover:text-white" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                                     </svg>
-                                    <span className="text-zinc-300 group-hover:text-white font-medium">GitHub Repository</span>
+                                    <span className="text-zinc-300 group-hover:text-white font-medium">{translate("launcher_settings.about.github")}</span>
                                 </button>
                                 <button onClick={() => invoke('open_uri', { uri: 'https://discord.gg/nDMJDwuj7s' })} className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-[#5865F2]/20 border border-white/5 hover:border-[#5865F2]/50 rounded-xl transition-all group cursor-pointer">
                                     <svg className="w-5 h-5 text-zinc-400 group-hover:text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026 13.83 13.83 0 0 0 1.226-1.963.074.074 0 0 0-.041-.104 13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.246.195.373.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.201 0 2.176 1.068 2.157 2.38 0 1.311-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.2 0 2.176 1.068 2.156 2.38 0 1.311-.956 2.38-2.156 2.38z" />
                                     </svg>
-                                    <span className="text-zinc-300 group-hover:text-white font-medium">Join Discord</span>
+                                    <span className="text-zinc-300 group-hover:text-white font-medium">{translate("launcher_settings.about.discord")}</span>
                                 </button>
                             </div>
                             <p className="mt-12 text-zinc-400 font-medium tracking-wide text-sm opacity-80 flex items-center justify-center">

@@ -62,7 +62,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for game manifest repository! {}", e.to_string()).as_str(), None, None); }
+            Err(e) => { let err = e.to_string(); show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.repo_fetch_game_manifest_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))); }
         }
     }
 }
@@ -108,7 +108,7 @@ pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Res
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for one or multiple 3rd party repositories! {}", e.to_string()).as_str(), None, None); }
+            Err(e) => { let err = e.to_string(); show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.repo_fetch_3rdparty_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))); }
         }
         Ok(false)
     }
@@ -180,7 +180,7 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
         let r = update_repositories(&repo_path);
         match r {
             Ok(_) => {}
-            Err(e) => { show_dialog_with_callback(app, "warning", "TwintailLauncher", format!("Failed to fetch update(s) for compatibility repository! {}", e.to_string()).as_str(), None, None); }
+            Err(e) => { let err = e.to_string(); show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.repo_fetch_compat_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))); }
         }
     }
 }

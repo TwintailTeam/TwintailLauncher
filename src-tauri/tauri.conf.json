@@ -47,7 +47,8 @@
         "resources": [
             "./resources/hkrpg_patch.dll",
             "./resources/reaper",
-            "./resources/winetricks"
+            "./resources/winetricks",
+            "./resources/locales/*"
         ],
         "icon": [
             "icons/32x32.png",

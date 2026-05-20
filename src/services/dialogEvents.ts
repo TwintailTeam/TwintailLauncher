@@ -6,6 +6,7 @@ export interface DialogPayload {
     message: string;
     buttons?: string[] | string;
     callback_id?: string;
+    variables?: Record<string, string>;
 }
 
 export type ShowDialogFn = (payload: DialogPayload) => void;

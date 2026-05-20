@@ -35,6 +35,7 @@ pub struct GlobalSettings {
     pub default_dxvk_path: String,
     pub default_mangohud_config_path: String,
     pub hide_app_to_tray: bool,
+    pub app_lang: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

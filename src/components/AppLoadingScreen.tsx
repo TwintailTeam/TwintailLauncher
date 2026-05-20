@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { translate } from "../utils/i18n";
 
 interface AppLoadingScreenProps {
     progress: number;
@@ -106,11 +107,11 @@ const AppLoadingScreen: React.FC<AppLoadingScreenProps> = ({ progress, message, 
                         onClick={onSkip}
                         className="px-4 py-1.5 text-xs font-medium text-white/70 hover:text-white bg-white/[0.08] hover:bg-white/[0.15] rounded-full border border-white/[0.1] hover:border-white/[0.2] transition-all duration-200 animate-fadeIn"
                     >
-                        Skip &amp; Continue
+                        {translate("loading_screen.skip_continue")}
                     </button>
                 )}
                 <div className="text-white/[0.15] text-[10px] uppercase tracking-[0.2em] font-medium">
-                    {isPreloadPhase ? "Preloading Assets" : "Initializing Environment"}
+                    {isPreloadPhase ? translate("loading_screen.preloading_assets") : translate("loading_screen.initializing")}
                 </div>
             </div>
         </main>

@@ -13,6 +13,7 @@ import {
 import { POPUPS } from "../popups/POPUPS";
 import { PAGES } from "../pages/PAGES";
 import { DownloadIcon } from "lucide-react";
+import { translate } from "../../utils/i18n";
 
 export default function SidebarDownloads({
   popup,
@@ -185,7 +186,7 @@ export default function SidebarDownloads({
           className="bg-black/75 rounded-md p-2 min-w-max z-50"
         >
           <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-          <span className="text-white z-50">Downloads</span>
+          <span className="text-white z-50">{translate("sidebar.downloads")}</span>
         </div>
       )}
     </React.Fragment>

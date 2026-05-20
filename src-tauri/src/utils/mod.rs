@@ -135,15 +135,25 @@ pub fn register_listeners(app: &AppHandle) {
     });
 }
 
-pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>) {
+pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>, variables: Option<std::collections::HashMap<&str, &str>>) {
     #[derive(serde::Serialize, Clone)]
-    struct DialogPayload { dialog_type: String, title: String, message: String,
+    struct DialogPayload {
+        dialog_type: String, title: String, message: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         buttons: Option<Vec<String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         callback_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        variables: Option<std::collections::HashMap<String, String>>,
     }
-    let payload = DialogPayload { dialog_type: dialog_type.to_string(), title: title.to_string(), message: message.to_string(), buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect::<Vec<String>>()), callback_id: callback_id.map(|id| id.to_string()), };
+    let payload = DialogPayload {
+        dialog_type: dialog_type.to_string(),
+        title: title.to_string(),
+        message: message.to_string(),
+        buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect()),
+        callback_id: callback_id.map(|id| id.to_string()),
+        variables: variables.map(|vars| vars.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()),
+    };
     app.emit("show_dialog", payload).unwrap();
 }
 

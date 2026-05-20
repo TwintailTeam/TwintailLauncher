@@ -13,6 +13,7 @@ import {
 import {POPUPS} from "../popups/POPUPS.ts";
 import {PAGES} from "../pages/PAGES.ts";
 import {AtomIcon} from "lucide-react";
+import { translate } from "../../utils/i18n";
 
 export default function SidebarRunners({popup, currentPage, setCurrentPage}: {popup: POPUPS, currentPage?: PAGES, setCurrentPage?: (page: PAGES) => void}) {
     const [isOpen, setIsOpen] = useState(false);
@@ -54,7 +55,7 @@ export default function SidebarRunners({popup, currentPage, setCurrentPage}: {po
             {(isOpen && popup == POPUPS.NONE && currentPage === PAGES.NONE) && (
                 <div ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()} className="bg-black/75 rounded-md p-2 min-w-max z-50">
                     <FloatingArrow ref={arrowRef} context={context} className="fill-black/75" />
-                    <span className="text-white z-50">Runners</span>
+                    <span className="text-white z-50">{translate("sidebar.runners")}</span>
                 </div>
             )}
         </React.Fragment>
