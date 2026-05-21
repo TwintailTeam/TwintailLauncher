@@ -22,7 +22,7 @@
     "general.launcher_action.keep": "Keep launcher open",
     "general.launcher_action.minimize": "Minimize to system tray",
     "general.language.label": "Application language",
-    "general.language.description": "Launcher interface language. Requires restart to fully apply.",
+    "general.language.description": "Launcher interface language.",
 
     "downloads.title": "Download Manager",
     "downloads.speed_limit.label": "Download Speed Limit (KB/s)",

@@ -915,13 +915,13 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({
                     globalSettings: gs
                 }));
-                this.fetchLocales();
+                this.fetchLocales(gs?.app_lang);
             }
         });
     }
 
-    fetchLocales() {
-        const lang: string = this.state.globalSettings?.app_lang || "en_US";
+    fetchLocales(appLang?: string) {
+        const lang: string = appLang ?? this.state.globalSettings?.app_lang ?? "en_US";
         return invoke<string[]>("list_locales").then(codes => {
             return Promise.all(codes.map(code => invoke<any>("get_locale", { code }).then(data => [code, data] as [string, any])));
         }).then(entries => {
