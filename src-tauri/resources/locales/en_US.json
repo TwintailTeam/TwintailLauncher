@@ -202,6 +202,7 @@
     "change": "Change",
     "storage": "Storage",
     "used": "Used",
+    "drive": "drive",
     "game": "Game",
     "free_after": "Free after",
     "need_more": "Need {size} more",

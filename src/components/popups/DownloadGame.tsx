@@ -271,7 +271,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                             <div className="bg-black/20 px-4 pb-4 border-t border-white/5">
                                 <div className="flex items-center justify-between pt-3 mb-2.5">
                                     <span className="text-xs text-white/40 uppercase font-bold tracking-wider">{translate("install_game.storage")}</span>
-                                    {totalSpace > 0 && <span className="text-xs text-white/20 font-mono">{formatBytes(totalSpace)} drive</span>}
+                                    {totalSpace > 0 && <span className="text-xs text-white/20 font-mono">{formatBytes(totalSpace)} {translate("install_game.drive")}</span>}
                                 </div>
                                 {totalSpace > 0 ? (
                                     <>

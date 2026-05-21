@@ -5,9 +5,10 @@ interface PlayStatsOverlayProps {
     lastPlayedTime?: string | number;
     totalPlaytime?: string | number;
     isVisible: boolean;
+    appLang?: string;
 }
 
-function formatLastPlayed(value?: string | number): string {
+function formatLastPlayed(value?: string | number, appLang?: string): string {
     if (value === undefined || value === null || value === "") return translate("play_stats.never");
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed <= 0) return translate("play_stats.never");
@@ -24,7 +25,8 @@ function formatLastPlayed(value?: string | number): string {
     if (dayDiff === 0) return translate("play_stats.today");
     if (dayDiff === 1) return translate("play_stats.yesterday");
 
-    return date.toLocaleDateString(undefined, {
+    const intlLocale = appLang ? appLang.replace("_", "-") : undefined;
+    return date.toLocaleDateString(intlLocale, {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -51,6 +53,7 @@ export default function PlayStatsOverlay({
     lastPlayedTime,
     totalPlaytime,
     isVisible,
+    appLang,
 }: PlayStatsOverlayProps) {
     if (!isVisible) return null;
 
@@ -72,7 +75,7 @@ export default function PlayStatsOverlay({
                             <CalendarDays className="w-5 h-5 text-white/55 flex-shrink-0" />
                             <div className="min-w-0">
                                 <div className="text-[11px] font-semibold uppercase tracking-wider text-white/60">{translate("play_stats.last_played")}</div>
-                                <div className="mt-0.5 text-sm font-semibold text-white">{formatLastPlayed(lastPlayedTime)}</div>
+                                <div className="mt-0.5 text-sm font-semibold text-white">{formatLastPlayed(lastPlayedTime, appLang)}</div>
                             </div>
                         </div>
                     </div>

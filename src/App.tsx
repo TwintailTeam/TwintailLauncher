@@ -538,6 +538,7 @@ export default class App extends React.Component<any, any> {
                         lastPlayedTime={this.state.installSettings?.last_played_time}
                         totalPlaytime={this.state.installSettings?.total_playtime}
                         isVisible={this.state.currentInstall !== "" && this.state.openPopup === POPUPS.NONE && this.state.currentPage === PAGES.NONE}
+                        appLang={this.state.globalSettings?.app_lang}
                     />
 
                     <ActionBar
