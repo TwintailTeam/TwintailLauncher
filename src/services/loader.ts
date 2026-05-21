@@ -100,6 +100,10 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       if (cancelled) return;
+
+      // Load settings and locales immediately — local DB, no network needed
+      opts.fetchSettings().catch(e => console.error("Error loading settings:", e));
+
       opts.setProgress(0, translate("network.checking"));
 
       // Step 0: Network connectivity check with retry support
@@ -143,12 +147,9 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
         if (updateAvailable) opts.applyEventState({ updateAvailable: true });
       }).catch(() => {});
 
-      // Step 1+2: Settings and repositories in parallel (independent data)
+      // Step 1+2: Repositories (settings already loaded above)
       try {
-        const [, ] = await Promise.all([
-          opts.fetchSettings().catch(e => { console.error("Error loading settings:", e); }),
-          opts.fetchRepositories().catch(e => { console.error("Error loading repositories:", e); }),
-        ]);
+        await opts.fetchRepositories().catch(e => { console.error("Error loading repositories:", e); });
         // Load runners if application is running on Linux (all independent, fetch in parallel)
         if (window.navigator.platform.includes("Linux")) {
           await Promise.all([
