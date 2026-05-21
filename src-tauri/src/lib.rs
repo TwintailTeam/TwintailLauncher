@@ -73,7 +73,13 @@ pub fn run() {
 
             #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
             {
-                run_async_command(async { init_db(handle).await; });
+                // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
+                #[cfg(target_os = "linux")]
+                let data_dir = { let d = app.path().app_data_dir().unwrap(); if utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
+                #[cfg(target_os = "windows")]
+                let data_dir = app.path().app_data_dir().unwrap();
+
+                run_async_command(async { init_db(handle, data_dir.clone()).await; });
 
                 // Start download queue worker (limits concurrent download-like jobs)
                 fn run_queued_job(app: AppHandle, job: QueueJob) -> QueueJobOutcome {
@@ -107,7 +113,7 @@ pub fn run() {
 
                 // Start connection monitor for auto-pause/resume on connectivity changes
                 downloading::connection_monitor::start_connection_monitor(handle.clone());
-                load_manifests(handle);
+                load_manifests(handle, data_dir.clone());
                 init_tray(handle).unwrap();
                 // Initialize the listeners
                 register_listeners(handle);
@@ -123,11 +129,6 @@ pub fn run() {
                     app.emit("sync_tray_toggle", "Show").unwrap();
                 }
 
-                // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
-                #[cfg(target_os = "linux")]
-                let data_dir = { let d = app.path().app_data_dir().unwrap(); if utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
-                #[cfg(target_os = "windows")]
-                let data_dir = app.path().app_data_dir().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 sync_install_backgrounds(handle);
                 check_extras_update(handle);

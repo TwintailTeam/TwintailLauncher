@@ -20,8 +20,7 @@ use std::pin::Pin;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
 
-pub async fn init_db(app: &AppHandle) {
-    let data_path = app.path().app_data_dir().unwrap();
+pub async fn init_db(app: &AppHandle, data_path: std::path::PathBuf) {
     let conn_url = data_path.join("storage.db");
     let manifests_dir = data_path.join("manifests");
 

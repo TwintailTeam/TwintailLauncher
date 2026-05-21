@@ -190,8 +190,7 @@ pub fn setup_compatibility_repository(_app: &AppHandle, _path: &PathBuf) {}
 
 // === MANIFESTS ===
 
-pub fn load_manifests(app: &AppHandle) {
-        let data_path = app.path().app_data_dir().unwrap();
+pub fn load_manifests(app: &AppHandle, data_path: PathBuf) {
         let manifets_path = data_path.join("manifests");
 
         if !manifets_path.exists() {
