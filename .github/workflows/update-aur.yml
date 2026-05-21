@@ -70,6 +70,7 @@ jobs:
             install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$_pkgname.png"
             install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$_pkgname.png"
             install -Dm644 usr/share/applications/twintaillauncher.desktop -t "\$pkgdir/usr/share/applications"
+            cp -r usr/lib/twintaillauncher/resources/locales "\$pkgdir/usr/lib/twintaillauncher/resources/"
           }
           EOF
 
@@ -112,6 +113,7 @@ jobs:
             install -Dm644 "\$_dirname/src-tauri/icons/32x32.png" "\$pkgdir/usr/share/icons/hicolor/32x32/apps/\$pkgname.png"
             install -Dm644 "\$_dirname/src-tauri/icons/128x128.png" "\$pkgdir/usr/share/icons/hicolor/128x128/apps/\$pkgname.png"
             install -Dm644 "\$_dirname/src-tauri/icons/128x128@2x.png" "\$pkgdir/usr/share/icons/hicolor/256x256@2/apps/\$pkgname.png"
+            cp -r "\$_dirname/src-tauri/target/release/resources/locales" "\$pkgdir/usr/lib/twintaillauncher/resources/"
           }
           EOF
       - name: Test PKGBUILD (twintaillauncher-bin)
