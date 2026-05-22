@@ -341,7 +341,18 @@ export default function GameSettings({
                                     description={translate("game_settings.launch.pre_launch_cmd.description")}
                                     value={installSettings.pre_launch_command || ""}
                                     onChange={(e) => handleUpdate("pre_launch_cmd", e.target.value)}
-                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)`}
+                                    helpText={[
+                                        translate("game_settings.launch.help.available_vars"),
+                                        `- %steamrt% = ${translate("game_settings.launch.help.var.steamrt")}`,
+                                        `- %reaper% = ${translate("game_settings.launch.help.var.reaper")}`,
+                                        `- %appid% = ${translate("game_settings.launch.help.var.appid")}`,
+                                        `- %runner% = ${translate("game_settings.launch.help.var.runner")}`,
+                                        `- %game_exe% = ${translate("game_settings.launch.help.var.game_exe")}`,
+                                        `- %runner_dir% = ${translate("game_settings.launch.help.var.runner_dir")}`,
+                                        `- %prefix% = ${translate("game_settings.launch.help.var.prefix")}`,
+                                        `- %install_dir% = ${translate("game_settings.launch.help.var.install_dir")}`,
+                                        `- %steamrt_path% = ${translate("game_settings.launch.help.var.steamrt_path")}`,
+                                    ].join("\n")}
                                 />
                                 <ModernInput
                                     label={translate("game_settings.launch.custom_launch_cmd.label")}
@@ -349,7 +360,19 @@ export default function GameSettings({
                                     description={translate("game_settings.launch.custom_launch_cmd.description")}
                                     value={installSettings.launch_command || ""}
                                     onChange={(e) => handleUpdate("launch_cmd", e.target.value)}
-                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)\n- %command% = Default launch command useful for command wrapping tools`}
+                                    helpText={[
+                                        translate("game_settings.launch.help.available_vars"),
+                                        `- %steamrt% = ${translate("game_settings.launch.help.var.steamrt")}`,
+                                        `- %reaper% = ${translate("game_settings.launch.help.var.reaper")}`,
+                                        `- %appid% = ${translate("game_settings.launch.help.var.appid")}`,
+                                        `- %runner% = ${translate("game_settings.launch.help.var.runner")}`,
+                                        `- %game_exe% = ${translate("game_settings.launch.help.var.game_exe")}`,
+                                        `- %runner_dir% = ${translate("game_settings.launch.help.var.runner_dir")}`,
+                                        `- %prefix% = ${translate("game_settings.launch.help.var.prefix")}`,
+                                        `- %install_dir% = ${translate("game_settings.launch.help.var.install_dir")}`,
+                                        `- %steamrt_path% = ${translate("game_settings.launch.help.var.steamrt_path")}`,
+                                        `- %command% = ${translate("game_settings.launch.help.var.command")}`,
+                                    ].join("\n")}
                                 />
                             </div>
                         </SettingsSection>
@@ -373,7 +396,7 @@ export default function GameSettings({
                                             setCurrentPage(PAGES.RUNNERS);
                                         }}
                                         className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors text-left px-1 underline-offset-2 hover:underline">
-                                        {translate("game_settings.linux.manage_runners")}
+                                        → {translate("game_settings.linux.manage_runners")}
                                     </button>
                                 </div>
                                 <ModernPathInput
@@ -543,7 +566,7 @@ export default function GameSettings({
                                         <div className="flex flex-col">
                                             <span className="font-bold">{translate("game_settings.manage.repair_game")}</span>
                                             <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                {installSettings.steam_imported ? translate("game_settings.manage.repair_game.description_steam") : translate("game_settings.manage.repair_game.description")}
+                                                {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.repair_game.description")}
                                             </span>
                                         </div>
                                     </button>
@@ -560,7 +583,7 @@ export default function GameSettings({
                                             <div className="flex flex-col">
                                                 <span className="font-bold">{translate("game_settings.manage.remove_from_steam")}</span>
                                                 <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                    {installSettings.steam_imported ? translate("game_settings.manage.remove_from_steam.description_steam") : translate("game_settings.manage.remove_from_steam.description")}
+                                                    {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.shortcut_delete")}
                                                 </span>
                                             </div>
                                         </button>
@@ -576,7 +599,7 @@ export default function GameSettings({
                                             <div className="flex flex-col">
                                                 <span className="font-bold">{translate("game_settings.manage.add_to_steam")}</span>
                                                 <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                    {installSettings.steam_imported ? translate("game_settings.manage.add_to_steam.description_steam") : translate("game_settings.manage.add_to_steam.description")}
+                                                    {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.shortcut_create")}
                                                 </span>
                                             </div>
                                         </button>
@@ -591,7 +614,7 @@ export default function GameSettings({
                                             <Trash2 className="w-6 h-6 text-blue-400" />
                                             <div className="flex flex-col">
                                                 <span className="font-bold">{translate("game_settings.manage.remove_from_desktop")}</span>
-                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.remove_from_desktop.description")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.shortcut_delete")}</span>
                                             </div>
                                         </button>
                                     ) : (
@@ -603,7 +626,7 @@ export default function GameSettings({
                                             <Monitor className="w-6 h-6 text-blue-400" />
                                             <div className="flex flex-col">
                                                 <span className="font-bold">{translate("game_settings.manage.add_to_desktop")}</span>
-                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.add_to_desktop.description")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.shortcut_create")}</span>
                                             </div>
                                         </button>
                                     )}

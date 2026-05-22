@@ -347,7 +347,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                         </h3>
                         <div className="flex flex-col gap-2">
                             <ModernSelect
-                                label={translate("install_game.runner_version.label")}
+                                label={translate("game_settings.linux.runner_version.label")}
                                 description={translate("install_game.runner_version.description")}
                                 value={selectedRunnerVersion || ""}
                                 options={runnerVersions}
@@ -357,12 +357,12 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                 setOpenPopup(POPUPS.NONE);
                                 setCurrentPage(PAGES.RUNNERS);
                             }} className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors text-left px-1 underline-offset-2 hover:underline">
-                                {translate("install_game.manage_runners")}
+                                → {translate("game_settings.linux.manage_runners")}
                             </button>
                         </div>
                         <ModernPathInput
                             label={translate("install_game.prefix_path.label")}
-                            description={translate("install_game.prefix_path.description")}
+                            description={translate("game_settings.linux.prefix_location.description")}
                             value={runnerPrefixPath || ""}
                             onChange={(val) => setRunnerPrefixPath(val)}
                         />
@@ -373,14 +373,14 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                         <Terminal className="text-blue-400" size={20} /> {translate("install_game.advanced_title")}
                     </h3>
                     <ModernToggle
-                        label={translate("install_game.skip_version_checks.label")}
-                        description={translate("install_game.skip_version_checks.description")}
+                        label={translate("game_settings.general.skip_version_checks.label")}
+                        description={translate("game_settings.general.skip_version_checks.description")}
                         checked={skipVersionUpdates || false}
                         onChange={(val) => setSkipVersionUpdates(val)}
                     />
                     <ModernToggle
-                        label={translate("install_game.skip_hash_validation.label")}
-                        description={translate("install_game.skip_hash_validation.description")}
+                        label={translate("game_settings.general.skip_hash_validation.label")}
+                        description={translate("game_settings.general.skip_hash_validation.description")}
                         checked={disableHashValidation || false}
                         onChange={(val) => setDisableHashValidation(val)}
                     />

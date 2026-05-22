@@ -608,9 +608,9 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                                 if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt3_diagnostics_failed", None, None, None); }
                             }
                             Ok(None) => {}
-                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt3_diagnostics_exec_incorrect", None, None, None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt_diagnostics_exec_incorrect", None, None, None); }
                         },
-                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt3_diagnostics_exec_critical", None, None, None); }
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt_diagnostics_exec_critical", None, None, None); }
                     }
                     match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
                         Ok(_) => {}
@@ -652,9 +652,9 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
                                 if !status.success() { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt4_diagnostics_failed", None, None, None); }
                             }
                             Ok(None) => {}
-                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt4_diagnostics_exec_incorrect", None, None, None); }
+                            Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt_diagnostics_exec_incorrect", None, None, None); }
                         },
-                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt4_diagnostics_exec_critical", None, None, None); }
+                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.steamrt_diagnostics_exec_critical", None, None, None); }
                     }
                     match app.opener().reveal_item_in_dir(log_path_file.as_path()) {
                         Ok(_) => {}
