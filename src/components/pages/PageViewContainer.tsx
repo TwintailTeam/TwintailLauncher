@@ -39,7 +39,7 @@ interface PageViewContainerProps {
     // Settings props
     globalSettings: any;
     fetchSettings: () => void;
-    availableLocales: string[];
+    availableLocales: { value: string; label: string }[];
 
     // Downloads props
     downloadQueueState: DownloadQueueStatePayload | null;
