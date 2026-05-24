@@ -1,14 +1,12 @@
 use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settings, update_install_after_update_by_id, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_xxmi_location};
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{
-    create_installed_runner, get_installed_runner_info_by_version, get_installed_runners,
-    update_install_use_jadeite_by_id, update_installed_runner_is_installed_by_version,
+    create_installed_runner, get_installed_runner_info_by_version, get_installed_runners, update_installed_runner_is_installed_by_version,
     update_settings_default_dxvk_location, update_settings_default_jadeite_location,
     update_settings_default_prefix_location, update_settings_default_runner_location,
 };
 use crate::utils::models::{DialogResponse,XXMISettings};
 use crate::utils::repo_manager::get_manifest;
-use fischl::utils::get_github_release;
 use sqlx::types::Json;
 use std::collections::HashMap;
 use std::io::BufRead;
@@ -18,7 +16,6 @@ use std::sync::{Arc};
 use std::{fs, io};
 use std::hash::Hash;
 use tauri::{AppHandle, Emitter, Listener, Manager};
-use tauri_plugin_dialog::DialogExt;
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
@@ -138,15 +135,25 @@ pub fn register_listeners(app: &AppHandle) {
     });
 }
 
-pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>) {
+pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>, variables: Option<std::collections::HashMap<&str, &str>>) {
     #[derive(serde::Serialize, Clone)]
-    struct DialogPayload { dialog_type: String, title: String, message: String,
+    struct DialogPayload {
+        dialog_type: String, title: String, message: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         buttons: Option<Vec<String>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         callback_id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        variables: Option<std::collections::HashMap<String, String>>,
     }
-    let payload = DialogPayload { dialog_type: dialog_type.to_string(), title: title.to_string(), message: message.to_string(), buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect::<Vec<String>>()), callback_id: callback_id.map(|id| id.to_string()), };
+    let payload = DialogPayload {
+        dialog_type: dialog_type.to_string(),
+        title: title.to_string(),
+        message: message.to_string(),
+        buttons: buttons.map(|btns| btns.into_iter().map(|b| b.to_string()).collect()),
+        callback_id: callback_id.map(|id| id.to_string()),
+        variables: variables.map(|vars| vars.into_iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()),
+    };
     app.emit("show_dialog", payload).unwrap();
 }
 
@@ -409,24 +416,6 @@ pub fn sync_install_backgrounds(app: &AppHandle) {
     }
 }
 
-#[cfg(target_os = "linux")]
-pub fn deprecate_jadeite(app: &AppHandle) {
-    let installs = get_installs(app);
-    if installs.is_some() {
-        let i = installs.unwrap();
-        for ci in i {
-            let im = get_manifest_info_by_id(&app, ci.manifest_id);
-            if im.is_some() {
-                let lm = im.unwrap();
-                // Shit validation but will work
-                if lm.display_name.to_ascii_lowercase().contains("wuthering") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-                if lm.display_name.to_ascii_lowercase().contains("starrail") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-                if lm.display_name.to_ascii_lowercase().contains("honkaiimpact") { update_install_use_jadeite_by_id(&app, ci.id.clone(), false); }
-            }
-        }
-    }
-}
-
 #[cfg(all(target_arch = "x86_64", target_os = "windows"))]
 pub fn is_windows_arm_translation() -> bool {
     #[link(name = "kernel32")]
@@ -458,33 +447,6 @@ pub fn raise_fd_limit(new_limit: i32) {
     unsafe { setrlimit(RLIMIT_NOFILE, &mut new); };
 }
 
-pub fn notify_update(app: &AppHandle) {
-    let ttl = get_github_release("TwintailTeam/TwintailLauncher".to_string());
-    if ttl.is_some() {
-        let r = ttl.unwrap();
-        let v = r.tag_name.unwrap().replace("ttl-v", "");
-        let suppressed = app.path().app_data_dir().unwrap().join(".updatenaghide");
-        if !suppressed.exists() {
-            let cfg = app.config();
-            match compare_version(cfg.version.clone().unwrap().as_str(), v.as_str()) {
-                std::cmp::Ordering::Less => {
-                    app.dialog().message("You are running outdated version of TwintailLauncher!\nWe recommend updating to the latest version for best experience.\nIf you are using Flatpak version on Linux updates are always delayed for some time, sit tight and relax.").title("TwintailLauncher").kind(tauri_plugin_dialog::MessageDialogKind::Warning).show(move |_| {});
-                    log::info!("You are running outdated version of TwintailLauncher!");
-                }
-                std::cmp::Ordering::Equal => {
-                    log::info!("You are running up to date version of TwintailLauncher!");
-                    #[cfg(debug_assertions)]
-                    println!("You are running up to date version of TwintailLauncher!");
-                }
-                std::cmp::Ordering::Greater => {
-                    log::info!("You are running newer version of TwintailLauncher! Is it dev build?");
-                    #[cfg(debug_assertions)]
-                    println!("You are running newer version of TwintailLauncher! Is it dev build?");
-                }
-            }
-        }
-    }
-}
 
 pub fn prevent_system_idle(is_idle: bool) -> Option<keepawake::KeepAwake> {
     keepawake::Builder::default().display(false).sleep(false).idle(is_idle).reason("TwintailLauncher requested action").app_name("TwintailLauncher").app_reverse_domain("app.twintaillauncher.ttl").create().ok()
@@ -511,40 +473,28 @@ pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
     let mut cmdline_appends: Vec<String> = Vec::new();
     let mut config = existing.as_str();
     while !config.is_empty() {
-        let (cur, remainder) = match config.split_once(',') {
-            Some((c, r)) => (c, r),
-            None => (config, ""),
-        };
+        let (cur, remainder) = match config.split_once(',') { Some((c, r)) => (c, r), None => (config, "") };
         if cur.starts_with("cmdlineappend:") {
             let mut full_arg = cur.to_string();
             let mut remaining = remainder;
             while full_arg.ends_with('\\') && !remaining.is_empty() {
-                let (next_part, new_remainder) = match remaining.split_once(',') {
-                    Some((n, r)) => (n, r),
-                    None => (remaining, ""),
-                };
+                let (next_part, new_remainder) = match remaining.split_once(',') { Some((n, r)) => (n, r), None => (remaining, "") };
                 full_arg = format!("{}{}", &full_arg[..full_arg.len() - 1], next_part);
                 remaining = new_remainder;
             }
             let arg = full_arg[14..].replace("\\\\", "\\");
             cmdline_appends.push(arg);
-        } else if !cur.trim().is_empty() {
-            compat_flags.push(cur.to_string());
-        }
+        } else if !cur.trim().is_empty() { compat_flags.push(cur.to_string()); }
         config = remainder;
     }
     for item in append_items.iter() {
         if item.starts_with("cmdlineappend:") {
             let arg = item[14..].replace("\\\\", "\\");
             cmdline_appends.push(arg);
-        } else {
-            compat_flags.push(item.to_string());
-        }
+        } else { compat_flags.push(item.to_string()); }
     }
     let mut new_parts: Vec<String> = Vec::new();
-    for flag in &compat_flags {
-        new_parts.push(flag.clone());
-    }
+    for flag in &compat_flags { new_parts.push(flag.clone()); }
     for append_arg in &cmdline_appends {
         let mut escaped_arg = append_arg.replace('\\', "\\\\");
         escaped_arg = escaped_arg.replace(',', "\\,");
@@ -642,6 +592,74 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
             data
         } else { data }
     } else { data }
+}
+
+pub fn apply_wwmi_tweaks(base: PathBuf) {
+    let path = base.join("Client/Binaries/Win64/Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini");
+    const SECTION: &str = "[ConsoleVariables]";
+    const FIELDS: &[(&str, &str)] = &[
+        ("r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", "-10"),
+        ("r.Streaming.Boost", "20.0"),
+        ("r.Streaming.MinBoost", "0.0"),
+        ("r.Streaming.UseAllMips", "1"),
+        ("r.Streaming.PoolSize", "0"),
+        ("r.Streaming.LimitPoolSizeToVRAM", "1"),
+        ("r.Streaming.UseFixedPoolSize", "1"),
+    ];
+
+    let block: String = FIELDS.iter().fold(format!("{}\r\n", SECTION), |mut s, (k, v)| {
+        s.push_str(&format!("{}={}\r\n", k, v));
+        s
+    });
+
+    if !path.exists() { let _ = fs::write(&path, &block); return; }
+    let content = match fs::read_to_string(&path) { Ok(c) => c, Err(_) => return };
+    let has_section = content.lines().any(|l| l.trim() == SECTION);
+    if !has_section {
+        let mut new_content = content;
+        if !new_content.ends_with('\n') { new_content.push_str("\r\n"); }
+        new_content.push_str(&block);
+        let _ = fs::write(&path, new_content);
+        return;
+    }
+
+    // Early return if all fields already correct
+    let all_correct = {
+        let mut in_section = false;
+        let mut matched = vec![false; FIELDS.len()];
+        for line in content.lines() {
+            let tr = line.trim();
+            if tr.starts_with('[') && tr.ends_with(']') { in_section = tr == SECTION; } else if in_section && !tr.starts_with(';') && tr.contains('=') {
+                let mut parts = tr.splitn(2, '=');
+                let key = parts.next().unwrap_or("").trim();
+                let val = parts.next().unwrap_or("").trim();
+                if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) { if FIELDS[i].1 == val { matched[i] = true; } }
+            }
+        }
+        matched.iter().all(|&m| m)
+    };
+    if all_correct { return; }
+
+    // Section exists — fix wrong/missing field values in-place, append missing keys at end of section
+    let mut in_section = false;
+    let mut written = vec![false; FIELDS.len()];
+    let mut out: Vec<String> = Vec::new();
+    for line in content.lines() {
+        let tr = line.trim();
+        if tr.starts_with('[') && tr.ends_with(']') {
+            if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); written[i] = true; } } }
+            in_section = tr == SECTION;
+            out.push(format!("{}\r\n", tr));
+        } else if in_section && !tr.starts_with(';') && tr.contains('=') {
+            let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+            if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
+                out.push(format!("{}={}\r\n", FIELDS[i].0, FIELDS[i].1));
+                written[i] = true;
+            } else { out.push(format!("{}\r\n", tr)); }
+        } else { out.push(format!("{}\r\n", tr)); }
+    }
+    if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); } } }
+    let _ = fs::write(&path, out.concat());
 }
 
 pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
@@ -847,6 +865,7 @@ pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: Str
         return "miHoYo/Honkai Impact 3rd/output_log.txt".to_string()
     }
     if game_biz.to_ascii_lowercase().contains("hyg_global") { return "miHoYo/PetitPlanet/Player.log".to_string() }
+    if game_biz.to_ascii_lowercase().contains("wuwa_global") { return "Client/Saved/Logs/Client.log".to_string() }
     if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
     if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()

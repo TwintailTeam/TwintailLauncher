@@ -24,6 +24,7 @@ import {
 import { SettingsLayout } from "../layout/SettingsLayout.tsx";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
 import { SettingsSection, ModernToggle, ModernInput, ModernPathInput, ModernSelect } from "../common/SettingsComponents.tsx";
+import { translate } from "../../utils/i18n";
 
 
 // Helper for Steam Icon
@@ -84,13 +85,13 @@ export default function GameSettings({
     const isLinux = window.navigator.platform.includes("Linux");
 
     const tabs: SettingsTab[] = [
-        { id: "general", label: "General", icon: Sliders, color: "blue" },
-        { id: "launch", label: "Launch Options", icon: Play, color: "emerald" },
-        ...(prefetchedSwitches.xxmi ? [{ id: "xxmi", label: "XXMI", icon: Wrench, color: "pink" }] : []),
-        ...(prefetchedSwitches.fps_unlocker ? [{ id: "fps_unlocker", label: "FPS Unlocker", icon: Gauge, color: "yellow" }] : []),
-        ...(isLinux ? [{ id: "linux", label: "Linux Options", icon: Monitor, color: "orange" }] : []),
-        { id: "manage", label: "Manage", icon: Box, color: "purple" },
-        { id: "uninstall", label: "Uninstall", icon: AlertTriangle, color: "red" },
+        { id: "general", label: translate("game_settings.tabs.general"), icon: Sliders, color: "blue" },
+        { id: "launch", label: translate("game_settings.tabs.launch"), icon: Play, color: "emerald" },
+        ...(prefetchedSwitches.xxmi ? [{ id: "xxmi", label: translate("game_settings.tabs.xxmi"), icon: Wrench, color: "pink" }] : []),
+        ...(prefetchedSwitches.fps_unlocker ? [{ id: "fps_unlocker", label: translate("game_settings.tabs.fps_unlocker"), icon: Gauge, color: "yellow" }] : []),
+        ...(isLinux ? [{ id: "linux", label: translate("game_settings.tabs.linux"), icon: Monitor, color: "orange" }] : []),
+        { id: "manage", label: translate("game_settings.tabs.manage"), icon: Box, color: "purple" },
+        { id: "uninstall", label: translate("game_settings.tabs.uninstall"), icon: AlertTriangle, color: "red" },
     ];
 
     // Generic update wrapper that matches backend command conventions
@@ -267,17 +268,17 @@ export default function GameSettings({
 
                 <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
                     {activeTab === "general" && (
-                        <SettingsSection title="General Configuration">
+                        <SettingsSection title={translate("game_settings.general.title")}>
                             <ModernPathInput
-                                label="Install Location"
-                                description="Directory where the game is installed."
+                                label={translate("game_settings.general.install_location.label")}
+                                description={translate("game_settings.general.install_location.description")}
                                 value={`${installSettings.directory}`}
                                 onChange={(val) => handleUpdate("game_path", val)}
                             />
                             <div className="grid grid-cols-1 gap-4 mt-4">
                                 <ModernToggle
-                                    label="Skip Version Checks"
-                                    description={installSettings.steam_imported ? "Updates are managed by Steam for this installation." : "Don't check for game updates."}
+                                    label={translate("game_settings.general.skip_version_checks.label")}
+                                    description={installSettings.steam_imported ? translate("game_settings.general.skip_version_checks.description_steam") : translate("game_settings.general.skip_version_checks.description")}
                                     descriptionClassName={installSettings.steam_imported ? "text-yellow-300 font-medium" : undefined}
                                     disabled={installSettings.steam_imported}
                                     checked={installSettings.steam_imported || installSettings.ignore_updates}
@@ -287,14 +288,14 @@ export default function GameSettings({
                                     }}
                                 />
                                 <ModernToggle
-                                    label="Skip Hash Validation"
-                                    description="Skip file verification during repairs (faster but less safe)."
+                                    label={translate("game_settings.general.skip_hash_validation.label")}
+                                    description={translate("game_settings.general.skip_hash_validation.description")}
                                     checked={installSettings.skip_hash_check}
                                     onChange={(val) => handleUpdate("skip_hash_valid", val)}
                                 />
                                 <ModernToggle
-                                    label="DiscordRPC"
-                                    description="Show Discord rich presence activity while you are playing the game."
+                                    label={translate("game_settings.general.discord_rpc.label")}
+                                    description={translate("game_settings.general.discord_rpc.description")}
                                     checked={installSettings.show_discord_rpc}
                                     onChange={(val) => handleUpdate("show_drpc", val)}
                                 />
@@ -303,52 +304,75 @@ export default function GameSettings({
                     )}
 
                     {activeTab === "launch" && (
-                        <SettingsSection title="Launch Configuration">
+                        <SettingsSection title={translate("game_settings.launch.title")}>
                             <div className="flex flex-col gap-4">
                                 <ModernToggle
-                                    label="Prevent Idle"
-                                    description="Prevents system from going to idle/screenlock state while playing the game."
+                                    label={translate("game_settings.launch.prevent_idle.label")}
+                                    description={translate("game_settings.launch.prevent_idle.description")}
                                     checked={installSettings.disable_system_idle}
                                     onChange={(val) => handleUpdate("disable_system_idle", val)}
                                 />
                                 {prefetchedSwitches.graphics_api && prefetchedGraphicsApi?.options?.length > 0 && (
                                     <ModernSelect
-                                        label="Graphics API"
-                                        description="Graphics API the game will use."
+                                        label={translate("game_settings.launch.graphics_api.label")}
+                                        description={translate("game_settings.launch.graphics_api.description")}
                                         value={installSettings.graphics_api || ""}
                                         options={prefetchedGraphicsApi.options}
                                         onChange={(val) => handleUpdate("graphics_api", val)}
                                     />
                                 )}
                                 <ModernInput
-                                    label="Launch Arguments"
-                                    description="Additional arguments passed to the game executable."
+                                    label={translate("game_settings.launch.args.label")}
+                                    description={translate("game_settings.launch.args.description")}
                                     value={installSettings.launch_args || ""}
                                     onChange={(e) => handleUpdate("launch_args", e.target.value)}
                                     placeholder="-dx11 -console"
                                 />
                                 <ModernInput
-                                    label="Environment Variables"
-                                    description="Environment variables set for the game process."
+                                    label={translate("game_settings.launch.env_vars.label")}
+                                    description={translate("game_settings.launch.env_vars.description")}
                                     value={installSettings.env_vars || ""}
                                     onChange={(e) => handleUpdate("env_vars", e.target.value)}
                                     placeholder='DXVK_HUD=fps,devinfo;PROTON_LOG=1;SOMETHING="/path/to/thing";'
                                 />
                                 <ModernInput
-                                    label="Pre-Launch Command"
+                                    label={translate("game_settings.launch.pre_launch_cmd.label")}
                                     placeholder={isLinux ? "/bin/bash -c echo hi" : "cmd.exe"}
-                                    description="Command executed before the game starts."
+                                    description={translate("game_settings.launch.pre_launch_cmd.description")}
                                     value={installSettings.pre_launch_command || ""}
                                     onChange={(e) => handleUpdate("pre_launch_cmd", e.target.value)}
-                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)`}
+                                    helpText={[
+                                        translate("game_settings.launch.help.available_vars"),
+                                        `- %steamrt% = ${translate("game_settings.launch.help.var.steamrt")}`,
+                                        `- %reaper% = ${translate("game_settings.launch.help.var.reaper")}`,
+                                        `- %appid% = ${translate("game_settings.launch.help.var.appid")}`,
+                                        `- %runner% = ${translate("game_settings.launch.help.var.runner")}`,
+                                        `- %game_exe% = ${translate("game_settings.launch.help.var.game_exe")}`,
+                                        `- %runner_dir% = ${translate("game_settings.launch.help.var.runner_dir")}`,
+                                        `- %prefix% = ${translate("game_settings.launch.help.var.prefix")}`,
+                                        `- %install_dir% = ${translate("game_settings.launch.help.var.install_dir")}`,
+                                        `- %steamrt_path% = ${translate("game_settings.launch.help.var.steamrt_path")}`,
+                                    ].join("\n")}
                                 />
                                 <ModernInput
-                                    label="Custom Launch Command"
+                                    label={translate("game_settings.launch.custom_launch_cmd.label")}
                                     placeholder={isLinux ? "%steamrt% --verb=waitforexitandrun -- %reaper% SteamLaunch AppId=%appid% -- %runner% waitforexitandrun %game_exe%" : "Start-Process -FilePath '%game_exe%' -WorkingDirectory '%install_dir%' -Verb RunAs"}
-                                    description="Override the default launch command."
+                                    description={translate("game_settings.launch.custom_launch_cmd.description")}
                                     value={installSettings.launch_command || ""}
                                     onChange={(e) => handleUpdate("launch_cmd", e.target.value)}
-                                    helpText={`Available variables:\n- %steamrt% = SteamLinuxRuntime binary (Usage: %steamrt% --verb=waitforexitandrun -- %reaper%)\n- %reaper% = Process reaper binary (Usage: %reaper% SteamLaunch AppId=0 -- %runner%)\n- %appid% = Get designated appid to pass to reaper argument\n- %runner% = Call proton binary\n- %game_exe% = Points to game executable\n- %runner_dir% = Path of current runner (not a binary you can append any binary from this folder)\n- %prefix% = Path to root of runner prefix location field\n- %install_dir% = Path to game install location field\n- %steamrt_path% = Path to SteamLinuxRuntime folder (you can append other binaries from the folder)\n- %command% = Default launch command useful for command wrapping tools`}
+                                    helpText={[
+                                        translate("game_settings.launch.help.available_vars"),
+                                        `- %steamrt% = ${translate("game_settings.launch.help.var.steamrt")}`,
+                                        `- %reaper% = ${translate("game_settings.launch.help.var.reaper")}`,
+                                        `- %appid% = ${translate("game_settings.launch.help.var.appid")}`,
+                                        `- %runner% = ${translate("game_settings.launch.help.var.runner")}`,
+                                        `- %game_exe% = ${translate("game_settings.launch.help.var.game_exe")}`,
+                                        `- %runner_dir% = ${translate("game_settings.launch.help.var.runner_dir")}`,
+                                        `- %prefix% = ${translate("game_settings.launch.help.var.prefix")}`,
+                                        `- %install_dir% = ${translate("game_settings.launch.help.var.install_dir")}`,
+                                        `- %steamrt_path% = ${translate("game_settings.launch.help.var.steamrt_path")}`,
+                                        `- %command% = ${translate("game_settings.launch.help.var.command")}`,
+                                    ].join("\n")}
                                 />
                             </div>
                         </SettingsSection>
@@ -356,12 +380,12 @@ export default function GameSettings({
 
                     {activeTab === "linux" && (
                         <>
-                        <SettingsSection title="Linux Configuration">
+                        <SettingsSection title={translate("game_settings.linux.title")}>
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-2">
                                     <ModernSelect
-                                        label="Runner Version"
-                                        description="Select the Wine/Proton version to use."
+                                        label={translate("game_settings.linux.runner_version.label")}
+                                        description={translate("game_settings.linux.runner_version.description")}
                                         value={installSettings.runner_version || ""}
                                         options={installedRunners}
                                         onChange={(val) => handleUpdate("runner_version", val)}
@@ -372,44 +396,44 @@ export default function GameSettings({
                                             setCurrentPage(PAGES.RUNNERS);
                                         }}
                                         className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors text-left px-1 underline-offset-2 hover:underline">
-                                        → Manage Runners
+                                        → {translate("game_settings.linux.manage_runners")}
                                     </button>
                                 </div>
                                 <ModernPathInput
-                                    label="Runner Location"
-                                    description="Path to Wine/Proton folder."
+                                    label={translate("game_settings.linux.runner_location.label")}
+                                    description={translate("game_settings.linux.runner_location.description")}
                                     value={`${installSettings.runner_path}`}
                                     onChange={(val) => handleUpdate("runner_path", val)}
                                 />
                                 <ModernPathInput
-                                    label="Prefix Location"
-                                    description="Path to the Wine/Proton prefix."
+                                    label={translate("game_settings.linux.prefix_location.label")}
+                                    description={translate("game_settings.linux.prefix_location.description")}
                                     value={`${installSettings.runner_prefix}`}
                                     onChange={(val) => handleUpdate("prefix_path", val)}
                                 />
                                 {prefetchedSwitches.jadeite && isLinux && (
                                     <ModernToggle
-                                        label="Jadeite"
-                                        description="Enable Jadeite patch."
+                                        label={translate("game_settings.linux.jadeite.label")}
+                                        description={translate("game_settings.linux.jadeite.description")}
                                         checked={installSettings.use_jadeite}
                                         onChange={(val) => handleUpdate("use_jadeite", val)}
                                     />
                                 )}
                                 <ModernToggle
-                                    label="Gamemode"
-                                    description="Enable Feral Interactive's GameMode."
+                                    label={translate("game_settings.linux.gamemode.label")}
+                                    description={translate("game_settings.linux.gamemode.description")}
                                     checked={installSettings.use_gamemode}
                                     onChange={(val) => handleUpdate("use_gamemode", val)}
                                 />
                                 <ModernToggle
-                                    label="MangoHUD"
-                                    description="Enable the MangoHUD overlay while playing."
+                                    label={translate("game_settings.linux.mangohud.label")}
+                                    description={translate("game_settings.linux.mangohud.description")}
                                     checked={!!installSettings.use_mangohud}
                                     onChange={(val) => handleUpdate("use_mangohud", val)}
                                 />
                                 <ModernPathInput
-                                    label="MangoHUD Config"
-                                    description="MangoHUD configuration file to load."
+                                    label={translate("game_settings.linux.mangohud_config.label")}
+                                    description={translate("game_settings.linux.mangohud_config.description")}
                                     value={`${installSettings.mangohud_config_path ?? ""}`}
                                     folder={false}
                                     extensions={["conf"]}
@@ -421,34 +445,34 @@ export default function GameSettings({
                     )}
 
                     {activeTab === "xxmi" && (
-                        <SettingsSection title="XXMI Configuration">
+                        <SettingsSection title={translate("game_settings.xxmi.title")}>
                             <div className="flex flex-col gap-4">
                                 <ModernToggle
-                                    label="Enable XXMI"
-                                    description="Enable and inject the XXMI modding tool."
+                                    label={translate("game_settings.xxmi.enable.label")}
+                                    description={translate("game_settings.xxmi.enable.description")}
                                     checked={!!installSettings.use_xxmi}
                                     onChange={(val) => handleUpdate("use_xxmi", val)}
                                 />
                                 <ModernToggle
-                                    label="Show Warnings"
-                                    description="Show mod parse warnings for debugging broken mods."
+                                    label={translate("game_settings.xxmi.show_warnings.label")}
+                                    description={translate("game_settings.xxmi.show_warnings.description")}
                                     checked={!!xxmiConfig.show_warnings}
                                     onChange={(val) => handleUpdateXxmiConfig({ xxmiSw: val })}
                                 />
                                 <ModernToggle
-                                    label="Dump Shaders"
-                                    description="Enable shader dumping for mod development."
+                                    label={translate("game_settings.xxmi.dump_shaders.label")}
+                                    description={translate("game_settings.xxmi.dump_shaders.description")}
                                     checked={!!xxmiConfig.dump_shaders}
                                     onChange={(val) => handleUpdateXxmiConfig({ xxmiSd: val })}
                                 />
                                 <ModernSelect
-                                    label="Hunting Mode"
-                                    description="Choose how XXMI hunting mode behaves."
+                                    label={translate("game_settings.xxmi.hunting_mode.label")}
+                                    description={translate("game_settings.xxmi.hunting_mode.description")}
                                     value={`${xxmiConfig.hunting_mode ?? 0}`}
                                     options={[
-                                        { value: "0", name: "Disabled" },
-                                        { value: "1", name: "Always enabled" },
-                                        { value: "2", name: "Soft disabled" }
+                                        { value: "0", name: translate("game_settings.xxmi.hunting_mode.disabled") },
+                                        { value: "1", name: translate("game_settings.xxmi.hunting_mode.always_enabled") },
+                                        { value: "2", name: translate("game_settings.xxmi.hunting_mode.soft_disabled") }
                                     ]}
                                     onChange={(val) => handleUpdateXxmiConfig({ xxmiHunting: Number(val) })}
                                 />
@@ -457,19 +481,19 @@ export default function GameSettings({
                     )}
 
                     {activeTab === "fps_unlocker" && (
-                        <SettingsSection title="FPS Unlocker Configuration">
+                        <SettingsSection title={translate("game_settings.fps_unlocker.title")}>
                             <div className="flex flex-col gap-4">
                                 {prefetchedSwitches.fps_unlocker ? (
                                     <>
                                         <ModernToggle
-                                            label="Enable FPS Unlocker"
-                                            description="Load and inject frame-rate unlocking into the game."
+                                            label={translate("game_settings.fps_unlocker.enable.label")}
+                                            description={translate("game_settings.fps_unlocker.enable.description")}
                                             checked={!!installSettings.use_fps_unlock}
                                             onChange={(val) => handleUpdate("use_fps_unlock", val)}
                                         />
                                         <ModernSelect
-                                            label="FPS Target"
-                                            description="Target frame rate for unlocker."
+                                            label={translate("game_settings.fps_unlocker.target.label")}
+                                            description={translate("game_settings.fps_unlocker.target.description")}
                                             value={selectedFps}
                                             options={fpsOptions}
                                             onChange={(val) => handleUpdate("fps_value", val)}
@@ -477,7 +501,7 @@ export default function GameSettings({
                                     </>
                                 ) : (
                                     <div className="rounded-xl border border-white/10 bg-zinc-900/70 p-4 text-sm text-zinc-300">
-                                        FPS Unlocker is not available for this installation.
+                                        {translate("game_settings.fps_unlocker.not_available")}
                                     </div>
                                 )}
                             </div>
@@ -486,7 +510,7 @@ export default function GameSettings({
 
                     {activeTab === "manage" && (
                         <>
-                            <SettingsSection title="Manage Installation">
+                            <SettingsSection title={translate("game_settings.manage.title")}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <button
                                         onClick={() => {
@@ -501,8 +525,8 @@ export default function GameSettings({
                                         className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                         <Folder className="w-6 h-6 text-purple-400" />
                                         <div className="flex flex-col">
-                                            <span className="font-bold">Open Game Folder</span>
-                                            <span className="text-xs text-zinc-400">View game files</span>
+                                            <span className="font-bold">{translate("game_settings.manage.open_game_folder")}</span>
+                                            <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_game_folder.description")}</span>
                                         </div>
                                     </button>
 
@@ -520,8 +544,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Folder className="w-6 h-6 text-pink-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Mods Folder</span>
-                                                <span className="text-xs text-zinc-400">View XXMI mods</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_mods_folder")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_mods_folder.description")}</span>
                                             </div>
                                         </button>
                                     )}
@@ -540,9 +564,9 @@ export default function GameSettings({
                                         className={`flex items-center gap-3 p-4 rounded-xl border border-white/5 transition-colors text-white text-left ${installSettings.steam_imported ? "cursor-not-allowed bg-zinc-900/85 opacity-70" : "bg-zinc-900/85 hover:bg-zinc-900 hover:border-white/10"}`}>
                                         <Wrench className={`w-6 h-6 ${installSettings.steam_imported ? "text-zinc-500" : "text-orange-400"}`}/>
                                         <div className="flex flex-col">
-                                            <span className="font-bold">Repair Game</span>
+                                            <span className="font-bold">{translate("game_settings.manage.repair_game")}</span>
                                             <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                {installSettings.steam_imported ? "Managed by Steam." : "Verify and fix game"}
+                                                {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.repair_game.description")}
                                             </span>
                                         </div>
                                     </button>
@@ -557,9 +581,9 @@ export default function GameSettings({
                                             className={`flex items-center gap-3 p-4 rounded-xl border border-white/5 transition-colors text-white text-left ${installSettings.steam_imported ? "cursor-not-allowed bg-zinc-900/85 opacity-70" : "bg-zinc-900/85 hover:bg-zinc-900 hover:border-white/10"}`}>
                                             <Trash2 className={`w-6 h-6 ${installSettings.steam_imported ? "text-zinc-500" : "text-blue-400"}`}/>
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Remove from Steam</span>
+                                                <span className="font-bold">{translate("game_settings.manage.remove_from_steam")}</span>
                                                 <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                    {installSettings.steam_imported ? "Managed by Steam." : "Delete shortcut"}
+                                                    {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.shortcut_delete")}
                                                 </span>
                                             </div>
                                         </button>
@@ -573,9 +597,9 @@ export default function GameSettings({
                                             className={`flex items-center gap-3 p-4 rounded-xl border border-white/5 transition-colors text-white text-left ${installSettings.steam_imported ? "cursor-not-allowed bg-zinc-900/85 opacity-70" : "bg-zinc-900/85 hover:bg-zinc-900 hover:border-white/10"}`}>
                                             <SteamIcon className={`w-6 h-6 ${installSettings.steam_imported ? "text-zinc-500" : "text-blue-400"}`}/>
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Add to Steam</span>
+                                                <span className="font-bold">{translate("game_settings.manage.add_to_steam")}</span>
                                                 <span className={`text-xs ${installSettings.steam_imported ? "text-yellow-300 font-medium" : "text-zinc-400"}`}>
-                                                    {installSettings.steam_imported ? "Managed by Steam." : "Create shortcut"}
+                                                    {installSettings.steam_imported ? translate("game_settings.manage.steam_managed") : translate("game_settings.manage.shortcut_create")}
                                                 </span>
                                             </div>
                                         </button>
@@ -589,8 +613,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Trash2 className="w-6 h-6 text-blue-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Remove from Desktop</span>
-                                                <span className="text-xs text-zinc-400">Delete shortcut</span>
+                                                <span className="font-bold">{translate("game_settings.manage.remove_from_desktop")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.shortcut_delete")}</span>
                                             </div>
                                         </button>
                                     ) : (
@@ -601,8 +625,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Monitor className="w-6 h-6 text-blue-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Add to Desktop</span>
-                                                <span className="text-xs text-zinc-400">Create shortcut</span>
+                                                <span className="font-bold">{translate("game_settings.manage.add_to_desktop")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.shortcut_create")}</span>
                                             </div>
                                         </button>
                                     )}
@@ -633,13 +657,13 @@ export default function GameSettings({
                                             {isAuthkeyFailed && <X className="w-6 h-6 text-red-300" />}
                                             {!isAuthkeyCopying && !isAuthkeyCopied && !isAuthkeyFailed && <Copy className="w-6 h-6 text-purple-400" />}
                                             <div className="flex flex-col">
-                                                <span className="font-bold">{isAuthkeyCopying ? "Copying authkey..." : isAuthkeyCopied ? "Authkey copied" : isAuthkeyFailed ? "Copy failed" : "Copy Authkey"}</span>
-                                                <span className={`text-xs ${isAuthkeyCopied ? "text-emerald-300" : isAuthkeyFailed ? "text-red-300" : "text-zinc-400"}`}>{isAuthkeyCopying ? "Reading latest game log and copying to clipboard..." : isAuthkeyCopied ? "Ready to paste into Aivo sync." : isAuthkeyFailed ? "Could not copy authkey. Open pull history first." : <>Sync and view your pull history at <span className="text-purple-400">aivo.minlor.net/hoyo</span></>}</span>
+                                                <span className="font-bold">{isAuthkeyCopying ? translate("game_settings.manage.copy_authkey.copying") : isAuthkeyCopied ? translate("game_settings.manage.copy_authkey.copied") : isAuthkeyFailed ? translate("game_settings.manage.copy_authkey.failed") : translate("game_settings.manage.copy_authkey")}</span>
+                                                <span className={`text-xs ${isAuthkeyCopied ? "text-emerald-300" : isAuthkeyFailed ? "text-red-300" : "text-zinc-400"}`}>{isAuthkeyCopying ? translate("game_settings.manage.copy_authkey.copying_description") : isAuthkeyCopied ? translate("game_settings.manage.copy_authkey.copied_description") : isAuthkeyFailed ? translate("game_settings.manage.copy_authkey.failed_description") : <>{translate("game_settings.manage.copy_authkey.description")} <span className="text-purple-400">aivo.minlor.net/hoyo</span></>}</span>
                                             </div>
                                         </button>
                                     )}
 
-                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg") || gameBiz.startsWith("endfield") || gameBiz.startsWith("pgr")) && (
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg") || gameBiz.startsWith("endfield") || gameBiz.startsWith("pgr") || gameBiz.startsWith("wuwa")) && (
                                         <button
                                             onClick={() => {
                                                 setOpenPopup(POPUPS.NONE);
@@ -653,15 +677,15 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Logs className="w-6 h-6 text-purple-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Engine Log</span>
-                                                <span className="text-xs text-zinc-400">View game engine log</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_engine_log")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_engine_log.description")}</span>
                                             </div>
                                         </button>
                                     )}
                                 </div>
                             </SettingsSection>
                             {window.navigator.platform.includes("Linux") && (
-                                <SettingsSection title="Manage Runner">
+                                <SettingsSection title={translate("game_settings.manage.runner_title")}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <button
                                             onClick={() => {
@@ -676,8 +700,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Folder className="w-6 h-6 text-orange-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Runner Folder</span>
-                                                <span className="text-xs text-zinc-400">Wine/Proton location</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_runner_folder")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_runner_folder.description")}</span>
                                             </div>
                                         </button>
                                         <button
@@ -693,8 +717,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Folder className="w-6 h-6 text-yellow-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Prefix Folder</span>
-                                                <span className="text-xs text-zinc-400">Wine/Proton prefix location</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_prefix_folder")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_prefix_folder.description")}</span>
                                             </div>
                                         </button>
                                         <button
@@ -708,8 +732,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Wrench className="w-6 h-6 text-orange-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Repair Prefix</span>
-                                                <span className="text-xs text-zinc-400">Verify and fix Wine/Proton prefix</span>
+                                                <span className="font-bold">{translate("game_settings.manage.repair_prefix")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.repair_prefix.description")}</span>
                                             </div>
                                         </button>
                                             <button
@@ -723,8 +747,8 @@ export default function GameSettings({
                                                 className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                                 <FileCode2 className="w-6 h-6 text-purple-400" />
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold">Open Registry Editor</span>
-                                                    <span className="text-xs text-zinc-400">Open regedit.exe for Wine/Proton prefix</span>
+                                                    <span className="font-bold">{translate("game_settings.manage.open_registry")}</span>
+                                                    <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_registry.description")}</span>
                                                 </div>
                                             </button>
                                         <button
@@ -738,8 +762,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <LayoutDashboard className="w-6 h-6 text-purple-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Control Panel</span>
-                                                <span className="text-xs text-zinc-400">Open control.exe for Wine/Proton prefix</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_control_panel")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_control_panel.description")}</span>
                                             </div>
                                         </button>
                                         <button
@@ -753,8 +777,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Terminal className="w-6 h-6 text-purple-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Command Prompt</span>
-                                                <span className="text-xs text-zinc-400">Open cmd.exe for Wine/Proton prefix</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_cmd")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_cmd.description")}</span>
                                             </div>
                                         </button>
                                         <button
@@ -768,8 +792,8 @@ export default function GameSettings({
                                             className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-xl border border-white/5 transition-all hover:border-white/20 text-white text-left">
                                             <Settings2 className="w-6 h-6 text-purple-400" />
                                             <div className="flex flex-col">
-                                                <span className="font-bold">Open Wine Config</span>
-                                                <span className="text-xs text-zinc-400">Open winecfg.exe for Wine/Proton prefix</span>
+                                                <span className="font-bold">{translate("game_settings.manage.open_winecfg")}</span>
+                                                <span className="text-xs text-zinc-400">{translate("game_settings.manage.open_winecfg.description")}</span>
                                             </div>
                                         </button>
                                     </div>
@@ -779,12 +803,12 @@ export default function GameSettings({
                         )}
 
                     {activeTab === "uninstall" && (
-                        <SettingsSection title="Danger Zone">
+                        <SettingsSection title={translate("game_settings.uninstall.title")}>
                             <div className="rounded-xl border border-red-500/30 bg-red-950/20 p-5 flex flex-col gap-4">
                                 <div className="flex flex-col gap-1">
-                                    <span className="text-red-300 font-semibold">Uninstall Installation</span>
+                                    <span className="text-red-300 font-semibold">{translate("game_settings.uninstall.name")}</span>
                                     <span className="text-sm text-red-200/70">
-                                        This removes the selected installation permanently. Use review first to verify exactly what will be deleted.
+                                        {translate("game_settings.uninstall.description")}
                                     </span>
                                 </div>
 
@@ -793,38 +817,38 @@ export default function GameSettings({
                                         onClick={startUninstallReview}
                                         className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold bg-red-900/40 hover:bg-red-800/50 border border-red-500/40 text-red-100 transition-colors">
                                         <Trash2 className="w-5 h-5" />
-                                        <span>Review Uninstall</span>
+                                        <span>{translate("game_settings.uninstall.review_button")}</span>
                                     </button>
                                 ) : (
                                     <div className="flex flex-col gap-4">
                                         <div className="rounded-lg border border-red-500/30 bg-black/30 p-4 text-sm text-red-100/90">
-                                            <p>You are uninstalling <span className="font-semibold text-red-200">{installSettings.name}</span>.</p>
-                                            <p className="mt-2">This will delete:</p>
-                                            <p className="text-red-200/80">- Game installation files for this install</p>
-                                            <p className="text-red-200/80">- Installation-specific tweak settings</p>
-                                            {isLinux && wipePrefixOnUninstall && (<p className="text-red-200/80">- Runner prefix for this install</p>)}
-                                            <p className="mt-2">This will not delete:</p>
-                                            <p className="text-red-200/80">- Installed runners or DXVK versions</p>
-                                            {isLinux && !wipePrefixOnUninstall && (<p className="text-red-200/80">- Runner prefix (kept unless toggled below)</p>)}
+                                            <p>{translate("game_settings.uninstall.reviewing_header", { install_name: installSettings.name })}</p>
+                                            <p className="mt-2">{translate("game_settings.uninstall.will_delete")}</p>
+                                            <p className="text-red-200/80">{translate("game_settings.uninstall.delete_files")}</p>
+                                            <p className="text-red-200/80">{translate("game_settings.uninstall.delete_settings")}</p>
+                                            {isLinux && wipePrefixOnUninstall && (<p className="text-red-200/80">{translate("game_settings.uninstall.delete_prefix")}</p>)}
+                                            <p className="mt-2">{translate("game_settings.uninstall.wont_delete")}</p>
+                                            <p className="text-red-200/80">{translate("game_settings.uninstall.keep_runners")}</p>
+                                            {isLinux && !wipePrefixOnUninstall && (<p className="text-red-200/80">{translate("game_settings.uninstall.keep_prefix")}</p>)}
                                         </div>
 
                                         {isLinux && (
                                             <ModernToggle
-                                                label="Delete prefix"
-                                                description="Also remove the Wine/Proton prefix associated with this installation."
+                                                label={translate("game_settings.uninstall.delete_prefix_toggle.label")}
+                                                description={translate("game_settings.uninstall.delete_prefix_toggle.description")}
                                                 checked={wipePrefixOnUninstall}
                                                 onChange={setWipePrefixOnUninstall}
                                             />
                                         )}
                                         <ModernToggle
-                                            label="Keep game data"
-                                            description="Do not delete game data if you want to import somewhere else."
+                                            label={translate("game_settings.uninstall.keep_game_data.label")}
+                                            description={translate("game_settings.uninstall.keep_game_data.description")}
                                             checked={keepGameUninstall}
                                             onChange={setKeepGameUninstall}
                                         />
                                         <ModernToggle
-                                            label="I Understand This Is Permanent"
-                                            description="This action cannot be undone."
+                                            label={translate("game_settings.uninstall.acknowledge.label")}
+                                            description={translate("game_settings.uninstall.acknowledge.description")}
                                             checked={uninstallAcknowledged}
                                             onChange={setUninstallAcknowledged}
                                         />
@@ -832,14 +856,14 @@ export default function GameSettings({
                                             <button
                                                 onClick={cancelUninstallReview}
                                                 className="flex-1 py-3 px-4 rounded-lg font-semibold bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors">
-                                                Cancel
+                                                {translate("game_settings.uninstall.cancel")}
                                             </button>
                                             <button
                                                 onClick={handleInlineUninstall}
                                                 disabled={!canUninstall}
                                                 className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold transition-colors ${canUninstall ? "bg-red-600 hover:bg-red-500 text-white" : "bg-zinc-800 text-zinc-500 cursor-not-allowed"}`}>
                                                 <Trash2 className="w-5 h-5" />
-                                                <span>{isUninstalling ? "Uninstalling..." : "Uninstall Installation"}</span>
+                                                <span>{isUninstalling ? translate("game_settings.uninstall.in_progress") : translate("game_settings.uninstall.confirm")}</span>
                                             </button>
                                         </div>
                                     </div>

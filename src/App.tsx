@@ -23,6 +23,7 @@ import SidebarRunners from "./components/sidebar/SidebarRunners.tsx";
 import SidebarDownloads from "./components/sidebar/SidebarDownloads";
 import { toPercent } from "./utils/progress";
 import BackgroundControls from "./components/common/BackgroundControls";
+import { setTranslations, translate } from "./utils/i18n";
 
 
 export default class App extends React.Component<any, any> {
@@ -57,6 +58,7 @@ export default class App extends React.Component<any, any> {
         this.refreshDownloadButtonInfo = this.refreshDownloadButtonInfo.bind(this);
         this.fetchInstalledRunners = this.fetchInstalledRunners.bind(this);
         this.fetchSteamRTStatus = this.fetchSteamRTStatus.bind(this);
+        this.fetchLocales = this.fetchLocales.bind(this);
         this.handleSpeedSample = this.handleSpeedSample.bind(this);
         this.handleClearSpeedHistory = this.handleClearSpeedHistory.bind(this);
         this.setCurrentPage = this.setCurrentPage.bind(this);
@@ -132,6 +134,7 @@ export default class App extends React.Component<any, any> {
             availableBackgrounds: [] as { src: string; label: string; isDynamic: boolean }[],
             limitedMode: false,
             networkStatus: "online" as "online" | "slow" | "offline",
+            updateAvailable: false,
             recoveryProgress: null as RecoveryProgress | null,
             imageVersion: 0, // Increments on recovery to force image re-loads
             // Drag and drop state for sidebar installs
@@ -139,6 +142,7 @@ export default class App extends React.Component<any, any> {
             dragTargetIndex: null as number | null,
             dropCompleted: false, // Flag to prevent handleDragEnd from resetting after successful drop
             droppedItemId: null as string | null, // Track which item was just dropped for pop animation
+            availableLocales: [] as { value: string; label: string }[],
         }
     }
 
@@ -237,14 +241,14 @@ export default class App extends React.Component<any, any> {
 
                                 {/* Status text - shows progress when recovering */}
                                 <span className="text-sm font-medium text-amber-900">
-                                    {this.state.recoveryProgress?.phase === "checking" && "Checking connection..."}
-                                    {this.state.recoveryProgress?.phase === "loading_repos" && "Loading repositories..."}
+                                    {this.state.recoveryProgress?.phase === "checking" && translate("network.checking")}
+                                    {this.state.recoveryProgress?.phase === "loading_repos" && translate("network.loading_repos")}
                                     {this.state.recoveryProgress?.phase === "loading_images" && (
-                                        <>Loading images... ({this.state.recoveryProgress.current}/{this.state.recoveryProgress.total})</>
+                                        <>{translate("network.loading_images")} ({this.state.recoveryProgress.current}/{this.state.recoveryProgress.total})</>
                                     )}
-                                    {this.state.recoveryProgress?.phase === "complete" && "Connected!"}
+                                    {this.state.recoveryProgress?.phase === "complete" && translate("network.connected")}
                                     {(!this.state.recoveryProgress?.phase || this.state.recoveryProgress.phase === "idle") && (
-                                        <>{this.state.networkStatus === "offline" ? "Offline Mode" : "Limited Mode"} - Downloads unavailable</>
+                                        <>{this.state.networkStatus === "offline" ? translate("network.offline_mode") : translate("network.limited_mode")} {translate("network.downloads_unavailable")}</>
                                     )}
                                 </span>
 
@@ -264,9 +268,20 @@ export default class App extends React.Component<any, any> {
                                         onClick={() => this.networkMonitor?.triggerRecovery()}
                                         className="ml-2 px-2 py-0.5 text-xs font-medium text-amber-900 bg-amber-200 hover:bg-amber-100 rounded transition-colors"
                                     >
-                                        Retry
+                                        {translate("network.retry")}
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    )}
+                    {/* Update Available Banner */}
+                    {this.state.updateAvailable && !this.state.limitedMode && (
+                        <div className="absolute top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+                            <div className="mt-2 px-5 py-2.5 bg-purple-600 rounded-lg shadow-[0_0_20px_3px_rgba(147,51,234,0.45)] pointer-events-auto flex items-center gap-2.5 animate-fadeIn border border-purple-400/40">
+                                <svg className="w-4 h-4 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <span className="text-[0.9rem] font-semibold text-white">{translate("app.update_available_banner")}</span>
                             </div>
                         </div>
                     )}
@@ -478,9 +493,9 @@ export default class App extends React.Component<any, any> {
                                 // Settings
                                 <SidebarSettings key="settings" popup={this.state.openPopup} setOpenPopup={this.setOpenPopup} currentPage={this.state.currentPage} setCurrentPage={this.setCurrentPage} />,
                                 // Discord
-                                <SidebarLink key="discord" popup={this.state.openPopup} title={"Discord"} iconType={"discord"} uri={"https://discord.gg/nDMJDwuj7s"} />,
+                                <SidebarLink key="discord" popup={this.state.openPopup} title={translate("sidebar.discord")} iconType={"discord"} uri={"https://discord.gg/nDMJDwuj7s"} />,
                                 // Donate
-                                <SidebarLink key="donate" popup={this.state.openPopup} title={"Support the project"} iconType={"donate"} uri={"https://ko-fi.com/twintailteam"} />,
+                                <SidebarLink key="donate" popup={this.state.openPopup} title={translate("sidebar.support")} iconType={"donate"} uri={"https://ko-fi.com/twintailteam"} />,
                             ];
 
                             return (
@@ -523,6 +538,7 @@ export default class App extends React.Component<any, any> {
                         lastPlayedTime={this.state.installSettings?.last_played_time}
                         totalPlaytime={this.state.installSettings?.total_playtime}
                         isVisible={this.state.currentInstall !== "" && this.state.openPopup === POPUPS.NONE && this.state.currentPage === PAGES.NONE}
+                        appLang={this.state.globalSettings?.app_lang}
                     />
 
                     <ActionBar
@@ -605,6 +621,7 @@ export default class App extends React.Component<any, any> {
                     setCurrentPage={this.setCurrentPage}
                     globalSettings={this.state.globalSettings}
                     fetchSettings={this.fetchSettings}
+                    availableLocales={this.state.availableLocales}
                     downloadQueueState={this.state.downloadQueueState}
                     downloadProgressByJobId={this.state.downloadProgressByJobId}
                     installs={this.state.installs}
@@ -656,9 +673,9 @@ export default class App extends React.Component<any, any> {
                 // Don't await - let it show in the background
                 showDialogAsync({
                     type: "warning",
-                    title: "Connection Lost",
-                    message: "Your internet connection was lost. Some features like downloads and updates won't be available until the connection is restored.\n\nThe launcher will automatically reconnect when possible.",
-                    buttons: [{ label: "OK", variant: "primary" }],
+                    title: translate("network.connection_lost_title"),
+                    message: translate("network.connection_lost_message"),
+                    buttons: [{ label: translate("network.ok"), variant: "primary" }],
                 });
             }
         );
@@ -899,8 +916,22 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({
                     globalSettings: gs
                 }));
+                this.fetchLocales(gs?.app_lang);
             }
         });
+    }
+
+    fetchLocales(appLang?: string) {
+        const lang: string = appLang ?? this.state.globalSettings?.app_lang ?? "en_US";
+        return invoke<string[]>("list_locales").then(codes => {
+            return Promise.all(codes.map(code => invoke<any>("get_locale", { code }).then(data => [code, data] as [string, any])));
+        }).then(entries => {
+            const all: Record<string, any> = Object.fromEntries(entries);
+            const tr = all[lang] ?? all["en_US"] ?? {};
+            const fb = all["en_US"] ?? {};
+            setTranslations(tr, fb);
+            this.setState({ availableLocales: Object.keys(all).map(code => ({ value: code, label: all[code]?.metadata?.display_name ?? code })) });
+        }).catch(e => console.error("Failed to load locales:", e));
     }
 
     fetchInstallSettings(install: any) {
@@ -1100,19 +1131,8 @@ export default class App extends React.Component<any, any> {
         if (this.state.currentInstall) {
             const install = this.state.installs.find((i: any) => i.id === this.state.currentInstall);
             if (install) {
-                // Try to find the game manifest by ID first, then by title
                 let game = this.state.gamesinfo.find((g: any) => g.manifest_id === install.manifest_id);
-
-                if (!game) {
-                    game = this.state.gamesinfo.find((g: any) =>
-                        g.display_name === install.name ||
-                        g.game_versions?.some((v: any) => v.metadata?.versioned_name === install.name)
-                    );
-                }
-
-                if (!game) {
-                    console.warn(`Could not find game manifest for install: ${install.name} (${install.manifest_id})`);
-                }
+                if (!game) { console.warn(`Could not find game manifest for install: ${install.name} (${install.manifest_id})`); }
 
                 if (game) {
                     // Add dynamic background if available (skip on Linux)

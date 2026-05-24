@@ -156,12 +156,12 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             #[cfg(target_os = "linux")]
                             crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                         } else {
-                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Error occurred during DOWNLOAD_MODE_FILE full extraction for {}, marking as failed", install.name);
                         }
                     } else {
-                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                         h5.emit("update_complete", ()).unwrap();
                         log::debug!("Error occurred during DOWNLOAD_MODE_FILE full download for {}, marking as failed", install.name);
                     }
@@ -240,12 +240,12 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                     #[cfg(target_os = "linux")]
                                     crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                                 } else {
-                                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                                     h5.emit("update_complete", ()).unwrap();
                                     log::debug!("Error occurred during DOWNLOAD_MODE_FILE (endfield_global) extraction for {}, marking as failed", install.name);
                                 }
                             } else {
-                                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                                if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                                 h5.emit("update_complete", ()).unwrap();
                                 log::debug!("Error occurred during DOWNLOAD_MODE_FILE (endfield_global) download for {}, marking as failed", install.name);
                             }
@@ -315,7 +315,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         #[cfg(target_os = "linux")]
                         crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                     } else {
-                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                         h5.emit("update_complete", ()).unwrap();
                         log::debug!("Error occurred during DOWNLOAD_MODE_CHUNK full download for {}, marking as failed", install.name);
                     }
@@ -379,12 +379,12 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                             crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
                             success = true;
                         } else {
-                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Error occurred during update of {} using DOWNLOAD_MODE_CHUNK, marking as failed", install.name);
                         }
                     } else {
-                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to update {} as there is not enough free space, please make sure there is enough free space for the update!", install.name), Some(vec!["Ok"]), None);
+                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.update_insufficient_space", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                         h5.emit("update_complete", ()).unwrap();
                         log::debug!("Not enough space to update {} using DOWNLOAD_MODE_CHUNK, required: {}, available: {:?}", install.name, total_size, available);
                     }
@@ -394,7 +394,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                 if urls.is_empty() {
                     log::debug!("No diff found for {} using DOWNLOAD_MODE_RAW - this should never happen, the manifest may be corrupt or the install version is unrecognized", install.name);
-                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to update {} - no update path was found for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version. Please reinstall the game.", install.name), Some(vec!["Ok"]), None);
+                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.update_no_path", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                     h5.emit("update_complete", ()).unwrap();
                 } else {
                     // we have diffs update the game
@@ -442,19 +442,19 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "add".to_string());
                             }
                         } else {
-                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Error occurred while trying to update {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                             h5.emit("update_complete", ()).unwrap();
                             log::debug!("Error occurred during update of {} using DOWNLOAD_MODE_RAW, marking as failed", install.name);
                         }
                     } else {
-                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", &format!("Unable to update {} as there is not enough free space, please make sure there is enough free space for the update!", install.name), Some(vec!["Ok"]), None);
+                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.update_insufficient_space", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                         h5.emit("update_complete", ()).unwrap();
                         log::debug!("Not enough space to update {} using DOWNLOAD_MODE_RAW, required: {}, available: {:?}", install.name, total_size, available);
                     }
                 }
             }
             "DOWNLOAD_MODE_MULTIFILE" => {}
-            _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h5, "error", "TwintailLauncher", "Unsupported download mode for update!", Some(vec!["Ok"]), None); }
+            _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h5, "error", "TwintailLauncher", "dialogs.unsupported_update_mode", Some(vec!["dialogs.buttons.ok"]), None, None); }
         }
 
         let mut cancelled = false;

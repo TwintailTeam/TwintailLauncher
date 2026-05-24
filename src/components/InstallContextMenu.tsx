@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { translate } from "../utils/i18n";
 import ReactDOM from "react-dom";
 import { MonitorIcon, SettingsIcon, Trash2Icon } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
@@ -155,7 +156,7 @@ export default function InstallContextMenu({
             <div className="py-2">
                 <MenuItem
                     icon={SettingsIcon}
-                    label="Installation Settings"
+                    label={translate("context_menu.installation_settings")}
                     onClick={handleOpenSettings}
                     variant="default"
                 />
@@ -163,26 +164,26 @@ export default function InstallContextMenu({
                 <Separator />
 
                 {isLoading ? (
-                    <div className="px-4 py-2.5 text-sm text-white/50">Loading...</div>
+                    <div className="px-4 py-2.5 text-sm text-white/50">{translate("context_menu.loading")}</div>
                 ) : (
                     <>
                         {installSettings?.steam_imported ? (
                             <div className="px-4 py-2.5 text-xs text-yellow-300 font-medium">
-                                Steam shortcuts are managed by Steam for this installation.
+                                {translate("context_menu.steam_managed")}
                             </div>
                         ) : (
                             <>
                                 {installSettings?.shortcut_is_steam ? (
                                     <MenuItem
                                         icon={Trash2Icon}
-                                        label="Remove from Steam"
+                                        label={translate("context_menu.remove_from_steam")}
                                         onClick={handleRemoveFromSteam}
                                         variant="danger"
                                     />
                                 ) : (
                                     <MenuItem
                                         icon={SteamIcon}
-                                        label="Add to Steam"
+                                        label={translate("context_menu.add_to_steam")}
                                         onClick={handleAddToSteam}
                                         variant="primary"
                                     />
@@ -193,14 +194,14 @@ export default function InstallContextMenu({
                         {installSettings?.shortcut_path !== "" ? (
                             <MenuItem
                                 icon={Trash2Icon}
-                                label="Remove from Desktop"
+                                label={translate("context_menu.remove_from_desktop")}
                                 onClick={handleDeleteShortcut}
                                 variant="danger"
                             />
                         ) : (
                             <MenuItem
                                 icon={MonitorIcon}
-                                label="Add to Desktop"
+                                label={translate("context_menu.add_to_desktop")}
                                 onClick={handleCreateShortcut}
                                 variant="primary"
                             />

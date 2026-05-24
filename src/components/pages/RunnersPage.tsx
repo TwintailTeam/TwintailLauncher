@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { translate } from "../../utils/i18n";
 import { invoke } from "@tauri-apps/api/core";
 import { ArrowLeft, AtomIcon, DownloadCloud, FolderOpen, Trash2, Check } from "lucide-react";
 import { PAGES } from "./PAGES";
@@ -87,7 +88,7 @@ function RunnerItem({
                         <button
                             onClick={onOpenFolder}
                             className="p-2 rounded-lg text-white/50 hover:text-purple-400 hover:bg-purple-500/10 transition-all duration-200"
-                            title="Open folder"
+                            title={translate('runners_page.open_folder_tooltip')}
                         >
                             <FolderOpen className="w-4 h-4" />
                         </button>
@@ -95,13 +96,13 @@ function RunnerItem({
                             onClick={handleRemove}
                             disabled={isLoading || isLastInstalled}
                             className="p-2 rounded-lg text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-white/50 disabled:hover:bg-transparent"
-                            title={isLastInstalled ? "Cannot remove the last installed runner" : "Remove"}
+                            title={isLastInstalled ? translate('runners_page.cannot_remove_last') : translate('runners_page.remove_tooltip')}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-xs text-emerald-400 font-medium">Installed</span>
+                            <span className="text-xs text-emerald-400 font-medium">{translate('runners_page.installed_label')}</span>
                         </div>
                     </>
                 ) : downloading ? (
@@ -116,7 +117,7 @@ function RunnerItem({
                             <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
                         </svg>
                         <span className="relative text-xs font-medium text-purple-300">
-                            {isQueued ? 'Queued' : progressPercent > 0 ? `${progressPercent}%` : 'Installing...'}
+                            {isQueued ? translate('runners_page.queued_label') : progressPercent > 0 ? `${progressPercent}%` : translate('runners_page.installing_label')}
                         </span>
                     </div>
                 ) : (
@@ -133,7 +134,7 @@ function RunnerItem({
                         ) : (
                             <DownloadCloud className="w-4 h-4" />
                         )}
-                        <span className="text-xs font-medium">Install</span>
+                        <span className="text-xs font-medium">{translate('runners_page.install_button')}</span>
                     </button>
                 )}
             </div>
@@ -213,10 +214,10 @@ export default function RunnersPage({
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                            Runner Manager
+                            {translate('runners_page.title')}
                         </h1>
                         <p className="text-sm text-white/50">
-                            {totalInstalled} installed / {totalVersions} available versions
+                            {translate('runners_page.installed_count', { installed: String(totalInstalled), total: String(totalVersions) })}
                         </p>
                     </div>
                 </div>
@@ -234,7 +235,7 @@ export default function RunnersPage({
                             className={`flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent ${animClass}`}
                         >
                             {activeRunner && (
-                                <SettingsSection title={`${activeRunner.display_name} Versions`}>
+                                <SettingsSection title={translate('runners_page.versions_section', { runner_name: activeRunner.display_name })}>
                                     <div className="flex flex-col gap-2">
                                         {activeRunner.versions.map((v) => {
                                             const isInstalled = installedRunners.some(
@@ -286,9 +287,9 @@ export default function RunnersPage({
                 ) : (
                     <div className="flex flex-col items-center justify-center w-full h-full text-center">
                         <AtomIcon className="w-16 h-16 text-white/20 mb-4" />
-                        <h3 className="text-lg font-medium text-white/70">No runners available</h3>
+                        <h3 className="text-lg font-medium text-white/70">{translate('runners_page.no_runners')}</h3>
                         <p className="text-sm text-white/40 mt-2">
-                            Runner versions will appear here when available
+                            {translate('runners_page.no_runners_description')}
                         </p>
                     </div>
                 )}

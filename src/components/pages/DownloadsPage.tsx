@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { translate } from '../../utils/i18n';
 import { createPortal } from 'react-dom';
 import { invoke } from '@tauri-apps/api/core';
 import type {
@@ -93,44 +94,44 @@ const calculateETA = (
 /* Format kind label */
 function formatKind(kind: QueueJobView['kind']): string {
     switch (kind) {
-        case 'game_download': return 'Game';
-        case 'game_update': return 'Update';
-        case 'game_preload': return 'Predownload';
-        case 'game_repair': return 'Repair';
-        case 'runner_download': return 'Runner';
+        case 'game_download': return translate('downloads_page.kind.game');
+        case 'game_update': return translate('downloads_page.kind.update');
+        case 'game_preload': return translate('downloads_page.kind.preload');
+        case 'game_repair': return translate('downloads_page.kind.repair');
+        case 'runner_download': return translate('downloads_page.kind.runner');
         case 'steamrt_download': return 'SteamRT';
         case 'steamrt4_download': return 'SteamRT';
         case 'xxmi_download': return 'XXMI';
-        case 'extras_download': return 'Extra';
-        default: return 'Download';
+        case 'extras_download': return translate('downloads_page.kind.extra');
+        default: return translate('downloads_page.kind.download');
     }
 }
 
 /* Format status label */
 function formatStatus(status: QueueJobView['status'], isPaused: boolean): string {
-    if (isPaused && status === 'running') return 'Paused';
+    if (isPaused && status === 'running') return translate('downloads_page.status.paused');
     switch (status) {
-        case 'queued': return 'Queued';
-        case 'running': return 'Downloading';
-        case 'completed': return 'Completed';
-        case 'failed': return 'Failed';
-        case 'cancelled': return 'Paused';
-        case 'paused': return 'Paused';
+        case 'queued': return translate('downloads_page.status.queued');
+        case 'running': return translate('downloads_page.status.downloading');
+        case 'completed': return translate('downloads_page.status.completed');
+        case 'failed': return translate('downloads_page.status.failed');
+        case 'cancelled': return translate('downloads_page.status.paused');
+        case 'paused': return translate('downloads_page.status.paused');
     }
 }
 
 /* Format download phase - only Verifying (when resuming) or Downloading */
 function formatDownloadPhase(phase: DownloadPhase | undefined): string {
-    return phase === 'verifying' ? 'Verifying' : 'Downloading';
+    return phase === 'verifying' ? translate('downloads_page.verifying') : translate('downloads_page.downloading');
 }
 
 /* Format install phase substatus */
 function formatInstallPhase(phase: DownloadPhase | undefined): string {
     switch (phase) {
-        case 'validating': return 'Validating';
-        case 'moving': return 'Moving';
-        case 'extracting': return 'Extracting';
-        default: return 'Installing';
+        case 'validating': return translate('downloads_page.validating');
+        case 'moving': return translate('downloads_page.moving');
+        case 'extracting': return translate('downloads_page.extracting');
+        default: return translate('downloads_page.installing');
     }
 }
 
@@ -588,15 +589,15 @@ export default function DownloadsPage({
                                 <div className="border-b border-white/5 pb-1.5 mb-1.5">
                                     <div className="flex items-center gap-1.5 text-orange-400 font-medium">
                                         <DownloadCloud className="w-3 h-3" />
-                                        <span className="break-all">{currentJob?.name ?? 'Download'}</span>
+                                        <span className="break-all">{currentJob?.name ?? translate('downloads_page.kind.download')}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-blue-400 font-semibold">Network</span>
+                                    <span className="text-blue-400 font-semibold">{translate('downloads_page.network')}</span>
                                     <span className="text-blue-400 font-semibold">{formatSpeed(sample.net)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-green-400 font-semibold">Disk</span>
+                                    <span className="text-green-400 font-semibold">{translate('downloads_page.disk')}</span>
                                     <span className="text-green-400 font-semibold">{formatSpeed(sample.disk)}</span>
                                 </div>
                             </div>
@@ -619,10 +620,12 @@ export default function DownloadsPage({
                         <DownloadCloud className="w-6 h-6 text-blue-400" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">Download Manager</h1>
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">{translate('downloads_page.title')}</h1>
                         {currentJob && (
                             <p className="text-sm text-white/50">
-                                {formatSpeed(displayNetSpeed)} • {allJobs.length} item{allJobs.length !== 1 ? 's' : ''} in queue
+                                {allJobs.length === 1
+                                    ? translate('downloads_page.header_speed_queue_one', { speed: formatSpeed(displayNetSpeed), count: String(allJobs.length) })
+                                    : translate('downloads_page.header_speed_queue_many', { speed: formatSpeed(displayNetSpeed), count: String(allJobs.length) })}
                             </p>
                         )}
                     </div>
@@ -712,7 +715,7 @@ export default function DownloadsPage({
                                                             <div className="w-0.5 h-2.5 bg-blue-400 rounded-sm"></div>
                                                             <div className="w-0.5 h-2 bg-blue-400 rounded-sm"></div>
                                                         </div>
-                                                        <span>Network</span>
+                                                        <span>{translate('downloads_page.network')}</span>
                                                     </div>
                                                     <div className="text-sm font-medium text-blue-400 mt-1">{formatSpeed(displayNetSpeed)}</div>
                                                 </div>
@@ -724,7 +727,7 @@ export default function DownloadsPage({
                                                             <div className="w-0.5 h-2.5 bg-blue-400 rounded-sm"></div>
                                                             <div className="w-0.5 h-2 bg-blue-400 rounded-sm"></div>
                                                         </div>
-                                                        <span>Peak</span>
+                                                        <span>{translate('downloads_page.peak')}</span>
                                                     </div>
                                                     <div className="text-sm font-medium text-blue-400 mt-1">{formatSpeed(peakSpeed)}</div>
                                                 </div>
@@ -734,7 +737,7 @@ export default function DownloadsPage({
                                                         <div className="flex items-center h-3">
                                                             <div className="w-3 h-0.5 bg-green-400 rounded-full"></div>
                                                         </div>
-                                                        <span>Disk</span>
+                                                        <span>{translate('downloads_page.disk')}</span>
                                                     </div>
                                                     <div className="text-sm font-medium text-green-400 mt-1">{formatSpeed(displayDiskSpeed)}</div>
                                                 </div>
@@ -743,7 +746,7 @@ export default function DownloadsPage({
                                             {/* Speed limit */}
                                             {limitText && (
                                                 <div className="text-xs text-gray-400 uppercase tracking-wider mt-2">
-                                                    Downloads limited to: <span className="text-gray-300">{limitText}</span>
+                                                    {translate('downloads_page.speed_limit_prefix')} <span className="text-gray-300">{limitText}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -753,7 +756,7 @@ export default function DownloadsPage({
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="text-xs">
                                                     {isPaused ? (
-                                                        <span className="text-yellow-400 font-medium">Paused</span>
+                                                        <span className="text-yellow-400 font-medium">{translate('downloads_page.paused')}</span>
                                                     ) : (
                                                         <div className="flex items-center gap-3">
                                                             {/* Phase indicator */}
@@ -792,7 +795,7 @@ export default function DownloadsPage({
                                                     <div className="flex items-center justify-between mb-1">
                                                         <div className={`flex items-center gap-1.5 text-xs ${getInstallPhaseColor(currentPhase)}`}>
                                                             <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                                                            <span className="font-medium uppercase tracking-wider">Installing</span>
+                                                            <span className="font-medium uppercase tracking-wider">{translate('downloads_page.installing')}</span>
                                                             <span className="text-gray-500">•</span>
                                                             <span className="font-medium">{formatInstallPhase(currentPhase)}</span>
                                                         </div>
@@ -820,12 +823,12 @@ export default function DownloadsPage({
                                                                 <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                                                                 <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
                                                             </svg>
-                                                            <span className="text-yellow-400 font-medium">Pausing...</span>
+                                                            <span className="text-yellow-400 font-medium">{translate('downloads_page.pausing')}</span>
                                                         </div>
                                                     ) : !isPaused ? (
                                                         etaText !== '—' ? (
                                                             <div>
-                                                                <span className="uppercase tracking-wider">Estimate:</span>
+                                                                <span className="uppercase tracking-wider">{translate('downloads_page.estimate_label')}</span>
                                                                 <span className="ml-2 text-white font-medium">{etaText}</span>
                                                             </div>
                                                         ) : null
@@ -864,20 +867,20 @@ export default function DownloadsPage({
                 ) : (
                     <div className="p-12 text-center text-gray-500">
                         <DownloadCloud className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">No active downloads</p>
-                        <p className="text-sm mt-2 text-gray-600">Downloads will appear here when you start them</p>
+                        <p className="text-lg">{translate('downloads_page.no_active_downloads')}</p>
+                        <p className="text-sm mt-2 text-gray-600">{translate('downloads_page.no_active_downloads_sub')}</p>
                     </div>
                 )}
 
                 {/* Queue Section */}
                 <div className="">
                     <div className="p-6 border-b border-white/5">
-                        <h3 className="text-lg font-semibold text-white">Queue ({queuedJobs.length})</h3>
+                        <h3 className="text-lg font-semibold text-white">{translate('downloads_page.queue_title', { count: String(queuedJobs.length) })}</h3>
                     </div>
                     <div className="p-4">
                         {queuedJobs.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
-                                <p className="text-sm">No items in queue</p>
+                                <p className="text-sm">{translate('downloads_page.no_items_in_queue')}</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-2">
@@ -935,14 +938,14 @@ export default function DownloadsPage({
                                                 <button
                                                     onClick={() => handleActivateJob(job.id)}
                                                     className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-                                                    title="Start downloading this now">
-                                                    Start Now
+                                                    title={translate('downloads_page.start_now_tooltip')}>
+                                                    {translate('downloads_page.start_now')}
                                                 </button>
                                                 {index > 0 && (
                                                     <button
                                                         onClick={() => handleMoveUp(job.id)}
                                                         className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
-                                                        title="Move up">
+                                                        title={translate('downloads_page.move_up_tooltip')}>
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                                                         </svg>
@@ -952,7 +955,7 @@ export default function DownloadsPage({
                                                     <button
                                                         onClick={() => handleMoveDown(job.id)}
                                                         className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
-                                                        title="Move down">
+                                                        title={translate('downloads_page.move_down_tooltip')}>
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                         </svg>
@@ -961,7 +964,7 @@ export default function DownloadsPage({
                                                 <button
                                                     onClick={() => handleRemove(job.id)}
                                                     className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors"
-                                                    title="Remove from queue">
+                                                    title={translate('downloads_page.remove_tooltip')}>
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                     </svg>
@@ -979,19 +982,19 @@ export default function DownloadsPage({
                         <div className="p-6 border-t border-white/5">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-white">
-                                    Completed <span className="text-gray-400 font-normal ml-2">({completedItems.length})</span>
+                                    {translate('downloads_page.completed_title')} <span className="text-gray-400 font-normal ml-2">({completedItems.length})</span>
                                 </h3>
                                 <button
                                     onClick={handleClearCompleted}
                                     className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded transition-colors">
-                                    Clear All
+                                    {translate('downloads_page.clear_all')}
                                 </button>
                             </div>
                             <div className="flex flex-col gap-2">
                                 {completedItems.map((job) => {
                                     const install = installs.find(i => i.id === job.installId);
                                     const statusColor = job.status === 'failed' ? 'text-red-400' : 'text-green-400';
-                                    const statusText = job.status === 'failed' ? 'Failed' : 'Completed';
+                                    const statusText = job.status === 'failed' ? translate('downloads_page.status.failed') : translate('downloads_page.status.completed');
                                     return (
                                         <div key={job.id} className="flex items-center gap-4 p-3 rounded-lg border border-white/5 bg-white/5">
                                             {/* Game Icon */}

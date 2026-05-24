@@ -17,6 +17,7 @@ import { useState, useEffect, useRef } from "react";
 import { formatBytes } from "../../utils/progress";
 import { open } from "@tauri-apps/plugin-dialog";
 import {ModernPathInput, ModernSelect, ModernToggle} from "../common/SettingsComponents.tsx";
+import { translate } from "../../utils/i18n";
 
 interface IProps {
     disk: any;
@@ -206,7 +207,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                         </div>
                     )}
                     <div className="mb-1">
-                        <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">{skipGameDownload ? "Add Installation" : "Install Game"}</h1>
+                        <h1 className="text-4xl font-bold text-white tracking-tight drop-shadow-md">{skipGameDownload ? translate("install_game.title_add") : translate("install_game.title_install")}</h1>
                         <div className="flex items-center gap-3 mt-1 relative">
                             <span className="text-white/80 font-medium text-lg">{displayName}</span>
                             {/* Version Pill */}
@@ -247,7 +248,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 {/* Location Section - Custom Card Design */}
                 <div className="space-y-4">
                     <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">
-                        <HardDrive className="text-purple-400" size={20} /> Installation Destination
+                        <HardDrive className="text-purple-400" size={20} /> {translate("install_game.location_title")}
                     </h3>
 
                     <div className="bg-gradient-to-br from-white/5 to-white/0 rounded-xl border border-white/10 overflow-hidden">
@@ -256,21 +257,21 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                 <Folder className="text-white/50" size={24} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-xs text-white/40 uppercase font-bold tracking-wider mb-1">Install Path</div>
+                                <div className="text-xs text-white/40 uppercase font-bold tracking-wider mb-1">{translate("install_game.install_path")}</div>
                                 <div className="text-white/90 font-medium truncate font-mono text-sm" title={installPath}>
                                     {installPath}
                                 </div>
                             </div>
                             <button onClick={handleBrowse} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/5 hover:border-white/20 transition-all text-sm font-medium">
-                                Change
+                                {translate("install_game.change")}
                             </button>
                         </div>
                         {/* Disk Space Visual - Integrated */}
                         {!skipGameDownload && (
                             <div className="bg-black/20 px-4 pb-4 border-t border-white/5">
                                 <div className="flex items-center justify-between pt-3 mb-2.5">
-                                    <span className="text-xs text-white/40 uppercase font-bold tracking-wider">Storage</span>
-                                    {totalSpace > 0 && <span className="text-xs text-white/20 font-mono">{formatBytes(totalSpace)} drive</span>}
+                                    <span className="text-xs text-white/40 uppercase font-bold tracking-wider">{translate("install_game.storage")}</span>
+                                    {totalSpace > 0 && <span className="text-xs text-white/20 font-mono">{formatBytes(totalSpace)} {translate("install_game.drive")}</span>}
                                 </div>
                                 {totalSpace > 0 ? (
                                     <>
@@ -283,24 +284,24 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                         <div className="flex items-center justify-between mt-2.5 text-xs gap-x-3 gap-y-1 flex-wrap">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="w-2 h-2 rounded-sm bg-blue-500/50 shrink-0" />
-                                                <span className="text-blue-400">Used</span>
+                                                <span className="text-blue-400">{translate("install_game.used")}</span>
                                                 <span className="text-blue-300 font-medium tabular-nums">{formatBytes(usedSpace)}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <span className={`w-2 h-2 rounded-sm shrink-0 ${hasEnoughSpace ? 'bg-violet-400' : 'bg-red-400'}`} />
-                                                <span className={hasEnoughSpace ? 'text-purple-300/70' : 'text-red-300/70'}>Game</span>
+                                                <span className={hasEnoughSpace ? 'text-purple-300/70' : 'text-red-300/70'}>{translate("install_game.game")}</span>
                                                 <span className={`font-medium tabular-nums ${hasEnoughSpace ? 'text-purple-300' : 'text-red-400'}`}>{formatBytes(requiredSpace)}</span>
                                             </div>
                                             {hasEnoughSpace ? (
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="w-2 h-2 rounded-sm bg-emerald-400/50 shrink-0" />
-                                                    <span className="text-emerald-400/70">Free after</span>
+                                                    <span className="text-emerald-400/70">{translate("install_game.free_after")}</span>
                                                     <span className="text-emerald-400 font-medium tabular-nums">{formatBytes(Math.max(0, freeSpace - requiredSpace))}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1 text-red-400">
                                                     <X size={11} />
-                                                    <span className="font-medium">Need {formatBytes(requiredSpace - freeSpace)} more</span>
+                                                    <span className="font-medium">{translate("install_game.need_more", { size: formatBytes(requiredSpace - freeSpace) })}</span>
                                                 </div>
                                             )}
                                         </div>
@@ -316,7 +317,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                         </div>
                                         {!hasEnoughSpace && (
                                             <p className="text-red-400 text-xs mt-1 font-medium flex items-center gap-1">
-                                                <X size={12} /> Insufficient disk space
+                                                <X size={12} /> {translate("install_game.insufficient_space")}
                                             </p>
                                         )}
                                     </>
@@ -328,11 +329,11 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 {biz === "bh3_global" && (
                     <div className="space-y-4">
                         <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">
-                            <Gamepad2Icon className="text-emerald-400" size={20} /> Game specific
+                            <Gamepad2Icon className="text-emerald-400" size={20} /> {translate("install_game.game_specific_title")}
                         </h3>
                         <ModernSelect
-                            label="Region"
-                            description="Game region you want downloaded."
+                            label={translate("install_game.region.label")}
+                            description={translate("install_game.region.description")}
                             value={selectedRegionCode || ""}
                             options={[{ name: "Europe & America", value: "glb_official" }, { name: "Japan", value: "jp_official" }, { name: "Korea", value: "kr_official" }, { name: "SEA", value: "overseas_official" }, { name: "Traditional Chinese", value: "asia_official" }]}
                             onChange={(val) => setSelectedRegionCode(val)}
@@ -342,12 +343,12 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 {window.navigator.platform.includes("Linux") && (
                     <div className="space-y-4">
                         <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">
-                            <Monitor className="text-orange-400" size={20} /> Linux options
+                            <Monitor className="text-orange-400" size={20} /> {translate("install_game.linux_title")}
                         </h3>
                         <div className="flex flex-col gap-2">
                             <ModernSelect
-                                label="Runner Version"
-                                description="Select the Wine/Proton version to download with the game."
+                                label={translate("game_settings.linux.runner_version.label")}
+                                description={translate("install_game.runner_version.description")}
                                 value={selectedRunnerVersion || ""}
                                 options={runnerVersions}
                                 onChange={(val) => setSelectedRunnerVersion(val)}
@@ -356,12 +357,12 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                 setOpenPopup(POPUPS.NONE);
                                 setCurrentPage(PAGES.RUNNERS);
                             }} className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors text-left px-1 underline-offset-2 hover:underline">
-                                → Manage Runners
+                                → {translate("game_settings.linux.manage_runners")}
                             </button>
                         </div>
                         <ModernPathInput
-                            label="Prefix Path"
-                            description="Path to the Wine/Proton prefix."
+                            label={translate("install_game.prefix_path.label")}
+                            description={translate("game_settings.linux.prefix_location.description")}
                             value={runnerPrefixPath || ""}
                             onChange={(val) => setRunnerPrefixPath(val)}
                         />
@@ -369,17 +370,17 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 )}
                 <div className="space-y-4">
                     <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">
-                        <Terminal className="text-blue-400" size={20} /> Advanced options
+                        <Terminal className="text-blue-400" size={20} /> {translate("install_game.advanced_title")}
                     </h3>
                     <ModernToggle
-                        label="Skip Version Checks"
-                        description="Don't check for game updates."
+                        label={translate("game_settings.general.skip_version_checks.label")}
+                        description={translate("game_settings.general.skip_version_checks.description")}
                         checked={skipVersionUpdates || false}
                         onChange={(val) => setSkipVersionUpdates(val)}
                     />
                     <ModernToggle
-                        label="Skip Hash Validation"
-                        description="Skip file verification during repairs (faster but less safe)."
+                        label={translate("game_settings.general.skip_hash_validation.label")}
+                        description={translate("game_settings.general.skip_hash_validation.description")}
                         checked={disableHashValidation || false}
                         onChange={(val) => setDisableHashValidation(val)}
                     />
@@ -389,7 +390,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
             {/* Footer Actions */}
             <div className="p-6 bg-[#0c0c0c]/90 border-t border-white/5 flex flex-col-reverse sm:flex-row justify-end gap-3 z-20">
                 <button onClick={() => { setIsClosing(true); setTimeout(() => setOpenPopup(POPUPS.NONE), 200); }} className="px-6 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all font-medium text-sm">
-                    Cancel
+                    {translate("install_game.cancel")}
                 </button>
                 <button
                     id="game_dl_btn"
@@ -406,7 +407,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 >
                     <div className="flex items-center gap-3 relative z-10">
                         {skipGameDownload ? <HardDriveDownloadIcon size={20} /> : <DownloadCloudIcon size={20} />}
-                        <span>{skipGameDownload ? "Locate Game" : "Install Game"}</span>
+                        <span>{skipGameDownload ? translate("install_game.locate_button") : translate("install_game.install_button")}</span>
                     </div>
                 </button>
             </div>

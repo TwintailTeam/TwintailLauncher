@@ -18,7 +18,7 @@ pub fn register_download_handler(app: &AppHandle) {
         let state = a.state::<DownloadState>();
         let q = state.queue.lock().unwrap().clone();
         if let Some(queue) = q {
-            if queue.has_job_for_id(payload.install.clone()) { log::warn!("Game {} is already queued for download, skipping", payload.install); show_dialog_with_callback(&a, "warning", "TwintailLauncher", "This game is already queued for download!", None, None); return; }
+            if queue.has_job_for_id(payload.install.clone()) { log::warn!("Game {} is already queued for download, skipping", payload.install); show_dialog_with_callback(&a, "warning", "TwintailLauncher", "dialogs.game_already_queued", None, None, None); return; }
             queue.enqueue(QueueJobKind::GameDownload, QueueJobPayload::Game(payload));
         } else {
             let h4 = a.clone();
@@ -154,7 +154,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         success = true;
                     }
                 } else {
-                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_FILE for {}, marking as failed", install.name);
                 }
@@ -222,7 +222,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     h4.emit("download_complete", ()).unwrap();
                     success = true;
                 } else {
-                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_CHUNK for {}, marking as failed", install.name);
                 }
@@ -267,7 +267,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     #[cfg(target_os = "linux")]
                     crate::utils::apply_patch(&h4, install.directory.clone(), "aki".to_string(), "add".to_string());
                 } else {
-                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_RAW for {}, marking as failed", install.name);
                 }
@@ -351,17 +351,17 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         log::debug!("All {} archives extracted for {}, marking download as complete", total_files, install.name);
                         success = true;
                     } else {
-                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                        if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                         h4.emit("download_complete", ()).unwrap();
                         log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE extraction for {}, marking as failed", install.name);
                     }
                 } else {
-                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", &format!("Error occurred while trying to download {}\nPlease try again!", install.name), Some(vec!["Ok"]), None); }
+                    if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_MULTIFILE for {}, marking as failed", install.name);
                 }
             }
-            _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h4, "error", "TwintailLauncher", "Unsupported download mode for download!", Some(vec!["Ok"]), None); }
+            _ => { log::debug!("We should not be here... HOW IN THE ABSOLUTE HELL DID WE GET HERE? DOWNLOAD_MODE_???"); show_dialog_with_callback(&h4, "error", "TwintailLauncher", "dialogs.unsupported_download_mode", Some(vec!["dialogs.buttons.ok"]), None, None); }
         }
 
         let mut cancelled = false;

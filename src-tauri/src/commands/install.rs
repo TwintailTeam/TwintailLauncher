@@ -74,7 +74,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
                     for ei in &existing_installs {
                         if ei.version == version && queue.has_job_for_id(ei.id.clone()) {
                             log::warn!("Attempted to add duplicate install \"{}\", already queued for download", ei.name);
-                            show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("{in} is already queued for download!", in = ei.name.clone()).as_str(), None, None);
+                            show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.install_already_queued", None, None, Some(std::collections::HashMap::from([("install_name", ei.name.as_str())])));
                             return Some(AddInstallRsp { success: false, install_id: "".to_string(), background: "".to_string(), skip_dl: skip_game_dl, steam_imported: false });
                         }
                     }
@@ -194,7 +194,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
         let gbg = if let Some(ref lbg) = g.assets.game_live_background { if !lbg.is_empty() { lbg.clone() } else { g.assets.game_background.clone() } } else { g.assets.game_background.clone() };
         if !install_location.exists() {
             if let Err(e) = fs::create_dir_all(&install_location) {
-                show_dialog_with_callback(&app, "error", "TwintailLauncher", &format!("Failed to start installation! {}", e), None, None);
+                let err = e.to_string(); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.install_start_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())])));
                 return Some(AddInstallRsp {
                     success: false,
                     install_id: "".to_string(),
@@ -253,9 +253,9 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_
                     let r = fs::remove_dir_all(installdir.clone());
                     match r {
                         Ok(_) => {},
-                        Err(e) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to remove game installation directory. {} - Please remove the folder manually!", e.to_string()).as_str(), None, None) }
+                        Err(e) => { let err = e.to_string(); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.install_remove_dir_failed", None, None, Some(std::collections::HashMap::from([("error", err.as_str())]))) }
                     }
-                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to remove game installation directory. Please remove the folder manually!", None, None); }
+                } else { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.install_remove_dir_failed_generic", None, None, None); }
             }
             delete_installation_by_id(&app, id.clone()).unwrap();
             Some(true)
@@ -768,7 +768,7 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
                     if r0 {
                         archandle.emit("download_complete", ()).unwrap();
                     } else {
-                        show_dialog_with_callback(&*archandle, "error", "TwintailLauncher", format!("Error occurred while trying to download {dxvn} DXVK! Please retry later.", dxvn = dxvkv.as_str().to_string()).as_str(), Some(vec!["Ok"]), None);
+                        show_dialog_with_callback(&*archandle, "error", "TwintailLauncher", "dialogs.dxvk_download_failed", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("dxvk_version", dxvkv.as_str())])));
                         archandle.emit("download_complete", ()).unwrap();
                         if dxpp.exists() { fs::remove_dir_all(&dxpp).unwrap(); }
                     }
@@ -805,7 +805,7 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
         Some(true)
     } else {
         log::warn!("Failed to find game installation with id {}", id);
-        show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to find game installation!", None, None);
+        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.install_not_found", None, None, None);
         None
     }
 }
@@ -951,8 +951,8 @@ Type=Application
                 if status {
                     log::info!("Created desktop shortcut for \"{}\" at {}", install.name, file.display());
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string(), );
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully created {} desktop shortcut.", install.name.as_str()).as_str(), None, None);
-                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to create {} desktop shortcut! If you use flatpak please make sure we have permission to access ~/.local/share/applications", install.name.as_str()).as_str(), None, None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_desktop_created", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_desktop_create_failed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
@@ -987,8 +987,8 @@ Type=Application
                     if status {
                         log::info!("Added \"{}\" to Steam (Flatpak)", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
-                        show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully added {} to Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
-                    } else { log::warn!("Failed to add \"{}\" to Steam (Flatpak)", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam (Flatpak)!", install.name.as_str()).as_str(), None, None); }
+                        show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_steam_flatpak_added", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+                    } else { log::warn!("Failed to add \"{}\" to Steam (Flatpak)", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_steam_flatpak_failed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                 }
 
                 if normal_steam.exists() {
@@ -996,8 +996,8 @@ Type=Application
                     if status {
                         log::info!("Added \"{}\" to Steam", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), true);
-                        show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully added {} to Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
-                    } else { log::warn!("Failed to add \"{}\" to Steam", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to add {} to Steam!", install.name.as_str()).as_str(), None, None); }
+                        show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_steam_added", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+                    } else { log::warn!("Failed to add \"{}\" to Steam", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_steam_failed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
                 }
             }
             _ => {}
@@ -1016,10 +1016,10 @@ Type=Application
                 if r.is_ok() {
                     log::info!("Created desktop shortcut for \"{}\" at {}", install.name, file.display());
                     update_install_shortcut_location_by_id(&app, install.id.clone(), file.clone().to_str().unwrap().to_string());
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully created desktop shortcut. Find it on your desktop.", None, None);
-                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to create launch shortcut!", None, None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_desktop_created_windows", None, None, None);
+                } else { log::warn!("Failed to create desktop shortcut for \"{}\"", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_create_failed_windows", None, None, None); }
             }
-            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
+            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.shortcut_steam_not_supported_windows", None, None, None); }
             _ => {}
         }
     }
@@ -1040,8 +1040,8 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 if status {
                     log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully deleted {} desktop shortcut.", install.name.as_str()).as_str(), None, None);
-                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Desktop shortcut for {} does not exist!", install.name.as_str()).as_str(), None, None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_desktop_deleted", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_desktop_not_exists", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
             }
             "steam" => {
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
@@ -1052,12 +1052,12 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                     if status {
                         log::info!("Removed \"{}\" from Steam (Flatpak)", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                        show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully removed {} from Steam (Flatpak), please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
+                        show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_steam_flatpak_removed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                     } else {
                         // If flatpak Steam somehow exists but has no shortcut this will trigger an edge case with DB state
                         log::warn!("Failed to remove \"{}\" from Steam (Flatpak), shortcut may have been manually deleted", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                        show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to remove {} from Steam (Flatpak)! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None, None);
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_steam_flatpak_remove_failed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                     }
                 }
 
@@ -1066,12 +1066,12 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                     if status {
                         log::info!("Removed \"{}\" from Steam", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                        show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Successfully removed {} from Steam, please restart Steam to apply changes.", install.name.as_str()).as_str(), None, None);
+                        show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_steam_removed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                     } else {
                         // If normal Steam somehow exists but has no shortcut this will trigger an edge case with DB state
                         log::warn!("Failed to remove \"{}\" from Steam, shortcut may have been manually deleted", install.name);
                         update_install_shortcut_is_steam_by_id(&app, install.id.clone(), false);
-                        show_dialog_with_callback(&app, "error", "TwintailLauncher", format!("Failed to remove {} from Steam! Shortcut was most likely manually deleted.", install.name.as_str()).as_str(), None, None);
+                        show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.shortcut_steam_remove_failed", None, None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                     }
                 }
             }
@@ -1090,10 +1090,10 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
                 if status {
                     log::info!("Removed desktop shortcut for \"{}\"", install.name);
                     update_install_shortcut_location_by_id(&app, install.id.clone(), "".to_string());
-                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "Successfully deleted desktop shortcut.", None, None);
-                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Desktop shortcut for this game does not exist!", None, None); }
+                    show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.shortcut_desktop_deleted_windows", None, None, None);
+                } else { log::warn!("Desktop shortcut for \"{}\" does not exist, nothing to remove", install.name); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.shortcut_desktop_not_exists_generic", None, None, None); }
             }
-            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Steam shortcuts are currently not supported on Windows!", None, None); }
+            "steam" => { show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.shortcut_steam_not_supported_windows", None, None, None); }
             _ => {}
         }
     };

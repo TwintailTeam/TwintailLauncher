@@ -1,4 +1,5 @@
 import { CachedImage } from "../common/CachedImage";
+import { translate } from "../../utils/i18n";
 
 interface GameInfoOverlayProps {
     displayName: string;
@@ -36,7 +37,7 @@ export default function GameInfoOverlay({
                             )}
                             {hasUpdate && (
                                 <span className="px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 text-xs font-medium border border-purple-500/30 shadow-[0_0_8px_rgba(147,51,234,0.2)]">
-                                    Update Available
+                                    {translate("game_info.update_available")}
                                 </span>
                             )}
                         </div>

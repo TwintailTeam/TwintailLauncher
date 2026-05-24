@@ -8,7 +8,7 @@ use crate::commands::install::{add_install, check_game_running, game_launch, get
 use crate::commands::queue::{pause_game_download, queue_move_up, queue_move_down, queue_remove, queue_set_paused, queue_activate_job, queue_reorder, queue_resume_job, get_download_queue_state, queue_clear_completed};
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled, get_game_manifest_by_manifest_id, list_compatibility_manifests, get_compatibility_manifest_by_manifest_id, override_manifest_url, clear_manifest_override};
 use crate::commands::repository::{list_repositories, remove_repository, add_repository, get_repository};
-use crate::commands::settings::{empty_folder, list_settings, open_folder, open_in_prefix, open_uri, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_download_speed_limit_cmd, update_settings_hide_app_tray, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
+use crate::commands::settings::{check_app_update, empty_folder, get_locale, list_locales, list_settings, open_folder, open_in_prefix, open_uri, update_settings_app_lang_cmd, update_settings_default_dxvk_path, update_settings_default_fps_unlock_path, update_settings_default_game_path, update_settings_default_jadeite_path, update_settings_default_mangohud_config_path, update_settings_default_prefix_path, update_settings_default_runner_path, update_settings_default_xxmi_path, update_settings_download_speed_limit_cmd, update_settings_hide_app_tray, update_settings_launcher_action, update_settings_manifests_hide, update_settings_third_party_repo_updates};
 use crate::downloading::download::register_download_handler;
 use crate::downloading::preload::register_preload_handler;
 use crate::downloading::repair::register_repair_handler;
@@ -18,7 +18,7 @@ use crate::downloading::QueueJobPayload;
 use crate::downloading::misc::check_extras_update;
 use crate::utils::db_manager::{init_db, DbInstances};
 use crate::utils::repo_manager::{load_manifests, ManifestLoader, ManifestLoaders};
-use crate::utils::{args, notify_update, register_listeners, run_async_command, setup_or_fix_default_paths, sync_install_backgrounds};
+use crate::utils::{args, register_listeners, run_async_command, setup_or_fix_default_paths, sync_install_backgrounds};
 use crate::utils::system_tray::init_tray;
 use crate::commands::runners::{add_installed_runner, get_installed_runner_by_id, get_installed_runner_by_version, is_steamrt_installed, list_installed_runners, remove_installed_runner, update_installed_runner_install_status};
 use crate::commands::network::check_network_connectivity;
@@ -73,8 +73,13 @@ pub fn run() {
 
             #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
             {
-                notify_update(handle);
-                run_async_command(async { init_db(handle).await; });
+                // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
+                #[cfg(target_os = "linux")]
+                let data_dir = { let d = app.path().app_data_dir().unwrap(); if utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
+                #[cfg(target_os = "windows")]
+                let data_dir = app.path().app_data_dir().unwrap();
+
+                run_async_command(async { init_db(handle, data_dir.clone()).await; });
 
                 // Start download queue worker (limits concurrent download-like jobs)
                 fn run_queued_job(app: AppHandle, job: QueueJob) -> QueueJobOutcome {
@@ -108,7 +113,7 @@ pub fn run() {
 
                 // Start connection monitor for auto-pause/resume on connectivity changes
                 downloading::connection_monitor::start_connection_monitor(handle.clone());
-                load_manifests(handle);
+                load_manifests(handle, data_dir.clone());
                 init_tray(handle).unwrap();
                 // Initialize the listeners
                 register_listeners(handle);
@@ -121,17 +126,9 @@ pub fn run() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
                     handle.get_window("main").unwrap().hide().unwrap();
-                    std::thread::sleep(std::time::Duration::from_secs(20));
-                    handle.cleanup_before_exit();
-                    handle.exit(0);
-                    std::process::exit(0);
+                    app.emit("sync_tray_toggle", "Show").unwrap();
                 }
 
-                // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
-                #[cfg(target_os = "linux")]
-                let data_dir = { let d = app.path().app_data_dir().unwrap(); if utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } };
-                #[cfg(target_os = "windows")]
-                let data_dir = app.path().app_data_dir().unwrap();
                 setup_or_fix_default_paths(handle, data_dir.clone(), true);
                 sync_install_backgrounds(handle);
                 check_extras_update(handle);
@@ -143,15 +140,9 @@ pub fn run() {
                 #[cfg(target_os = "linux")]
                 {
                     utils::fix_window_decorations(handle);
-                    utils::deprecate_jadeite(handle);
                     utils::sync_installed_runners(handle);
                     downloading::misc::download_or_update_steamrt3(handle);
                     downloading::misc::download_or_update_steamrt4(handle);
-                }
-                // Delete deprecated resource files (PS: reaper binary is executable in resources dir so useless to copy)
-                for df in ["7zr", "7zr.exe", "krpatchz", "krpatchz.exe", "reaper", "hpatchz", "hpatchz.exe"] {
-                    let fd = data_dir.join(df);
-                    if fd.exists() { std::fs::remove_file(fd).unwrap(); }
                 }
             }
             Ok(())
@@ -163,7 +154,7 @@ pub fn run() {
             update_install_game_path, update_install_runner_path, update_install_dxvk_path, update_install_skip_version_updates, update_install_skip_hash_valid, update_install_use_jadeite, update_install_use_xxmi, update_install_use_fps_unlock, update_install_fps_value, update_install_graphics_api, update_install_env_vars, update_install_pre_launch_cmd, update_install_launch_cmd, update_install_game_background, update_install_prefix_path, update_install_launch_args, update_install_dxvk_version, update_install_runner_version, update_install_use_gamemode, update_install_use_mangohud, update_install_xxmi_config, update_install_show_drpc, update_install_disable_system_idle, copy_authkey,
             list_compatibility_manifests, get_compatibility_manifest_by_manifest_id,
             game_launch, check_game_running, get_download_sizes, get_resume_states, update_install_mangohud_config_path, update_settings_default_mangohud_config_path, add_shortcut, remove_shortcut, pause_game_download, queue_move_up, queue_move_down, queue_remove, queue_set_paused, queue_activate_job, queue_reorder, queue_resume_job, get_download_queue_state, queue_clear_completed,
-            add_installed_runner, remove_installed_runner, get_installed_runner_by_version, get_installed_runner_by_id, list_installed_runners, update_installed_runner_install_status, is_steamrt_installed, check_network_connectivity])
+            add_installed_runner, remove_installed_runner, get_installed_runner_by_version, get_installed_runner_by_id, list_installed_runners, update_installed_runner_install_status, is_steamrt_installed, check_network_connectivity, check_app_update, get_locale, list_locales, update_settings_app_lang_cmd])
         .build(tauri::generate_context!())
         .expect("Error while running TwintailLauncher!");
 

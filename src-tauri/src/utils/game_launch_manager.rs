@@ -49,19 +49,19 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
-        show_dialog_with_callback(app, "error", "TwintailLauncher", &format!("Failed to launch {} due to possibly broken SteamLinuxRuntime! Please open Launcher Settings -> Linux Options then press Repair SteamLinuxRuntime button.", install.name), Some(vec!["I understand"]), None);
+        show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.launch_steamrt_broken", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
         return Ok(false);
     }
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
         log::info!("Attempted to launch {} with runner version {} which is lower than the minimum required runner version(s) of {}!", install.name, install.runner_version, cpo.min_runner_versions.join(", "));
-        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various unexpected behaviors.\nPlease download one of the supported minimum runner versions or higher!\nGame will not start until this requirement is satisfied!\nSupported minimum runner version(s): {}", install.name, install.runner_version, cpo.min_runner_versions.join(", ")), Some(vec!["I understand"]), None);
+        let min_vers = cpo.min_runner_versions.join(", "); show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.launch_runner_unsupported", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str()), ("runner_version", install.runner_version.as_str()), ("min_runner_versions", min_vers.as_str())])));
         return Ok(false);
     }
 
     if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) && !endfield_can_bypass {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
-        show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Launching {} with {} could lead to various issues.\nPlease change your runner to at minimum {} and try again!\nGame will not start until this requirement is satisfied!", install.name, install.runner_version, cpo.override_runner.linux.runner_version), Some(vec!["I understand"]), None);
+        show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.launch_runner_version_required", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str()), ("runner_version", install.runner_version.as_str()), ("required_runner", cpo.override_runner.linux.runner_version.as_str())])));
         return Ok(false);
     }
 
@@ -69,7 +69,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
     if !prefixp.exists() {
         if let Err(e) = std::fs::create_dir_all(&prefixp) {
             log::error!("Failed to create missing runner prefix folder at {}! Error: {}", prefixp.to_str().unwrap(), e.to_string());
-            show_dialog_with_callback(app, "warning", "TwintailLauncher", &format!("Encountered an error while trying to reinitialize your runner prefix! - {err}!", err = e.to_string()), Some(vec!["I understand"]), None);
+            let err_str = e.to_string(); show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.prefix_reinit_failed", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("error", err_str.as_str())])));
             return Ok(false);
         };
     }
@@ -109,12 +109,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_failed", None, None, None); }
                 }
                 Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", command); }
-                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_critical", None, None, None); }
         }
     }
 
@@ -123,13 +123,13 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 
     let mut args = install.launch_args.clone();
     let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+    if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
     if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
     if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
     let gamemode_ok = if install.use_gamemode && !crate::utils::is_flatpak() {
         let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
-        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "Feral GameMode is enabled but `gamemoderun` was not found in PATH. The game will launch without GameMode.\nInstall the `gamemode` package or equivalent from your distro to use this feature.", Some(vec!["I understand"]), None); }
+        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.gamemode_not_found", Some(vec!["dialogs.buttons.i_understand"]), None, None); }
         found
     } else { install.use_gamemode };
 
@@ -145,6 +145,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&default_command);
 
+        cmd.env("SteamGameId", appid.clone().to_string());
         cmd.env("SteamOS", "1");
         cmd.env("WINEARCH", "win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
@@ -192,7 +193,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", default_command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", default_command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", None, None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -200,9 +201,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", default_command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_critical", None, None, None); }
         }
         true
     } else {
@@ -212,7 +213,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("{c}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("{c} {args}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
@@ -221,6 +222,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         cmd.arg("-c");
         cmd.arg(&command);
 
+        cmd.env("SteamGameId", appid.clone().to_string());
         cmd.env("SteamOS", "1");
         cmd.env("WINEARCH", "win64");
         cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
@@ -268,7 +270,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check install settings.", None, None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", None, None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -276,9 +278,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_critical", None, None, None); }
         }
         true
     };
@@ -295,11 +297,13 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             let xxmi_path = xxmi_path.clone();
             let mipath = get_mi_path_from_game(game.clone()).unwrap();
             let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
+            let game_dir = std::path::PathBuf::from(&install.directory);
             let command = if is_proton { format!("'{runner}/{wine64}' run 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") } else { format!("'{runner}/{wine64}' 'z:\\{xxmi_path}/3dmloader.exe' {mipath}") };
 
             // Apply the installation tweaks
             let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
             crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
+            if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -336,12 +340,12 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
             match cmd.spawn() {
                 Ok(mut child) => match child.try_wait() {
                     Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing XXMI command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again and make sure \"Inject XXMI\" is enabled!", None, None); }
+                        if !status.success() { log::info!("Executing XXMI command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.xxmi_run_failed", None, None, None); }
                     }
                     Ok(None) => { log::info!("Executing XXMI command: \"{}\"", command); }
-                    Err(_) => { log::error!("Executing XXMI command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Please try again later!", None, None); }
+                    Err(_) => { log::error!("Executing XXMI command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.xxmi_run_retry", None, None, None); }
                 },
-                Err(_) => { log::error!("Executing XXMI command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run XXMI! Something serious is wrong.", None, None); }
+                Err(_) => { log::error!("Executing XXMI command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.xxmi_run_critical", None, None, None); }
             }
         });
     }
@@ -391,12 +395,12 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
             match cmd.spawn() {
                 Ok(mut child) => match child.try_wait() {
                     Ok(Some(status)) => {
-                        if !status.success() { log::info!("Executing FPS Unlocker command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!", None, None); }
+                        if !status.success() { log::info!("Executing FPS Unlocker command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.fps_unlock_run_failed", None, None, None); }
                     }
                     Ok(None) => { log::info!("Executing FPS Unlocker command: \"{}\"", command); }
-                    Err(_) => { log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Please try again later!", None, None); }
+                    Err(_) => { log::error!("Executing FPS Unlocker command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.fps_unlock_run_retry", None, None, None); }
                 },
-                Err(_) => { log::error!("Executing FPS Unlocker command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run FPS Unlocker! Something serious is wrong.", None, None); }
+                Err(_) => { log::error!("Executing FPS Unlocker command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.fps_unlock_run_critical", None, None, None); }
             }
         });
     }
@@ -465,13 +469,13 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
                 let status = child.wait();
                 match status {
                     Ok(s) => {
-                        if !s.success() { log::info!("Executing WineTricks command: \"{}\" failed with status: {}", command, s.code().unwrap()); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! The game will still attempt to launch.", Some(vec!["I understand"]), None); }
+                        if !s.success() { log::info!("Executing WineTricks command: \"{}\" failed with status: {}", command, s.code().unwrap()); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.winetricks_setup_failed", Some(vec!["dialogs.buttons.i_understand"]), None, None); }
                         s.success()
                     }
-                    Err(_) => { log::error!("Executing WineTricks command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Winetricks setup failed! Please try again later!", Some(vec!["I understand"]), None); false }
+                    Err(_) => { log::error!("Executing WineTricks command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.winetricks_setup_retry", Some(vec!["dialogs.buttons.i_understand"]), None, None); false }
                 }
             }
-            Err(_) => { log::error!("Executing WineTricks command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "Failed to execute winetricks for setup! Something serious is wrong.", Some(vec!["I understand"]), None); false }
+            Err(_) => { log::error!("Executing WineTricks command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.winetricks_exec_critical", Some(vec!["dialogs.buttons.i_understand"]), None, None); false }
         }
     })
 }
@@ -498,12 +502,12 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing prelaunch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_failed", None, None, None); }
                 }
                 Ok(None) => { log::info!("Executing prelaunch command: \"{}\"", command); }
-                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing prelaunch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute prelaunch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing prelaunch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.prelaunch_cmd_critical", None, None, None); }
         }
     }
 
@@ -522,7 +526,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("Start-Process -FilePath '{full_path_str}' -WorkingDirectory '{dir}' -Verb RunAs");
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("Start-Process -FilePath '{full_path_str}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs"); }
@@ -549,7 +553,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_run_cmd_failed", None, None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -557,9 +561,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to run launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_run_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_critical", None, None, None); }
         }
         true
     } else {
@@ -575,7 +579,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut command = format!("Start-Process -FilePath '{c}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global");
-        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11"; }
+        if install.use_xxmi && gm.biz == "wuwa_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-dx11 -ENGINEINI=Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini"; }
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
         if !args.is_empty() { command = format!("Start-Process -FilePath '{c}' -ArgumentList '{args}' -WorkingDirectory '{dir}' -Verb RunAs").replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str()); }
@@ -602,7 +606,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         match cmd.spawn() {
             Ok(mut child) => match child.try_wait() {
                 Ok(Some(status)) => {
-                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check game settings.", None, None); }
+                    if !status.success() { log::info!("Executing launch command: \"{}\" failed with status: {}", command, status.code().unwrap()); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", None, None, None); }
                 }
                 Ok(None) => {
                     let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs().to_string();
@@ -610,9 +614,9 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
                 }
-                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Please try again or check the command correctness.", None, None); }
+                Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_incorrect", None, None, None); }
             },
-            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "Failed to execute launch command! Something serious is wrong.", None, None); }
+            Err(_) => { log::error!("Executing launch command \"{}\" failed catastrophically!", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_critical", None, None, None); }
         }
         true
     };
@@ -625,6 +629,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
         let mi_pathbuf = std::path::Path::new(&xxmi_path).join(&mipath);
+        let game_dir = std::path::PathBuf::from(&install.directory);
         let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
         let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
@@ -632,6 +637,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
         crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
+        if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");

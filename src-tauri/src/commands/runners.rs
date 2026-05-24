@@ -99,7 +99,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 if let Some(ref queue) = q {
                     if queue.has_job_for_id(runner_version.clone()) {
                         log::warn!("Runner {} is already queued for download, skipping", runner_version);
-                        crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", format!("Runner {} is already queued for download!", runner_version.as_str()).as_str(), None, None);
+                        crate::utils::show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.runner_already_queued", None, None, Some(std::collections::HashMap::from([("runner_version", runner_version.as_str())])));
                         return Some(false);
                     }
                 }
@@ -135,7 +135,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
                 if ir.is_some() { update_installed_runner_is_installed_by_version(&app, runner_version.clone(), false); } else { create_installed_runner(&app, runner_version.clone(), false, runner_path.to_str().unwrap().to_string()).unwrap(); }
                 Some(true)
             } else {
-                crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} already installed!", runn = runner_version.clone().as_str().to_string()).as_str(), None, None);
+                crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.runner_already_installed", None, None, Some(std::collections::HashMap::from([("runner_version", runner_version.clone().as_str())])));
                 Some(false)
             }
         }
@@ -180,7 +180,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
             }
             Some(true)
         } else {
-            crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", format!("Runner {runn} is not installed!", runn = runner_version.as_str().to_string()).as_str(), None, None);
+            crate::utils::show_dialog_with_callback(&app, "info", "TwintailLauncher", "dialogs.runner_not_installed", None, None, Some(std::collections::HashMap::from([("runner_version", runner_version.as_str())])));
             Some(false)
         }
     }

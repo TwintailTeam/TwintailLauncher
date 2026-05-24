@@ -5,6 +5,7 @@ import {
     DialogPayload,
     emitDialogResponse,
 } from "../../services/dialogEvents";
+import { translate } from "../../utils/i18n";
 
 const DIALOG_TYPES: DialogType[] = ["info", "warning", "error", "confirm"];
 
@@ -36,11 +37,11 @@ export default function DialogEventHandler() {
 
                 // Map Rust payload to React dialog options
                 const buttons = parsedButtons.map((label: string, index: number) => ({
-                    label,
+                    label: translate(label),
                     variant: index === parsedButtons.length - 1 ? ("primary" as const) : ("secondary" as const),
                     onClick: callbackId ? () => emitDialogResponse(callbackId, index) : undefined,
                 }));
-                showDialog({type: payload.dialog_type, title: payload.title, message: payload.message, buttons, onClose: callbackId ? (buttonIndex) => emitDialogResponse(callbackId, buttonIndex) : undefined,});
+                showDialog({type: payload.dialog_type, title: payload.title, message: translate(payload.message, payload.variables ?? undefined), buttons, onClose: callbackId ? (buttonIndex) => emitDialogResponse(callbackId, buttonIndex) : undefined,});
             });
         };
 

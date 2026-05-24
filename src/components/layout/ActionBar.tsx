@@ -3,6 +3,7 @@ import { emit } from "@tauri-apps/api/event";
 import { CircleFadingArrowUp, Settings } from "lucide-react";
 import TooltipIcon from "../common/TooltipIcon";
 import GameButton from "../GameButton";
+import { translate } from "../../utils/i18n";
 
 export type ActionBarProps = {
   currentInstall: string;
@@ -73,7 +74,7 @@ export default function ActionBar(props: ActionBarProps) {
           }}>
           <TooltipIcon
             side={"top"}
-            text={"Predownload update"}
+            text={translate("action_bar.predownload_tooltip")}
             icon={<CircleFadingArrowUp className="w-8 h-8 text-white/90" />}/>
         </button>
       ) : null}
@@ -89,7 +90,7 @@ export default function ActionBar(props: ActionBarProps) {
                   ? "bg-gray-600 hover:bg-gray-700 border border-white/20 shadow-gray-900/20 focus:ring-2 focus:ring-gray-400/60"
                   : "bg-purple-600 hover:bg-purple-700 border border-white/20 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}
             `} disabled={disableInstallEdit} onClick={() => onOpenInstallSettings()}>
-          <TooltipIcon side={"top"} text={"Game Settings"} icon={<Settings className="w-8 h-8 text-white" />} />
+          <TooltipIcon side={"top"} text={translate("action_bar.game_settings_tooltip")} icon={<Settings className="w-8 h-8 text-white" />} />
         </button>
       ) : null}
       <GameButton
