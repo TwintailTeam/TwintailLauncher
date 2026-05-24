@@ -154,7 +154,7 @@
     "manage.remove_from_desktop": "Vom Desktop entfernen",
     "manage.add_to_desktop": "Zum Desktop hinzufügen",
     "manage.copy_authkey": "Authkey kopieren",
-    "manage.copy_authkey.description": "Synchronisiere und sieh dir deinen Pull-Verlauf unter aivo.minlor.net/hoyo an",
+    "manage.copy_authkey.description": "Synchronisiere und sieh dir deinen Pull-Verlauf an unter",
     "manage.copy_authkey.copying": "Authkey wird kopiert...",
     "manage.copy_authkey.copying_description": "Neueste Spiel-Logdatei wird gelesen und in die Zwischenablage kopiert...",
     "manage.copy_authkey.copied": "Authkey kopiert",
