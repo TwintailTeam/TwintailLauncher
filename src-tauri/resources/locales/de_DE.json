@@ -125,7 +125,7 @@
     "linux.title": "Linux-Konfiguration",
     "linux.runner_version.label": "Runner-Version",
     "linux.runner_version.description": "Wähle die zu verwendende Wine-/Proton-Version aus.",
-    "linux.manage_runners": "→ Runner verwalten",
+    "linux.manage_runners": "Runner verwalten",
     "linux.runner_location.label": "Runner-Speicherort",
     "linux.runner_location.description": "Pfad zum Wine-/Proton-Ordner.",
     "linux.prefix_location.label": "Prefix-Speicherort",
