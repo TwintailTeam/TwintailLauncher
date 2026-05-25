@@ -46,7 +46,12 @@ git2 = { version = "0.21", features = ["vendored-libgit2"] }
 shortcuts-rs = "1.1.1"
 
 [profile.dev]
+opt-level = 1
+incremental = true
 overflow-checks = false
+
+[profile.dev.package."*"]
+opt-level = 3
 
 [profile.release]
 panic = "abort"

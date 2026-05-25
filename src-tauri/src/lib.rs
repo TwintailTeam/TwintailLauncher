@@ -39,7 +39,7 @@ pub fn run() {
     let builder = {
         #[cfg(target_os = "linux")]
         {
-            utils::gpu::fuck_nvidia();
+            if std::env::var("TTL_BYPASS_NVIDIA_FIXES").is_err() { utils::gpu::fuck_nvidia(); }
             utils::raise_fd_limit(999999);
             let base = tauri::Builder::default()
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: utils::repo_manager::RunnerLoader::default()})
