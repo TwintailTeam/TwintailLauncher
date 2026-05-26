@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "2.2.0"
+version = "2.2.1"
 description = "A multi-platform launcher for your anime games"
 authors = ["TwintailTeam"]
 edition = "2024"
@@ -21,14 +21,14 @@ serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.52", features = ["sync"] }
 sqlx = { version = "0.8.6", features = ["sqlite", "json", "time", "runtime-tokio"] }
 serde_json = "1"
-git2 = "0.21"
 cuid2 = "0.1"
 gumdrop = "0.8.1"
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
+git2 = { version = "0.21", features = ["https", "vendored-libgit2", "vendored-openssl"] }
 steam_shortcuts_util = "1.1.8"
 rpcdiscord = { git = "https://github.com/TukanDev/rpcdiscord.git", branch = "main" }
 keepawake = "0.6.0"
-log = "0.4.29"
+log = "0.4.30"
 
 # tauri plugins
 tauri-plugin-log = "2.8.0"
@@ -45,7 +45,12 @@ wgpu = { version = "27.0.1", default-features = false, features = ["vulkan"] }
 shortcuts-rs = "1.1.1"
 
 [profile.dev]
+opt-level = 1
+incremental = true
 overflow-checks = false
+
+[profile.dev.package."*"]
+opt-level = 3
 
 [profile.release]
 panic = "abort"

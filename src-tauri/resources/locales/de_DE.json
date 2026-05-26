@@ -508,6 +508,7 @@
     "preload_insufficient_space": "Das Update für {install_name} kann nicht vorab heruntergeladen werden, da nicht genügend freier Speicherplatz vorhanden ist. Bitte stelle sicher, dass genug Speicherplatz für den Vorab-Download verfügbar ist!",
     "preload_error": "Beim Vorab-Herunterladen von {install_name} ist ein Fehler aufgetreten.\nBitte versuche es erneut!",
     "unsupported_predownload_mode": "Nicht unterstützter Download-Modus für den Vorab-Download!",
-    "unsupported_repair_mode": "Nicht unterstützter Download-Modus für die Reparatur!"
+    "unsupported_repair_mode": "Nicht unterstützter Download-Modus für die Reparatur!",
+    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!"
   }
 }

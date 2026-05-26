@@ -508,6 +508,7 @@
     "preload_insufficient_space": "Unabwe to pwedownwoad update fow {install_name} as thewe is NOT ENOUGH FWEE SPACE!! >_< Pwease make suwe thewe is enough fwee space fow pwedownwoad, nyaa~!! (DEWETE SOMETHING PWEASE ;w;)",
     "preload_error": "Ewwow occuwwed whiwe twying to pwedownwoad {install_name}!! >_<\nPwease twy again, nyaa~!!",
     "unsupported_predownload_mode": "Unsuppowted downwoad mode fow pwedownwoad!! >:3 (dis is not how any of dis wowks nyaa~!!)",
-    "unsupported_repair_mode": "Unsuppowted downwoad mode fow wepaiw!! >:3 (wepaiw mode is confwused nyaa~!!)"
+    "unsupported_repair_mode": "Unsuppowted downwoad mode fow wepaiw!! >:3 (wepaiw mode is confwused nyaa~!!)",
+    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!"
   }
 }

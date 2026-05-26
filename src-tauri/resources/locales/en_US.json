@@ -508,6 +508,7 @@
     "preload_insufficient_space": "Unable to predownload update for {install_name} as there is not enough free space, please make sure there is enough free space for predownload!",
     "preload_error": "Error occurred while trying to predownload {install_name}\nPlease try again!",
     "unsupported_predownload_mode": "Unsupported download mode for predownload!",
-    "unsupported_repair_mode": "Unsupported download mode for repair!"
+    "unsupported_repair_mode": "Unsupported download mode for repair!",
+    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!"
   }
 }

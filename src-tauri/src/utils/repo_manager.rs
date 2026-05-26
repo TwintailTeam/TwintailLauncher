@@ -32,12 +32,10 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     let repo_path = path.join(format!("{}/{}", user, repo_name).as_str());
     let repo_manifest = repo_path.join("repository.json");
 
-    if !path.exists() {
-        return;
-    } else if !repo_path.exists() {
-        clone_repo(url, &repo_path).unwrap();
+    if !path.exists() { return; } else if !repo_path.exists() {
+        let r= clone_repo(url, &repo_path);
 
-        if repo_manifest.exists() {
+        if repo_manifest.exists() && r.is_ok() {
             let rm = fs::File::open(&repo_manifest).unwrap();
             let reader = BufReader::new(rm);
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
@@ -54,6 +52,9 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
                 create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
             }
             ()
+        } else {
+            log::error!("Repo manifest not found! or cloning repository failed!");
+            show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.repo_clone_failed", None, None, None);
         }
     } else {
         log::debug!("Official game repository is already cloned!");
