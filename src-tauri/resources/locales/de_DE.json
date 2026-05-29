@@ -509,6 +509,6 @@
     "preload_error": "Beim Vorab-Herunterladen von {install_name} ist ein Fehler aufgetreten.\nBitte versuche es erneut!",
     "unsupported_predownload_mode": "Nicht unterstützter Download-Modus für den Vorab-Download!",
     "unsupported_repair_mode": "Nicht unterstützter Download-Modus für die Reparatur!",
-    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!"
+    "repo_clone_failed": "Repository konnte nicht geklont werden oder dem Repository fehlt ein Manifest!"
   }
 }
