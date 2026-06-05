@@ -916,7 +916,8 @@ export default class App extends React.Component<any, any> {
                 this.setState(() => ({
                     globalSettings: gs
                 }));
-                this.fetchLocales(gs?.app_lang);
+                return this.fetchLocales(gs?.app_lang);
+                // Wait until locales loaded then return
             }
         });
     }
