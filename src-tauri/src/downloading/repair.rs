@@ -128,7 +128,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 let archive_path = repairing_path.join("staging").join(fnn.clone());
                 let far = archive_path.to_str().unwrap().to_string();
                 log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, i.directory);
-                let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, None, {
                     let dlpayload = dlpayload.clone();
                     let h5 = h5.clone();
                     let instn = instn.clone();
@@ -321,7 +321,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                     if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
                     log::debug!("Extracting archive {} to {} ({}/{})", far, i.directory, file_idx + 1, total_files);
-                    let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                    let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, None, {
                         let dlpayload = dlpayload.clone();
                         let h5 = h5.clone();
                         let instn = instn.clone();

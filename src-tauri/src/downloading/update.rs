@@ -132,7 +132,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let fnn = first.split('/').last().unwrap_or_default().to_string();
                         let archive_path = patching_path.join("staging").join(fnn);
                         let far = archive_path.to_str().unwrap().to_string();
-                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                             let dlpayload = dlpayload.clone();
                             let h5 = h5.clone();
                             let instn = instn.clone();
@@ -214,7 +214,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 let far = archive_path.to_str().unwrap().to_string();
                                 let hash = first.file_hash.clone();
                                 let ext = run_async_command(async {
-                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), {
+                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), Some(picked.metadata.diff_list_url.game.clone()), {
                                         let dlpayload = dlpayload.clone();
                                         let h5 = h5.clone();
                                         let instn = instn.clone();
