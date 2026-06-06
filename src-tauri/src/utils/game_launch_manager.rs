@@ -12,6 +12,8 @@ use crate::utils::{get_steam_appid, get_steam_tool_appid, is_runner_lower, is_us
 use std::os::unix::process::CommandExt;
 #[cfg(target_os = "linux")]
 use tauri::Manager;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 
 #[cfg(target_os = "linux")]
 pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
@@ -494,6 +496,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -534,6 +537,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -587,6 +591,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -642,6 +647,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game:
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
         cmd.env("LOADER_MODE", loader_mode);
@@ -681,6 +687,7 @@ fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fps
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");
         cmd.arg(&command);
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
