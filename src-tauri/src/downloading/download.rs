@@ -132,7 +132,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     let far = archive_path.to_str().unwrap().to_string();
 
                     log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, install.directory);
-                    let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                    let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                         let dlpayload = dlpayload.clone();
                         let h4 = h4.clone();
                         let instn = instn.clone();
@@ -325,7 +325,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                         if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
                         log::debug!("Extracting archive {} to {} ({}/{})", far, install.directory, file_idx + 1, total_files);
-                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                             let dlpayload = dlpayload.clone();
                             let h4 = h4.clone();
                             let instn = instn.clone();

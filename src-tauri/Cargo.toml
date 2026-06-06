@@ -19,7 +19,7 @@ tauri-build = { version = "2.6.2", features = [] }
 tauri = { version = "2.11.2", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.52", features = ["sync"] }
-sqlx = { version = "0.8.6", features = ["sqlite", "json", "time", "runtime-tokio"] }
+sqlx = { version = "0.9.0", features = ["sqlite", "json", "time", "runtime-tokio"] }
 serde_json = "1"
 cuid2 = "0.1"
 gumdrop = "0.8.1"
@@ -28,7 +28,7 @@ git2 = { version = "0.21", features = ["https", "vendored-libgit2", "vendored-op
 steam_shortcuts_util = "1.1.8"
 rpcdiscord = { git = "https://github.com/TukanDev/rpcdiscord.git", branch = "main" }
 keepawake = "0.6.0"
-log = "0.4.30"
+log = "0.4.32"
 
 # tauri plugins
 tauri-plugin-log = "2.8.0"

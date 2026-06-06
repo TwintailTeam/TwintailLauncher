@@ -5,15 +5,7 @@ use crate::utils::models::{
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
 use sqlx::types::Json;
-use sqlx::{
-    Error, Executor, Pool, Row, Sqlite,
-    error::BoxDynError,
-    migrate::{
-        MigrateDatabase, Migration as SqlxMigration, MigrationSource, MigrationType, Migrator,
-    },
-    query,
-    sqlite::SqliteQueryResult,
-};
+use sqlx::{Error, Pool, Row, Sqlite, error::BoxDynError, migrate::{MigrateDatabase, Migration as SqlxMigration, MigrationSource, MigrationType, Migrator}, query, sqlite::SqliteQueryResult, SqlSafeStr};
 use std::collections::HashMap;
 use std::fs;
 use std::pin::Pin;
@@ -585,7 +577,7 @@ pub fn create_manifest(
             .unwrap()
             .clone();
 
-        rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ('{id}', '{repository_id}', '{display_name}', '{filename}', {enabled})").as_str()).await.unwrap();
+        rslt = query("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ($1, $2, $3, $4, $5)").bind(&id).bind(&repository_id).bind(display_name).bind(filename).bind(enabled).execute(&db).await.unwrap();
     });
 
     if rslt.rows_affected() >= 1 {
@@ -1811,7 +1803,7 @@ impl MigrationSource<'static> for MigrationList {
                         migration.version,
                         migration.description.into(),
                         migration.kind.into(),
-                        migration.sql.into(),
+                        migration.sql.into_sql_str(),
                         false
                     ));
                 }
