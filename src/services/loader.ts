@@ -102,8 +102,14 @@ export function startInitialLoad(opts: LoaderOptions): LoaderController {
       if (cancelled) return;
 
       // Load settings and locales immediately — local DB, no network needed
-      opts.fetchSettings().catch(e => console.error("Error loading settings:", e));
+      // Trying to use await to load locales before translate() is used below
+      try {
+        await opts.fetchSettings();
+      } catch (e) {
+        console.error("Error loading settings:", e);
+      }
 
+      if (cancelled) return;
       opts.setProgress(0, translate("network.checking"));
 
       // Step 0: Network connectivity check with retry support
