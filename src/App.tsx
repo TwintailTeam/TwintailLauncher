@@ -908,18 +908,17 @@ export default class App extends React.Component<any, any> {
         })
     }
 
-    fetchSettings() {
-        return invoke<any | null>("list_settings").then(gs => {
-            if (gs === null) {
-                console.error("Settings database table contains nothing, some serious fuck up happened!")
-            } else {
-                this.setState(() => ({
-                    globalSettings: gs
-                }));
-                return this.fetchLocales(gs?.app_lang);
-                // Wait until locales loaded then return
-            }
-        });
+    async fetchSettings() {
+        // Use async to await locales loaded
+        const gs = await invoke<any | null>("list_settings");
+        if (gs === null) {
+            console.error("Settings database table contains nothing, some serious fuck up happened!");
+        } else {
+            this.setState(() => ({
+                globalSettings: gs
+            }));
+            await this.fetchLocales(gs?.app_lang);
+        }
     }
 
     fetchLocales(appLang?: string) {
