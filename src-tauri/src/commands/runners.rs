@@ -6,7 +6,7 @@ use crate::utils::db_manager::{
 use crate::utils::models::LauncherRunner;
 use std::fs;
 use std::path::Path;
-use tauri::AppHandle;
+use tauri::{AppHandle, Runtime};
 
 #[cfg(target_os = "linux")]
 use crate::DownloadState;
@@ -25,7 +25,7 @@ use tauri::Manager;
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn list_installed_runners(app: AppHandle) -> Option<Vec<LauncherRunner>> {
+pub fn list_installed_runners<R: Runtime>(app: AppHandle<R>) -> Option<Vec<LauncherRunner>> {
     #[cfg(target_os = "linux")]
     {
         let repos = get_installed_runners(&app);
@@ -45,18 +45,18 @@ pub fn list_installed_runners(app: AppHandle) -> Option<Vec<LauncherRunner>> {
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_id(app: AppHandle, runner_id: String) -> Option<LauncherRunner> {
+pub fn get_installed_runner_by_id<R: Runtime>(app: AppHandle<R>, runner_id: String) -> Option<LauncherRunner> {
     get_installed_runner_info_by_id(&app, runner_id)
 }
 
 #[tauri::command]
-pub fn get_installed_runner_by_version(app: AppHandle, runner_version: String) -> Option<LauncherRunner> {
+pub fn get_installed_runner_by_version<R: Runtime>(app: AppHandle<R>, runner_version: String) -> Option<LauncherRunner> {
     get_installed_runner_info_by_version(&app, runner_version)
 }
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn update_installed_runner_install_status(app: AppHandle, version: String, is_installed: bool) -> Option<bool> {
+pub fn update_installed_runner_install_status<R: Runtime>(app: AppHandle<R>, version: String, is_installed: bool) -> Option<bool> {
     #[cfg(target_os = "linux")]
     {
         let manifest = get_installed_runner_info_by_version(&app, version.clone());
@@ -77,7 +77,7 @@ pub fn update_installed_runner_install_status(app: AppHandle, version: String, i
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: String) -> Option<bool> {
+pub fn add_installed_runner<R: Runtime>(app: AppHandle<R>, runner_url: String, runner_version: String) -> Option<bool> {
     if runner_url.is_empty() || runner_version.is_empty() {
         None
     } else {
@@ -147,7 +147,7 @@ pub fn add_installed_runner(app: AppHandle, runner_url: String, runner_version: 
 }
 
 #[tauri::command]
-pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option<bool> {
+pub fn remove_installed_runner<R: Runtime>(app: AppHandle<R>, runner_version: String) -> Option<bool> {
     if runner_version.is_empty() {
         None
     } else {
@@ -188,7 +188,7 @@ pub fn remove_installed_runner(app: AppHandle, runner_version: String) -> Option
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn is_steamrt_installed(app: AppHandle) -> bool {
+pub fn is_steamrt_installed<R: Runtime>(app: AppHandle<R>) -> bool {
     #[cfg(target_os = "linux")]
     {
         let gs = match get_settings(&app) {

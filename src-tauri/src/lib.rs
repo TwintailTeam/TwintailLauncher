@@ -3,7 +3,7 @@ extern crate core;
 use std::sync::{Mutex, Arc};
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
-use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
+use tauri::{AppHandle, Runtime, Emitter, Manager, RunEvent, WindowEvent};
 use crate::commands::install::{add_install, check_game_running, game_launch, get_download_sizes, get_resume_states, get_install_by_id, list_installs, list_installs_by_manifest_id, remove_install, set_installs_order, update_install_dxvk_path, update_install_dxvk_version, update_install_env_vars, update_install_fps_value, update_install_game_background, update_install_game_path, update_install_graphics_api, update_install_launch_args, update_install_launch_cmd, update_install_pre_launch_cmd, update_install_prefix_path, update_install_runner_path, update_install_runner_version, update_install_skip_hash_valid, update_install_skip_version_updates, update_install_use_fps_unlock, update_install_use_jadeite, update_install_use_xxmi, update_install_use_gamemode, update_install_use_mangohud, update_install_mangohud_config_path, add_shortcut, remove_shortcut, update_install_xxmi_config, update_install_show_drpc, update_install_disable_system_idle, copy_authkey};
 use crate::commands::queue::{pause_game_download, queue_move_up, queue_move_down, queue_remove, queue_set_paused, queue_activate_job, queue_reorder, queue_resume_job, get_download_queue_state, queue_clear_completed};
 use crate::commands::manifest::{get_manifest_by_filename, get_manifest_by_id, list_game_manifests, get_game_manifest_by_filename, list_manifests_by_repository_id, update_manifest_enabled, get_game_manifest_by_manifest_id, list_compatibility_manifests, get_compatibility_manifest_by_manifest_id, override_manifest_url, clear_manifest_override};
@@ -41,7 +41,7 @@ pub fn run() {
         {
             if std::env::var("TTL_BYPASS_NVIDIA_FIXES").is_err() { utils::gpu::fuck_nvidia(); }
             utils::raise_fd_limit(999999);
-            let base = tauri::Builder::default()
+            let base = tauri::Builder::<tauri::Wry>::new()
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: utils::repo_manager::RunnerLoader::default()})
                 .manage(DownloadState { tokens: Mutex::new(HashMap::new()), queue: Mutex::new(None), verified_files: Mutex::new(HashMap::new()) })
                 .plugin(tauri_plugin_dialog::init())
@@ -52,7 +52,7 @@ pub fn run() {
         }
         #[cfg(target_os = "windows")]
         {
-            let base = tauri::Builder::default()
+            let base = tauri::Builder::<tauri::Wry>::new()
                 .manage(DownloadState { tokens: Mutex::new(HashMap::new()), queue: Mutex::new(None), verified_files: Mutex::new(HashMap::new()) })
                 .manage(ManifestLoaders {game: ManifestLoader::default()})
                 .plugin(tauri_plugin_dialog::init())
@@ -82,7 +82,7 @@ pub fn run() {
                 run_async_command(async { init_db(handle, data_dir.clone()).await; });
 
                 // Start download queue worker (limits concurrent download-like jobs)
-                fn run_queued_job(app: AppHandle, job: QueueJob) -> QueueJobOutcome {
+                fn run_queued_job<R: Runtime>(app: AppHandle<R>, job: QueueJob) -> QueueJobOutcome {
                     match (&job.kind, job.payload) {
                         (QueueJobKind::GameDownload, QueueJobPayload::Game(p)) => downloading::download::run_game_download(app, p, job.id),
                         (QueueJobKind::GameUpdate, QueueJobPayload::Game(p)) => downloading::update::run_game_update(app, p, job.id),

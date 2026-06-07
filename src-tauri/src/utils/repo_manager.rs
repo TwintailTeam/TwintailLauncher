@@ -4,7 +4,7 @@ use std::path::{PathBuf};
 use std::sync::{RwLock};
 use crate::utils::LinkedHashMap;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Runtime, Manager};
 use crate::utils::db_manager::{create_manifest,create_repository,delete_manifest_by_id,get_manifest_info_by_filename,get_manifests_by_repository_id,get_repositories,get_repository_info_by_github_id,update_manifest_enabled_by_id};
 use crate::utils::{generate_cuid, models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog_with_callback};
 use crate::utils::git_helpers::{do_fetch, do_merge};
@@ -22,7 +22,7 @@ fn clone_repo(url: &str, path: &PathBuf) -> Result<git2::Repository, git2::Error
     if cfg!(debug_assertions) { git2::build::RepoBuilder::new().branch("next").clone(url, path) } else { git2::Repository::clone(url, path) }
 }
 
-pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
+pub fn setup_official_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf) {
     let url = "https://github.com/TwintailTeam/game-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
@@ -68,7 +68,7 @@ pub fn setup_official_repository(app: &AppHandle, path: &PathBuf) {
     }
 }
 
-pub fn clone_new_repository(app: &AppHandle, path: &PathBuf, url: String) -> Result<bool, git2::Error> {
+pub fn clone_new_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf, url: String) -> Result<bool, git2::Error> {
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
     let user = url.split("/").collect::<Vec<&str>>()[3];
     let repo_name = tmp.split(".").collect::<Vec<&str>>()[0];
@@ -137,7 +137,7 @@ pub fn update_repositories(path: &PathBuf) -> Result<bool, git2::Error> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
+pub fn setup_compatibility_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf) {
     let url = "https://github.com/TwintailTeam/runner-manifests.git";
 
     let tmp = url.split("/").collect::<Vec<&str>>()[4];
@@ -187,11 +187,11 @@ pub fn setup_compatibility_repository(app: &AppHandle, path: &PathBuf) {
 }
 
 #[cfg(target_os = "windows")]
-pub fn setup_compatibility_repository(_app: &AppHandle, _path: &PathBuf) {}
+pub fn setup_compatibility_repository<R: Runtime>(_app: &AppHandle<R>, _path: &PathBuf) {}
 
 // === MANIFESTS ===
 
-pub fn load_manifests(app: &AppHandle, data_path: PathBuf) {
+pub fn load_manifests<R: Runtime>(app: &AppHandle<R>, data_path: PathBuf) {
         let manifets_path = data_path.join("manifests");
 
         if !manifets_path.exists() {
@@ -316,7 +316,7 @@ pub fn load_manifests(app: &AppHandle, data_path: PathBuf) {
         cleanup_unloaded_manifests(app);
     }
 
-fn cleanup_unloaded_manifests(app: &AppHandle) {
+fn cleanup_unloaded_manifests<R: Runtime>(app: &AppHandle<R>) {
     let game_loader = app.state::<ManifestLoaders>().game.0.read().unwrap().clone();
     #[cfg(target_os = "linux")]
     let runner_loader = app.state::<ManifestLoaders>().runner.0.read().unwrap().clone();
@@ -335,7 +335,7 @@ fn cleanup_unloaded_manifests(app: &AppHandle) {
     }
 }
 
-fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, path: PathBuf) {
+fn update_manifest_table<R: Runtime>(app: &AppHandle<R>, filename: String, display_name: &str, path: PathBuf) {
     let dbm = get_manifest_info_by_filename(&app, filename.clone());
     if dbm.is_none() {
         let user = path.parent().unwrap().components().last().unwrap().as_os_str().to_str().unwrap();
@@ -350,11 +350,11 @@ fn update_manifest_table(app: &AppHandle, filename: String, display_name: &str, 
     } else if let Some(m) = dbm { if !m.enabled { update_manifest_enabled_by_id(app, m.id, true); } }
 }
 
-pub fn get_manifests(app: &AppHandle) -> LinkedHashMap<String, GameManifest> {
+pub fn get_manifests<R: Runtime>(app: &AppHandle<R>) -> LinkedHashMap<String, GameManifest> {
     app.state::<ManifestLoaders>().game.0.read().unwrap().clone()
 }
 
-pub fn get_manifest(app: &AppHandle, filename: String) -> Option<GameManifest> {
+pub fn get_manifest<R: Runtime>(app: &AppHandle<R>, filename: String) -> Option<GameManifest> {
     let loader = app.state::<ManifestLoaders>().game.0.read().unwrap().clone();
 
     if loader.contains_key(&filename) {
@@ -366,12 +366,12 @@ pub fn get_manifest(app: &AppHandle, filename: String) -> Option<GameManifest> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn get_compatibilities(app: &AppHandle) -> LinkedHashMap<String, RunnerManifest> {
+pub fn get_compatibilities<R: Runtime>(app: &AppHandle<R>) -> LinkedHashMap<String, RunnerManifest> {
     app.state::<ManifestLoaders>().runner.0.read().unwrap().clone()
 }
 
 #[cfg(target_os = "linux")]
-pub fn get_compatibility(app: &AppHandle, filename: &String) -> Option<RunnerManifest> {
+pub fn get_compatibility<R: Runtime>(app: &AppHandle<R>, filename: &String) -> Option<RunnerManifest> {
     let loader = app.state::<ManifestLoaders>().runner.0.read().unwrap().clone();
 
     if loader.contains_key(filename) {

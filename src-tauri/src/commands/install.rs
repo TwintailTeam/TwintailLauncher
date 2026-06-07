@@ -9,7 +9,7 @@ use std::fs;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Manager};
 use sqlx::types::Json;
 use std::sync::atomic::Ordering;
 use tauri_plugin_clipboard_manager::ClipboardExt;
@@ -33,28 +33,28 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use steam_shortcuts_util::{Shortcut, app_id_generator::calculate_app_id};
 
 #[tauri::command]
-pub async fn list_installs(app: AppHandle) -> Option<Vec<LauncherInstall>> {
+pub async fn list_installs<R: Runtime>(app: AppHandle<R>) -> Option<Vec<LauncherInstall>> {
     get_installs(&app)
 }
 
 #[tauri::command]
-pub fn list_installs_by_manifest_id(app: AppHandle, manifest_id: String) -> Option<Vec<LauncherInstall>> {
+pub fn list_installs_by_manifest_id<R: Runtime>(app: AppHandle<R>, manifest_id: String) -> Option<Vec<LauncherInstall>> {
     get_installs_by_manifest_id(&app, manifest_id)
 }
 
 #[tauri::command]
-pub fn set_installs_order(app: AppHandle, order: Vec<(String, i32)>) {
+pub fn set_installs_order<R: Runtime>(app: AppHandle<R>, order: Vec<(String, i32)>) {
     update_installs_order(&app, order);
 }
 
 #[tauri::command]
-pub fn get_install_by_id(app: AppHandle, id: String) -> Option<LauncherInstall> {
+pub fn get_install_by_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<LauncherInstall> {
     get_install_info_by_id(&app, id)
 }
 
 #[allow(unused_mut, unused_variables)]
 #[tauri::command]
-pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
+pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -222,7 +222,7 @@ pub fn add_install(app: AppHandle, manifest_id: String, version: String, audio_l
 }
 
 #[tauri::command]
-pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_game_data: bool) -> Option<bool> {
+pub async fn remove_install<R: Runtime>(app: AppHandle<R>, id: String, wipe_prefix: bool, keep_game_data: bool) -> Option<bool> {
     if id.is_empty() {
         None
     } else {
@@ -266,7 +266,7 @@ pub async fn remove_install(app: AppHandle, id: String, wipe_prefix: bool, keep_
 }
 
 #[tauri::command]
-pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+pub fn update_install_game_path<R: Runtime>(app: AppHandle<R>, id: String, path: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -298,7 +298,7 @@ pub fn update_install_game_path(app: AppHandle, id: String, path: String) -> Opt
 }
 
 #[tauri::command]
-pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+pub fn update_install_runner_path<R: Runtime>(app: AppHandle<R>, id: String, path: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -329,7 +329,7 @@ pub fn update_install_runner_path(app: AppHandle, id: String, path: String) -> O
 }
 
 #[tauri::command]
-pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+pub fn update_install_dxvk_path<R: Runtime>(app: AppHandle<R>, id: String, path: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -360,7 +360,7 @@ pub fn update_install_dxvk_path(app: AppHandle, id: String, path: String) -> Opt
 }
 
 #[tauri::command]
-pub fn update_install_skip_version_updates(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_skip_version_updates<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -373,7 +373,7 @@ pub fn update_install_skip_version_updates(app: AppHandle, id: String, enabled: 
 }
 
 #[tauri::command]
-pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_skip_hash_valid<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -386,7 +386,7 @@ pub fn update_install_skip_hash_valid(app: AppHandle, id: String, enabled: bool)
 }
 
 #[tauri::command]
-pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_use_jadeite<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -399,7 +399,7 @@ pub fn update_install_use_jadeite(app: AppHandle, id: String, enabled: bool) -> 
 }
 
 #[tauri::command]
-pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_use_xxmi<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
     let settings = get_settings(&app).unwrap();
 
@@ -419,7 +419,7 @@ pub fn update_install_use_xxmi(app: AppHandle, id: String, enabled: bool) -> Opt
 }
 
 #[tauri::command]
-pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_use_fps_unlock<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
     let settings = get_settings(&app).unwrap();
 
@@ -436,7 +436,7 @@ pub fn update_install_use_fps_unlock(app: AppHandle, id: String, enabled: bool) 
 }
 
 #[tauri::command]
-pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Option<bool> {
+pub fn update_install_fps_value<R: Runtime>(app: AppHandle<R>, id: String, fps: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
     let settings = get_settings(&app).unwrap();
 
@@ -452,13 +452,13 @@ pub fn update_install_fps_value(app: AppHandle, id: String, fps: String) -> Opti
 }
 
 #[tauri::command]
-pub fn update_install_graphics_api(app: AppHandle, id: String, api: String) -> Option<bool> {
+pub fn update_install_graphics_api<R: Runtime>(app: AppHandle<R>, id: String, api: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
     if install.is_some() { let m = install.unwrap(); update_install_graphics_api_by_id(&app, m.id, api); Some(true) } else { None }
 }
 
 #[tauri::command]
-pub fn update_install_use_gamemode(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_use_gamemode<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -471,7 +471,7 @@ pub fn update_install_use_gamemode(app: AppHandle, id: String, enabled: bool) ->
 }
 
 #[tauri::command]
-pub fn update_install_use_mangohud(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_use_mangohud<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -484,7 +484,7 @@ pub fn update_install_use_mangohud(app: AppHandle, id: String, enabled: bool) ->
 }
 
 #[tauri::command]
-pub fn update_install_mangohud_config_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+pub fn update_install_mangohud_config_path<R: Runtime>(app: AppHandle<R>, id: String, path: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -498,7 +498,7 @@ pub fn update_install_mangohud_config_path(app: AppHandle, id: String, path: Str
 }
 
 #[tauri::command]
-pub fn update_install_xxmi_config(app: AppHandle, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, _engineini_tweaks: Option<bool>) -> Option<bool> {
+pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, _engineini_tweaks: Option<bool>) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -532,7 +532,7 @@ pub fn update_install_xxmi_config(app: AppHandle, id: String, xxmi_hunting: Opti
 }
 
 #[tauri::command]
-pub fn update_install_show_drpc(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_show_drpc<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -545,7 +545,7 @@ pub fn update_install_show_drpc(app: AppHandle, id: String, enabled: bool) -> Op
 }
 
 #[tauri::command]
-pub fn update_install_disable_system_idle(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_install_disable_system_idle<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -558,7 +558,7 @@ pub fn update_install_disable_system_idle(app: AppHandle, id: String, enabled: b
 }
 
 #[tauri::command]
-pub fn update_install_env_vars(app: AppHandle, id: String, env_vars: String) -> Option<bool> {
+pub fn update_install_env_vars<R: Runtime>(app: AppHandle<R>, id: String, env_vars: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -571,7 +571,7 @@ pub fn update_install_env_vars(app: AppHandle, id: String, env_vars: String) -> 
 }
 
 #[tauri::command]
-pub fn update_install_pre_launch_cmd(app: AppHandle, id: String, cmd: String) -> Option<bool> {
+pub fn update_install_pre_launch_cmd<R: Runtime>(app: AppHandle<R>, id: String, cmd: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -584,7 +584,7 @@ pub fn update_install_pre_launch_cmd(app: AppHandle, id: String, cmd: String) ->
 }
 
 #[tauri::command]
-pub fn update_install_launch_cmd(app: AppHandle, id: String, cmd: String) -> Option<bool> {
+pub fn update_install_launch_cmd<R: Runtime>(app: AppHandle<R>, id: String, cmd: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -597,7 +597,7 @@ pub fn update_install_launch_cmd(app: AppHandle, id: String, cmd: String) -> Opt
 }
 
 #[tauri::command]
-pub fn update_install_game_background(app: AppHandle, id: String, background: String) -> Option<bool> {
+pub fn update_install_game_background<R: Runtime>(app: AppHandle<R>, id: String, background: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
     if install.is_some() {
         let m = install.unwrap();
@@ -607,7 +607,7 @@ pub fn update_install_game_background(app: AppHandle, id: String, background: St
 }
 
 #[tauri::command]
-pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> Option<bool> {
+pub fn update_install_prefix_path<R: Runtime>(app: AppHandle<R>, id: String, path: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -638,7 +638,7 @@ pub fn update_install_prefix_path(app: AppHandle, id: String, path: String) -> O
 }
 
 #[tauri::command]
-pub fn update_install_launch_args(app: AppHandle, id: String, args: String) -> Option<bool> {
+pub fn update_install_launch_args<R: Runtime>(app: AppHandle<R>, id: String, args: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -652,7 +652,7 @@ pub fn update_install_launch_args(app: AppHandle, id: String, args: String) -> O
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
-pub fn update_install_runner_version(app: AppHandle, id: String, version: String) -> Option<bool> {
+pub fn update_install_runner_version<R: Runtime>(app: AppHandle<R>, id: String, version: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -716,13 +716,13 @@ pub fn update_install_runner_version(app: AppHandle, id: String, version: String
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn update_install_runner_version(_app: AppHandle, _id: String, _version: String) -> Option<bool> {
+pub fn update_install_runner_version<R: Runtime>(_app: AppHandle<R>, _id: String, _version: String) -> Option<bool> {
     None
 }
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
-pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) -> Option<bool> {
+pub fn update_install_dxvk_version<R: Runtime>(app: AppHandle<R>, id: String, version: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -785,12 +785,12 @@ pub fn update_install_dxvk_version(app: AppHandle, id: String, version: String) 
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn update_install_dxvk_version(_app: AppHandle, _id: String, _version: String) -> Option<bool> {
+pub fn update_install_dxvk_version<R: Runtime>(_app: AppHandle<R>, _id: String, _version: String) -> Option<bool> {
     None
 }
 
 #[tauri::command]
-pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
+pub fn game_launch<R: Runtime>(app: AppHandle<R>, id: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id.clone());
     let global_settings = get_settings(&app).unwrap();
 
@@ -811,7 +811,7 @@ pub fn game_launch(app: AppHandle, id: String) -> Option<bool> {
 }
 
 #[tauri::command]
-pub fn check_game_running(app: AppHandle, id: String) -> Option<String> {
+pub fn check_game_running<R: Runtime>(app: AppHandle<R>, id: String) -> Option<String> {
     let install = get_install_info_by_id(&app, id.clone());
 
     if let Some(m) = install {
@@ -832,7 +832,7 @@ pub fn check_game_running(app: AppHandle, id: String) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<DownloadSizesRsp> {
+pub fn get_download_sizes<R: Runtime>(app: AppHandle<R>, biz: String, version: String, lang: String, path: String, region: Option<String>) -> Option<DownloadSizesRsp> {
     let manifest = get_manifest(&app, biz + ".json");
 
     if manifest.is_some() {
@@ -864,7 +864,7 @@ pub fn get_download_sizes(app: AppHandle, biz: String, version: String, lang: St
 }
 
 #[tauri::command]
-pub fn get_resume_states(app: AppHandle, install: String) -> Option<ResumeStatesRsp> {
+pub fn get_resume_states<R: Runtime>(app: AppHandle<R>, install: String) -> Option<ResumeStatesRsp> {
     let install = get_install_info_by_id(&app, install);
 
     if install.is_some() {
@@ -920,7 +920,7 @@ pub fn get_resume_states(app: AppHandle, install: String) -> Option<ResumeStates
 }
 
 #[tauri::command]
-pub fn add_shortcut(app: AppHandle, install_id: String, shortcut_type: String) {
+pub fn add_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortcut_type: String) {
     let install = get_install_info_by_id(&app, install_id).unwrap();
     #[cfg(target_os = "linux")]
     {
@@ -1026,7 +1026,7 @@ Type=Application
 }
 
 #[tauri::command]
-pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String) {
+pub fn remove_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortcut_type: String) {
     let install = get_install_info_by_id(&app, install_id).unwrap();
     #[cfg(target_os = "linux")]
     {
@@ -1101,7 +1101,7 @@ pub fn remove_shortcut(app: AppHandle, install_id: String, shortcut_type: String
 
 
 #[tauri::command]
-pub fn copy_authkey(app: AppHandle, id: String) -> bool {
+pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
     let install = get_install_info_by_id(&app, id).unwrap();
     let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
     let gm = get_manifest(&app, manifest.filename).unwrap();
@@ -1143,13 +1143,13 @@ pub fn copy_authkey(app: AppHandle, id: String) -> bool {
     }
 }
 
-fn enqueue_extras_download(app: &AppHandle, path: String, package_id: String, package_type: String, update_mode: bool) {
+fn enqueue_extras_download<R: Runtime>(app: &AppHandle<R>, path: String, package_id: String, package_type: String, update_mode: bool) {
     let state = app.state::<DownloadState>();
     let q = state.queue.lock().unwrap().clone();
     if let Some(queue) = q { if !queue.has_job_for_id(package_type.clone()) { queue.enqueue(QueueJobKind::ExtrasDownload, QueueJobPayload::Extras(ExtrasDownloadPayload { path, package_id, package_type, update_mode })); } }
 }
 
-pub fn cancel_download_for_install(app: &AppHandle, install_id: &str) {
+pub fn cancel_download_for_install<R: Runtime>(app: &AppHandle<R>, install_id: &str) {
     log::debug!("Cancelling active download and queued jobs for install {}", install_id);
     let state = app.state::<DownloadState>();
     // 1. Signal any running download to stop

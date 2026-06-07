@@ -9,9 +9,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 
-pub fn register_download_handler(app: &AppHandle) {
+pub fn register_download_handler<R: Runtime>(app: &AppHandle<R>) {
     let a = app.clone();
     app.listen("start_game_download", move |event| {
         let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
@@ -30,7 +30,7 @@ pub fn register_download_handler(app: &AppHandle) {
     });
 }
 
-pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
+pub fn run_game_download<R: Runtime>(h4: AppHandle<R>, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let install = match get_install_info_by_id(&h4, payload.install.clone()) {
         Some(v) => v,

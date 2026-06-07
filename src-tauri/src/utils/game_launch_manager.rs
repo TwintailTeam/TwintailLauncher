@@ -1,7 +1,7 @@
 use crate::utils::models::{GameManifest, GlobalSettings, LauncherInstall};
 use crate::utils::{apply_xxmi_tweaks,get_mi_path_from_game,prevent_system_idle,show_dialog_with_callback};
 use std::process::{Command, Stdio};
-use tauri::{AppHandle, Emitter, Error};
+use tauri::{AppHandle, Runtime, Emitter, Error};
 use crate::utils::db_manager::{update_install_last_played_by_id,update_install_total_playtime_by_id};
 use crate::utils::discord_rpc;
 use fischl::utils::is_process_running;
@@ -16,7 +16,7 @@ use tauri::Manager;
 use std::os::windows::process::CommandExt;
 
 #[cfg(target_os = "linux")]
-pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
+pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let Some(rm) = get_compatibility(&app, &runner_from_runner_version(app, install.runner_version.clone()).unwrap_or_default()) else { return Ok(false); };
     let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
     let mut compat_config = update_steam_compat_config(vec![]);
@@ -290,7 +290,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "linux")]
-fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
+fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, prefix: String, xxmi_path: String, runner: String, wine64: String, game: String, is_proton: bool) {
     if install.use_xxmi {
         let appc = app.clone();
         // Prevent "App is not responding" by waiting in a separate thread
@@ -354,7 +354,7 @@ fn load_xxmi(app: &AppHandle, install: LauncherInstall, prefix: String, xxmi_pat
 }
 
 #[cfg(target_os = "linux")]
-fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefix: String, fpsunlock_path: String, game_path: String, runner: String, wine64: String, is_proton: bool) {
+fn load_fps_unlock<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, biz: String, prefix: String, fpsunlock_path: String, game_path: String, runner: String, wine64: String, is_proton: bool) {
     if install.use_fps_unlock {
         let appc = app.clone();
         // Prevent "App is not responding" by waiting in a separate thread
@@ -409,7 +409,7 @@ fn load_fps_unlock(app: &AppHandle, install: LauncherInstall, biz: String, prefi
 }
 
 #[cfg(target_os = "linux")]
-fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, reaper: String, appid: u32, runner: String, wine64: String, prefix: String, install_dir: String, verbs: Vec<String>) -> std::thread::JoinHandle<bool> {
+fn run_winetricks<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, steamrt: String, reaper: String, appid: u32, runner: String, wine64: String, prefix: String, install_dir: String, verbs: Vec<String>) -> std::thread::JoinHandle<bool> {
     let appc = app.clone();
     // Prevent "App is not responding" by waiting in a separate thread
     std::thread::spawn(move || {
@@ -483,7 +483,7 @@ fn run_winetricks(app: &AppHandle, install: LauncherInstall, steamrt: String, re
 }
 
 #[cfg(target_os = "windows")]
-pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
+pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameManifest, gs: GlobalSettings) -> Result<bool, Error> {
     let dirp = std::path::Path::new(&install.directory.clone()).to_path_buf();
     let dir = dirp.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
@@ -629,7 +629,7 @@ pub fn launch(app: &AppHandle, install: LauncherInstall, gm: GameManifest, gs: G
 }
 
 #[cfg(target_os = "windows")]
-fn load_xxmi(app: &AppHandle, install: LauncherInstall, xxmi_path: String, game: String) {
+fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, xxmi_path: String, game: String) {
     if install.use_xxmi {
         let xxmi_path = xxmi_path.trim_matches('\\');
         let mipath = get_mi_path_from_game(game.clone()).unwrap();
@@ -712,7 +712,7 @@ fn load_fps_unlock(install: LauncherInstall, biz: String, game_path: String, fps
     }
 }
 
-fn start_playtime_tracker(app: &AppHandle, install: LauncherInstall, gm: GameManifest, exe_name: String) {
+fn start_playtime_tracker<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameManifest, exe_name: String) {
     let app = app.clone();
     let install_id = install.id.clone();
     let base_playtime = install.total_playtime as u64;

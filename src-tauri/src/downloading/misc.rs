@@ -3,7 +3,7 @@ use fischl::download::Extras;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path,PathBuf};
-use tauri::{AppHandle,Emitter,Manager};
+use tauri::{AppHandle, Runtime,Emitter,Manager};
 use crate::DownloadState;
 use crate::downloading::{QueueJobPayload, queue::{QueueJobKind}};
 
@@ -19,7 +19,7 @@ use fischl::compat::{download_runner, download_steamrt};
 use std::sync::{Arc,Mutex};
 
 #[cfg(target_os = "linux")]
-pub fn download_or_update_steamrt3(app: &AppHandle) {
+pub fn download_or_update_steamrt3<R: Runtime>(app: &AppHandle<R>) {
     let gs = get_settings(app);
     if let Some(s) = gs {
         let rp = Path::new(&s.default_runner_path);
@@ -54,7 +54,7 @@ pub fn download_or_update_steamrt3(app: &AppHandle) {
 }
 
 #[cfg(target_os = "linux")]
-pub fn run_steamrt3_download(app: AppHandle, payload: SteamrtDownloadPayload, job_id: String) -> QueueJobOutcome {
+pub fn run_steamrt3_download<R: Runtime>(app: AppHandle<R>, payload: SteamrtDownloadPayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let dlpayload: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
     let steamrt_path = PathBuf::from(&payload.steamrt_path);
@@ -123,7 +123,7 @@ pub fn run_steamrt3_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
 }
 
 #[cfg(target_os = "linux")]
-pub fn download_or_update_steamrt4(app: &AppHandle) {
+pub fn download_or_update_steamrt4<R: Runtime>(app: &AppHandle<R>) {
     let gs = get_settings(app);
     if let Some(s) = gs {
         let rp = Path::new(&s.default_runner_path);
@@ -158,7 +158,7 @@ pub fn download_or_update_steamrt4(app: &AppHandle) {
 }
 
 #[cfg(target_os = "linux")]
-pub fn run_steamrt4_download(app: AppHandle, payload: SteamrtDownloadPayload, job_id: String) -> QueueJobOutcome {
+pub fn run_steamrt4_download<R: Runtime>(app: AppHandle<R>, payload: SteamrtDownloadPayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let dlpayload: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
     let steamrt_path = PathBuf::from(&payload.steamrt_path);
@@ -227,7 +227,7 @@ pub fn run_steamrt4_download(app: AppHandle, payload: SteamrtDownloadPayload, jo
 }
 
 #[cfg(target_os = "linux")]
-pub fn run_runner_download(app: AppHandle, payload: RunnerDownloadPayload, job_id: String) -> QueueJobOutcome {
+pub fn run_runner_download<R: Runtime>(app: AppHandle<R>, payload: RunnerDownloadPayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let dlpayload: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
     let runner_name = payload.runner_version.clone();
@@ -295,7 +295,7 @@ pub fn run_runner_download(app: AppHandle, payload: RunnerDownloadPayload, job_i
     }
 }
 
-pub fn check_extras_update(app: &AppHandle) {
+pub fn check_extras_update<R: Runtime>(app: &AppHandle<R>) {
     let gs = get_settings(app);
     if gs.is_some() {
         let s = gs.unwrap();
@@ -377,7 +377,7 @@ pub fn check_extras_update(app: &AppHandle) {
     }
 }
 
-pub fn download_or_update_extra(app: &AppHandle, path: PathBuf, package_id: String, package_type: String, update_mode: bool, job_id: Option<String>) -> bool {
+pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, package_id: String, package_type: String, update_mode: bool, job_id: Option<String>) -> bool {
     if job_id.is_none() {
         if !update_mode {
             let state = app.state::<DownloadState>();

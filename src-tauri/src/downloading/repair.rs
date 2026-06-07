@@ -8,9 +8,9 @@ use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 
-pub fn register_repair_handler(app: &AppHandle) {
+pub fn register_repair_handler<R: Runtime>(app: &AppHandle<R>) {
     let a = app.clone();
     app.listen("start_game_repair", move |event| {
         let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
@@ -29,7 +29,7 @@ pub fn register_repair_handler(app: &AppHandle) {
     });
 }
 
-pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
+pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let install_id = payload.install.clone();
     let install = get_install_info_by_id(&h5, payload.install.clone());

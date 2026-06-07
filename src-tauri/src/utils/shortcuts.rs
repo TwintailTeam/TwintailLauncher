@@ -3,7 +3,7 @@ use std::io::{Write};
 use std::path::{PathBuf};
 use steam_shortcuts_util::{parse_shortcuts, shortcuts_to_bytes, Shortcut};
 #[cfg(target_os = "linux")]
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Runtime, Manager};
 
 #[cfg(target_os = "linux")]
 pub fn resolve_normal_steam_userdata(home_dir: PathBuf) -> PathBuf {
@@ -126,7 +126,7 @@ pub fn remove_desktop_shortcut(file: PathBuf) -> bool {
 }
 
 #[cfg(target_os = "linux")]
-pub fn sync_desktop_shortcut(app: &AppHandle, install_id: String, new_name: String) {
+pub fn sync_desktop_shortcut<R: Runtime>(app: &AppHandle<R>, install_id: String, new_name: String) {
     let install = crate::utils::db_manager::get_install_info_by_id(app, install_id).unwrap();
     if install.shortcut_path.is_empty() { return; }
     let base = app.path().home_dir().unwrap().join(".local/share/applications");

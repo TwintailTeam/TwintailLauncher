@@ -1,10 +1,10 @@
 use std::sync::atomic::Ordering;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Runtime, Manager};
 use crate::DownloadState;
 use crate::downloading::queue::QueueStatePayload;
 
 #[tauri::command]
-pub fn pause_game_download(app: AppHandle, install_id: String) -> bool {
+pub fn pause_game_download<R: Runtime>(app: AppHandle<R>, install_id: String) -> bool {
     let state = app.state::<DownloadState>();
 
     // Mark the install as "pausing" in the queue state
@@ -27,7 +27,7 @@ pub fn pause_game_download(app: AppHandle, install_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn queue_move_up(app: AppHandle, job_id: String) -> bool {
+pub fn queue_move_up<R: Runtime>(app: AppHandle<R>, job_id: String) -> bool {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { return queue_handle.move_up(job_id); }
@@ -35,7 +35,7 @@ pub fn queue_move_up(app: AppHandle, job_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn queue_move_down(app: AppHandle, job_id: String) -> bool {
+pub fn queue_move_down<R: Runtime>(app: AppHandle<R>, job_id: String) -> bool {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { return queue_handle.move_down(job_id); }
@@ -43,7 +43,7 @@ pub fn queue_move_down(app: AppHandle, job_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn queue_remove(app: AppHandle, job_id: String) -> bool {
+pub fn queue_remove<R: Runtime>(app: AppHandle<R>, job_id: String) -> bool {
     log::debug!("Removing job {} from queue", job_id);
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
@@ -52,14 +52,14 @@ pub fn queue_remove(app: AppHandle, job_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn queue_set_paused(app: AppHandle, paused: bool) {
+pub fn queue_set_paused<R: Runtime>(app: AppHandle<R>, paused: bool) {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { queue_handle.set_paused(paused); }
 }
 
 #[tauri::command]
-pub fn queue_activate_job(app: AppHandle, job_id: String) -> bool {
+pub fn queue_activate_job<R: Runtime>(app: AppHandle<R>, job_id: String) -> bool {
     let state = app.state::<DownloadState>();
 
     // First, activate the job in the queue - this sets the `activating` flag
@@ -84,7 +84,7 @@ pub fn queue_activate_job(app: AppHandle, job_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn queue_reorder(app: AppHandle, job_id: String, new_position: usize) -> bool {
+pub fn queue_reorder<R: Runtime>(app: AppHandle<R>, job_id: String, new_position: usize) -> bool {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { return queue_handle.reorder(job_id, new_position); }
@@ -92,7 +92,7 @@ pub fn queue_reorder(app: AppHandle, job_id: String, new_position: usize) -> boo
 }
 
 #[tauri::command]
-pub fn queue_resume_job(app: AppHandle, install_id: String) -> bool {
+pub fn queue_resume_job<R: Runtime>(app: AppHandle<R>, install_id: String) -> bool {
     log::info!("Resuming paused download for install {}", install_id);
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
@@ -101,7 +101,7 @@ pub fn queue_resume_job(app: AppHandle, install_id: String) -> bool {
 }
 
 #[tauri::command]
-pub fn get_download_queue_state(app: AppHandle) -> Option<QueueStatePayload> {
+pub fn get_download_queue_state<R: Runtime>(app: AppHandle<R>) -> Option<QueueStatePayload> {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { return queue_handle.get_state(); }
@@ -109,7 +109,7 @@ pub fn get_download_queue_state(app: AppHandle) -> Option<QueueStatePayload> {
 }
 
 #[tauri::command]
-pub fn queue_clear_completed(app: AppHandle) {
+pub fn queue_clear_completed<R: Runtime>(app: AppHandle<R>) {
     let state = app.state::<DownloadState>();
     let queue_guard = state.queue.lock().unwrap();
     if let Some(ref queue_handle) = *queue_guard { queue_handle.clear_completed(); }
