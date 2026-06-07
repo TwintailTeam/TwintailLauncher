@@ -33,5 +33,6 @@ jobs:
             {
               "release_tag": "${{ env.RAW_VERSION }}",
               "release_name": "${{ env.VERSION }}",
+              "pkg_desc": "Your anime games, one launcher",
               "url": "${{ github.event.release.html_url || 'manual' }}"
             }
