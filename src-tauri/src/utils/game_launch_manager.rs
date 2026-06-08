@@ -309,7 +309,7 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, prefix: S
             cmd.arg("-c");
             cmd.arg(&command);
 
-            let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
+            let loader_mode = if mipath == "efmi" || mipath == "wwmi" { "inject" } else { "hook" };
             cmd.env("LOADER_MODE", loader_mode);
             cmd.env("WINEARCH", "win64");
             cmd.env("WINEPREFIX", prefix.clone() + "/pfx");
@@ -646,7 +646,7 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, xxmi_path
         cmd.arg(&command);
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
-        let loader_mode = if mipath == "efmi" { "inject" } else { "hook" };
+        let loader_mode = if mipath == "efmi" || mipath == "wwmi" { "inject" } else { "hook" };
         cmd.env("LOADER_MODE", loader_mode);
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
