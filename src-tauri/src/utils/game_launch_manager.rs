@@ -41,13 +41,6 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     #[cfg(debug_assertions)]
     let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
     let appid = get_steam_appid();
-    let endfield_can_bypass = gm.biz == "endfield_global" && install.runner_version.ends_with("-proton-ge") && {
-        let v = install.runner_version.strip_suffix("-proton-ge").unwrap_or("");
-        let parts: Vec<&str> = v.split('.').collect();
-        let major: u32 = parts.get(0).and_then(|s| s.parse().ok()).unwrap_or(0);
-        let minor: u32 = parts.get(1).and_then(|s| s.parse().ok()).unwrap_or(0);
-        major > 10 || (major == 10 && minor >= 32)
-    };
 
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
@@ -61,7 +54,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         return Ok(false);
     }
 
-    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) && !endfield_can_bypass {
+    if cpo.override_runner.linux.enabled && !cpo.override_runner.linux.runner_version.is_empty() && !is_using_overriden_runner(install.runner_version.clone(), cpo.override_runner.linux.runner_version.clone()) {
         log::info!("Attempted to launch {} with runner version {} while compatibility override is set to {}!", install.name, install.runner_version, cpo.override_runner.linux.runner_version);
         show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.launch_runner_version_required", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str()), ("runner_version", install.runner_version.as_str()), ("required_runner", cpo.override_runner.linux.runner_version.as_str())])));
         return Ok(false);
