@@ -595,7 +595,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
 }
 
 pub fn apply_wwmi_tweaks(base: PathBuf) {
-    let path = base.join("Client/Binaries/Win64/Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini");
+    let path = base.join("Client/Config/UserEngine.ini");
     const SECTION: &str = "[ConsoleVariables]";
     const FIELDS: &[(&str, &str)] = &[
         ("r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", "-10"),
