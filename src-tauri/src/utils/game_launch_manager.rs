@@ -298,7 +298,7 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, prefix: S
             // Apply the installation tweaks
             let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
             crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
-            if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
+            if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf(), xxmi_path.clone()); }
 
             let mut cmd = Command::new("bash");
             cmd.arg("-c");
@@ -635,7 +635,7 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, xxmi_path
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
         crate::utils::db_manager::update_install_xxmi_config_by_id(&app, install.id, data);
-        if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf()); }
+        if mipath.to_ascii_lowercase().as_str() == "wwmi" { crate::utils::apply_wwmi_tweaks(game_dir.to_path_buf(), xxmi_path.to_string()); }
 
         let mut cmd = Command::new("powershell");
         cmd.arg("-Command");

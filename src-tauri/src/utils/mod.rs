@@ -594,7 +594,15 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
     } else { data }
 }
 
-pub fn apply_wwmi_tweaks(base: PathBuf) {
+pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
+    let xxmi_base = Path::new(&xxmi_path).to_path_buf();
+    let d3dcompiler = xxmi_base.join("d3dcompiler_47.dll");
+    let d3d_target = base.join("Client/Binaries/Win64/d3dcompiler_47.dll");
+    if d3dcompiler.exists() {
+        #[cfg(target_os = "linux")]
+        let _ = std::os::unix::fs::symlink(&d3dcompiler, &d3d_target);
+    }
+
     let path = base.join("Client/Config/UserEngine.ini");
     const SECTION: &str = "[ConsoleVariables]";
     const FIELDS: &[(&str, &str)] = &[
