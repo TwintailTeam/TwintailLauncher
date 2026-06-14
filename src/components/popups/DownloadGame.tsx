@@ -75,8 +75,9 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
         };
     }, [dropdownRef]);
 
+    let def_path = window.navigator.platform.includes("Linux") ? `${settings.default_game_path}/${biz}` : `${settings.default_game_path}\\${biz}`;
     // Controlled State for Install Path
-    const [installPath, setInstallPath] = useState(`${settings.default_game_path}/${biz}`);
+    const [installPath, setInstallPath] = useState(`${def_path}`);
     // Controlled State for Proton Prefix Path
     const [runnerPrefixPath, setRunnerPrefixPath] = useState(`${settings.default_runner_prefix_path}/${biz}`);
     // Controlled State for skip version updates

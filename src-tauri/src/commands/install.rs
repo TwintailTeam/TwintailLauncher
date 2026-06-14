@@ -206,7 +206,7 @@ pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: 
         }
         if !skip_game_dl && !steam_import {
             let downloading_marker = install_location.join("downloading");
-            if !downloading_marker.exists() { let _ = fs::create_dir(&downloading_marker); }
+            if !downloading_marker.exists() { let _ = fs::create_dir_all(&downloading_marker); }
         }
         let default_graphics_api = gm.extra.graphics_api_options.default.clone();
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api).unwrap();

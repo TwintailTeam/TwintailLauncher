@@ -630,7 +630,7 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, xxmi_path
         let game_dir = std::path::PathBuf::from(&install.directory);
         let loader_path = std::path::Path::new(xxmi_path).join("3dmloader.exe");
         let loader_path_str = loader_path.to_str().unwrap().replace("/", "\\");
-        let command = format!("Start-Process -FilePath '{}' -ArgumentList '{}' -WorkingDirectory '{}' -Verb RunAs", loader_path_str, mipath, xxmi_path);
+        let command = format!("Start-Process -FilePath 'powershell' -ArgumentList '-NoProfile -Command \"$env:LOADER_MODE=''{m}''; & ''{l}'' {a}\"' -WorkingDirectory '{x}' -Verb RunAs", l = loader_path_str, a = mipath, x = xxmi_path, m = if mipath == "efmi" || mipath == "wwmi" { "inject" } else { "hook" });
 
         // Apply the installation tweaks
         let data = apply_xxmi_tweaks(mi_pathbuf, install.xxmi_config);
@@ -642,8 +642,6 @@ fn load_xxmi<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, xxmi_path
         cmd.arg(&command);
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
-        let loader_mode = if mipath == "efmi" || mipath == "wwmi" { "inject" } else { "hook" };
-        cmd.env("LOADER_MODE", loader_mode);
         cmd.stdout(Stdio::null());
         cmd.stderr(Stdio::null());
         cmd.current_dir(xxmi_path);
