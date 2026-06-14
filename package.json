@@ -1,7 +1,7 @@
 {
     "name": "twintaillauncher",
     "private": true,
-    "version": "2.2.1",
+    "version": "2.3.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -23,7 +23,7 @@
     },
     "devDependencies": {
         "@tauri-apps/cli": "^2.11.2",
-        "@types/react": "^18.3.29",
+        "@types/react": "^18.3.31",
         "@types/react-dom": "^18.3.7",
         "@vitejs/plugin-react": "^4.7.0",
         "autoprefixer": "^10.5.0",
@@ -33,9 +33,8 @@
         "typescript": "^5.9.3",
         "vite": "^5.4.21"
     },
-    "pnpm": {
-        "ignoredBuiltDependencies": [
-            "esbuild"
-        ]
+    "allowScripts": {
+        "file:../esbuild@0.21.5/node_modules/esbuild": true,
+        "file:../../esbuild@0.21.5/node_modules/esbuild": true
     }
 }

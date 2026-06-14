@@ -43,7 +43,7 @@ jobs:
           _pkgname="\${pkgname%-bin}"
           pkgver=${PKGV}
           pkgrel=1
-          pkgdesc="A multi-platform launcher for your anime games"
+          pkgdesc="Your anime games, one launcher"
           arch=('x86_64' 'aarch64')
           url="https://github.com/TwintailTeam/TwintailLauncher"
           license=('GPL-3.0-only')
@@ -80,7 +80,7 @@ jobs:
           pkgver=${PKGV}
           pkgrel=1
           _dirname="TwintailLauncher-ttl-v\${pkgver}"
-          pkgdesc='A multi-platform launcher for your anime games'
+          pkgdesc='Your anime games, one launcher'
           arch=('x86_64' 'aarch64')
           license=('GPL-3.0-only')
           url=https://github.com/TwintailTeam/TwintailLauncher

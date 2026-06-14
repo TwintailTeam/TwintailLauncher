@@ -9,9 +9,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 
-pub fn register_download_handler(app: &AppHandle) {
+pub fn register_download_handler<R: Runtime>(app: &AppHandle<R>) {
     let a = app.clone();
     app.listen("start_game_download", move |event| {
         let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
@@ -30,7 +30,7 @@ pub fn register_download_handler(app: &AppHandle) {
     });
 }
 
-pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
+pub fn run_game_download<R: Runtime>(h4: AppHandle<R>, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let install = match get_install_info_by_id(&h4, payload.install.clone()) {
         Some(v) => v,
@@ -132,7 +132,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                     let far = archive_path.to_str().unwrap().to_string();
 
                     log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, install.directory);
-                    let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                    let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                         let dlpayload = dlpayload.clone();
                         let h4 = h4.clone();
                         let instn = instn.clone();
@@ -325,7 +325,7 @@ pub fn run_game_download(h4: AppHandle, payload: DownloadGamePayload, job_id: St
                         let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                         if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
                         log::debug!("Extracting archive {} to {} ({}/{})", far, install.directory, file_idx + 1, total_files);
-                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                             let dlpayload = dlpayload.clone();
                             let h4 = h4.clone();
                             let instn = instn.clone();

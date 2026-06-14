@@ -5,22 +5,14 @@ use crate::utils::models::{
 use crate::utils::repo_manager::{setup_compatibility_repository, setup_official_repository};
 use crate::utils::{run_async_command, setup_or_fix_default_paths};
 use sqlx::types::Json;
-use sqlx::{
-    Error, Executor, Pool, Row, Sqlite,
-    error::BoxDynError,
-    migrate::{
-        MigrateDatabase, Migration as SqlxMigration, MigrationSource, MigrationType, Migrator,
-    },
-    query,
-    sqlite::SqliteQueryResult,
-};
+use sqlx::{Error, Pool, Row, Sqlite, error::BoxDynError, migrate::{MigrateDatabase, Migration as SqlxMigration, MigrationSource, MigrationType, Migrator}, query, sqlite::SqliteQueryResult, SqlSafeStr};
 use std::collections::HashMap;
 use std::fs;
 use std::pin::Pin;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Runtime, Manager};
 use tokio::sync::Mutex;
 
-pub async fn init_db(app: &AppHandle, data_path: std::path::PathBuf) {
+pub async fn init_db<R: Runtime>(app: &AppHandle<R>, data_path: std::path::PathBuf) {
     let conn_url = data_path.join("storage.db");
     let manifests_dir = data_path.join("manifests");
 
@@ -234,7 +226,7 @@ pub async fn init_db(app: &AppHandle, data_path: std::path::PathBuf) {
 
 // === SETTINGS ===
 
-pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
+pub fn get_settings<R: Runtime>(app: &AppHandle<R>) -> Option<GlobalSettings> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -264,7 +256,7 @@ pub fn get_settings(app: &AppHandle) -> Option<GlobalSettings> {
     } else { None }
 }
 
-pub fn update_settings_third_party_repo_update(app: &AppHandle, enabled: bool) {
+pub fn update_settings_third_party_repo_update<R: Runtime>(app: &AppHandle<R>, enabled: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'third_party_repo_updates' = $1 WHERE id = 1").bind(enabled);
@@ -272,7 +264,7 @@ pub fn update_settings_third_party_repo_update(app: &AppHandle, enabled: bool) {
     });
 }
 
-pub fn update_settings_default_game_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_game_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'default_game_path' = $1 WHERE id = 1").bind(path);
@@ -280,7 +272,7 @@ pub fn update_settings_default_game_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_default_xxmi_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_xxmi_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'xxmi_path' = $1 WHERE id = 1").bind(path);
@@ -288,7 +280,7 @@ pub fn update_settings_default_xxmi_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_default_fps_unlock_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_fps_unlock_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'fps_unlock_path' = $1 WHERE id = 1").bind(path);
@@ -296,7 +288,7 @@ pub fn update_settings_default_fps_unlock_location(app: &AppHandle, path: String
     });
 }
 
-pub fn update_settings_default_jadeite_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_jadeite_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1").bind(path);
@@ -304,7 +296,7 @@ pub fn update_settings_default_jadeite_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_default_prefix_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_prefix_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'default_runner_prefix_path' = $1 WHERE id = 1").bind(path);
@@ -312,7 +304,7 @@ pub fn update_settings_default_prefix_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_default_runner_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_runner_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'default_runner_path' = $1 WHERE id = 1").bind(path);
@@ -320,7 +312,7 @@ pub fn update_settings_default_runner_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_download_speed_limit(app: &AppHandle, limit_kb_per_sec: i64) {
+pub fn update_settings_download_speed_limit<R: Runtime>(app: &AppHandle<R>, limit_kb_per_sec: i64) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -337,7 +329,7 @@ pub fn update_settings_download_speed_limit(app: &AppHandle, limit_kb_per_sec: i
     });
 }
 
-pub fn update_settings_default_dxvk_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_dxvk_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -353,7 +345,7 @@ pub fn update_settings_default_dxvk_location(app: &AppHandle, path: String) {
     });
 }
 
-pub fn update_settings_default_mangohud_config_location(app: &AppHandle, path: String) {
+pub fn update_settings_default_mangohud_config_location<R: Runtime>(app: &AppHandle<R>, path: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -370,7 +362,7 @@ pub fn update_settings_default_mangohud_config_location(app: &AppHandle, path: S
     });
 }
 
-pub fn update_settings_launch_action(app: &AppHandle, action: String) {
+pub fn update_settings_launch_action<R: Runtime>(app: &AppHandle<R>, action: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -386,7 +378,7 @@ pub fn update_settings_launch_action(app: &AppHandle, action: String) {
     });
 }
 
-pub fn update_settings_hide_manifests(app: &AppHandle, enabled: bool) {
+pub fn update_settings_hide_manifests<R: Runtime>(app: &AppHandle<R>, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -402,7 +394,7 @@ pub fn update_settings_hide_manifests(app: &AppHandle, enabled: bool) {
     });
 }
 
-pub fn update_settings_hide_app_to_tray(app: &AppHandle, enabled: bool) {
+pub fn update_settings_hide_app_to_tray<R: Runtime>(app: &AppHandle<R>, enabled: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'hide_app_to_tray' = $1 WHERE id = 1").bind(enabled);
@@ -410,7 +402,7 @@ pub fn update_settings_hide_app_to_tray(app: &AppHandle, enabled: bool) {
     });
 }
 
-pub fn update_settings_app_lang(app: &AppHandle, lang: String) {
+pub fn update_settings_app_lang<R: Runtime>(app: &AppHandle<R>, lang: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'app_lang' = $1 WHERE id = 1").bind(lang);
@@ -420,7 +412,7 @@ pub fn update_settings_app_lang(app: &AppHandle, lang: String) {
 
 // === REPOSITORIES ===
 
-pub fn create_repository(app: &AppHandle, id: String, github_id: &str) -> Result<bool, Error> {
+pub fn create_repository<R: Runtime>(app: &AppHandle<R>, id: String, github_id: &str) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
@@ -446,7 +438,7 @@ pub fn create_repository(app: &AppHandle, id: String, github_id: &str) -> Result
     }
 }
 
-pub fn delete_repository_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
+pub fn delete_repository_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
@@ -470,7 +462,7 @@ pub fn delete_repository_by_id(app: &AppHandle, id: String) -> Result<bool, Erro
     }
 }
 
-pub fn get_repository_info_by_id(app: &AppHandle, id: String) -> Option<LauncherRepository> {
+pub fn get_repository_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Option<LauncherRepository> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -499,8 +491,8 @@ pub fn get_repository_info_by_id(app: &AppHandle, id: String) -> Option<Launcher
     }
 }
 
-pub fn get_repository_info_by_github_id(
-    app: &AppHandle,
+pub fn get_repository_info_by_github_id<R: Runtime>(
+    app: &AppHandle<R>,
     github_id: String,
 ) -> Option<LauncherRepository> {
     let mut rslt = vec![];
@@ -531,7 +523,7 @@ pub fn get_repository_info_by_github_id(
     }
 }
 
-pub fn get_repositories(app: &AppHandle) -> Option<Vec<LauncherRepository>> {
+pub fn get_repositories<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherRepository>> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -565,8 +557,8 @@ pub fn get_repositories(app: &AppHandle) -> Option<Vec<LauncherRepository>> {
 
 // === MANIFESTS ===
 
-pub fn create_manifest(
-    app: &AppHandle,
+pub fn create_manifest<R: Runtime>(
+    app: &AppHandle<R>,
     id: String,
     repository_id: String,
     display_name: &str,
@@ -585,7 +577,7 @@ pub fn create_manifest(
             .unwrap()
             .clone();
 
-        rslt = db.execute(format!("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ('{id}', '{repository_id}', '{display_name}', '{filename}', {enabled})").as_str()).await.unwrap();
+        rslt = query("INSERT INTO manifest(id, repository_id, display_name, filename, enabled) VALUES ($1, $2, $3, $4, $5)").bind(&id).bind(&repository_id).bind(display_name).bind(filename).bind(enabled).execute(&db).await.unwrap();
     });
 
     if rslt.rows_affected() >= 1 {
@@ -596,8 +588,8 @@ pub fn create_manifest(
 }
 
 #[allow(dead_code)]
-pub fn delete_manifest_by_repository_id(
-    app: &AppHandle,
+pub fn delete_manifest_by_repository_id<R: Runtime>(
+    app: &AppHandle<R>,
     repository_id: String,
 ) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
@@ -625,7 +617,7 @@ pub fn delete_manifest_by_repository_id(
     }
 }
 
-pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
+pub fn delete_manifest_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
@@ -649,7 +641,7 @@ pub fn delete_manifest_by_id(app: &AppHandle, id: String) -> Result<bool, Error>
     }
 }
 
-pub fn get_manifest_info_by_id(app: &AppHandle, id: String) -> Option<LauncherManifest> {
+pub fn get_manifest_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Option<LauncherManifest> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -681,8 +673,8 @@ pub fn get_manifest_info_by_id(app: &AppHandle, id: String) -> Option<LauncherMa
     }
 }
 
-pub fn get_manifest_info_by_filename(
-    app: &AppHandle,
+pub fn get_manifest_info_by_filename<R: Runtime>(
+    app: &AppHandle<R>,
     filename: String,
 ) -> Option<LauncherManifest> {
     let mut rslt = vec![];
@@ -716,8 +708,8 @@ pub fn get_manifest_info_by_filename(
     }
 }
 
-pub fn get_manifests_by_repository_id(
-    app: &AppHandle,
+pub fn get_manifests_by_repository_id<R: Runtime>(
+    app: &AppHandle<R>,
     repository_id: String,
 ) -> Option<Vec<LauncherManifest>> {
     let mut rslt = vec![];
@@ -754,7 +746,7 @@ pub fn get_manifests_by_repository_id(
     }
 }
 
-pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_manifest_enabled_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -774,8 +766,8 @@ pub fn update_manifest_enabled_by_id(app: &AppHandle, id: String, enabled: bool)
 
 // === INSTALLS ===
 
-pub fn create_installation(
-    app: &AppHandle,
+pub fn create_installation<R: Runtime>(
+    app: &AppHandle<R>,
     id: String,
     manifest_id: String,
     version: String,
@@ -824,7 +816,7 @@ pub fn create_installation(
     }
 }
 
-pub fn delete_installation_by_id(app: &AppHandle, id: String) -> Result<bool, Error> {
+pub fn delete_installation_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
     run_async_command(async {
@@ -848,7 +840,7 @@ pub fn delete_installation_by_id(app: &AppHandle, id: String) -> Result<bool, Er
     }
 }
 
-pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherInstall> {
+pub fn get_install_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Option<LauncherInstall> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -912,8 +904,8 @@ pub fn get_install_info_by_id(app: &AppHandle, id: String) -> Option<LauncherIns
     }
 }
 
-pub fn get_installs_by_manifest_id(
-    app: &AppHandle,
+pub fn get_installs_by_manifest_id<R: Runtime>(
+    app: &AppHandle<R>,
     manifest_id: String,
 ) -> Option<Vec<LauncherInstall>> {
     let mut rslt = vec![];
@@ -982,7 +974,7 @@ pub fn get_installs_by_manifest_id(
     }
 }
 
-pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
+pub fn get_installs<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherInstall>> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -1049,7 +1041,7 @@ pub fn get_installs(app: &AppHandle) -> Option<Vec<LauncherInstall>> {
     }
 }
 
-pub fn update_installs_order(app: &AppHandle, order_updates: Vec<(String, i32)>) {
+pub fn update_installs_order<R: Runtime>(app: &AppHandle<R>, order_updates: Vec<(String, i32)>) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1070,7 +1062,7 @@ pub fn update_installs_order(app: &AppHandle, order_updates: Vec<(String, i32)>)
     });
 }
 
-pub fn update_install_game_location_by_id(app: &AppHandle, id: String, location: String) {
+pub fn update_install_game_location_by_id<R: Runtime>(app: &AppHandle<R>, id: String, location: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1088,7 +1080,7 @@ pub fn update_install_game_location_by_id(app: &AppHandle, id: String, location:
     });
 }
 
-pub fn update_install_game_background_by_id(app: &AppHandle, id: String, background: String) {
+pub fn update_install_game_background_by_id<R: Runtime>(app: &AppHandle<R>, id: String, background: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1106,7 +1098,7 @@ pub fn update_install_game_background_by_id(app: &AppHandle, id: String, backgro
     });
 }
 
-pub fn update_install_runner_location_by_id(app: &AppHandle, id: String, location: String) {
+pub fn update_install_runner_location_by_id<R: Runtime>(app: &AppHandle<R>, id: String, location: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1124,7 +1116,7 @@ pub fn update_install_runner_location_by_id(app: &AppHandle, id: String, locatio
     });
 }
 
-pub fn update_install_dxvk_location_by_id(app: &AppHandle, id: String, location: String) {
+pub fn update_install_dxvk_location_by_id<R: Runtime>(app: &AppHandle<R>, id: String, location: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1142,7 +1134,7 @@ pub fn update_install_dxvk_location_by_id(app: &AppHandle, id: String, location:
     });
 }
 
-pub fn update_install_ignore_updates_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_ignore_updates_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1160,7 +1152,7 @@ pub fn update_install_ignore_updates_by_id(app: &AppHandle, id: String, enabled:
     });
 }
 
-pub fn update_install_skip_hash_check_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_skip_hash_check_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1178,7 +1170,7 @@ pub fn update_install_skip_hash_check_by_id(app: &AppHandle, id: String, enabled
     });
 }
 
-pub fn update_install_use_jadeite_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_use_jadeite_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1196,7 +1188,7 @@ pub fn update_install_use_jadeite_by_id(app: &AppHandle, id: String, enabled: bo
     });
 }
 
-pub fn update_install_use_xxmi_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_use_xxmi_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1214,7 +1206,7 @@ pub fn update_install_use_xxmi_by_id(app: &AppHandle, id: String, enabled: bool)
     });
 }
 
-pub fn update_install_use_fps_unlock_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_use_fps_unlock_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1232,7 +1224,7 @@ pub fn update_install_use_fps_unlock_by_id(app: &AppHandle, id: String, enabled:
     });
 }
 
-pub fn update_install_fps_value_by_id(app: &AppHandle, id: String, fps: String) {
+pub fn update_install_fps_value_by_id<R: Runtime>(app: &AppHandle<R>, id: String, fps: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1250,7 +1242,7 @@ pub fn update_install_fps_value_by_id(app: &AppHandle, id: String, fps: String) 
     });
 }
 
-pub fn update_install_graphics_api_by_id(app: &AppHandle, id: String, api: String) {
+pub fn update_install_graphics_api_by_id<R: Runtime>(app: &AppHandle<R>, id: String, api: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE install SET 'graphics_api' = $1 WHERE id = $2").bind(api).bind(id);
@@ -1258,7 +1250,7 @@ pub fn update_install_graphics_api_by_id(app: &AppHandle, id: String, api: Strin
     });
 }
 
-pub fn update_install_use_gamemode_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_use_gamemode_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1276,7 +1268,7 @@ pub fn update_install_use_gamemode_by_id(app: &AppHandle, id: String, enabled: b
     });
 }
 
-pub fn update_install_use_mangohud_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_use_mangohud_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1294,7 +1286,7 @@ pub fn update_install_use_mangohud_by_id(app: &AppHandle, id: String, enabled: b
     });
 }
 
-pub fn update_install_env_vars_by_id(app: &AppHandle, id: String, env_vars: String) {
+pub fn update_install_env_vars_by_id<R: Runtime>(app: &AppHandle<R>, id: String, env_vars: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1312,7 +1304,7 @@ pub fn update_install_env_vars_by_id(app: &AppHandle, id: String, env_vars: Stri
     });
 }
 
-pub fn update_install_pre_launch_cmd_by_id(app: &AppHandle, id: String, cmd: String) {
+pub fn update_install_pre_launch_cmd_by_id<R: Runtime>(app: &AppHandle<R>, id: String, cmd: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1330,7 +1322,7 @@ pub fn update_install_pre_launch_cmd_by_id(app: &AppHandle, id: String, cmd: Str
     });
 }
 
-pub fn update_install_launch_cmd_by_id(app: &AppHandle, id: String, cmd: String) {
+pub fn update_install_launch_cmd_by_id<R: Runtime>(app: &AppHandle<R>, id: String, cmd: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1348,7 +1340,7 @@ pub fn update_install_launch_cmd_by_id(app: &AppHandle, id: String, cmd: String)
     });
 }
 
-pub fn update_install_prefix_location_by_id(app: &AppHandle, id: String, location: String) {
+pub fn update_install_prefix_location_by_id<R: Runtime>(app: &AppHandle<R>, id: String, location: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1366,7 +1358,7 @@ pub fn update_install_prefix_location_by_id(app: &AppHandle, id: String, locatio
     });
 }
 
-pub fn update_install_launch_args_by_id(app: &AppHandle, id: String, args: String) {
+pub fn update_install_launch_args_by_id<R: Runtime>(app: &AppHandle<R>, id: String, args: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1385,7 +1377,7 @@ pub fn update_install_launch_args_by_id(app: &AppHandle, id: String, args: Strin
 }
 
 #[allow(dead_code)]
-pub fn update_install_runner_version_by_id(app: &AppHandle, id: String, version: String) {
+pub fn update_install_runner_version_by_id<R: Runtime>(app: &AppHandle<R>, id: String, version: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1404,7 +1396,7 @@ pub fn update_install_runner_version_by_id(app: &AppHandle, id: String, version:
 }
 
 #[allow(dead_code)]
-pub fn update_install_dxvk_version_by_id(app: &AppHandle, id: String, version: String) {
+pub fn update_install_dxvk_version_by_id<R: Runtime>(app: &AppHandle<R>, id: String, version: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1422,8 +1414,8 @@ pub fn update_install_dxvk_version_by_id(app: &AppHandle, id: String, version: S
     });
 }
 
-pub fn update_install_after_update_by_id(
-    app: &AppHandle,
+pub fn update_install_after_update_by_id<R: Runtime>(
+    app: &AppHandle<R>,
     id: String,
     name: String,
     icon: String,
@@ -1460,8 +1452,8 @@ pub fn update_install_after_update_by_id(
     });
 }
 
-pub fn update_install_mangohud_config_location_by_id(
-    app: &AppHandle,
+pub fn update_install_mangohud_config_location_by_id<R: Runtime>(
+    app: &AppHandle<R>,
     id: String,
     location: String,
 ) {
@@ -1482,7 +1474,7 @@ pub fn update_install_mangohud_config_location_by_id(
     });
 }
 
-pub fn update_install_shortcut_location_by_id(app: &AppHandle, id: String, location: String) {
+pub fn update_install_shortcut_location_by_id<R: Runtime>(app: &AppHandle<R>, id: String, location: String) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1501,7 +1493,7 @@ pub fn update_install_shortcut_location_by_id(app: &AppHandle, id: String, locat
 }
 
 #[allow(dead_code)]
-pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_steam: bool) {
+pub fn update_install_shortcut_is_steam_by_id<R: Runtime>(app: &AppHandle<R>, id: String, is_steam: bool) {
     run_async_command(async {
         let db = app
             .state::<DbInstances>()
@@ -1519,8 +1511,8 @@ pub fn update_install_shortcut_is_steam_by_id(app: &AppHandle, id: String, is_st
     });
 }
 
-pub fn update_install_xxmi_config_by_id(
-    app: &AppHandle,
+pub fn update_install_xxmi_config_by_id<R: Runtime>(
+    app: &AppHandle<R>,
     id: String,
     xxmi_config: Json<XXMISettings>,
 ) {
@@ -1541,7 +1533,7 @@ pub fn update_install_xxmi_config_by_id(
     });
 }
 
-pub fn update_install_last_played_by_id(app: &AppHandle, id: String, last_played_time: String) {
+pub fn update_install_last_played_by_id<R: Runtime>(app: &AppHandle<R>, id: String, last_played_time: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE install SET 'last_played_time' = $1 WHERE id = $2").bind(last_played_time).bind(id);
@@ -1549,7 +1541,7 @@ pub fn update_install_last_played_by_id(app: &AppHandle, id: String, last_played
     });
 }
 
-pub fn update_install_total_playtime_by_id(app: &AppHandle, id: String, total_playtime: String) {
+pub fn update_install_total_playtime_by_id<R: Runtime>(app: &AppHandle<R>, id: String, total_playtime: String) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE install SET 'total_playtime' = $1 WHERE id = $2").bind(total_playtime).bind(id);
@@ -1557,7 +1549,7 @@ pub fn update_install_total_playtime_by_id(app: &AppHandle, id: String, total_pl
     });
 }
 
-pub fn update_install_show_drpc_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_show_drpc_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
@@ -1566,7 +1558,7 @@ pub fn update_install_show_drpc_by_id(app: &AppHandle, id: String, enabled: bool
     });
 }
 
-pub fn update_install_disable_system_idle_by_id(app: &AppHandle, id: String, enabled: bool) {
+pub fn update_install_disable_system_idle_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
@@ -1577,7 +1569,7 @@ pub fn update_install_disable_system_idle_by_id(app: &AppHandle, id: String, ena
 
 // === INSTALLED RUNNERS ===
 
-pub fn get_installed_runners(app: &AppHandle) -> Option<Vec<LauncherRunner>> {
+pub fn get_installed_runners<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherRunner>> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -1614,8 +1606,8 @@ pub fn get_installed_runners(app: &AppHandle) -> Option<Vec<LauncherRunner>> {
 }
 
 #[allow(dead_code)]
-pub fn create_installed_runner(
-    app: &AppHandle,
+pub fn create_installed_runner<R: Runtime>(
+    app: &AppHandle<R>,
     version: String,
     is_installed: bool,
     runner_path: String,
@@ -1643,7 +1635,7 @@ pub fn create_installed_runner(
     }
 }
 
-pub fn get_installed_runner_info_by_id(app: &AppHandle, id: String) -> Option<LauncherRunner> {
+pub fn get_installed_runner_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Option<LauncherRunner> {
     let mut rslt = vec![];
 
     run_async_command(async {
@@ -1676,8 +1668,8 @@ pub fn get_installed_runner_info_by_id(app: &AppHandle, id: String) -> Option<La
     }
 }
 
-pub fn get_installed_runner_info_by_version(
-    app: &AppHandle,
+pub fn get_installed_runner_info_by_version<R: Runtime>(
+    app: &AppHandle<R>,
     version: String,
 ) -> Option<LauncherRunner> {
     let mut rslt = vec![];
@@ -1712,8 +1704,8 @@ pub fn get_installed_runner_info_by_version(
     }
 }
 
-pub fn update_installed_runner_is_installed_by_version(
-    app: &AppHandle,
+pub fn update_installed_runner_is_installed_by_version<R: Runtime>(
+    app: &AppHandle<R>,
     version: String,
     is_installed: bool,
 ) {
@@ -1735,8 +1727,8 @@ pub fn update_installed_runner_is_installed_by_version(
 }
 
 #[allow(dead_code)]
-pub fn update_installed_runner_path_by_version(
-    app: &AppHandle,
+pub fn update_installed_runner_path_by_version<R: Runtime>(
+    app: &AppHandle<R>,
     version: String,
     runner_path: String,
 ) {
@@ -1811,7 +1803,7 @@ impl MigrationSource<'static> for MigrationList {
                         migration.version,
                         migration.description.into(),
                         migration.kind.into(),
-                        migration.sql.into(),
+                        migration.sql.into_sql_str(),
                         false
                     ));
                 }

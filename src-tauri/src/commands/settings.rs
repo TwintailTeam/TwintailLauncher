@@ -4,14 +4,14 @@ use crate::utils::repo_manager::get_manifest;
 use crate::utils::{compare_version, get_mi_path_from_game, show_dialog_with_callback};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle,Manager};
+use tauri::{AppHandle, Runtime,Manager};
 use tauri_plugin_opener::OpenerExt;
 
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
 
 #[tauri::command]
-pub async fn list_settings(app: AppHandle) -> Option<GlobalSettings> {
+pub async fn list_settings<R: Runtime>(app: AppHandle<R>) -> Option<GlobalSettings> {
     let settings = get_settings(&app);
 
     if settings.is_some() {
@@ -25,7 +25,7 @@ pub async fn list_settings(app: AppHandle) -> Option<GlobalSettings> {
 }
 
 #[tauri::command]
-pub fn update_settings_download_speed_limit_cmd(app: AppHandle, speed_limit: i64) -> Option<bool> {
+pub fn update_settings_download_speed_limit_cmd<R: Runtime>(app: AppHandle<R>, speed_limit: i64) -> Option<bool> {
     let clamped = speed_limit.max(0);
     update_settings_download_speed_limit(&app, clamped);
     fischl::utils::downloader::set_global_download_speed_limit_kb(clamped as u64);
@@ -33,13 +33,13 @@ pub fn update_settings_download_speed_limit_cmd(app: AppHandle, speed_limit: i64
 }
 
 #[tauri::command]
-pub fn update_settings_third_party_repo_updates(app: AppHandle, enabled: bool) -> Option<bool> {
+pub fn update_settings_third_party_repo_updates<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Option<bool> {
     update_settings_third_party_repo_update(&app, enabled);
     Some(true)
 }
 
 #[tauri::command]
-pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_game_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -53,7 +53,7 @@ pub fn update_settings_default_game_path(app: AppHandle, path: String) -> Option
 }
 
 #[tauri::command]
-pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_xxmi_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -67,7 +67,7 @@ pub fn update_settings_default_xxmi_path(app: AppHandle, path: String) -> Option
 }
 
 #[tauri::command]
-pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_fps_unlock_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -81,7 +81,7 @@ pub fn update_settings_default_fps_unlock_path(app: AppHandle, path: String) -> 
 }
 
 #[tauri::command]
-pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_jadeite_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -95,7 +95,7 @@ pub fn update_settings_default_jadeite_path(app: AppHandle, path: String) -> Opt
 }
 
 #[tauri::command]
-pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_prefix_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -109,7 +109,7 @@ pub fn update_settings_default_prefix_path(app: AppHandle, path: String) -> Opti
 }
 
 #[tauri::command]
-pub fn update_settings_default_runner_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_runner_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -123,7 +123,7 @@ pub fn update_settings_default_runner_path(app: AppHandle, path: String) -> Opti
 }
 
 #[tauri::command]
-pub fn update_settings_default_dxvk_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_dxvk_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_dir() {
@@ -137,7 +137,7 @@ pub fn update_settings_default_dxvk_path(app: AppHandle, path: String) -> Option
 }
 
 #[tauri::command]
-pub fn update_settings_default_mangohud_config_path(app: AppHandle, path: String) -> Option<bool> {
+pub fn update_settings_default_mangohud_config_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
     let p = Path::new(&path);
 
     if !p.exists() && p.is_file() {
@@ -151,25 +151,25 @@ pub fn update_settings_default_mangohud_config_path(app: AppHandle, path: String
 }
 
 #[tauri::command]
-pub fn update_settings_launcher_action(app: AppHandle, action: String) -> Option<bool> {
+pub fn update_settings_launcher_action<R: Runtime>(app: AppHandle<R>, action: String) -> Option<bool> {
     update_settings_launch_action(&app, action);
     Some(true)
 }
 
 #[tauri::command]
-pub fn update_settings_manifests_hide(app: AppHandle, enabled: bool) -> Option<bool> {
+pub fn update_settings_manifests_hide<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Option<bool> {
     update_settings_hide_manifests(&app, enabled);
     Some(true)
 }
 
 #[tauri::command]
-pub fn update_settings_hide_app_tray(app: AppHandle, enabled: bool) -> Option<bool> {
+pub fn update_settings_hide_app_tray<R: Runtime>(app: AppHandle<R>, enabled: bool) -> Option<bool> {
     update_settings_hide_app_to_tray(&app, enabled);
     Some(true)
 }
 
 #[tauri::command]
-pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
+pub fn open_folder<R: Runtime>(app: AppHandle<R>, manifest_id: String, install_id: String, runner_version: String, path_type: String) {
     log::debug!("Opening {} folder for install {}", path_type, install_id);
     match path_type.as_str() {
         "mods" => {
@@ -285,7 +285,7 @@ pub fn open_folder(app: AppHandle, manifest_id: String, install_id: String, runn
 }
 
 #[tauri::command]
-pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
+pub fn empty_folder<R: Runtime>(app: AppHandle<R>, install_id: String, path_type: String) {
     match path_type.as_str() {
         "runner_prefix" => {
             let install = get_install_info_by_id(&app, install_id);
@@ -328,7 +328,7 @@ pub fn empty_folder(app: AppHandle, install_id: String, path_type: String) {
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
+pub fn open_in_prefix<R: Runtime>(app: AppHandle<R>, install_id: String, path_type: String) {
     log::info!("Spawning {} in prefix for installation {}", path_type, install_id);
     match path_type.as_str() {
         "regedit.exe" => {
@@ -668,7 +668,7 @@ pub fn open_in_prefix(app: AppHandle, install_id: String, path_type: String) {
 }
 
 #[tauri::command]
-pub async fn check_app_update(app: AppHandle) -> bool {
+pub async fn check_app_update<R: Runtime>(app: AppHandle<R>) -> bool {
     tokio::task::spawn_blocking(move || {
         let Some(r) = fischl::utils::get_github_release("TwintailTeam/TwintailLauncher".to_string()) else { return false; };
         let v = r.tag_name.unwrap_or_default().replace("ttl-v", "");
@@ -682,7 +682,7 @@ pub async fn check_app_update(app: AppHandle) -> bool {
 }
 
 #[tauri::command]
-pub fn open_uri(app: AppHandle, uri: String) {
+pub fn open_uri<R: Runtime>(app: AppHandle<R>, uri: String) {
     match app.opener().open_url(uri, None::<&str>) {
         Ok(_) => {}
         Err(_e) => {}
@@ -690,20 +690,20 @@ pub fn open_uri(app: AppHandle, uri: String) {
 }
 
 #[tauri::command]
-pub fn update_settings_app_lang_cmd(app: AppHandle, lang: String) -> Option<bool> {
+pub fn update_settings_app_lang_cmd<R: Runtime>(app: AppHandle<R>, lang: String) -> Option<bool> {
     update_settings_app_lang(&app, lang);
     Some(true)
 }
 
 #[tauri::command]
-pub fn get_locale(app: AppHandle, code: String) -> Result<serde_json::Value, String> {
+pub fn get_locale<R: Runtime>(app: AppHandle<R>, code: String) -> Result<serde_json::Value, String> {
     let path = app.path().resource_dir().unwrap().join("resources/locales").join(format!("{}.json", code));
     let raw = fs::read_to_string(&path).map_err(|e| format!("Failed to read locale {}: {}", code, e))?;
     serde_json::from_str(&raw).map_err(|e| format!("Failed to parse locale {}: {}", code, e))
 }
 
 #[tauri::command]
-pub fn list_locales(app: AppHandle) -> Vec<String> {
+pub fn list_locales<R: Runtime>(app: AppHandle<R>) -> Vec<String> {
     let dir = app.path().resource_dir().unwrap().join("resources/locales");
     let entries = match fs::read_dir(&dir) { Ok(e) => e, Err(_) => return vec![] };
     let mut codes = Vec::new();

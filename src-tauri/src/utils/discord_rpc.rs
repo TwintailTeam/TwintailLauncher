@@ -1,10 +1,10 @@
 use rpcdiscord::{DiscordIpc,DiscordIpcClient,activity};
-use tauri::AppHandle;
+use tauri::{AppHandle, Runtime};
 use crate::utils::models::{GameManifest, LauncherInstall};
 
 const CLIENT_ID: &str = "1472729008675491872";
 
-pub fn init(app: &AppHandle, install: LauncherInstall, gm: GameManifest) -> Option<DiscordIpcClient> {
+pub fn init<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameManifest) -> Option<DiscordIpcClient> {
     let mut client = DiscordIpcClient::new(CLIENT_ID).ok()?;
     if client.connect().is_err() { return None; }
 

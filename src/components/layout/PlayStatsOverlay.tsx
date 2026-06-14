@@ -25,7 +25,7 @@ function formatLastPlayed(value?: string | number, appLang?: string): string {
     if (dayDiff === 0) return translate("play_stats.today");
     if (dayDiff === 1) return translate("play_stats.yesterday");
 
-    const intlLocale = appLang ? appLang.replace("_", "-") : undefined;
+    const intlLocale = appLang ? appLang.replace(/_/g, "-") : undefined;
     return date.toLocaleDateString(intlLocale, {
         month: "short",
         day: "numeric",

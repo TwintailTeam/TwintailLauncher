@@ -1,5 +1,5 @@
 use crate::utils::LinkedHashMap;
-use tauri::{AppHandle,Manager};
+use tauri::{AppHandle, Runtime,Manager};
 use crate::utils::db_manager::{get_manifest_info_by_filename,get_manifest_info_by_id,get_manifests_by_repository_id,update_manifest_enabled_by_id};
 use crate::utils::repo_manager::{get_manifest,get_manifests,ManifestLoaders};
 use crate::utils::models::{GameManifest,LauncherManifest};
@@ -9,22 +9,22 @@ use crate::utils::models::{RunnerManifest};
 use crate::utils::repo_manager::{get_compatibilities,get_compatibility};
 
 #[tauri::command]
-pub fn get_manifest_by_id(app: AppHandle, id: String) -> Option<LauncherManifest> {
+pub fn get_manifest_by_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<LauncherManifest> {
     get_manifest_info_by_id(&app, id)
 }
 
 #[tauri::command]
-pub fn get_manifest_by_filename(app: AppHandle, filename: String) -> Option<LauncherManifest> {
+pub fn get_manifest_by_filename<R: Runtime>(app: AppHandle<R>, filename: String) -> Option<LauncherManifest> {
     get_manifest_info_by_filename(&app, filename)
 }
 
 #[tauri::command]
-pub fn list_manifests_by_repository_id(app: AppHandle, repository_id: String) -> Option<Vec<LauncherManifest>> {
+pub fn list_manifests_by_repository_id<R: Runtime>(app: AppHandle<R>, repository_id: String) -> Option<Vec<LauncherManifest>> {
     get_manifests_by_repository_id(&app, repository_id)
 }
 
 #[tauri::command]
-pub fn list_game_manifests(app: AppHandle) -> Option<Vec<GameManifest>> {
+pub fn list_game_manifests<R: Runtime>(app: AppHandle<R>) -> Option<Vec<GameManifest>> {
     let manifestss: LinkedHashMap<String, GameManifest> = get_manifests(&app);
     let mut manifests: Vec<GameManifest> = Vec::new();
 
@@ -34,7 +34,7 @@ pub fn list_game_manifests(app: AppHandle) -> Option<Vec<GameManifest>> {
 }
 
 #[tauri::command]
-pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option<GameManifest> {
+pub fn get_game_manifest_by_filename<R: Runtime>(app: AppHandle<R>, filename: String) -> Option<GameManifest> {
     let manifest = get_manifest(&app, filename.clone());
     let db_manifest = get_manifest_info_by_filename(&app, filename.clone());
 
@@ -48,7 +48,7 @@ pub fn get_game_manifest_by_filename(app: AppHandle, filename: String) -> Option
 }
 
 #[tauri::command]
-pub fn get_game_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<GameManifest> {
+pub fn get_game_manifest_by_manifest_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<GameManifest> {
     let db_manifest = get_manifest_info_by_id(&app, id.clone());
 
     if db_manifest.is_some() {
@@ -62,7 +62,7 @@ pub fn get_game_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<Ga
 }
 
 #[tauri::command]
-pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Option<bool> {
+pub fn update_manifest_enabled<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_manifest_info_by_id(&app, id);
 
     if manifest.is_some() {
@@ -77,7 +77,7 @@ pub fn update_manifest_enabled(app: AppHandle, id: String, enabled: bool) -> Opt
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
-pub fn list_compatibility_manifests(app: AppHandle, biz: Option<String>) -> Option<Vec<RunnerManifest>> {
+pub fn list_compatibility_manifests<R: Runtime>(app: AppHandle<R>, biz: Option<String>) -> Option<Vec<RunnerManifest>> {
     let manifestss: LinkedHashMap<String, RunnerManifest> = get_compatibilities(&app);
     let mut manifests: Vec<RunnerManifest> = Vec::new();
 
@@ -103,11 +103,11 @@ pub fn list_compatibility_manifests(app: AppHandle, biz: Option<String>) -> Opti
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn list_compatibility_manifests(_app: AppHandle, _biz: Option<String>) -> Option<Vec<RunnerManifest>> { None }
+pub fn list_compatibility_manifests<R: Runtime>(_app: AppHandle<R>, _biz: Option<String>) -> Option<Vec<RunnerManifest>> { None }
 
 #[cfg(target_os = "linux")]
 #[tauri::command]
-pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> Option<RunnerManifest> {
+pub fn get_compatibility_manifest_by_manifest_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<RunnerManifest> {
     let db_manifest = get_manifest_info_by_id(&app, id.clone());
 
     if db_manifest.is_some() {
@@ -129,11 +129,11 @@ pub fn get_compatibility_manifest_by_manifest_id(app: AppHandle, id: String) -> 
 
 #[cfg(target_os = "windows")]
 #[tauri::command]
-pub fn get_compatibility_manifest_by_manifest_id(_app: AppHandle, _id: String) -> Option<RunnerManifest> { None }
+pub fn get_compatibility_manifest_by_manifest_id<R: Runtime>(_app: AppHandle<R>, _id: String) -> Option<RunnerManifest> { None }
 
 #[allow(unused_variables)]
 #[tauri::command]
-pub async fn override_manifest_url(app: AppHandle, filename: String, url: String) -> Option<bool> {
+pub async fn override_manifest_url<R: Runtime>(app: AppHandle<R>, filename: String, url: String) -> Option<bool> {
     // Moved reqwest calls fully to fischl so this is dirty disabled
     let text = "";
     let manifest: GameManifest = serde_json::from_str(&text).ok()?;
@@ -144,7 +144,7 @@ pub async fn override_manifest_url(app: AppHandle, filename: String, url: String
 }
 
 #[tauri::command]
-pub fn clear_manifest_override(app: AppHandle, filename: String) -> Option<bool> {
+pub fn clear_manifest_override<R: Runtime>(app: AppHandle<R>, filename: String) -> Option<bool> {
     let data_path = app.path().app_data_dir().unwrap();
     let manifests_path = data_path.join("manifests");
     for d in std::fs::read_dir(&manifests_path).ok()? {

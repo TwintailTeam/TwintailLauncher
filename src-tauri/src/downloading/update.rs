@@ -10,9 +10,9 @@ use std::fs;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool,AtomicU64,Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 
-pub fn register_update_handler(app: &AppHandle) {
+pub fn register_update_handler<R: Runtime>(app: &AppHandle<R>) {
     let a = app.clone();
     app.listen("start_game_update", move |event| {
         let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
@@ -30,7 +30,7 @@ pub fn register_update_handler(app: &AppHandle) {
     });
 }
 
-pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
+pub fn run_game_update<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let install_id = payload.install.clone();
     let install = match get_install_info_by_id(&h5, payload.install) {
@@ -132,7 +132,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                         let fnn = first.split('/').last().unwrap_or_default().to_string();
                         let archive_path = patching_path.join("staging").join(fnn);
                         let far = archive_path.to_str().unwrap().to_string();
-                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, {
+                        let ext = fischl::utils::extract_archive_with_progress(far, install.directory.clone(), false, None, {
                             let dlpayload = dlpayload.clone();
                             let h5 = h5.clone();
                             let instn = instn.clone();
@@ -214,7 +214,7 @@ pub fn run_game_update(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                                 let far = archive_path.to_str().unwrap().to_string();
                                 let hash = first.file_hash.clone();
                                 let ext = run_async_command(async {
-                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), {
+                                    <Game as Zipped>::patch(far, hash, install.directory.clone(), Some(picked.metadata.diff_list_url.game.clone()), {
                                         let dlpayload = dlpayload.clone();
                                         let h5 = h5.clone();
                                         let instn = instn.clone();

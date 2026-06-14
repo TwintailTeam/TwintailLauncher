@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Runtime, Emitter};
 
 use crate::downloading::QueueJobPayload;
 use crate::utils::db_manager::{get_install_info_by_id,get_manifest_info_by_id};
@@ -194,7 +194,7 @@ pub enum QueueJobOutcome {
     Cancelled,
 }
 
-fn emit_queue_state(app: &AppHandle, max_concurrent: usize, paused: bool, auto_paused: bool, active: &HashMap<String, QueueJobView>, queued: &VecDeque<QueueJobView>, completed: &VecDeque<QueueJobView>, paused_jobs: &HashMap<String, QueueJobView>, pausing_installs: &HashSet<String>) {
+fn emit_queue_state<R: Runtime>(app: &AppHandle<R>, max_concurrent: usize, paused: bool, auto_paused: bool, active: &HashMap<String, QueueJobView>, queued: &VecDeque<QueueJobView>, completed: &VecDeque<QueueJobView>, paused_jobs: &HashMap<String, QueueJobView>, pausing_installs: &HashSet<String>) {
     let payload = QueueStatePayload {
         max_concurrent,
         paused,
@@ -208,7 +208,7 @@ fn emit_queue_state(app: &AppHandle, max_concurrent: usize, paused: bool, auto_p
     let _ = app.emit("download_queue_state", payload);
 }
 
-pub fn start_download_queue_worker(app: AppHandle, initial_max_concurrent: usize, run_job: fn(AppHandle, QueueJob) -> QueueJobOutcome) -> DownloadQueueHandle {
+pub fn start_download_queue_worker<R: Runtime>(app: AppHandle<R>, initial_max_concurrent: usize, run_job: fn(AppHandle<R>, QueueJob) -> QueueJobOutcome) -> DownloadQueueHandle {
     let (tx, rx) = std::sync::mpsc::channel::<QueueCommand>();
     let (done_tx, done_rx) = std::sync::mpsc::channel::<(String, QueueJobOutcome)>();
 

@@ -8,9 +8,9 @@ use fischl::download::game::{Game, Kuro, Sophon, Zipped};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 
-pub fn register_repair_handler(app: &AppHandle) {
+pub fn register_repair_handler<R: Runtime>(app: &AppHandle<R>) {
     let a = app.clone();
     app.listen("start_game_repair", move |event| {
         let payload: DownloadGamePayload = serde_json::from_str(event.payload()).unwrap();
@@ -29,7 +29,7 @@ pub fn register_repair_handler(app: &AppHandle) {
     });
 }
 
-pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
+pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayload, job_id: String) -> QueueJobOutcome {
     let job_id = Arc::new(job_id);
     let install_id = payload.install.clone();
     let install = get_install_info_by_id(&h5, payload.install.clone());
@@ -128,7 +128,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                 let archive_path = repairing_path.join("staging").join(fnn.clone());
                 let far = archive_path.to_str().unwrap().to_string();
                 log::debug!("Download complete, starting extraction of {} (Multipart possible!) to {}", far, i.directory);
-                let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, None, {
                     let dlpayload = dlpayload.clone();
                     let h5 = h5.clone();
                     let instn = instn.clone();
@@ -321,7 +321,7 @@ pub fn run_game_repair(h5: AppHandle, payload: DownloadGamePayload, job_id: Stri
                     let file_install_size = e.decompressed_size.parse::<u64>().unwrap_or(0);
                     if !archive_path.exists() { log::debug!("Archive {} not found at expected path, cannot extract ({}/{})", far, file_idx + 1, total_files); ok = false; break; }
                     log::debug!("Extracting archive {} to {} ({}/{})", far, i.directory, file_idx + 1, total_files);
-                    let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, {
+                    let ext = fischl::utils::extract_archive_with_progress(far, i.directory.clone(), false, None, {
                         let dlpayload = dlpayload.clone();
                         let h5 = h5.clone();
                         let instn = instn.clone();

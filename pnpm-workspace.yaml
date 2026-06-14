@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@types/react@18.3.31'
+
+onlyBuiltDependencies:
+  - esbuild

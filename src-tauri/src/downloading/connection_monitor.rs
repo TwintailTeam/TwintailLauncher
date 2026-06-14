@@ -1,9 +1,9 @@
 use crate::DownloadState;
 use crate::downloading::queue::DownloadQueueHandle;
 use std::time::Duration;
-use tauri::{AppHandle,Emitter,Manager};
+use tauri::{AppHandle, Runtime,Emitter,Manager};
 
-pub fn start_connection_monitor(app: AppHandle) {
+pub fn start_connection_monitor<R: Runtime>(app: AppHandle<R>) {
     let app_handle = app.clone();
 
     std::thread::spawn(move || {

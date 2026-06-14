@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc};
 use std::{fs, io};
 use std::hash::Hash;
-use tauri::{AppHandle, Emitter, Listener, Manager};
+use tauri::{AppHandle, Runtime, Emitter, Listener, Manager};
 #[cfg(target_os = "linux")]
 use crate::utils::repo_manager::{get_compatibility, get_compatibilities};
 #[cfg(target_os = "linux")]
@@ -43,7 +43,7 @@ pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() { tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(cmd)) } else { tauri::async_runtime::block_on(cmd) }
 }
 
-pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String, install_name: String, install_type: String) -> io::Result<()> {
+pub fn copy_dir_all<R: Runtime>(app: &AppHandle<R>, src: impl AsRef<Path>, dst: impl AsRef<Path>, install: String, install_name: String, install_type: String) -> io::Result<()> {
     fn dir_size(path: &Path) -> io::Result<u64> {
         let mut size = 0;
         for entry in fs::read_dir(path)? {
@@ -99,7 +99,7 @@ pub fn copy_dir_all(app: &AppHandle, src: impl AsRef<Path>, dst: impl AsRef<Path
     Ok(())
 }
 
-pub fn register_listeners(app: &AppHandle) {
+pub fn register_listeners<R: Runtime>(app: &AppHandle<R>) {
     let h1 = app.clone();
     app.listen("launcher_action_exit", move |_event| {
         h1.get_window("main").unwrap().hide().unwrap();
@@ -135,7 +135,7 @@ pub fn register_listeners(app: &AppHandle) {
     });
 }
 
-pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>, variables: Option<std::collections::HashMap<&str, &str>>) {
+pub fn show_dialog_with_callback<R: Runtime>(app: &AppHandle<R>, dialog_type: &str, title: &str, message: &str, buttons: Option<Vec<&str>>, callback_id: Option<&str>, variables: Option<std::collections::HashMap<&str, &str>>) {
     #[derive(serde::Serialize, Clone)]
     struct DialogPayload {
         dialog_type: String, title: String, message: String,
@@ -158,7 +158,7 @@ pub fn show_dialog_with_callback(app: &AppHandle, dialog_type: &str, title: &str
 }
 
 #[cfg(target_os = "linux")]
-pub fn runner_from_runner_version(app: &AppHandle, runner_version: String) -> Option<String> {
+pub fn runner_from_runner_version<R: Runtime>(app: &AppHandle<R>, runner_version: String) -> Option<String> {
     if runner_version.is_empty() { return None; }
     let loader = get_compatibilities(app);
     for (filename, manifest) in &loader { if manifest.versions.iter().any(|v| v.version == runner_version) { return Some(filename.clone()); } }
@@ -202,7 +202,7 @@ pub fn get_mi_path_from_game(exe_name: String) -> Option<String> {
     }
 }
 
-pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool) {
+pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf, fix_mode: bool) {
     let defgpath = path.join("games");
     let xxmipath = path.join("extras").join("xxmi");
     let fpsunlockpath = path.join("extras").join("fps_unlock");
@@ -299,7 +299,7 @@ pub fn setup_or_fix_default_paths(app: &AppHandle, path: PathBuf, fix_mode: bool
 }
 
 #[cfg(target_os = "linux")]
-pub fn sync_installed_runners(app: &AppHandle) {
+pub fn sync_installed_runners<R: Runtime>(app: &AppHandle<R>) {
     let gs = get_settings(app);
     if gs.is_some() {
         let s = gs.unwrap();
@@ -396,7 +396,7 @@ pub fn sync_installed_runners(app: &AppHandle) {
     }
 }
 
-pub fn sync_install_backgrounds(app: &AppHandle) {
+pub fn sync_install_backgrounds<R: Runtime>(app: &AppHandle<R>) {
     if let Some(is) = get_installs(app) {
         log::debug!("Started background sync for {} installs", is.len());
         for i in is {
@@ -458,7 +458,7 @@ pub fn is_flatpak() -> bool {
 }
 
 #[cfg(target_os = "linux")]
-pub fn fix_window_decorations(app: &AppHandle) {
+pub fn fix_window_decorations<R: Runtime>(app: &AppHandle<R>) {
     let ssd = vec!["hyprland", "i3", "sway", "bspwm", "awesome", "dwm", "xmonad", "qtile", "niri", "mango", "mangowc"];
     match std::env::var("XDG_SESSION_DESKTOP") {
         Ok(val) => { if ssd.contains(&&**&val.to_ascii_lowercase()) { app.get_window("main").unwrap().set_decorations(false).unwrap(); } else { app.get_window("main").unwrap().set_decorations(true).unwrap(); } },
@@ -505,7 +505,7 @@ pub fn update_steam_compat_config(append_items: Vec<&str>) -> String {
 }
 
 #[cfg(target_os = "linux")]
-pub fn apply_patch(app: &AppHandle, dir: String, patch_type: String, mode: String) {
+pub fn apply_patch<R: Runtime>(app: &AppHandle<R>, dir: String, patch_type: String, mode: String) {
     let dir = Path::new(&dir);
     if dir.exists() {
         match patch_type.as_str() {
@@ -594,8 +594,18 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
     } else { data }
 }
 
-pub fn apply_wwmi_tweaks(base: PathBuf) {
-    let path = base.join("Client/Binaries/Win64/Kuro_Please_Add_Force_LOD0_For_Characters_To_Settings_Engine.ini");
+pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
+    let xxmi_base = Path::new(&xxmi_path).to_path_buf();
+    let d3dcompiler = xxmi_base.join("d3dcompiler_47.dll");
+    if d3dcompiler.exists() {
+        #[cfg(target_os = "linux")]
+        {
+            let d3d_target = base.join("Client/Binaries/Win64/d3dcompiler_47.dll");
+            let _ = std::os::unix::fs::symlink(&d3dcompiler, &d3d_target);
+        }
+    }
+
+    let path = base.join("Client/Config/UserEngine.ini");
     const SECTION: &str = "[ConsoleVariables]";
     const FIELDS: &[(&str, &str)] = &[
         ("r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", "-10"),
