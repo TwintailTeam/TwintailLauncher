@@ -34,14 +34,17 @@ pub struct DownloadState {
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+#[tauri::cef_entry_point]
 pub fn run() {
     let logger = tauri_plugin_log::Builder::new().filter(|metadata| !metadata.target().contains("h2")).filter(|metadata| !metadata.target().contains("tracing")).filter(|metadata| !metadata.target().contains("hyper")).max_file_size(8000000).clear_targets().targets([tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir { file_name: Some("twintaillauncher".to_string()) })]).rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(5)).timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal).level(if cfg!(debug_assertions) { log::LevelFilter::Trace } else { if std::env::var("TTL_DEBUG").is_ok() { log::LevelFilter::Debug } else { log::LevelFilter::Info } }).build();
     let builder = {
         #[cfg(target_os = "linux")]
         {
+            unsafe { std::env::set_var("DISPLAY", ""); }
             if std::env::var("TTL_BYPASS_NVIDIA_FIXES").is_err() { utils::gpu::fuck_nvidia(); }
             utils::raise_fd_limit(999999);
-            let base = tauri::Builder::<tauri::Wry>::new()
+            let base = tauri::Builder::<tauri::Cef>::new()
+                .command_line_args([("ozone-platform", Some("wayland"))])
                 .manage(ManifestLoaders {game: ManifestLoader::default(), runner: utils::repo_manager::RunnerLoader::default()})
                 .manage(DownloadState { tokens: Mutex::new(HashMap::new()), queue: Mutex::new(None), verified_files: Mutex::new(HashMap::new()) })
                 .plugin(tauri_plugin_dialog::init())
@@ -114,7 +117,7 @@ pub fn run() {
                 // Start connection monitor for auto-pause/resume on connectivity changes
                 downloading::connection_monitor::start_connection_monitor(handle.clone());
                 load_manifests(handle, data_dir.clone());
-                init_tray(handle).unwrap();
+                //init_tray(handle).unwrap();
                 // Initialize the listeners
                 register_listeners(handle);
                 register_download_handler(handle);

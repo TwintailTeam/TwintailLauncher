@@ -1,6 +1,6 @@
 [package]
 name = "twintaillauncher"
-version = "2.3.0"
+version = "2.3.0-cef"
 description = "A multi-platform launcher for your anime games"
 authors = ["TwintailTeam"]
 edition = "2024"
@@ -13,10 +13,10 @@ name = "twintaillauncher_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.6.2", features = [] }
+tauri-build = { git = "https://github.com/tauri-apps/tauri", branch = "feat/cef", features = [] }#{ version = "2.6.2", features = [] }
 
 [dependencies]
-tauri = { version = "2.11.2", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
+tauri = { version = "2.11.2", default-features = false, features = ["unstable", "common-controls-v6", "compression", "tray-icon", "image-ico", "image-png", "cef"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.52", features = ["sync"] }
 sqlx = { version = "0.9.0", features = ["sqlite", "json", "time", "runtime-tokio"] }
@@ -31,11 +31,15 @@ keepawake = "0.6.0"
 log = "0.4.32"
 
 # tauri plugins
-tauri-plugin-log = "2.8.0"
-tauri-plugin-dialog = "2.7.1"
-tauri-plugin-opener = "2.5.4"
-tauri-plugin-single-instance = "2.4.2"
-tauri-plugin-clipboard-manager = "2.3.2"
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "feat/cef" }#"2.8.0"
+tauri-plugin-dialog = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "feat/cef" }#"2.7.1"
+tauri-plugin-opener = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "feat/cef" }#"2.5.4"
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "feat/cef" }#"2.4.2"
+tauri-plugin-clipboard-manager = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "feat/cef" }#"2.3.2"
+
+[patch.crates-io]
+tauri = { git = "https://github.com/tauri-apps/tauri", branch = "feat/cef" }
+tauri-plugin = { git = "https://github.com/tauri-apps/tauri", branch = "feat/cef" }
 
 # Fuck NVIDIA btw
 [target."cfg(any(target_os = \"linux\", target_os = \"dragonfly\", target_os = \"freebsd\", target_os = \"openbsd\", target_os = \"netbsd\"))".dependencies]
