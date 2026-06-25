@@ -130,8 +130,6 @@
     "linux.runner_location.description": "Шлях до папки Wine/Proton.",
     "linux.prefix_location.label": "Розташування префікса",
     "linux.prefix_location.description": "Шлях до префікса Wine/Proton.",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Увімкнути патч Jadeite.",
     "linux.gamemode.label": "GameMode",
     "linux.gamemode.description": "Увімкнути GameMode від Feral Interactive.",
     "linux.mangohud.label": "MangoHUD",

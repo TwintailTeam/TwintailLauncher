@@ -153,7 +153,6 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 gameBackground: popupBanner,
                 ignoreUpdates: skipVersionUpdates,
                 skipHashCheck: disableHashValidation,
-                useJadeite: false,
                 useXxmi: false,
                 useFpsUnlock: false,
                 envVars: "",

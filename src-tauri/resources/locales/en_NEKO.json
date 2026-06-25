@@ -131,8 +131,6 @@
     "linux.runner_location.description": "Path to Wine/Pwoton foldew, nya~",
     "linux.prefix_location.label": "Pwefix Wocation",
     "linux.prefix_location.description": "Path to da Wine/Pwoton pwefix, nyaa~",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Enabwe Jadeite patch, nyaa~!! (shiny wike a gem!! OwO)",
     "linux.gamemode.label": "Gamemode",
     "linux.gamemode.description": "Enabwe Fewaw Intewactive's GameMode, nya~!! (FEWAW!! wike me when I don't get pettws!! >:3c)",
     "linux.mangohud.label": "MangoHUD",

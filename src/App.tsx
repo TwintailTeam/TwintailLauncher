@@ -171,9 +171,6 @@ export default class App extends React.Component<any, any> {
         const isXxmiDownloading = this.state.installSettings?.use_xxmi && allJobs.some((j: any) =>
             j.kind === 'xxmi_download' || (j.kind === 'extras_download' && xxmiPackageIds.includes(j.installId))
         );
-        const isJadeiteDownloading = this.state.installSettings?.use_jadeite && allJobs.some((j: any) =>
-            j.kind === 'extras_download' && j.installId === 'v5.0.1-hotfix'
-        );
         const isFpsUnlockDownloading = this.state.installSettings?.use_fps_unlock && allJobs.some((j: any) =>
             j.kind === 'extras_download' && j.installId === 'keqing_unlock'
         );
@@ -183,7 +180,7 @@ export default class App extends React.Component<any, any> {
         const isRunnerDownloading = isLinux && currentRunnerVersion && allJobs.some((j: any) =>
             j.kind === 'runner_download' && j.installId === currentRunnerVersion
         );
-        const extrasDownloading = !!(isXxmiDownloading || isJadeiteDownloading || isFpsUnlockDownloading || isSteamRTDownloading || isRunnerDownloading);
+        const extrasDownloading = !!(isXxmiDownloading || isFpsUnlockDownloading || isSteamRTDownloading || isRunnerDownloading);
 
         const primaryRunningJobId = runningJobs.length > 0 ? runningJobs[0].id : undefined;
         const primaryProgress = primaryRunningJobId ? this.state.downloadProgressByJobId?.[primaryRunningJobId] : undefined;

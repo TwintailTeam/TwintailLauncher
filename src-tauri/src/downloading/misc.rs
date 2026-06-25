@@ -400,10 +400,10 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
                         log::debug!("Failed to fetch TTL manifest for {package_id} during update check");
                         return false;
                     } else {
-                        let ap = if package_type.as_str() == "xxmi" || package_id.as_str() == "jadeite" || package_id == "keqingunlock" { path.clone() } else { path.join(&package_type) };
-                        let ver_path = if package_id == "keqingunlock" || package_id == "jadeite" || package_type == "xxmi" { path.join("VERSION.txt") } else { path.join(package_type.clone()).join("VERSION.txt") };
+                        let ap = if package_type.as_str() == "xxmi" || package_id == "keqingunlock" { path.clone() } else { path.join(&package_type) };
+                        let ver_path = if package_id == "keqingunlock" || package_type == "xxmi" { path.join("VERSION.txt") } else { path.join(package_type.clone()).join("VERSION.txt") };
                         if !ver_path.exists() { return false; }
-                        let pkg_type = if package_id == "keqingunlock" || package_id == "jadeite" { package_id.as_str() } else { package_type.as_str() };
+                        let pkg_type = if package_id == "keqingunlock" { package_id.as_str() } else { package_type.as_str() };
                         let local_ver = find_package_version(ver_path.clone(), &pkg_type);
                         if local_ver.is_some() {
                             let lv = local_ver.unwrap();

@@ -120,8 +120,6 @@
     "linux.runner_location.description": "Wine/Proton 資料夾的路徑",
     "linux.prefix_location.label": "Prefix 位置",
     "linux.prefix_location.description": "Wine/Proton Prefix 的路徑",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "啟用 Jadeite 修補程式",
     "linux.gamemode.label": "GameMode",
     "linux.gamemode.description": "啟用 Feral Interactive 的 GameMode",
     "linux.mangohud.label": "MangoHUD",

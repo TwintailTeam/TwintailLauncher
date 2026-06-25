@@ -130,8 +130,6 @@
     "linux.runner_location.description": "Path to Wine/Proton folder.",
     "linux.prefix_location.label": "Prefix Location",
     "linux.prefix_location.description": "Path to the Wine/Proton prefix.",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Enable Jadeite patch.",
     "linux.gamemode.label": "Gamemode",
     "linux.gamemode.description": "Enable Feral Interactive's GameMode.",
     "linux.mangohud.label": "MangoHUD",

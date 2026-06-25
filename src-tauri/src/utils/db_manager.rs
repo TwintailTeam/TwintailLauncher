@@ -191,6 +191,18 @@ pub async fn init_db<R: Runtime>(app: &AppHandle<R>, data_path: std::path::PathB
             sql: r#"ALTER TABLE settings ADD COLUMN app_lang TEXT DEFAULT 'en_US' NOT NULL;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 31,
+            description: "alter_install_table_use_jadeite_remove",
+            sql: r#"ALTER TABLE install DROP COLUMN use_jadeite;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 32,
+            description: "alter_settings_table_jadeite_path_remove",
+            sql: r#"ALTER TABLE settings DROP COLUMN jadeite_path;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -240,7 +252,6 @@ pub fn get_settings<R: Runtime>(app: &AppHandle<R>) -> Option<GlobalSettings> {
             default_game_path: rslt.get(0).unwrap().get("default_game_path"),
             xxmi_path: rslt.get(0).unwrap().get("xxmi_path"),
             fps_unlock_path: rslt.get(0).unwrap().get("fps_unlock_path"),
-            jadeite_path: rslt.get(0).unwrap().get("jadeite_path"),
             third_party_repo_updates: rslt.get(0).unwrap().get("third_party_repo_updates"),
             default_runner_prefix_path: rslt.get(0).unwrap().get("default_runner_prefix_path"),
             download_speed_limit: rslt.get(0).unwrap().get("download_speed_limit"),
@@ -284,14 +295,6 @@ pub fn update_settings_default_fps_unlock_location<R: Runtime>(app: &AppHandle<R
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE settings SET 'fps_unlock_path' = $1 WHERE id = 1").bind(path);
-        query.execute(&db).await.unwrap();
-    });
-}
-
-pub fn update_settings_default_jadeite_location<R: Runtime>(app: &AppHandle<R>, path: String) {
-    run_async_command(async {
-        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
-        let query = query("UPDATE settings SET 'jadeite_path' = $1 WHERE id = 1").bind(path);
         query.execute(&db).await.unwrap();
     });
 }
@@ -782,7 +785,6 @@ pub fn create_installation<R: Runtime>(
     game_background: String,
     ignore_updates: bool,
     skip_hash_check: bool,
-    use_jadeite: bool,
     use_xxmi: bool,
     use_fps_unlock: bool,
     env_vars: String,
@@ -805,7 +807,7 @@ pub fn create_installation<R: Runtime>(
 
         let max_order: i32 = query("SELECT COALESCE(MAX(sort_order), -1) as max_order FROM install").fetch_one(&db).await.unwrap().get("max_order");
         let next_order = max_order + 1;
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path, region_code, sort_order, steam_imported, graphics_api) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_jadeite).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path).bind(region_code).bind(next_order).bind(steam_import).bind(graphics_api);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path, region_code, sort_order, steam_imported, graphics_api) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path).bind(region_code).bind(next_order).bind(steam_import).bind(graphics_api);
         rslt = query.execute(&db).await.unwrap();
     });
 
@@ -873,7 +875,6 @@ pub fn get_install_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Opt
             game_background: rslt.get(0).unwrap().get("game_background"),
             ignore_updates: rslt.get(0).unwrap().get("ignore_updates"),
             skip_hash_check: rslt.get(0).unwrap().get("skip_hash_check"),
-            use_jadeite: rslt.get(0).unwrap().get("use_jadeite"),
             use_xxmi: rslt.get(0).unwrap().get("use_xxmi"),
             use_fps_unlock: rslt.get(0).unwrap().get("use_fps_unlock"),
             env_vars: rslt.get(0).unwrap().get("env_vars"),
@@ -942,7 +943,6 @@ pub fn get_installs_by_manifest_id<R: Runtime>(
                 game_background: r.get("game_background"),
                 ignore_updates: r.get("ignore_updates"),
                 skip_hash_check: r.get("skip_hash_check"),
-                use_jadeite: r.get("use_jadeite"),
                 use_xxmi: r.get("use_xxmi"),
                 use_fps_unlock: r.get("use_fps_unlock"),
                 env_vars: r.get("env_vars"),
@@ -1009,7 +1009,6 @@ pub fn get_installs<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherInstal
                 game_background: r.get("game_background"),
                 ignore_updates: r.get("ignore_updates"),
                 skip_hash_check: r.get("skip_hash_check"),
-                use_jadeite: r.get("use_jadeite"),
                 use_xxmi: r.get("use_xxmi"),
                 use_fps_unlock: r.get("use_fps_unlock"),
                 env_vars: r.get("env_vars"),
@@ -1164,24 +1163,6 @@ pub fn update_install_skip_hash_check_by_id<R: Runtime>(app: &AppHandle<R>, id: 
             .clone();
 
         let query = query("UPDATE install SET 'skip_hash_check' = $1 WHERE id = $2")
-            .bind(enabled)
-            .bind(id);
-        query.execute(&db).await.unwrap();
-    });
-}
-
-pub fn update_install_use_jadeite_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
-    run_async_command(async {
-        let db = app
-            .state::<DbInstances>()
-            .0
-            .lock()
-            .await
-            .get("db")
-            .unwrap()
-            .clone();
-
-        let query = query("UPDATE install SET 'use_jadeite' = $1 WHERE id = $2")
             .bind(enabled)
             .bind(id);
         query.execute(&db).await.unwrap();

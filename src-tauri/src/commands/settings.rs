@@ -1,4 +1,4 @@
-use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_app_lang, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_jadeite_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_download_speed_limit, update_settings_hide_app_to_tray, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
+use crate::utils::db_manager::{get_install_info_by_id, get_installed_runner_info_by_version, get_manifest_info_by_id, get_settings, update_settings_app_lang, update_settings_default_dxvk_location, update_settings_default_fps_unlock_location, update_settings_default_game_location, update_settings_default_mangohud_config_location, update_settings_default_prefix_location, update_settings_default_runner_location, update_settings_default_xxmi_location, update_settings_download_speed_limit, update_settings_hide_app_to_tray, update_settings_hide_manifests, update_settings_launch_action, update_settings_third_party_repo_update};
 use crate::utils::models::GlobalSettings;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{compare_version, get_mi_path_from_game, show_dialog_with_callback};
@@ -77,20 +77,6 @@ pub fn update_settings_default_fps_unlock_path<R: Runtime>(app: AppHandle<R>, pa
         update_settings_default_fps_unlock_location(&app, p.to_str().unwrap().parse().unwrap());
     }
     log::debug!("Updated default FPS unlock path to {}", path);
-    Some(true)
-}
-
-#[tauri::command]
-pub fn update_settings_default_jadeite_path<R: Runtime>(app: AppHandle<R>, path: String) -> Option<bool> {
-    let p = Path::new(&path);
-
-    if !p.exists() && p.is_dir() {
-        fs::create_dir_all(&p).unwrap();
-        update_settings_default_jadeite_location(&app, p.to_str().unwrap().parse().unwrap());
-    } else {
-        update_settings_default_jadeite_location(&app, p.to_str().unwrap().parse().unwrap());
-    }
-    log::debug!("Updated default Jadeite path to {}", path);
     Some(true)
 }
 

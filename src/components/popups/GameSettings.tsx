@@ -415,14 +415,6 @@ export default function GameSettings({
                                     value={`${installSettings.runner_prefix}`}
                                     onChange={(val) => handleUpdate("prefix_path", val)}
                                 />
-                                {prefetchedSwitches.jadeite && isLinux && (
-                                    <ModernToggle
-                                        label={translate("game_settings.linux.jadeite.label")}
-                                        description={translate("game_settings.linux.jadeite.description")}
-                                        checked={installSettings.use_jadeite}
-                                        onChange={(val) => handleUpdate("use_jadeite", val)}
-                                    />
-                                )}
                                 <ModernToggle
                                     label={translate("game_settings.linux.gamemode.label")}
                                     description={translate("game_settings.linux.gamemode.description")}

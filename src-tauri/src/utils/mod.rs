@@ -2,7 +2,7 @@ use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settin
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{
     create_installed_runner, get_installed_runner_info_by_version, get_installed_runners, update_installed_runner_is_installed_by_version,
-    update_settings_default_dxvk_location, update_settings_default_jadeite_location,
+    update_settings_default_dxvk_location,
     update_settings_default_prefix_location, update_settings_default_runner_location,
 };
 use crate::utils::models::{DialogResponse,XXMISettings};
@@ -222,7 +222,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
                 let wine = comppath.join("runners");
                 let dxvk = comppath.join("dxvk");
                 let prefixes = comppath.join("prefixes");
-                let jadeitepath = path.join("extras").join("jadeite");
                 let mangohudcfg = app.path().home_dir().unwrap().join(".config/MangoHud/MangoHud.conf");
 
                 // steamrt setup
@@ -243,7 +242,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
                     }
                 }
 
-                if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
                 if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
                 if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap();update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
                 if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
@@ -260,7 +258,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
             let prefixes = comppath.join("prefixes");
-            let jadeitepath = path.join("extras").join("jadeite");
             let mangohudcfg = app.path().home_dir().unwrap().join(".config/MangoHud/MangoHud.conf");
 
             // steamrt setup
@@ -282,7 +279,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
             }
 
             if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); } else { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
-            if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap();update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
                 fs::create_dir_all(&dxvk).unwrap();
