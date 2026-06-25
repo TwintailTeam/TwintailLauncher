@@ -657,8 +657,10 @@ pub fn update_install_runner_version<R: Runtime>(app: AppHandle<R>, id: String, 
 
     if install.is_some() {
         let m = install.unwrap();
-        let rp = m.runner_path.clone();
-        let rpn = rp.replace(m.runner_version.as_str(), version.as_str());
+        let rpn = get_installed_runner_info_by_version(&app, version.clone()).map(|r| r.runner_path).unwrap_or_else(|| {
+                let gs = get_settings(&app).unwrap();
+                Path::new(&gs.default_runner_path).join(&version).to_str().unwrap().to_string()
+            });
         if !Path::exists(rpn.as_ref()) { if let Err(_) = fs::create_dir_all(rpn.clone()) { return Some(false); } }
 
         if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
