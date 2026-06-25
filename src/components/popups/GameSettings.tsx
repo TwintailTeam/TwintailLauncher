@@ -77,6 +77,7 @@ export default function GameSettings({
 }: GameSettingsProps) {
     const [activeTab, setActiveTab] = useState("general");
     const [authkeyCopyState, setAuthkeyCopyState] = useState<"idle" | "copying" | "copied" | "failed">("idle");
+    const [pullUrlCopyState, setPullUrlCopyState] = useState<"idle" | "copying" | "copied" | "failed">("idle");
     const [wipePrefixOnUninstall, setWipePrefixOnUninstall] = useState(false);
     const [showUninstallReview, setShowUninstallReview] = useState(false);
     const [uninstallAcknowledged, setUninstallAcknowledged] = useState(false);
@@ -186,6 +187,9 @@ export default function GameSettings({
     const isAuthkeyCopying = authkeyCopyState === "copying";
     const isAuthkeyCopied = authkeyCopyState === "copied";
     const isAuthkeyFailed = authkeyCopyState === "failed";
+    const isPullUrlCopying = pullUrlCopyState === "copying";
+    const isPullUrlCopied = pullUrlCopyState === "copied";
+    const isPullUrlFailed = pullUrlCopyState === "failed";
 
     const handleInlineUninstall = async () => {
         if (!canUninstall) return;
@@ -636,7 +640,7 @@ export default function GameSettings({
                                                 if (isAuthkeyCopying) { return; }
                                                 setAuthkeyCopyState("copying");
                                                 try {
-                                                    const copied = await invoke<boolean>("copy_authkey", { id: installSettings.id });
+                                                    const copied = await invoke<boolean>("copy_authkey", { id: installSettings.id, mode: "authkey" });
                                                     if (copied) {
                                                         setAuthkeyCopyState("copied");
                                                         setTimeout(() => setAuthkeyCopyState("idle"), 2400);
@@ -659,6 +663,38 @@ export default function GameSettings({
                                             <div className="flex flex-col">
                                                 <span className="font-bold">{isAuthkeyCopying ? translate("game_settings.manage.copy_authkey.copying") : isAuthkeyCopied ? translate("game_settings.manage.copy_authkey.copied") : isAuthkeyFailed ? translate("game_settings.manage.copy_authkey.failed") : translate("game_settings.manage.copy_authkey")}</span>
                                                 <span className={`text-xs ${isAuthkeyCopied ? "text-emerald-300" : isAuthkeyFailed ? "text-red-300" : "text-zinc-400"}`}>{isAuthkeyCopying ? translate("game_settings.manage.copy_authkey.copying_description") : isAuthkeyCopied ? translate("game_settings.manage.copy_authkey.copied_description") : isAuthkeyFailed ? translate("game_settings.manage.copy_authkey.failed_description") : <>{translate("game_settings.manage.copy_authkey.description")} <span className="text-purple-400">aivo.minlor.net/hoyo</span></>}</span>
+                                            </div>
+                                        </button>
+                                    )}
+                                    {gameBiz && (gameBiz.startsWith("hk4e") || gameBiz.startsWith("hkrpg") || gameBiz.startsWith("nap") || gameBiz.startsWith("bh3") || gameBiz.startsWith("abc") || gameBiz.startsWith("hyg") || gameBiz.startsWith("wuwa")) && (
+                                        <button
+                                            onClick={async () => {
+                                                if (isPullUrlCopying) { return; }
+                                                setPullUrlCopyState("copying");
+                                                try {
+                                                    const copied = await invoke<boolean>("copy_authkey", { id: installSettings.id, mode: "full_url" });
+                                                    if (copied) {
+                                                        setPullUrlCopyState("copied");
+                                                        setTimeout(() => setPullUrlCopyState("idle"), 2400);
+                                                    } else {
+                                                        setPullUrlCopyState("failed");
+                                                        setTimeout(() => setPullUrlCopyState("idle"), 2600);
+                                                    }
+                                                } catch (e) {
+                                                    console.error("Failed to copy pullurl:", e);
+                                                    setPullUrlCopyState("failed");
+                                                    setTimeout(() => setPullUrlCopyState("idle"), 2600);
+                                                }
+                                            }}
+                                            disabled={isPullUrlCopying}
+                                            className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-white text-left ${isPullUrlCopying ? "bg-purple-900/25 border-purple-400/30 cursor-wait" : ""} ${isPullUrlCopied ? "bg-emerald-900/25 border-emerald-400/40" : ""} ${isPullUrlFailed ? "bg-red-900/25 border-red-400/35" : ""} ${!isPullUrlCopying && !isPullUrlCopied && !isPullUrlFailed ? "bg-zinc-800/50 hover:bg-zinc-700/50 border-white/5 hover:border-white/20" : ""}`}>
+                                            {isPullUrlCopying && <Loader2 className="w-6 h-6 text-purple-300 animate-spin" />}
+                                            {isPullUrlCopied && <Check className="w-6 h-6 text-emerald-300" />}
+                                            {isPullUrlFailed && <X className="w-6 h-6 text-red-300" />}
+                                            {!isPullUrlCopying && !isPullUrlCopied && !isPullUrlFailed && <Copy className="w-6 h-6 text-purple-400" />}
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">{isPullUrlCopying ? translate("game_settings.manage.copy_pullurl.copying") : isPullUrlCopied ? translate("game_settings.manage.copy_pullurl.copied") : isPullUrlFailed ? translate("game_settings.manage.copy_pullurl.failed") : translate("game_settings.manage.copy_pullurl")}</span>
+                                                <span className={`text-xs ${isPullUrlCopied ? "text-emerald-300" : isPullUrlFailed ? "text-red-300" : "text-zinc-400"}`}>{isPullUrlCopying ? translate("game_settings.manage.copy_pullurl.copying_description") : isPullUrlCopied ? translate("game_settings.manage.copy_pullurl.copied_description") : isPullUrlFailed ? translate("game_settings.manage.copy_pullurl.failed_description") : <>{translate("game_settings.manage.copy_pullurl.description")}</>}</span>
                                             </div>
                                         </button>
                                     )}

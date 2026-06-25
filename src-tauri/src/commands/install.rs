@@ -2,7 +2,7 @@ use crate::utils::db_manager::{create_installation, delete_installation_by_id, g
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
-use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
+use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content, extract_pullurl_from_content};
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -1103,7 +1103,7 @@ pub fn remove_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortc
 
 
 #[tauri::command]
-pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
+pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String, mode: String) -> bool {
     let install = get_install_info_by_id(&app, id).unwrap();
     let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
     let gm = get_manifest(&app, manifest.filename).unwrap();
@@ -1114,13 +1114,22 @@ pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
         let prefix_exists = prefix.join("pfx/").exists();
         if prefix_exists {
             let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
-            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
+            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz.clone(), install.region_code));
             if engine_log.exists() {
-                let log_content = fs::read_to_string(engine_log);
+                let log_content = if gm.biz == "wuwa_global" { fs::read(&engine_log).map(|b| unsafe { String::from_utf8_unchecked(b) }) } else { fs::read_to_string(&engine_log) };
                 return match log_content {
                     Ok(content) => {
-                        let authkey = extract_authkey_from_content(&content);
-                        if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                        match mode.as_str() {
+                            "authkey" => {
+                                let authkey = extract_authkey_from_content(&content);
+                                if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                            }
+                            "full_url" => {
+                                let url = extract_pullurl_from_content(&content, gm.biz.clone());
+                                if let Some(uri) = url { match app.clipboard().write_text(uri) { Ok(_) => true, Err(_) => false } } else { false }
+                            }
+                            _ => { return false; }
+                        }
                     },
                     Err(_) => { false }
                 }
@@ -1131,13 +1140,22 @@ pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
     #[cfg(target_os = "windows")]
     {
         let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
-        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
+        let engine_log = base.join(get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz.clone(), install.region_code));
         if engine_log.exists() {
-            let log_content = fs::read_to_string(engine_log);
+            let log_content = if gm.biz == "wuwa_global" { fs::read(&engine_log).map(|b| unsafe { String::from_utf8_unchecked(b) }) } else { fs::read_to_string(&engine_log) };
             match log_content {
                 Ok(content) => {
-                    let authkey = extract_authkey_from_content(&content);
-                    if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                    match mode.as_str() {
+                        "authkey" => {
+                            let authkey = extract_authkey_from_content(&content);
+                            if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                        }
+                        "full_url" => {
+                            let url = extract_pullurl_from_content(&content, gm.biz.clone());
+                            if let Some(uri) = url { match app.clipboard().write_text(uri) { Ok(_) => true, Err(_) => false } } else { false }
+                        }
+                        _ => { return false; }
+                    }
                 },
                 Err(_) => { false }
             }

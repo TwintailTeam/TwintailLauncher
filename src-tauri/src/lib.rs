@@ -63,14 +63,6 @@ pub fn run() {
         }
     }.setup(|app| {
             let handle = app.handle();
-            #[cfg(all(target_arch = "x86_64", target_os = "windows"))]
-            if utils::is_windows_arm_translation() {
-                use tauri_plugin_dialog::DialogExt;
-                let h = handle.clone();
-                handle.dialog().message("TwintailLauncher does not support running under Windows ARM x86_64 emulation (Prism).").kind(tauri_plugin_dialog::MessageDialogKind::Warning).title("Unsupported Architecture").show(move |_| { let h = h.clone(); h.cleanup_before_exit(); h.exit(0); std::process::exit(0); });
-                return Ok(());
-            }
-
             #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
             {
                 // Why in the absolute fuck is fedora atomic garbage distros doing /home -> var/home symlink???
@@ -122,16 +114,16 @@ pub fn run() {
                 register_repair_handler(handle);
                 register_preload_handler(handle);
 
+                setup_or_fix_default_paths(handle, data_dir.clone(), true);
+                sync_install_backgrounds(handle);
+                check_extras_update(handle);
+
                 if args::get_launch_install().is_some() {
                     let id = args::get_launch_install().unwrap();
                     game_launch(handle.clone(), id);
                     handle.get_window("main").unwrap().hide().unwrap();
                     app.emit("sync_tray_toggle", "Show").unwrap();
                 }
-
-                setup_or_fix_default_paths(handle, data_dir.clone(), true);
-                sync_install_backgrounds(handle);
-                check_extras_update(handle);
 
                 // https://github.com/tauri-apps/tauri/issues/14596
                 #[cfg(target_os = "windows")]

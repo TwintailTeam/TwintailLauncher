@@ -416,18 +416,6 @@ pub fn sync_install_backgrounds<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", target_os = "windows"))]
-pub fn is_windows_arm_translation() -> bool {
-    #[link(name = "kernel32")]
-    unsafe extern "system" {
-        fn GetCurrentProcess() -> *mut core::ffi::c_void;
-        fn IsWow64Process2(h_process: *mut core::ffi::c_void, p_process_machine: *mut u16, p_native_machine: *mut u16) -> i32;
-    }
-    let mut process_machine: u16 = 0;
-    let mut native_machine: u16 = 0;
-    unsafe { IsWow64Process2(GetCurrentProcess(), &mut process_machine, &mut native_machine) != 0 && native_machine == 0xAA64 }
-}
-
 #[cfg(target_os = "linux")]
 #[allow(non_camel_case_types)]
 pub fn raise_fd_limit(new_limit: i32) {
@@ -858,6 +846,38 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
         if let Ok(uri) = fischl::utils::parse_url(url.parse().unwrap()) {
             for (key, value) in uri.query_pairs() { if key.eq_ignore_ascii_case("authkey") && value.len() > 10 { return Some(value.into_owned()); } }
         }
+    }
+    None
+}
+
+pub fn extract_pullurl_from_content(content: &str, biz: String) -> Option<String> {
+    if biz == "wuwa_global" {
+        let decrypted: String = content.bytes().map(|byte| { (byte ^ if (byte & 0x0F) % 2 == 1 { 0xA5 } else { 0xEF }) as char }).collect();
+        let mut urls = Vec::new();
+        let mut offset = 0;
+        while offset < decrypted.len() {
+            let next = decrypted[offset..].find("https://");
+            if next.is_none() { break; }
+            let start = offset + next.unwrap();
+            let sliced = &decrypted[start..];
+            let end = sliced.find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>').unwrap_or(sliced.len());
+            urls.push(&sliced[..end]);
+            offset = start + "https://".len();
+        }
+        let hints = vec!["aki-game"];
+        for url in urls.into_iter().rev() {
+            let lowered = url.to_ascii_lowercase();
+            if !hints.iter().any(|h| lowered.contains(h)) { continue; }
+            if fischl::utils::parse_url(url.parse().unwrap()).is_ok() { return Some(url.to_string()); }
+        }
+        return None;
+    }
+    let urls = collect_authkey_urls(content);
+    let hints = vec!["webview_gacha"];
+    for url in urls.into_iter().rev() {
+        let lowered = url.to_ascii_lowercase();
+        if !hints.iter().any(|h| lowered.contains(h)) { continue; }
+        if fischl::utils::parse_url(url.parse().unwrap()).is_ok() { return Some(url.to_string()); }
     }
     None
 }
