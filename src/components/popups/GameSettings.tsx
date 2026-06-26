@@ -456,6 +456,12 @@ export default function GameSettings({
                                     onChange={(val) => handleUpdateXxmiConfig({ xxmiSw: val })}
                                 />
                                 <ModernToggle
+                                    label={translate("game_settings.xxmi.cache_shaders.label")}
+                                    description={translate("game_settings.xxmi.cache_shaders.description")}
+                                    checked={!!xxmiConfig.cache_shaders}
+                                    onChange={(val) => handleUpdateXxmiConfig({ xxmiSc: val })}
+                                />
+                                <ModernToggle
                                     label={translate("game_settings.xxmi.dump_shaders.label")}
                                     description={translate("game_settings.xxmi.dump_shaders.description")}
                                     checked={!!xxmiConfig.dump_shaders}

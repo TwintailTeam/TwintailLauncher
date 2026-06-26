@@ -208,8 +208,9 @@ pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: 
             let downloading_marker = install_location.join("downloading");
             if !downloading_marker.exists() { let _ = fs::create_dir_all(&downloading_marker); }
         }
+        let xxmi_cfg = Json(XXMISettings { hunting_mode: 0, require_admin: true, dll_init_delay: 500, close_delay: 20, show_warnings: 0, dump_shaders: false, cache_shaders: 0 });
         let default_graphics_api = gm.extra.graphics_api_options.default.clone();
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api, xxmi_cfg).unwrap();
         log::info!("Created installation {} (\"{}\")", cuid, name);
         Some(AddInstallRsp {
             success: true,
@@ -488,7 +489,7 @@ pub fn update_install_mangohud_config_path<R: Runtime>(app: AppHandle<R>, id: St
 }
 
 #[tauri::command]
-pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, _engineini_tweaks: Option<bool>) -> Option<bool> {
+pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, xxmi_sc: Option<bool>) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -501,8 +502,10 @@ pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxm
             close_delay: m.xxmi_config.close_delay,
             show_warnings: m.xxmi_config.show_warnings,
             dump_shaders: m.xxmi_config.dump_shaders,
+            cache_shaders: m.xxmi_config.cache_shaders
         });
         if xxmi_hunting.is_some() { data.hunting_mode = xxmi_hunting?; }
+        if xxmi_sc.is_some() { data.cache_shaders = if xxmi_sc? { 1 } else { 0 } }
         if xxmi_sd.is_some() { data.dump_shaders = xxmi_sd?; }
         if xxmi_sw.is_some() { data.show_warnings = if xxmi_sw? { 1 } else { 0 } }
 

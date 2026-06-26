@@ -101,6 +101,8 @@
     "xxmi.show_warnings.description": "顯示模組解析警告，以便除錯損壞的模組",
     "xxmi.dump_shaders.label": "匯出著色器",
     "xxmi.dump_shaders.description": "啟用著色器匯出，以供模組開發使用",
+    "xxmi.cache_shaders.label": "Cache Shaders",
+    "xxmi.cache_shaders.description": "Enable shader cache of XXMI.",
     "xxmi.hunting_mode.label": "狩獵模式（Hunting Mode）",
     "xxmi.hunting_mode.description": "狩獵模式（Hunting Mode）用於模組開發過程中的除錯和元素定位，此處指定 XXMI 應該如何處理注入行為",
     "xxmi.hunting_mode.disabled": "停用（一般 Mod 玩家使用者應選擇此項）",

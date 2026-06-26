@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "Показувати попередження парсингу модів, щоб налагоджувати несправні моди.",
     "xxmi.dump_shaders.label": "Дамп шейдерів",
     "xxmi.dump_shaders.description": "Увімкнути дамп шейдерів для розробки модів.",
+    "xxmi.cache_shaders.label": "Cache Shaders",
+    "xxmi.cache_shaders.description": "Enable shader cache of XXMI.",
     "xxmi.hunting_mode.label": "Режим полювання",
     "xxmi.hunting_mode.description": "Вибери, як має поводитись режим полювання XXMI.",
     "xxmi.hunting_mode.disabled": "Вимкнено",

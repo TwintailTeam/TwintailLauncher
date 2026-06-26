@@ -110,6 +110,8 @@
     "xxmi.show_warnings.description": "Show mod pawse wawnings fow debugging bwoken mods. (bwoken mods make me sad nya~ ;_;)",
     "xxmi.dump_shaders.label": "Dump Shadews",
     "xxmi.dump_shaders.description": "Enabwe shadew dumping fow mod devewopment, nyaa~ (fow da hawd wowking moddews!!)",
+    "xxmi.cache_shaders.label": "Cache Shaders",
+    "xxmi.cache_shaders.description": "Enable shader cache of XXMI.",
     "xxmi.hunting_mode.label": "Hunting Mode (GRRR!!)",
     "xxmi.hunting_mode.description": "Choose how XXMI hunting mode behaves, nya~ (hunt!! get!! catch!! OwO)",
     "xxmi.hunting_mode.disabled": "Disabwed (da kitty is westin~~ -.-)",

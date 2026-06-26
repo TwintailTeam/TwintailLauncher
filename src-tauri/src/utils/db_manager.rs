@@ -799,6 +799,7 @@ pub fn create_installation<R: Runtime>(
     region_code: String,
     steam_import: bool,
     graphics_api: String,
+    xxmi_config: Json<XXMISettings>
 ) -> Result<bool, Error> {
     let mut rslt = SqliteQueryResult::default();
 
@@ -807,7 +808,7 @@ pub fn create_installation<R: Runtime>(
 
         let max_order: i32 = query("SELECT COALESCE(MAX(sort_order), -1) as max_order FROM install").fetch_one(&db).await.unwrap().get("max_order");
         let next_order = max_order + 1;
-        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path, region_code, sort_order, steam_imported, graphics_api) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path).bind(region_code).bind(next_order).bind(steam_import).bind(graphics_api);
+        let query = query("INSERT INTO install(id, manifest_id, version, name, directory, runner_path, dxvk_path, runner_version, dxvk_version, game_icon, game_background, ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix_path, launch_args, audio_langs, use_gamemode, use_mangohud, mangohud_config_path, region_code, xxmi_config, sort_order, steam_imported, graphics_api) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)").bind(id).bind(manifest_id).bind(version).bind(name).bind(directory).bind(runner_path).bind(dxvk_path).bind(runner_version).bind(dxvk_version).bind(game_icon).bind(game_background).bind(ignore_updates).bind(skip_hash_check).bind(use_xxmi).bind(use_fps_unlock).bind(env_vars).bind(pre_launch_command).bind(launch_command).bind(fps_value).bind(runner_prefix_path).bind(launch_args).bind(audio_langs).bind(use_gamemode).bind(use_mangohud).bind(mangohud_config_path).bind(region_code).bind(xxmi_config).bind(next_order).bind(steam_import).bind(graphics_api);
         rslt = query.execute(&db).await.unwrap();
     });
 

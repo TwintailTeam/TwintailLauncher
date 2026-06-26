@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "Mod-Parse-Warnungen anzeigen, um defekte Mods zu debuggen.",
     "xxmi.dump_shaders.label": "Shader dumpen",
     "xxmi.dump_shaders.description": "Shader-Dumping für die Mod-Entwicklung aktivieren.",
+    "xxmi.cache_shaders.label": "Cache Shaders",
+    "xxmi.cache_shaders.description": "Enable shader cache of XXMI.",
     "xxmi.hunting_mode.label": "Hunting-Modus",
     "xxmi.hunting_mode.description": "Wähle aus, wie sich der XXMI-Hunting-Modus verhalten soll.",
     "xxmi.hunting_mode.disabled": "Deaktiviert",

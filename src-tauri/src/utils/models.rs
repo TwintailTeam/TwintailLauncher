@@ -16,6 +16,8 @@ pub struct XXMISettings {
     pub close_delay: u64,
     pub show_warnings: u64,
     pub dump_shaders: bool,
+    #[serde(default)]
+    pub cache_shaders: u64
 }
 
 // === DATABASE ===
