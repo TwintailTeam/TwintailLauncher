@@ -35,10 +35,6 @@ pub mod shortcuts;
 pub mod system_tray;
 pub mod discord_rpc;
 
-pub fn generate_cuid() -> String {
-    cuid2::create_id()
-}
-
 pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() { tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(cmd)) } else { tauri::async_runtime::block_on(cmd) }
 }

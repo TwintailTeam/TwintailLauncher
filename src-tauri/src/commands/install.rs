@@ -2,7 +2,7 @@ use crate::utils::db_manager::{create_installation, delete_installation_by_id, g
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
-use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, get_engine_log_from_game, extract_authkey_from_content, extract_pullurl_from_content};
+use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, get_mi_path_from_game, show_dialog_with_callback, get_engine_log_from_game, extract_authkey_from_content, extract_pullurl_from_content};
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -59,7 +59,7 @@ pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: 
         None
     } else {
         let gs = get_settings(&app).unwrap();
-        let cuid = generate_cuid();
+        let cuid = uuid::Uuid::now_v7().to_string();
         let m = manifest_id + ".json";
         let dbm = get_manifest_info_by_filename(&app, m.clone()).unwrap();
         let gm = get_manifest(&app, m.clone()).unwrap();

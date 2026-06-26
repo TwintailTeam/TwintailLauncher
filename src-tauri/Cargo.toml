@@ -18,10 +18,10 @@ tauri-build = { version = "2.6.3", features = [] }
 [dependencies]
 tauri = { version = "2.11.3", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
 serde = { version = "1", features = ["derive"] }
-tokio = { version = "1.52", features = ["sync"] }
-sqlx = { version = "0.9.0", features = ["sqlite", "json", "time", "runtime-tokio"] }
+tokio = { version = "1.52", features = ["sync", "rt"] }
+uuid = { version = "1", features = ["v7"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["sqlite", "json", "migrate", "runtime-tokio"] }
 serde_json = "1"
-cuid2 = "0.1"
 gumdrop = "0.8.1"
 fischl = { git = "https://github.com/TwintailTeam/fischl-rs.git", branch = "master", features = ["compat", "download"] }
 git2 = { version = "0.21", features = ["https", "vendored-libgit2", "vendored-openssl"] }
@@ -48,9 +48,6 @@ shortcuts-rs = "1.1.1"
 opt-level = 1
 incremental = true
 overflow-checks = false
-
-[profile.dev.package."*"]
-opt-level = 3
 
 [profile.release]
 panic = "abort"
