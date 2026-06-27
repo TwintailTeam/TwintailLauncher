@@ -1156,6 +1156,24 @@ pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String, mode: String) -> 
     }
 }
 
+#[tauri::command]
+pub fn validate_path_exists<R: Runtime>(app: AppHandle<R>, manifest_id: String, directory: String, mode: String) -> bool {
+    match mode.as_str() {
+        "game" => {
+            let m = manifest_id.clone() + ".json";
+            match get_manifest(&app, m.clone()) { Some(gm) => Path::new(&directory).join(&gm.paths.exe_filename).exists(), None => false }
+        }
+        "runner" => {
+            let mf = runner_from_runner_version(&app, manifest_id.clone()).unwrap();
+            match get_compatibility(&app, &mf) { Some(rm) => {
+                let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32.clone() } else { rm.paths.wine64.clone() };
+                Path::new(&directory).join(wine64).exists()
+            }, None => false }
+        }
+        _ => { false }
+    }
+}
+
 fn enqueue_extras_download<R: Runtime>(app: &AppHandle<R>, path: String, package_id: String, package_type: String, update_mode: bool) {
     let state = app.state::<DownloadState>();
     let q = state.queue.lock().unwrap().clone();

@@ -233,7 +233,8 @@
     "cancel": "Cancel",
     "install_button": "Install Game",
     "locate_button": "Locate Game",
-    "use_existing_install": "Use existing install"
+    "use_existing_install": "Use existing install",
+    "exe_not_found": "Game executable not found in this path, please pick a directory containing game executable."
   },
 
   "game_button": {

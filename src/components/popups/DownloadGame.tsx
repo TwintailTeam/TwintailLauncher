@@ -78,6 +78,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
     let def_path = window.navigator.platform.includes("Linux") ? `${settings.default_game_path}/${biz}` : `${settings.default_game_path}\\${biz}`;
     // Controlled State for Install Path
     const [installPath, setInstallPath] = useState(`${def_path}`);
+    const [exeExists, setExeExists] = useState(true);
     // Controlled State for Proton Prefix Path
     const [runnerPrefixPath, setRunnerPrefixPath] = useState(`${settings.default_runner_prefix_path}/${biz}`);
     // Controlled State for skip version updates
@@ -91,6 +92,13 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
             fetchDownloadSizes(biz, selectedGameVersion, selectedAudioLang, installPath, selectedRegionCode, () => { });
         }
     }, [installPath, selectedGameVersion, selectedAudioLang, selectedRegionCode]);
+
+    useEffect(() => {
+        if (skipGameDownload && installPath && biz) {
+            // @ts-ignore
+            invoke("validate_path_exists", { manifestId: biz, directory: installPath, mode: "game" }).then(setExeExists);
+        }
+    }, [installPath, skipGameDownload, biz]);
 
     // Animation state
     const [isClosing, setIsClosing] = useState(false);
@@ -109,7 +117,11 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
         const btn = document.getElementById("game_dl_btn");
         if (btn) {
             if (skipGameDownload) {
-                btn.removeAttribute("disabled");
+                if (exeExists) {
+                    btn.removeAttribute("disabled");
+                } else {
+                    btn.setAttribute("disabled", "");
+                }
             } else {
                 if (!hasEnoughSpace) {
                     btn.setAttribute("disabled", "");
@@ -118,7 +130,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 }
             }
         }
-    }, [skipGameDownload, hasEnoughSpace]);
+    }, [skipGameDownload, hasEnoughSpace, exeExists]);
 
     const handleBrowse = async () => {
         const selected = await open({
@@ -128,6 +140,10 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
         });
         if (selected && typeof selected === "string") {
             setInstallPath(selected);
+            if (skipGameDownload) {
+                // @ts-ignore
+                invoke("validate_path_exists", { manifestId: biz, directory: selected, mode: "game" }).then(setExeExists);
+            }
         }
     };
 
@@ -324,6 +340,13 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                                 )}
                             </div>
                         )}
+                        {skipGameDownload && !exeExists && (
+                            <div className="bg-red-500/10 px-4 pb-4 border-t border-white/5">
+                                <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                                    <X size={12} /> {translate("install_game.exe_not_found")}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {biz === "bh3_global" && (
@@ -395,7 +418,7 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 <button
                     id="game_dl_btn"
                     onClick={handleInstall}
-                    disabled={!hasEnoughSpace && !skipGameDownload}
+                    disabled={(!hasEnoughSpace && !skipGameDownload) || (skipGameDownload && !exeExists)}
                     className={`
                         relative overflow-hidden px-8 py-3 rounded-xl font-bold text-white shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]
                         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
