@@ -1,9 +1,10 @@
 ---
 name: Bug report
 about: Report issues about TTL
-title: "[BUG] "
+title: ''
 labels: Bug, Oh shit! I need help
 assignees: ''
+type: Bug
 
 ---
 
