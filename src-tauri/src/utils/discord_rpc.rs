@@ -30,8 +30,9 @@ pub fn init<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameMa
     let ver = app.config().version.clone().unwrap_or_default();
     let small_txt = format!("TwintailLauncher v{ver}");
     let details = install.name[..install.name.rfind(" (").and_then(|ri| install.name[..ri].rfind(' ')).unwrap_or(install.name.len())].to_string();
+    let platform_string = if cfg!(target_os = "linux") { "Linux" } else if cfg!(target_os = "windows") { "Windows" } else { "MacOS" };
 
-    let payload = activity::Activity::new().activity_display_type(activity::ActivityDisplayType::Details).activity_type(activity::ActivityType::Playing).details(&details).state("In Game").timestamps(activity::Timestamps::new().start(start)).assets(activity::Assets::new().large_image(icon_key).large_text(&install.name).small_image("tl_512").small_text(&small_txt));
+    let payload = activity::Activity::new().activity_display_type(activity::ActivityDisplayType::Details).activity_type(activity::ActivityType::Playing).details(&details).state(format!("In Game on {platform_string}").as_str()).timestamps(activity::Timestamps::new().start(start)).assets(activity::Assets::new().large_image(icon_key).large_text(&install.name).small_image("tl_512").small_text(&small_txt));
     let _ = client.set_activity(payload);
     log::info!("Discord RPC initialized for {} (ID: {})!", install.name, install.id);
     Some(client)
