@@ -203,6 +203,18 @@ pub async fn init_db<R: Runtime>(app: &AppHandle<R>, data_path: std::path::PathB
             sql: r#"ALTER TABLE settings DROP COLUMN jadeite_path;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 33,
+            description: "alter_install_table_use_gamescope",
+            sql: r#"ALTER TABLE install ADD COLUMN use_gamescope bool DEFAULT false NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 34,
+            description: "alter_install_table_gamescope_args",
+            sql: r#"ALTER TABLE install ADD COLUMN gamescope_args TEXT DEFAULT '' NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -898,6 +910,8 @@ pub fn get_install_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Opt
             disable_system_idle: rslt.get(0).unwrap().get("disable_system_idle"),
             steam_imported: rslt.get(0).unwrap().get("steam_imported"),
             graphics_api: rslt.get(0).unwrap().get("graphics_api"),
+            use_gamescope: rslt.get(0).unwrap().get("use_gamescope"),
+            gamescope_args: rslt.get(0).unwrap().get("gamescope_args"),
         };
 
         Some(rsltt)
@@ -966,6 +980,8 @@ pub fn get_installs_by_manifest_id<R: Runtime>(
                 disable_system_idle: r.get("disable_system_idle"),
                 steam_imported: r.get("steam_imported"),
                 graphics_api: r.get("graphics_api"),
+                use_gamescope: r.get("use_gamescope"),
+                gamescope_args: r.get("gamescope_args"),
             })
         }
 
@@ -1032,6 +1048,8 @@ pub fn get_installs<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherInstal
                 disable_system_idle: r.get("disable_system_idle"),
                 steam_imported: r.get("steam_imported"),
                 graphics_api: r.get("graphics_api"),
+                use_gamescope: r.get("use_gamescope"),
+                gamescope_args: r.get("gamescope_args"),
             })
         }
 
@@ -1545,6 +1563,24 @@ pub fn update_install_disable_system_idle_by_id<R: Runtime>(app: &AppHandle<R>, 
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
 
         let query = query("UPDATE install SET 'disable_system_idle' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_use_gamescope_by_id<R: Runtime>(app: &AppHandle<R>, id: String, enabled: bool) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'use_gamescope' = $1 WHERE id = $2").bind(enabled).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_gamescope_args_by_id<R: Runtime>(app: &AppHandle<R>, id: String, args: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+
+        let query = query("UPDATE install SET 'gamescope_args' = $1 WHERE id = $2").bind(args).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

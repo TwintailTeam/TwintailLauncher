@@ -123,6 +123,12 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
     if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
+    let gamescope_ok = if install.use_gamescope && !install.gamescope_args.is_empty() && !crate::utils::is_flatpak() {
+        let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamescope").exists());
+        if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.gamescope_not_found", Some(vec!["dialogs.buttons.i_understand"]), None, None); }
+        found
+    } else { install.use_gamescope };
+
     let gamemode_ok = if install.use_gamemode && !crate::utils::is_flatpak() {
         let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamemoderun").exists());
         if !found { show_dialog_with_callback(app, "warning", "TwintailLauncher", "dialogs.gamemode_not_found", Some(vec!["dialogs.buttons.i_understand"]), None, None); }
@@ -136,10 +142,11 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
     };
 
+    let final_cmd = if gamescope_ok { format!("gamescope {} -- {default_command}", install.gamescope_args) } else { default_command.clone() };
     let rslt = if install.launch_command.is_empty() {
         let mut cmd = Command::new("bash");
         cmd.arg("-c");
-        cmd.arg(&default_command);
+        cmd.arg(&final_cmd);
 
         cmd.env("SteamGameId", if gm.biz == "wuwa_global" { "3513350".to_string() } else { appid.clone().to_string() });
         cmd.env("SteamOS", "1");

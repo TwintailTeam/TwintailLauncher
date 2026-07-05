@@ -112,7 +112,7 @@ export default function GameSettings({
             } else if (key.includes("path")) {
                 // Path commands use { id, path }
                 payload.path = value;
-            } else if (key === "launch_args") {
+            } else if (key === "launch_args" || key === "gamescope_args") {
                 // update_install_launch_args uses { id, args }
                 payload.args = value;
             } else if (key === "env_vars") {
@@ -434,6 +434,31 @@ export default function GameSettings({
                                     folder={false}
                                     extensions={["conf"]}
                                     onChange={(val) => handleUpdate("mangohud_config_path", val)}
+                                />
+                                <ModernToggle
+                                    label={translate("game_settings.linux.gamescope.label")}
+                                    description={translate("game_settings.linux.gamescope.description")}
+                                    checked={installSettings.use_gamescope}
+                                    onChange={(val) => handleUpdate("use_gamescope", val)}
+                                />
+                                <ModernInput
+                                    label={translate("game_settings.linux.gamescope_args.label")}
+                                    placeholder={"-w 1920 -h 1080 -W 3440 -H 1440 -b"}
+                                    description={translate("game_settings.linux.gamescope_args.description")}
+                                    value={installSettings.gamescope_args || ""}
+                                    onChange={(e) => handleUpdate("gamescope_args", e.target.value)}
+                                    helpText={[
+                                        translate("game_settings.linux.help.gamescope_args"),
+                                        `- -w / -h = ${translate("game_settings.linux.help.gamescope_arg.wh")}`,
+                                        `- -W / -H = ${translate("game_settings.linux.help.gamescope_arg.WH")}`,
+                                        `- -r = ${translate("game_settings.linux.help.gamescope_arg.ffrate")}`,
+                                        `- -o = ${translate("game_settings.linux.help.gamescope_arg.ufrate")}`,
+                                        `- -F = ${translate("game_settings.linux.help.gamescope_arg.upscaler")}`,
+                                        `- -S = ${translate("game_settings.linux.help.gamescope_arg.scaling")}`,
+                                        `- -b = ${translate("game_settings.linux.help.gamescope_arg.borderless")}`,
+                                        `- -f = ${translate("game_settings.linux.help.gamescope_arg.fullscreen")}`,
+                                        `${translate("game_settings.linux.help.gamescope_arg.extra_help")}`,
+                                    ].join("\n")}
                                 />
                             </div>
                         </SettingsSection>

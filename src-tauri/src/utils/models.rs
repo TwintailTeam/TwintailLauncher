@@ -100,6 +100,8 @@ pub struct LauncherInstall {
     pub disable_system_idle: bool,
     pub steam_imported: bool,
     pub graphics_api: String,
+    pub use_gamescope: bool,
+    pub gamescope_args: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
