@@ -533,6 +533,7 @@
     "unsupported_predownload_mode": "不支援的預下載模式！",
     "unsupported_repair_mode": "不支援的修復下載模式！",
     "repo_clone_failed": "無法克隆儲存庫或儲存庫缺少清單！",
-    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature."
+    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope and XXMI are not supported for this game, Please choose only to use one of these tools!"
   }
 }

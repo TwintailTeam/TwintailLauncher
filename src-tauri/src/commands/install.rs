@@ -393,6 +393,12 @@ pub fn update_install_use_xxmi<R: Runtime>(app: AppHandle<R>, id: String, enable
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let lm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
+        let gm = get_manifest(&app, lm.filename).unwrap();
+        if m.use_gamescope && (gm.biz == "wuwa_global" || gm.biz == "endfield_global") {
+            show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.gamescope_xxmi_combo_unsupported", None, None, None);
+            return Some(false);
+        }
         let p = Path::new(&settings.xxmi_path).to_path_buf();
         let ps = p.to_str().unwrap().to_string();
         log::debug!("XXMI {} for install {}", if enabled { "enabled" } else { "disabled" }, m.id);
@@ -1180,6 +1186,12 @@ pub fn update_install_use_gamescope<R: Runtime>(app: AppHandle<R>, id: String, e
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let lm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
+        let gm = get_manifest(&app, lm.filename).unwrap();
+        if m.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global")  {
+            show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.gamescope_xxmi_combo_unsupported", None, None, None);
+            return Some(false);
+        }
         update_install_use_gamescope_by_id(&app, m.id, enabled);
         Some(true)
     } else {

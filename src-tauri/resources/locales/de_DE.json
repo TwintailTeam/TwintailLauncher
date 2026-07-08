@@ -533,6 +533,7 @@
     "unsupported_predownload_mode": "Nicht unterstützter Download-Modus für den Vorab-Download!",
     "unsupported_repair_mode": "Nicht unterstützter Download-Modus für die Reparatur!",
     "repo_clone_failed": "Repository konnte nicht geklont werden oder dem Repository fehlt ein Manifest!",
-    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature."
+    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope and XXMI are not supported for this game, Please choose only to use one of these tools!"
   }
 }

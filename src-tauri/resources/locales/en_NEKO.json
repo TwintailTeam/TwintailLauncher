@@ -533,6 +533,7 @@
     "unsupported_predownload_mode": "Unsuppowted downwoad mode fow pwedownwoad!! >:3 (dis is not how any of dis wowks nyaa~!!)",
     "unsupported_repair_mode": "Unsuppowted downwoad mode fow wepaiw!! >:3 (wepaiw mode is confwused nyaa~!!)",
     "repo_clone_failed": "Faiwed to cwone wepositowy, ow the wepositowy is missing a manifest, nyaa~!! >_<",
-    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature."
+    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope and XXMI are not supported for this game, Please choose only to use one of these tools!"
   }
 }
