@@ -585,7 +585,8 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         }
     }
 
-    let path = base.join("Client/Config/UserEngine.ini");
+    // The parser and handler for writing the ini configs is extremely cursed, tukan will touch you inappropriately if this breaks
+    /*let path = base.join("Client/Config/UserEngine.ini");
     const SECTION: &str = "[ConsoleVariables]";
     const FIELDS: &[(&str, &str)] = &[
         ("r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", "-10"),
@@ -596,6 +597,7 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         ("r.Streaming.LimitPoolSizeToVRAM", "1"),
         ("r.Streaming.UseFixedPoolSize", "1"),
     ];
+    let managed_keys: std::collections::HashSet<&str> = FIELDS.iter().map(|(k, _)| *k).collect();
 
     let block: String = FIELDS.iter().fold(format!("{}\r\n", SECTION), |mut s, (k, v)| {
         s.push_str(&format!("{}={}\r\n", k, v));
@@ -613,24 +615,30 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         return;
     }
 
-    // Early return if all fields already correct
+    // Early return if all fields already correct, flag and deal with illegal ones too
     let all_correct = {
         let mut in_section = false;
         let mut matched = vec![false; FIELDS.len()];
+        let mut has_stale = false;
+        let mut has_misplaced = false;
         for line in content.lines() {
             let tr = line.trim();
-            if tr.starts_with('[') && tr.ends_with(']') { in_section = tr == SECTION; } else if in_section && !tr.starts_with(';') && tr.contains('=') {
-                let mut parts = tr.splitn(2, '=');
-                let key = parts.next().unwrap_or("").trim();
-                let val = parts.next().unwrap_or("").trim();
-                if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) { if FIELDS[i].1 == val { matched[i] = true; } }
+            if tr.starts_with('[') && tr.ends_with(']') { in_section = tr == SECTION; }
+            else if !tr.starts_with(';') && !tr.starts_with('#') && tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if in_section {
+                    if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
+                        let val = tr.splitn(2, '=').nth(1).unwrap_or("").trim();
+                        if FIELDS[i].1 == val { matched[i] = true; }
+                    } else { has_stale = true; }
+                } else if managed_keys.contains(key) { has_misplaced = true; }
             }
         }
-        matched.iter().all(|&m| m)
+        matched.iter().all(|&m| m) && !has_stale && !has_misplaced
     };
     if all_correct { return; }
 
-    // Section exists — fix wrong/missing field values in-place, append missing keys at end of section
+    // Enforce FIELDS and clean up misplaced keys
     let mut in_section = false;
     let mut written = vec![false; FIELDS.len()];
     let mut out: Vec<String> = Vec::new();
@@ -640,16 +648,39 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
             if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); written[i] = true; } } }
             in_section = tr == SECTION;
             out.push(format!("{}\r\n", tr));
-        } else if in_section && !tr.starts_with(';') && tr.contains('=') {
-            let key = tr.splitn(2, '=').next().unwrap_or("").trim();
-            if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
-                out.push(format!("{}={}\r\n", FIELDS[i].0, FIELDS[i].1));
-                written[i] = true;
-            } else { out.push(format!("{}\r\n", tr)); }
-        } else { out.push(format!("{}\r\n", tr)); }
+        } else if in_section {
+            if tr.starts_with(';') || tr.starts_with('#') || tr.is_empty() { out.push(format!("{}\r\n", tr)); }
+            else if tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
+                    out.push(format!("{}={}\r\n", FIELDS[i].0, FIELDS[i].1));
+                    written[i] = true;
+                }
+            }
+        } else {
+            if !tr.starts_with(';') && !tr.starts_with('#') && !tr.is_empty() && tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if managed_keys.contains(key) { continue; }
+            }
+            out.push(format!("{}\r\n", tr));
+        }
     }
     if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); } } }
-    let _ = fs::write(&path, out.concat());
+
+    // Remove empty section headers left after cleanup
+    let mut cleaned: Vec<String> = Vec::new();
+    let mut i = 0;
+    while i < out.len() {
+        let line = out[i].trim();
+        if line.starts_with('[') && line.ends_with(']') {
+            let mut j = i + 1;
+            while j < out.len() && out[j].trim().is_empty() { j += 1; }
+            if j >= out.len() || out[j].trim().starts_with('[') { i = j; continue; }
+        }
+        cleaned.push(out[i].clone());
+        i += 1;
+    }
+    let _ = fs::write(&path, cleaned.concat());*/
 }
 
 pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {

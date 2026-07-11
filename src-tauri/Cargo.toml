@@ -16,7 +16,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
-tauri = { version = "2.11.3", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
+tauri = { version = "2.11.5", features = ["unstable", "tray-icon", "image-ico", "image-png"] }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1.52", features = ["sync", "rt"] }
 uuid = { version = "1", features = ["v7"] }
