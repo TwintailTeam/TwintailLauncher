@@ -574,6 +574,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
     } else { data }
 }
 
+#[allow(unused_variables)]
 pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
     let xxmi_base = Path::new(&xxmi_path).to_path_buf();
     let d3dcompiler = xxmi_base.join("d3dcompiler_47.dll");
@@ -922,6 +923,31 @@ pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: Str
     if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
     if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()
+}
+
+pub fn sanitize_cmd(cmd: &str) -> String {
+    let mut s = cmd.trim_start();
+    loop {
+        let eq = match s.find('=') {
+            Some(i) if i > 0 => i,
+            _ => break,
+        };
+        let key = &s[..eq];
+        if !key.bytes().next().map_or(false, |b| b.is_ascii_alphabetic() || b == b'_')
+            || !key.bytes().skip(1).all(|b| b.is_ascii_alphanumeric() || b == b'_') {
+            break;
+        }
+        let val = &s[eq + 1..];
+        let skip = if val.starts_with('"') {
+            val[1..].find('"').map_or(val.len(), |i| i + 2)
+        } else if val.starts_with('\'') {
+            val[1..].find('\'').map_or(val.len(), |i| i + 2)
+        } else {
+            val.find(' ').unwrap_or(val.len())
+        };
+        s = s[eq + 1 + skip..].trim_start();
+    }
+    s.to_string()
 }
 
 // === LinkedHashMap ===

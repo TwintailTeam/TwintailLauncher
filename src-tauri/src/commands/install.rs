@@ -1170,11 +1170,16 @@ pub fn validate_path_exists<R: Runtime>(app: AppHandle<R>, manifest_id: String, 
             match get_manifest(&app, m.clone()) { Some(gm) => Path::new(&directory).join(&gm.paths.exe_filename).exists(), None => false }
         }
         "runner" => {
-            let mf = runner_from_runner_version(&app, manifest_id.clone()).unwrap();
-            match get_compatibility(&app, &mf) { Some(rm) => {
-                let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32.clone() } else { rm.paths.wine64.clone() };
-                Path::new(&directory).join(wine64).exists()
-            }, None => false }
+            #[cfg(target_os = "linux")]
+            {
+                let mf = runner_from_runner_version(&app, manifest_id.clone()).unwrap();
+                match get_compatibility(&app, &mf) { Some(rm) => {
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32.clone() } else { rm.paths.wine64.clone() };
+                    Path::new(&directory).join(wine64).exists()
+                }, None => false }
+            }
+            #[cfg(target_os = "windows")]
+            false
         }
         _ => { false }
     }

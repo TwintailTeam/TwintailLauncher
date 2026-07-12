@@ -211,7 +211,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         true
     } else {
         // We assume user knows what he/she is doing so we just execute command that is configured without any checks
-        let c = install.launch_command.clone();
+        let c = crate::utils::sanitize_cmd(&install.launch_command);
         let mut args = install.launch_args.clone();
         let mut command = format!("{c}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str()));
 
@@ -574,7 +574,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
 
         let full_path = std::path::Path::new(dir).join(&tmp);
         let full_path_str = full_path.to_str().unwrap().replace("/", "\\");
-        let c = install.launch_command.clone().replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
+        let c = crate::utils::sanitize_cmd(&install.launch_command).replace("%install_dir%", dir).replace("%game_exe%", full_path_str.as_str());
         let mut args = install.launch_args.clone();
 
         let xxmi_forced = install.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global" || gm.biz == "nap_global");
