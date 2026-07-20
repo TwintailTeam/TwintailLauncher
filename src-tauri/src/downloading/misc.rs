@@ -444,6 +444,8 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
                                                     let _ = fs::copy(&source_lib, &linkedpath);
                                                 }
                                             }
+                                            // FFS create empty Mods/ folder if its not extracted for a package... just why we cant package software properly
+                                            if !path.join(mi).join("Mods").exists() { let _ = fs::create_dir_all(path.join(mi).join("Mods")); }
                                         }
                                         app.emit("update_complete", package_id.clone()).unwrap();
                                         log::debug!("Successfully updated {package_id} to version {}", p.version);
@@ -506,6 +508,8 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
                                 let _ = fs::copy(&source_lib, &linkedpath);
                             }
                         }
+                        // FFS create empty Mods/ folder if its not extracted for a package... just why we cant package software properly
+                        if !path.join(mi).join("Mods").exists() { let _ = fs::create_dir_all(path.join(mi).join("Mods")); }
                     }
                     app.emit("download_complete", package_id.clone()).unwrap();
                     log::debug!("Finished downloading {package_id}");

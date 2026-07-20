@@ -139,19 +139,19 @@
     "linux.mangohud_config.label": "Конфігурація MangoHUD",
     "linux.mangohud_config.description": "Конфігураційний файл MangoHUD для завантаження.",
     "linux.gamescope.label": "Gamescope",
-    "linux.gamescope.description": "Enable ValveSoftware's Gamescope.",
-    "linux.gamescope_args.label": "Gamescope Arguments",
-    "linux.gamescope_args.description": "Additional arguments passed to Gamescope.",
-    "linux.help.gamescope_args": "Available arguments:",
-    "linux.help.gamescope_arg.wh": "Resolution of game window. If -h is specified but -w is not 16:9 aspect ratio is assumed. Defaults to the values specified in -W and -H",
-    "linux.help.gamescope_arg.WH": "Resolution of gamescope. Resizing gamescope window will update these settings. Ignored in embedded mode. If -H is specified but -W is not 16:9 aspect ratio is assumed. Defaults to 1280×720",
-    "linux.help.gamescope_arg.ffrate": "Framerate limit for the game. Specified in frames per second. Defaults to unlimited",
-    "linux.help.gamescope_arg.ufrate": "Framerate limit for the game when unfocused. Specified in frames per second. Defaults to unlimited",
-    "linux.help.gamescope_arg.upscaler": "Upscaling mode for the game. AMD FidelityFX Super Resolution 1.0 is used when set to fsr, NVIDIA Image Scaling 1.0.3 is used when set to nis",
-    "linux.help.gamescope_arg.scaling": "Scaling option for gamescope, Can be set to either integer or stretch, when set to stretch the game will fill the window. (e.g. 4:3 to 16:9)",
-    "linux.help.gamescope_arg.borderless": "Create a borderless window",
-    "linux.help.gamescope_arg.fullscreen": "Create a fullscreen window",
-    "linux.help.gamescope_arg.extra_help": "For more options check gamescope --help",
+    "linux.gamescope.description": "Увімкнути ValveSoftware Gamescope.",
+    "linux.gamescope_args.label": "Аргументи Gamescope",
+    "linux.gamescope_args.description": "Додаткові аргументи, що передаються Gamescope.",
+    "linux.help.gamescope_args": "Доступні аргументи:",
+    "linux.help.gamescope_arg.wh": "Роздільна здатність вікна гри. Якщо вказано -h, але не -w, приймається співвідношення сторін 16:9. За замовчуванням використовуються значення, вказані в -W і -H",
+    "linux.help.gamescope_arg.WH": "Роздільна здатність Gamescope. Зміна розміру вікна Gamescope оновить ці налаштування. Ігнорується у вбудованому режимі. Якщо вказано -H, але не -W, приймається співвідношення сторін 16:9. За замовчуванням 1280×720",
+    "linux.help.gamescope_arg.ffrate": "Обмеження частоти кадрів для гри. Вказується в кадрах на секунду. За замовчуванням без обмежень",
+    "linux.help.gamescope_arg.ufrate": "Обмеження частоти кадрів для гри, коли вікно не в фокусі. Вказується в кадрах на секунду. За замовчуванням без обмежень",
+    "linux.help.gamescope_arg.upscaler": "Режим апскейлінгу для гри. AMD FidelityFX Super Resolution 1.0 використовується при fsr, NVIDIA Image Scaling 1.0.3 — при nis",
+    "linux.help.gamescope_arg.scaling": "Параметр масштабування для Gamescope. Можна встановити integer або stretch. При stretch гра заповнює вікно (напр., 4:3 до 16:9)",
+    "linux.help.gamescope_arg.borderless": "Створити безрамкове вікно",
+    "linux.help.gamescope_arg.fullscreen": "Створити повноекранне вікно",
+    "linux.help.gamescope_arg.extra_help": "Для отримання додаткових параметрів перегляньте gamescope --help",
 
     "manage.title": "Керування інсталяцією",
     "manage.open_game_folder": "Відкрити папку гри",
@@ -533,8 +533,8 @@
     "unsupported_predownload_mode": "Непідтримуваний режим завантаження для попереднього завантаження!",
     "unsupported_repair_mode": "Непідтримуваний режим завантаження для відновлення!",
     "repo_clone_failed": "Не вдалося клонувати репозиторій або у репозиторії відсутній маніфест!",
-    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature.",
-    "gamescope_xxmi_combo_unsupported": "Gamescope and XXMI are not supported for this game, Please choose only to use one of these tools!"
+    "gamescope_not_found": "ValveSoftware Gamescope увімкнено, але `gamescope` не знайдено у PATH. Гра запуститься без Gamescope.\nВстановіть пакет `gamescope` або аналогічний пакет вашого дистрибутива, щоб скористатися цією функцією.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope та XXMI не підтримуються для цієї гри. Будь ласка, оберіть лише один із цих інструментів!"
   }
 }
 

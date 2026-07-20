@@ -1,6 +1,10 @@
 # Custom
 node_sources.json
 src-tauri/cargo_sources.json
+ttl-bin/
+ttl-stable-src/
+ttl-git/
+flathub/
 
 # Logs
 logs

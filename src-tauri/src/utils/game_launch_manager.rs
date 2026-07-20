@@ -31,7 +31,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     let runner = runnerpi.to_str().unwrap().to_string();
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
-    let toolid = get_steam_tool_appid(runnerpi);
+    let toolid = get_steam_tool_appid(runnerpi.clone());
     let steamrtpp = runnerp.join("steamrt/").join(toolid.clone());
     let steamrt_path = steamrtpp.to_str().unwrap().to_string();
     let steamrtp = steamrtpp.join("_v2-entry-point");
@@ -45,6 +45,13 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
         show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.launch_steamrt_broken", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+        return Ok(false);
+    }
+
+    // Hate this as much as users will but dw runners do not support modding
+    if install.use_xxmi && (runner.to_lowercase().contains("dw") || crate::utils::get_steam_tool_name(runnerpi.clone()).to_lowercase().contains("dw")) {
+        log::info!("Attempted to launch {} with blacklisted runner (Runner: {})! Please do not use this runner.", install.name, install.runner_version);
+        show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
         return Ok(false);
     }
 

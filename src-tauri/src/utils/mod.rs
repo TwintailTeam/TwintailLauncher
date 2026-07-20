@@ -736,7 +736,7 @@ pub fn is_using_overriden_runner(installed_runner: String, override_runner: Stri
 
 #[allow(dead_code)]
 pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    const EXCEPTIONS: &[&str] = &["Mods/", "ShaderCache/", "ShaderFixes/", "d3dx_user.ini", "gimi/", "srmi/", "zzmi/", "himi/", "wwmi/", "ssmi/", "efmi/"];
+    const EXCEPTIONS: &[&str] = &["Mods/", "mods/", "ShaderCache/", "ShaderFixes/", "d3dx_user.ini", "gimi/", "srmi/", "zzmi/", "himi/", "wwmi/", "ssmi/", "efmi/"];
     if dir.as_ref().exists() {
         for entry in fs::read_dir(dir.as_ref())? {
             let entry = entry?;
@@ -837,6 +837,25 @@ pub fn get_steam_tool_appid(path: PathBuf) -> String {
                     if let Some(value_start) = trimmed[..start].rfind('"') {
                         let appid = &trimmed[value_start + 1..start];
                         if let Some(runtime) = SteamRTType::from_tool_appid(appid) { return runtime.runtime_name().to_string(); }
+                    }
+                }
+            }
+        }
+    }
+    String::new()
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_steam_tool_name(path: PathBuf) -> String {
+    let manifest_path = path.join("compatibilitytool.vdf");
+    if let Ok(manifest_str) = fs::read_to_string(&manifest_path) {
+        for line in manifest_str.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("\"display_name\"") {
+                if let Some(start) = trimmed.rfind('"') {
+                    if let Some(value_start) = trimmed[..start].rfind('"') {
+                        let appid = &trimmed[value_start + 1..start];
+                        return appid.to_string()
                     }
                 }
             }
