@@ -9,17 +9,17 @@ importers:
   .:
     dependencies:
       '@floating-ui/react':
-        specifier: ^0.27.19
-        version: 0.27.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^0.27.20
+        version: 0.27.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
       '@tauri-apps/plugin-dialog':
-        specifier: ^2.7.1
-        version: 2.7.1
+        specifier: ^2.7.2
+        version: 2.7.2
       framer-motion:
-        specifier: ^12.41.0
-        version: 12.41.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^12.42.2
+        version: 12.42.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       lucide-react:
         specifier: ^0.487.0
         version: 0.487.0(react@18.3.1)
@@ -43,11 +43,11 @@ importers:
         specifier: ^4.7.0
         version: 4.7.0(vite@5.4.21)
       autoprefixer:
-        specifier: ^10.5.1
-        version: 10.5.1(postcss@8.5.15)
+        specifier: ^10.5.4
+        version: 10.5.4(postcss@8.5.22)
       postcss:
-        specifier: ^8.5.15
-        version: 8.5.15
+        specifier: ^8.5.22
+        version: 8.5.22
       tailwind-scrollbar:
         specifier: ^3.1.0
         version: 3.1.0(tailwindcss@3.4.19)
@@ -288,26 +288,26 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@floating-ui/core@1.7.5':
-    resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
+  '@floating-ui/core@1.8.0':
+    resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
 
-  '@floating-ui/dom@1.7.6':
-    resolution: {integrity: sha512-9gZSAI5XM36880PPMm//9dfiEngYoC6Am2izES1FF406YFsjvyBMmeJ2g4SAju3xWwtuynNRFL2s9hgxpLI5SQ==}
+  '@floating-ui/dom@1.8.0':
+    resolution: {integrity: sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg==}
 
-  '@floating-ui/react-dom@2.1.8':
-    resolution: {integrity: sha512-cC52bHwM/n/CxS87FH0yWdngEZrjdtLW/qVruo68qg+prK7ZQ4YGdut2GyDVpoGeAYe/h899rVeOVm6Oi40k2A==}
+  '@floating-ui/react-dom@2.1.9':
+    resolution: {integrity: sha512-JDjEFGCpImxDCA7JJKviA0M9+RtmJdj0m/NVU5IMgBK+AmZouAQQ7/+2GLH0GXXY0YMw9oXPB8hKdbPYg5QLYg==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
 
-  '@floating-ui/react@0.27.19':
-    resolution: {integrity: sha512-31B8h5mm8YxotlE7/AU/PhNAl8eWxAmjL/v2QOxroDNkTFLk3Uu82u63N3b6TXa4EGJeeZLVcd/9AlNlVqzeog==}
+  '@floating-ui/react@0.27.20':
+    resolution: {integrity: sha512-CMqMy7OaXl9W0eq1Uy7L7i2Y/anPvHmFmESd2CEw0t5YvZhcVCeo4MBevAmswRllX7Y2dEidA4ozGPunLSTQpw==}
     peerDependencies:
       react: '>=17.0.0'
       react-dom: '>=17.0.0'
 
-  '@floating-ui/utils@0.2.11':
-    resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+  '@floating-ui/utils@0.2.12':
+    resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -557,8 +557,8 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
-  '@tauri-apps/plugin-dialog@2.7.1':
-    resolution: {integrity: sha512-OK1UBXYt+ojcmxMktzzuyonYIFta8CmAASpX+CA+DTGK24KlHjhYI6x2iOJ/TjZF4N7/ACK1oFmEOjIY9IhzOQ==}
+  '@tauri-apps/plugin-dialog@2.7.2':
+    resolution: {integrity: sha512-pX0IGm1I3I6wc+zeKYcq1GSqogK6okCNX5fOdaNU5ab1AjGS6l1E5wFNjEb7meg7ZFSp0JUs+0jQGQNyOvLrsg==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -602,15 +602,15 @@ packages:
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
 
-  autoprefixer@10.5.1:
-    resolution: {integrity: sha512-jwM2pcTuCWUoN70FEvf5XrXyDbUgRURK4FnU8v0jWZZYU/KkVvN9T33mu1sVLFY9JW3kTWzKheEpn6xYLRc/VA==}
+  autoprefixer@10.5.4:
+    resolution: {integrity: sha512-MaU0U/za7N3r6brxD4YB/l4NSrFzLPlANv6wEuQVaIPlD3L4W9rFcQPbL/EilY9BHhHvhfcz3gInDLrEtWT4EA==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
       postcss: ^8.1.0
 
-  baseline-browser-mapping@2.10.38:
-    resolution: {integrity: sha512-31/02mVB4yuQU6adKk5SlY6m+mxDwUq5KZkyYgnLrrKl7TEm1+3PyDtDBz2kOv/wxZz41GHsvV1A/u6RmiyBvw==}
+  baseline-browser-mapping@2.11.1:
+    resolution: {integrity: sha512-HYXq73DDpCtNzOmrFsm9eSwCvWCql0RzqjpDzXN9EadiLJ4DNat0nsZ/Bzmy+Ud12mb4/zKDY0cQ805ZzN+i0A==}
     engines: {node: '>=6.0.0'}
     hasBin: true
 
@@ -622,8 +622,8 @@ packages:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
 
-  browserslist@4.28.4:
-    resolution: {integrity: sha512-MTc8i/x9jBQd1iMw2CFGS+rwMa07eYjLR0CCTLDACl9xhxy+nIs3KeML/biicXtk9JrZ6dnnTatmc7ErPXIxqw==}
+  browserslist@4.28.7:
+    resolution: {integrity: sha512-JxV13hNrFxqjOc8alRbq9dK1MM79NEXYpma2B2J4wAtpWS5zIEIKqWPGCl7N4o7Uc7B7itylh7SuDujATRyyTw==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
@@ -631,8 +631,8 @@ packages:
     resolution: {integrity: sha512-QOSvevhslijgYwRx6Rv7zKdMF8lbRmx+uQGx2+vDc+KI/eBnsy9kit5aj23AgGu3pa4t9AgwbnXWqS+iOY+2aA==}
     engines: {node: '>= 6'}
 
-  caniuse-lite@1.0.30001799:
-    resolution: {integrity: sha512-hG1bReV+OUU+MOqK4t/ZWI0tZOyz3rqS9XuhOUz1cIcbwBKjOyJEJuw9ER5JuNyqxNk8u/JUVbGibBOL1yrjFw==}
+  caniuse-lite@1.0.30001806:
+    resolution: {integrity: sha512-72Cuvd95zbSYPKq6Fhg8eDJRlzgWDf7/mtoZv6Qe/DYNCEBdNxoA3+rZAU2ZhGCpZlns3EssFavaZomckT5Uuw==}
 
   chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
@@ -668,8 +668,8 @@ packages:
   dlv@1.1.3:
     resolution: {integrity: sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==}
 
-  electron-to-chromium@1.5.378:
-    resolution: {integrity: sha512-VinvOAuuPmdD1guEgGv5f2Qp7/vlfqOrUOMYNnOD4wj3pit8kRsQHzfIf6teyUGWo15Tg5+bOJaRunvyltpVWQ==}
+  electron-to-chromium@1.5.395:
+    resolution: {integrity: sha512-7zt9Aw+SrmxLWLN0zhaTWZQiCdryLVrYTq5R7iZakLvi2UQPYMMsROYV/2qVCzMeCiSXHwKOU+sZ4zOVVlrtKA==}
 
   es-errors@1.3.0:
     resolution: {integrity: sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==}
@@ -707,8 +707,8 @@ packages:
   fraction.js@5.3.4:
     resolution: {integrity: sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==}
 
-  framer-motion@12.41.0:
-    resolution: {integrity: sha512-OHAMNiCEON1RDBlRGuulsN5AD8ptMjvk5QWfFmYmBLPZ3zFGIJe60kQucQQf4cez1OzQmjYBWDY+dYfISkUdqg==}
+  framer-motion@12.42.2:
+    resolution: {integrity: sha512-5XY9luDiu0oHfHBjpDthFMh0ES+122w6p/papSJBweMkO8Sn+PW2QaEgRblQBpWFnuvZS5qvarpt/hO2pjGmnw==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -809,8 +809,8 @@ packages:
     resolution: {integrity: sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA==}
     engines: {node: '>=8.6'}
 
-  motion-dom@12.41.0:
-    resolution: {integrity: sha512-Lk3J39fOGg6xNr1KRZsN6usDyBf8aP7MEbUPez1VCughHt79OrP7VGqNrPyFL0riaT7WS8t9DRw1M3BHtM/xKw==}
+  motion-dom@12.42.2:
+    resolution: {integrity: sha512-5gIMWLp/PycBtJRJWRgjxke5n8dlvkSn2DrYW+tr3XcqAZY1xZh6BJyooJXCM8wdfM7wfMjkBJNLge1CKPUIRA==}
 
   motion-utils@12.39.0:
     resolution: {integrity: sha512-8nadJAJjTtqRkmRF36FoJTrywK9nnFmnPwnSMyxaOCU7GDjN9RTMJIxx9De8ErM+vpPhMccr/6fo5WciyQLnMQ==}
@@ -821,13 +821,13 @@ packages:
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
-  nanoid@3.3.15:
-    resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
+  nanoid@3.3.16:
+    resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  node-releases@2.0.49:
-    resolution: {integrity: sha512-f06bl1D+8ZDkn2oOQQKAh5/otFWqVnM1Q5oerA8Pex7UfT66Tx4IPHIqVVFKqFT3FUtaDstdgkM7yT7JWhqxfw==}
+  node-releases@2.0.51:
+    resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
 
   normalize-path@3.0.0:
@@ -852,8 +852,8 @@ packages:
     resolution: {integrity: sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA==}
     engines: {node: '>=8.6'}
 
-  picomatch@4.0.4:
-    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
+  picomatch@4.0.5:
+    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
   pify@2.3.0:
@@ -907,8 +907,8 @@ packages:
   postcss-value-parser@4.2.0:
     resolution: {integrity: sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==}
 
-  postcss@8.5.15:
-    resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
+  postcss@8.5.22:
+    resolution: {integrity: sha512-KBDEIpLrvpv16pp3K0Fw+UCoZfopFjjgeB+0tA/aaThfEE74kKDLrgg603YvOWJyg3+WYtyq3xYsQWsIyZlPqQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   queue-microtask@1.2.3:
@@ -1098,7 +1098,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.29.7
       '@babel/helper-validator-option': 7.29.7
-      browserslist: 4.28.4
+      browserslist: 4.28.7
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -1239,30 +1239,30 @@ snapshots:
   '@esbuild/win32-x64@0.21.5':
     optional: true
 
-  '@floating-ui/core@1.7.5':
+  '@floating-ui/core@1.8.0':
     dependencies:
-      '@floating-ui/utils': 0.2.11
+      '@floating-ui/utils': 0.2.12
 
-  '@floating-ui/dom@1.7.6':
+  '@floating-ui/dom@1.8.0':
     dependencies:
-      '@floating-ui/core': 1.7.5
-      '@floating-ui/utils': 0.2.11
+      '@floating-ui/core': 1.8.0
+      '@floating-ui/utils': 0.2.12
 
-  '@floating-ui/react-dom@2.1.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@floating-ui/react-dom@2.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@floating-ui/dom': 1.7.6
+      '@floating-ui/dom': 1.8.0
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@floating-ui/react@0.27.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@floating-ui/react@0.27.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@floating-ui/utils': 0.2.11
+      '@floating-ui/react-dom': 2.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@floating-ui/utils': 0.2.12
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       tabbable: 6.5.0
 
-  '@floating-ui/utils@0.2.11': {}
+  '@floating-ui/utils@0.2.12': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -1421,7 +1421,7 @@ snapshots:
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
 
-  '@tauri-apps/plugin-dialog@2.7.1':
+  '@tauri-apps/plugin-dialog@2.7.2':
     dependencies:
       '@tauri-apps/api': 2.11.1
 
@@ -1480,16 +1480,16 @@ snapshots:
 
   arg@5.0.2: {}
 
-  autoprefixer@10.5.1(postcss@8.5.15):
+  autoprefixer@10.5.4(postcss@8.5.22):
     dependencies:
-      browserslist: 4.28.4
-      caniuse-lite: 1.0.30001799
+      browserslist: 4.28.7
+      caniuse-lite: 1.0.30001806
       fraction.js: 5.3.4
       picocolors: 1.1.1
-      postcss: 8.5.15
+      postcss: 8.5.22
       postcss-value-parser: 4.2.0
 
-  baseline-browser-mapping@2.10.38: {}
+  baseline-browser-mapping@2.11.1: {}
 
   binary-extensions@2.3.0: {}
 
@@ -1497,17 +1497,17 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  browserslist@4.28.4:
+  browserslist@4.28.7:
     dependencies:
-      baseline-browser-mapping: 2.10.38
-      caniuse-lite: 1.0.30001799
-      electron-to-chromium: 1.5.378
-      node-releases: 2.0.49
-      update-browserslist-db: 1.2.3(browserslist@4.28.4)
+      baseline-browser-mapping: 2.11.1
+      caniuse-lite: 1.0.30001806
+      electron-to-chromium: 1.5.395
+      node-releases: 2.0.51
+      update-browserslist-db: 1.2.3(browserslist@4.28.7)
 
   camelcase-css@2.0.1: {}
 
-  caniuse-lite@1.0.30001799: {}
+  caniuse-lite@1.0.30001806: {}
 
   chokidar@3.6.0:
     dependencies:
@@ -1537,7 +1537,7 @@ snapshots:
 
   dlv@1.1.3: {}
 
-  electron-to-chromium@1.5.378: {}
+  electron-to-chromium@1.5.395: {}
 
   es-errors@1.3.0: {}
 
@@ -1581,9 +1581,9 @@ snapshots:
     dependencies:
       reusify: 1.1.0
 
-  fdir@6.5.0(picomatch@4.0.4):
+  fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
-      picomatch: 4.0.4
+      picomatch: 4.0.5
 
   fill-range@7.1.1:
     dependencies:
@@ -1591,9 +1591,9 @@ snapshots:
 
   fraction.js@5.3.4: {}
 
-  framer-motion@12.41.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  framer-motion@12.42.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      motion-dom: 12.41.0
+      motion-dom: 12.42.2
       motion-utils: 12.39.0
       tslib: 2.8.1
     optionalDependencies:
@@ -1666,7 +1666,7 @@ snapshots:
       braces: 3.0.3
       picomatch: 2.3.2
 
-  motion-dom@12.41.0:
+  motion-dom@12.42.2:
     dependencies:
       motion-utils: 12.39.0
 
@@ -1680,9 +1680,9 @@ snapshots:
       object-assign: 4.1.1
       thenify-all: 1.6.0
 
-  nanoid@3.3.15: {}
+  nanoid@3.3.16: {}
 
-  node-releases@2.0.49: {}
+  node-releases@2.0.51: {}
 
   normalize-path@3.0.0: {}
 
@@ -1696,34 +1696,34 @@ snapshots:
 
   picomatch@2.3.2: {}
 
-  picomatch@4.0.4: {}
+  picomatch@4.0.5: {}
 
   pify@2.3.0: {}
 
   pirates@4.0.7: {}
 
-  postcss-import@15.1.0(postcss@8.5.15):
+  postcss-import@15.1.0(postcss@8.5.22):
     dependencies:
-      postcss: 8.5.15
+      postcss: 8.5.22
       postcss-value-parser: 4.2.0
       read-cache: 1.0.0
       resolve: 1.22.12
 
-  postcss-js@4.1.0(postcss@8.5.15):
+  postcss-js@4.1.0(postcss@8.5.22):
     dependencies:
       camelcase-css: 2.0.1
-      postcss: 8.5.15
+      postcss: 8.5.22
 
-  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.15):
+  postcss-load-config@6.0.1(jiti@1.21.7)(postcss@8.5.22):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 1.21.7
-      postcss: 8.5.15
+      postcss: 8.5.22
 
-  postcss-nested@6.2.0(postcss@8.5.15):
+  postcss-nested@6.2.0(postcss@8.5.22):
     dependencies:
-      postcss: 8.5.15
+      postcss: 8.5.22
       postcss-selector-parser: 6.1.4
 
   postcss-selector-parser@6.1.4:
@@ -1733,9 +1733,9 @@ snapshots:
 
   postcss-value-parser@4.2.0: {}
 
-  postcss@8.5.15:
+  postcss@8.5.22:
     dependencies:
-      nanoid: 3.3.15
+      nanoid: 3.3.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -1847,11 +1847,11 @@ snapshots:
       normalize-path: 3.0.0
       object-hash: 3.0.0
       picocolors: 1.1.1
-      postcss: 8.5.15
-      postcss-import: 15.1.0(postcss@8.5.15)
-      postcss-js: 4.1.0(postcss@8.5.15)
-      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.15)
-      postcss-nested: 6.2.0(postcss@8.5.15)
+      postcss: 8.5.22
+      postcss-import: 15.1.0(postcss@8.5.22)
+      postcss-js: 4.1.0(postcss@8.5.22)
+      postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.22)
+      postcss-nested: 6.2.0(postcss@8.5.22)
       postcss-selector-parser: 6.1.4
       resolve: 1.22.12
       sucrase: 3.35.1
@@ -1869,8 +1869,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   to-regex-range@5.0.1:
     dependencies:
@@ -1882,9 +1882,9 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  update-browserslist-db@1.2.3(browserslist@4.28.4):
+  update-browserslist-db@1.2.3(browserslist@4.28.7):
     dependencies:
-      browserslist: 4.28.4
+      browserslist: 4.28.7
       escalade: 3.2.0
       picocolors: 1.1.1
 
@@ -1893,7 +1893,7 @@ snapshots:
   vite@5.4.21:
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.5.15
+      postcss: 8.5.22
       rollup: 4.62.2
     optionalDependencies:
       fsevents: 2.3.3
