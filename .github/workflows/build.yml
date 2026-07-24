@@ -140,4 +140,7 @@ jobs:
           output-artifact-directory: './src-tauri/target/release/bundle/nsis/signed'
       - name: Upload signed installer
         if: matrix.platform == 'windows-latest'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release upload "${{ needs.create-release.outputs.tag_name }}" "./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}" --clobber
