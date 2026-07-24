@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "Show mod parse warnings for debugging broken mods.",
     "xxmi.dump_shaders.label": "Dump Shaders",
     "xxmi.dump_shaders.description": "Enable shader dumping for mod development.",
+    "xxmi.cache_shaders.label": "Cache Shaders",
+    "xxmi.cache_shaders.description": "Enable shader cache of XXMI.",
     "xxmi.hunting_mode.label": "Hunting Mode",
     "xxmi.hunting_mode.description": "Choose how XXMI hunting mode behaves.",
     "xxmi.hunting_mode.disabled": "Disabled",
@@ -130,14 +132,26 @@
     "linux.runner_location.description": "Path to Wine/Proton folder.",
     "linux.prefix_location.label": "Prefix Location",
     "linux.prefix_location.description": "Path to the Wine/Proton prefix.",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Enable Jadeite patch.",
     "linux.gamemode.label": "Gamemode",
     "linux.gamemode.description": "Enable Feral Interactive's GameMode.",
     "linux.mangohud.label": "MangoHUD",
     "linux.mangohud.description": "Enable the MangoHUD overlay while playing.",
     "linux.mangohud_config.label": "MangoHUD Config",
     "linux.mangohud_config.description": "MangoHUD configuration file to load.",
+    "linux.gamescope.label": "Gamescope",
+    "linux.gamescope.description": "Enable ValveSoftware's Gamescope.",
+    "linux.gamescope_args.label": "Gamescope Arguments",
+    "linux.gamescope_args.description": "Additional arguments passed to Gamescope.",
+    "linux.help.gamescope_args": "Available arguments:",
+    "linux.help.gamescope_arg.wh": "Resolution of game window. If -h is specified but -w is not 16:9 aspect ratio is assumed. Defaults to the values specified in -W and -H",
+    "linux.help.gamescope_arg.WH": "Resolution of gamescope. Resizing gamescope window will update these settings. Ignored in embedded mode. If -H is specified but -W is not 16:9 aspect ratio is assumed. Defaults to 1280×720",
+    "linux.help.gamescope_arg.ffrate": "Framerate limit for the game. Specified in frames per second. Defaults to unlimited",
+    "linux.help.gamescope_arg.ufrate": "Framerate limit for the game when unfocused. Specified in frames per second. Defaults to unlimited",
+    "linux.help.gamescope_arg.upscaler": "Upscaling mode for the game. AMD FidelityFX Super Resolution 1.0 is used when set to fsr, NVIDIA Image Scaling 1.0.3 is used when set to nis",
+    "linux.help.gamescope_arg.scaling": "Scaling option for gamescope, Can be set to either integer or stretch, when set to stretch the game will fill the window. (e.g. 4:3 to 16:9)",
+    "linux.help.gamescope_arg.borderless": "Create a borderless window",
+    "linux.help.gamescope_arg.fullscreen": "Create a fullscreen window",
+    "linux.help.gamescope_arg.extra_help": "For more options check gamescope --help",
 
     "manage.title": "Manage Installation",
     "manage.open_game_folder": "Open Game Folder",
@@ -161,6 +175,14 @@
     "manage.copy_authkey.copied_description": "Ready to paste into Aivo sync.",
     "manage.copy_authkey.failed": "Copy failed",
     "manage.copy_authkey.failed_description": "Could not copy authkey. Open pull history first.",
+    "manage.copy_pullurl": "Copy Pull Url",
+    "manage.copy_pullurl.description": "Copy url for importing your pull history",
+    "manage.copy_pullurl.copying": "Copying url...",
+    "manage.copy_pullurl.copying_description": "Reading latest game log and copying to clipboard...",
+    "manage.copy_pullurl.copied": "Url copied",
+    "manage.copy_pullurl.copied_description": "Ready to paste into your pull tracker of choice.",
+    "manage.copy_pullurl.failed": "Copy failed",
+    "manage.copy_pullurl.failed_description": "Could not copy url. Open pull history first.",
     "manage.open_engine_log": "Open Engine Log",
     "manage.open_engine_log.description": "View game engine log",
     "manage.runner_title": "Manage Runner",
@@ -225,7 +247,8 @@
     "cancel": "Cancel",
     "install_button": "Install Game",
     "locate_button": "Locate Game",
-    "use_existing_install": "Use existing install"
+    "use_existing_install": "Use existing install",
+    "exe_not_found": "Game executable not found in this path, please pick a directory containing game executable."
   },
 
   "game_button": {
@@ -509,6 +532,8 @@
     "preload_error": "Error occurred while trying to predownload {install_name}\nPlease try again!",
     "unsupported_predownload_mode": "Unsupported download mode for predownload!",
     "unsupported_repair_mode": "Unsupported download mode for repair!",
-    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!"
+    "repo_clone_failed": "Failed to clone repository or repository is missing a manifest!",
+    "gamescope_not_found": "ValveSoftware Gamescope is enabled but `gamescope` was not found in PATH. The game will launch without Gamescope.\nInstall the `gamescope` package or equivalent from your distro to use this feature.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope and XXMI are not supported for this game, Please choose only to use one of these tools!"
   }
 }

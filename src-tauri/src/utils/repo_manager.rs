@@ -6,7 +6,7 @@ use crate::utils::LinkedHashMap;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Runtime, Manager};
 use crate::utils::db_manager::{create_manifest,create_repository,delete_manifest_by_id,get_manifest_info_by_filename,get_manifests_by_repository_id,get_repositories,get_repository_info_by_github_id,update_manifest_enabled_by_id};
-use crate::utils::{generate_cuid, models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog_with_callback};
+use crate::utils::{models::{RepositoryManifest, RunnerManifest, GameManifest}, show_dialog_with_callback};
 use crate::utils::git_helpers::{do_fetch, do_merge};
 
 #[cfg(target_os = "linux")]
@@ -40,7 +40,7 @@ pub fn setup_official_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf)
             let reader = BufReader::new(rm);
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
-            let repo_id = generate_cuid();
+            let repo_id = uuid::Uuid::now_v7().to_string();
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
@@ -48,7 +48,7 @@ pub fn setup_official_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf)
                 let reader = BufReader::new(mf);
                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                let cuid = generate_cuid();
+                let cuid = uuid::Uuid::now_v7().to_string();
                 create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
             }
             ()
@@ -86,7 +86,7 @@ pub fn clone_new_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf, url:
             let reader = BufReader::new(rm);
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
-            let repo_id = generate_cuid();
+            let repo_id = uuid::Uuid::now_v7().to_string();
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
@@ -94,7 +94,7 @@ pub fn clone_new_repository<R: Runtime>(app: &AppHandle<R>, path: &PathBuf, url:
                 let reader = BufReader::new(mf);
                 let mi: GameManifest = serde_json::from_reader(reader).unwrap();
 
-                let cuid = generate_cuid();
+                let cuid = uuid::Uuid::now_v7().to_string();
                 create_manifest(app, cuid.clone(), repo_id.clone(), mi.clone().display_name.as_str(), m.clone().as_str(), true).unwrap();
             }
             Ok(true)
@@ -157,7 +157,7 @@ pub fn setup_compatibility_repository<R: Runtime>(app: &AppHandle<R>, path: &Pat
             let reader = BufReader::new(rm);
             let rma: RepositoryManifest = serde_json::from_reader(reader).unwrap();
 
-            let repo_id = generate_cuid();
+            let repo_id = uuid::Uuid::now_v7().to_string();
             create_repository(app, repo_id.clone(), format!("{user}/{repo_name}").as_str()).unwrap();
 
             for m in rma.manifests {
@@ -166,7 +166,7 @@ pub fn setup_compatibility_repository<R: Runtime>(app: &AppHandle<R>, path: &Pat
                     Ok(mm) => {
                         let reader = BufReader::new(mm);
                         let mi: RunnerManifest = serde_json::from_reader(reader).unwrap();
-                        let cuid = generate_cuid();
+                        let cuid = uuid::Uuid::now_v7().to_string();
                         create_manifest(app, cuid.clone(), repo_id.clone(), mi.display_name.as_str(), m.as_str(), true).unwrap();
                     }
                     Err(_) => {}
@@ -344,7 +344,7 @@ fn update_manifest_table<R: Runtime>(app: &AppHandle<R>, filename: String, displ
         let dbr = get_repository_info_by_github_id(&app, format!("{user}/{repo_name}"));
         if dbr.is_some() {
             let dbrr = dbr.unwrap();
-            let cuid = generate_cuid();
+            let cuid = uuid::Uuid::now_v7().to_string();
             create_manifest(&app, cuid, dbrr.id, display_name, filename.as_str(), true).unwrap();
         }
     } else if let Some(m) = dbm { if !m.enabled { update_manifest_enabled_by_id(app, m.id, true); } }

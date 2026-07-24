@@ -1,8 +1,8 @@
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_disable_system_idle_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_background_by_id, update_install_game_location_by_id, update_install_graphics_api_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_show_drpc_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_jadeite_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id, update_installs_order};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_disable_system_idle_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_background_by_id, update_install_game_location_by_id, update_install_gamescope_args_by_id, update_install_graphics_api_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_show_drpc_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_gamescope_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id, update_installs_order};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
-use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, generate_cuid, get_mi_path_from_game, show_dialog_with_callback, extract_authkey_from_content};
+use crate::utils::{models::{AddInstallRsp, DownloadSizesRsp, ResumeStatesRsp, GameVersion, LauncherInstall}, apply_xxmi_tweaks, copy_dir_all, get_mi_path_from_game, show_dialog_with_callback, get_engine_log_from_game, extract_authkey_from_content, extract_pullurl_from_content};
 use fischl::utils::is_process_running;
 use fischl::utils::prettify_bytes;
 use std::fs;
@@ -54,12 +54,12 @@ pub fn get_install_by_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<La
 
 #[allow(unused_mut, unused_variables)]
 #[tauri::command]
-pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, mut use_jadeite: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
+pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
         let gs = get_settings(&app).unwrap();
-        let cuid = generate_cuid();
+        let cuid = uuid::Uuid::now_v7().to_string();
         let m = manifest_id + ".json";
         let dbm = get_manifest_info_by_filename(&app, m.clone()).unwrap();
         let gm = get_manifest(&app, m.clone()).unwrap();
@@ -208,8 +208,9 @@ pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: 
             let downloading_marker = install_location.join("downloading");
             if !downloading_marker.exists() { let _ = fs::create_dir_all(&downloading_marker); }
         }
+        let xxmi_cfg = Json(XXMISettings { hunting_mode: 0, require_admin: true, dll_init_delay: 500, close_delay: 20, show_warnings: 0, dump_shaders: false, cache_shaders: 0 });
         let default_graphics_api = gm.extra.graphics_api_options.default.clone();
-        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_jadeite, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api).unwrap();
+        create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api, xxmi_cfg).unwrap();
         log::info!("Created installation {} (\"{}\")", cuid, name);
         Some(AddInstallRsp {
             success: true,
@@ -386,31 +387,27 @@ pub fn update_install_skip_hash_valid<R: Runtime>(app: AppHandle<R>, id: String,
 }
 
 #[tauri::command]
-pub fn update_install_use_jadeite<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
-    let manifest = get_install_info_by_id(&app, id);
-
-    if manifest.is_some() {
-        let m = manifest.unwrap();
-        update_install_use_jadeite_by_id(&app, m.id, enabled);
-        Some(true)
-    } else {
-        None
-    }
-}
-
-#[tauri::command]
 pub fn update_install_use_xxmi<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
     let manifest = get_install_info_by_id(&app, id);
     let settings = get_settings(&app).unwrap();
 
     if manifest.is_some() {
         let m = manifest.unwrap();
+        let lm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
+        let gm = get_manifest(&app, lm.filename).unwrap();
+        if m.use_gamescope && (gm.biz == "wuwa_global" || gm.biz == "endfield_global") {
+            show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.gamescope_xxmi_combo_unsupported", None, None, None);
+            return Some(false);
+        }
         let p = Path::new(&settings.xxmi_path).to_path_buf();
         let ps = p.to_str().unwrap().to_string();
         log::debug!("XXMI {} for install {}", if enabled { "enabled" } else { "disabled" }, m.id);
         update_install_use_xxmi_by_id(&app, m.id.clone(), enabled);
         if enabled {
-            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi", "efmi"] { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); }
+            for pkg_type in ["xxmi", "gimi", "srmi", "zzmi", "himi", "wwmi", "efmi"] {
+                let ver_path = if pkg_type == "xxmi" { p.join("VERSION.txt") } else { p.join(pkg_type).join("VERSION.txt") };
+                if !ver_path.exists() { enqueue_extras_download(&app, ps.clone(), "xxmi".to_string(), pkg_type.to_string(), false); } else { crate::downloading::misc::download_or_update_extra(&app, p.clone(), "xxmi".to_string(), pkg_type.to_string(), true, None); }
+            }
         }
         Some(true)
     } else {
@@ -428,7 +425,10 @@ pub fn update_install_use_fps_unlock<R: Runtime>(app: AppHandle<R>, id: String, 
         let p = Path::new(&settings.fps_unlock_path).to_path_buf();
         log::debug!("FPS unlock {} for install {}", if enabled { "enabled" } else { "disabled" }, m.id);
         update_install_use_fps_unlock_by_id(&app, m.id, enabled);
-        if enabled { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); }
+        if enabled {
+            let ver_path = p.join("VERSION.txt");
+            if !ver_path.exists() { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); } else { crate::downloading::misc::download_or_update_extra(&app, p.clone(), "keqingunlock".to_string(), "keqing_unlock".to_string(), true, None); }
+        }
         Some(true)
     } else {
         None
@@ -438,13 +438,10 @@ pub fn update_install_use_fps_unlock<R: Runtime>(app: AppHandle<R>, id: String, 
 #[tauri::command]
 pub fn update_install_fps_value<R: Runtime>(app: AppHandle<R>, id: String, fps: String) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
-    let settings = get_settings(&app).unwrap();
 
     if install.is_some() {
         let m = install.unwrap();
-        let p = Path::new(&settings.fps_unlock_path).to_path_buf();
         update_install_fps_value_by_id(&app, m.id, fps);
-        if m.use_fps_unlock { enqueue_extras_download(&app, p.to_str().unwrap().to_string(), "keqingunlock".to_string(), "keqing_unlock".to_string(), false); }
         Some(true)
     } else {
         None
@@ -498,7 +495,7 @@ pub fn update_install_mangohud_config_path<R: Runtime>(app: AppHandle<R>, id: St
 }
 
 #[tauri::command]
-pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, _engineini_tweaks: Option<bool>) -> Option<bool> {
+pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxmi_hunting: Option<u64>, xxmi_sd: Option<bool>, xxmi_sw: Option<bool>, xxmi_sc: Option<bool>) -> Option<bool> {
     let install = get_install_info_by_id(&app, id);
 
     if install.is_some() {
@@ -511,8 +508,10 @@ pub fn update_install_xxmi_config<R: Runtime>(app: AppHandle<R>, id: String, xxm
             close_delay: m.xxmi_config.close_delay,
             show_warnings: m.xxmi_config.show_warnings,
             dump_shaders: m.xxmi_config.dump_shaders,
+            cache_shaders: m.xxmi_config.cache_shaders
         });
         if xxmi_hunting.is_some() { data.hunting_mode = xxmi_hunting?; }
+        if xxmi_sc.is_some() { data.cache_shaders = if xxmi_sc? { 1 } else { 0 } }
         if xxmi_sd.is_some() { data.dump_shaders = xxmi_sd?; }
         if xxmi_sw.is_some() { data.show_warnings = if xxmi_sw? { 1 } else { 0 } }
 
@@ -657,8 +656,10 @@ pub fn update_install_runner_version<R: Runtime>(app: AppHandle<R>, id: String, 
 
     if install.is_some() {
         let m = install.unwrap();
-        let rp = m.runner_path.clone();
-        let rpn = rp.replace(m.runner_version.as_str(), version.as_str());
+        let rpn = get_installed_runner_info_by_version(&app, version.clone()).map(|r| r.runner_path).unwrap_or_else(|| {
+                let gs = get_settings(&app).unwrap();
+                Path::new(&gs.default_runner_path).join(&version).to_str().unwrap().to_string()
+            });
         if !Path::exists(rpn.as_ref()) { if let Err(_) = fs::create_dir_all(rpn.clone()) { return Some(false); } }
 
         if fs::read_dir(rpn.as_str()).unwrap().next().is_none() {
@@ -1101,7 +1102,7 @@ pub fn remove_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortc
 
 
 #[tauri::command]
-pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
+pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String, mode: String) -> bool {
     let install = get_install_info_by_id(&app, id).unwrap();
     let manifest = get_manifest_info_by_id(&app, install.manifest_id).unwrap();
     let gm = get_manifest(&app, manifest.filename).unwrap();
@@ -1112,13 +1113,22 @@ pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
         let prefix_exists = prefix.join("pfx/").exists();
         if prefix_exists {
             let base = prefix.join("pfx/drive_c/users/steamuser/AppData/LocalLow/");
-            let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
+            let engine_log = base.join(get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz.clone(), install.region_code));
             if engine_log.exists() {
-                let log_content = fs::read_to_string(engine_log);
+                let log_content = if gm.biz == "wuwa_global" { fs::read(&engine_log).map(|b| unsafe { String::from_utf8_unchecked(b) }) } else { fs::read_to_string(&engine_log) };
                 return match log_content {
                     Ok(content) => {
-                        let authkey = extract_authkey_from_content(&content);
-                        if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                        match mode.as_str() {
+                            "authkey" => {
+                                let authkey = extract_authkey_from_content(&content);
+                                if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                            }
+                            "full_url" => {
+                                let url = extract_pullurl_from_content(&content, gm.biz.clone());
+                                if let Some(uri) = url { match app.clipboard().write_text(uri) { Ok(_) => true, Err(_) => false } } else { false }
+                            }
+                            _ => { return false; }
+                        }
                     },
                     Err(_) => { false }
                 }
@@ -1129,17 +1139,81 @@ pub fn copy_authkey<R: Runtime>(app: AppHandle<R>, id: String) -> bool {
     #[cfg(target_os = "windows")]
     {
         let base = app.path().home_dir().unwrap().join("AppData/LocalLow/");
-        let engine_log = base.join(crate::utils::get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz, install.region_code));
+        let engine_log = base.join(get_engine_log_from_game(base.to_str().unwrap().to_string(), gm.biz.clone(), install.region_code));
         if engine_log.exists() {
-            let log_content = fs::read_to_string(engine_log);
+            let log_content = if gm.biz == "wuwa_global" { fs::read(&engine_log).map(|b| unsafe { String::from_utf8_unchecked(b) }) } else { fs::read_to_string(&engine_log) };
             match log_content {
                 Ok(content) => {
-                    let authkey = extract_authkey_from_content(&content);
-                    if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                    match mode.as_str() {
+                        "authkey" => {
+                            let authkey = extract_authkey_from_content(&content);
+                            if let Some(authkey) = authkey { match app.clipboard().write_text(authkey) { Ok(_) => true, Err(_) => false } } else { false }
+                        }
+                        "full_url" => {
+                            let url = extract_pullurl_from_content(&content, gm.biz.clone());
+                            if let Some(uri) = url { match app.clipboard().write_text(uri) { Ok(_) => true, Err(_) => false } } else { false }
+                        }
+                        _ => { return false; }
+                    }
                 },
                 Err(_) => { false }
             }
         } else { false }
+    }
+}
+
+#[tauri::command]
+pub fn validate_path_exists<R: Runtime>(app: AppHandle<R>, manifest_id: String, directory: String, mode: String) -> bool {
+    match mode.as_str() {
+        "game" => {
+            let m = manifest_id.clone() + ".json";
+            match get_manifest(&app, m.clone()) { Some(gm) => Path::new(&directory).join(&gm.paths.exe_filename).exists(), None => false }
+        }
+        "runner" => {
+            #[cfg(target_os = "linux")]
+            {
+                let mf = runner_from_runner_version(&app, manifest_id.clone()).unwrap();
+                match get_compatibility(&app, &mf) { Some(rm) => {
+                    let wine64 = if rm.paths.wine64.is_empty() { rm.paths.wine32.clone() } else { rm.paths.wine64.clone() };
+                    Path::new(&directory).join(wine64).exists()
+                }, None => false }
+            }
+            #[cfg(target_os = "windows")]
+            false
+        }
+        _ => { false }
+    }
+}
+
+#[tauri::command]
+pub fn update_install_use_gamescope<R: Runtime>(app: AppHandle<R>, id: String, enabled: bool) -> Option<bool> {
+    let manifest = get_install_info_by_id(&app, id);
+
+    if manifest.is_some() {
+        let m = manifest.unwrap();
+        let lm = get_manifest_info_by_id(&app, m.manifest_id).unwrap();
+        let gm = get_manifest(&app, lm.filename).unwrap();
+        if m.use_xxmi && (gm.biz == "wuwa_global" || gm.biz == "endfield_global")  {
+            show_dialog_with_callback(&app, "warning", "TwintailLauncher", "dialogs.gamescope_xxmi_combo_unsupported", None, None, None);
+            return Some(false);
+        }
+        update_install_use_gamescope_by_id(&app, m.id, enabled);
+        Some(true)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn update_install_gamescope_args<R: Runtime>(app: AppHandle<R>, id: String, args: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id);
+
+    if install.is_some() {
+        let m = install.unwrap();
+        update_install_gamescope_args_by_id(&app, m.id, args);
+        Some(true)
+    } else {
+        None
     }
 }
 

@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "显示模组输出的警告信息，用于调试损坏的模组",
     "xxmi.dump_shaders.label": "导出着色器",
     "xxmi.dump_shaders.description": "启用着色器导出，以供模组开发",
+    "xxmi.cache_shaders.label": "着色器缓存",
+    "xxmi.cache_shaders.description": "启用 XXMI 的着色器缓存。",
     "xxmi.hunting_mode.label": "狩猎模式（Hunting Mode）",
     "xxmi.hunting_mode.description": "狩猎模式（Hunting Mode）用于模组开发过程中的调试和元素定位，此处指定 XXMI 应当如何处理注入行为",
     "xxmi.hunting_mode.disabled": "禁用（一般 Mod 玩家用户应选择此项）",
@@ -130,14 +132,26 @@
     "linux.runner_location.description": "Wine/Proton 文件夹的路径",
     "linux.prefix_location.label": "运行时配置位置",
     "linux.prefix_location.description": "Wine/Proton Prefix 的路径",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "启用 Jadeite 补丁",
     "linux.gamemode.label": "Gamemode 性能优化",
     "linux.gamemode.description": "启用 Feral Interactive 的 GameMode 性能优化",
     "linux.mangohud.label": "MangoHUD",
     "linux.mangohud.description": "游玩时启用 MangoHUD 叠加层",
     "linux.mangohud_config.label": "MangoHUD 配置",
     "linux.mangohud_config.description": "要加载的 MangoHUD 配置文件",
+    "linux.gamescope.label": "Gamescope",
+    "linux.gamescope.description": "启用 ValveSoftware 的 Gamescope。",
+    "linux.gamescope_args.label": "Gamescope 参数",
+    "linux.gamescope_args.description": "传递给 Gamescope 的附加参数。",
+    "linux.help.gamescope_args": "可用参数：",
+    "linux.help.gamescope_arg.wh": "游戏窗口的分辨率。如果指定了 -h 但未指定 -w，则假定为 16:9 宽高比。默认为 -W 和 -H 中指定的值",
+    "linux.help.gamescope_arg.WH": "Gamescope 的分辨率。调整 Gamescope 窗口大小将更新这些设置。在嵌入模式下忽略。如果指定了 -H 但未指定 -W，则假定为 16:9 宽高比。默认为 1280×720",
+    "linux.help.gamescope_arg.ffrate": "游戏的帧率限制。以每秒帧数为单位。默认为无限制",
+    "linux.help.gamescope_arg.ufrate": "游戏失去焦点时的帧率限制。以每秒帧数为单位。默认为无限制",
+    "linux.help.gamescope_arg.upscaler": "游戏的升级模式。设置为 fsr 时使用 AMD FidelityFX Super Resolution 1.0，设置为 nis 时使用 NVIDIA Image Scaling 1.0.3",
+    "linux.help.gamescope_arg.scaling": "Gamescope 的缩放选项。可设置为 integer 或 stretch，设置为 stretch 时游戏将填充窗口（例如从 4:3 到 16:9）",
+    "linux.help.gamescope_arg.borderless": "创建无边框窗口",
+    "linux.help.gamescope_arg.fullscreen": "创建全屏窗口",
+    "linux.help.gamescope_arg.extra_help": "更多选项请查看 gamescope --help",
 
     "manage.title": "管理安装",
     "manage.open_game_folder": "打开游戏文件夹",
@@ -161,6 +175,14 @@
     "manage.copy_authkey.copied_description": "准备粘贴到 Aivo Sync 中",
     "manage.copy_authkey.failed": "复制失败",
     "manage.copy_authkey.failed_description": "无法复制 authkey。请先打开抽卡记录",
+    "manage.copy_pullurl": "复制拉取链接",
+    "manage.copy_pullurl.description": "复制用于导入抽卡记录的链接",
+    "manage.copy_pullurl.copying": "正在复制链接...",
+    "manage.copy_pullurl.copying_description": "正在读取最新游戏日志并复制到剪贴板...",
+    "manage.copy_pullurl.copied": "链接已复制",
+    "manage.copy_pullurl.copied_description": "已准备就绪，可粘贴到抽卡记录工具中。",
+    "manage.copy_pullurl.failed": "复制失败",
+    "manage.copy_pullurl.failed_description": "无法复制链接，请先打开抽卡记录。",
     "manage.open_engine_log": "打开引擎日志",
     "manage.open_engine_log.description": "查看游戏引擎日志",
     "manage.runner_title": "管理运行时宿主",
@@ -225,7 +247,8 @@
     "cancel": "取消",
     "install_button": "安装游戏",
     "locate_button": "定位游戏",
-    "use_existing_install": "使用现有安装"
+    "use_existing_install": "使用现有安装",
+    "exe_not_found": "在此路径中未找到游戏可执行文件，请选择包含游戏可执行文件的目录。"
   },
 
   "game_button": {
@@ -509,6 +532,8 @@
     "preload_error": "尝试预下载 {install_name} 时发生错误\n请重试！",
     "unsupported_predownload_mode": "不支持的预下载模式！",
     "unsupported_repair_mode": "不支持的修复下载模式！",
-    "repo_clone_failed": "无法克隆仓库或仓库缺少清单！"
+    "repo_clone_failed": "无法克隆仓库或仓库缺少清单！",
+    "gamescope_not_found": "已启用 ValveSoftware Gamescope，但在 PATH 中未找到 `gamescope`。游戏将在没有 Gamescope 的情况下启动。\n请从您的发行版安装 `gamescope` 软件包或等效包以使用此功能。",
+    "gamescope_xxmi_combo_unsupported": "此游戏不支持 Gamescope 和 XXMI，请仅选择使用其中一个工具！"
   }
 }

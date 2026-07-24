@@ -48,8 +48,6 @@ export default function SettingsPage({ settings, fetchSettings, setCurrentPage, 
                     await invoke("update_settings_default_xxmi_path", { path: value });
                 } else if (key === "fps_unlock_path") {
                     await invoke("update_settings_default_fps_unlock_path", { path: value });
-                } else if (key === "jadeite_path") {
-                    await invoke("update_settings_default_jadeite_path", { path: value });
                 } else {
                     await invoke(`update_settings_${key}`, { path: value });
                 }

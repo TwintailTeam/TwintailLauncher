@@ -1,0 +1,33 @@
+pkgname=twintaillauncher-bin
+_pkgname="${pkgname%-bin}"
+pkgver=@PKGVER@
+pkgrel=1
+pkgdesc='@PKGDESC@'
+arch=@ARCH@
+url=@REPO_URL@
+license=@LICENSE@
+depends=@DEPENDS@
+optdepends=@OPTDEPENDS@
+options=('!debug')
+provides=("twintaillauncher")
+conflicts=("twintaillauncher-git" "twintaillauncher")
+source_x86_64=("${_pkgname}-${pkgver}-amd64.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_amd64.deb")
+source_aarch64=("${_pkgname}-${pkgver}-arm64.deb::${url}/releases/download/ttl-v${pkgver}/twintaillauncher_${pkgver}_arm64.deb")
+sha256sums_x86_64=('@X86_64_SUM@')
+sha256sums_aarch64=('@AARCH64_SUM@')
+
+build() {
+    bsdtar -x -f data.tar.gz
+}
+
+package() {
+    install -Dm755 usr/bin/twintaillauncher -t "$pkgdir/usr/bin"
+    install -Dm755 usr/lib/twintaillauncher/resources/reaper -t "$pkgdir/usr/lib/twintaillauncher/resources"
+    install -Dm755 usr/lib/twintaillauncher/resources/winetricks -t "$pkgdir/usr/lib/twintaillauncher/resources"
+    install -Dm644 usr/lib/twintaillauncher/resources/hkrpg_patch.dll -t "$pkgdir/usr/lib/twintaillauncher/resources"
+    install -Dm644 usr/share/icons/hicolor/32x32/apps/twintaillauncher.png "$pkgdir/usr/share/icons/hicolor/32x32/apps/$_pkgname.png"
+    install -Dm644 usr/share/icons/hicolor/128x128/apps/twintaillauncher.png "$pkgdir/usr/share/icons/hicolor/128x128/apps/$_pkgname.png"
+    install -Dm644 usr/share/icons/hicolor/256x256@2/apps/twintaillauncher.png "$pkgdir/usr/share/icons/hicolor/256x256@2/apps/$_pkgname.png"
+    install -Dm644 usr/share/applications/twintaillauncher.desktop -t "$pkgdir/usr/share/applications"
+    cp -r usr/lib/twintaillauncher/resources/locales "$pkgdir/usr/lib/twintaillauncher/resources/"
+}

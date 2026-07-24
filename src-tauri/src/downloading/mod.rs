@@ -89,7 +89,6 @@ impl QueueJobPayload {
             QueueJobPayload::XXMI(_) => "XXMI Modding Tool".to_string(),
             QueueJobPayload::Extras(p) => {
                 match p.package_type.as_str() {
-                    "v5.0.1-hotfix" | "jadeite" => "Jadeite".to_string(),
                     "keqing_unlock" => "FPS Unlocker".to_string(),
                     "xxmi" => "XXMI".to_string(),
                     "gimi" => "XXMI - GIMI".to_string(),

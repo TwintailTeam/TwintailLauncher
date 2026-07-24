@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "Показувати попередження парсингу модів, щоб налагоджувати несправні моди.",
     "xxmi.dump_shaders.label": "Дамп шейдерів",
     "xxmi.dump_shaders.description": "Увімкнути дамп шейдерів для розробки модів.",
+    "xxmi.cache_shaders.label": "Кеш шейдерів",
+    "xxmi.cache_shaders.description": "Увімкнути кеш шейдерів XXMI.",
     "xxmi.hunting_mode.label": "Режим полювання",
     "xxmi.hunting_mode.description": "Вибери, як має поводитись режим полювання XXMI.",
     "xxmi.hunting_mode.disabled": "Вимкнено",
@@ -130,14 +132,26 @@
     "linux.runner_location.description": "Шлях до папки Wine/Proton.",
     "linux.prefix_location.label": "Розташування префікса",
     "linux.prefix_location.description": "Шлях до префікса Wine/Proton.",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Увімкнути патч Jadeite.",
     "linux.gamemode.label": "GameMode",
     "linux.gamemode.description": "Увімкнути GameMode від Feral Interactive.",
     "linux.mangohud.label": "MangoHUD",
     "linux.mangohud.description": "Увімкнути оверлей MangoHUD під час гри.",
     "linux.mangohud_config.label": "Конфігурація MangoHUD",
     "linux.mangohud_config.description": "Конфігураційний файл MangoHUD для завантаження.",
+    "linux.gamescope.label": "Gamescope",
+    "linux.gamescope.description": "Увімкнути ValveSoftware Gamescope.",
+    "linux.gamescope_args.label": "Аргументи Gamescope",
+    "linux.gamescope_args.description": "Додаткові аргументи, що передаються Gamescope.",
+    "linux.help.gamescope_args": "Доступні аргументи:",
+    "linux.help.gamescope_arg.wh": "Роздільна здатність вікна гри. Якщо вказано -h, але не -w, приймається співвідношення сторін 16:9. За замовчуванням використовуються значення, вказані в -W і -H",
+    "linux.help.gamescope_arg.WH": "Роздільна здатність Gamescope. Зміна розміру вікна Gamescope оновить ці налаштування. Ігнорується у вбудованому режимі. Якщо вказано -H, але не -W, приймається співвідношення сторін 16:9. За замовчуванням 1280×720",
+    "linux.help.gamescope_arg.ffrate": "Обмеження частоти кадрів для гри. Вказується в кадрах на секунду. За замовчуванням без обмежень",
+    "linux.help.gamescope_arg.ufrate": "Обмеження частоти кадрів для гри, коли вікно не в фокусі. Вказується в кадрах на секунду. За замовчуванням без обмежень",
+    "linux.help.gamescope_arg.upscaler": "Режим апскейлінгу для гри. AMD FidelityFX Super Resolution 1.0 використовується при fsr, NVIDIA Image Scaling 1.0.3 — при nis",
+    "linux.help.gamescope_arg.scaling": "Параметр масштабування для Gamescope. Можна встановити integer або stretch. При stretch гра заповнює вікно (напр., 4:3 до 16:9)",
+    "linux.help.gamescope_arg.borderless": "Створити безрамкове вікно",
+    "linux.help.gamescope_arg.fullscreen": "Створити повноекранне вікно",
+    "linux.help.gamescope_arg.extra_help": "Для отримання додаткових параметрів перегляньте gamescope --help",
 
     "manage.title": "Керування інсталяцією",
     "manage.open_game_folder": "Відкрити папку гри",
@@ -161,6 +175,14 @@
     "manage.copy_authkey.copied_description": "Готово до вставки в Aivo Sync.",
     "manage.copy_authkey.failed": "Помилка копіювання",
     "manage.copy_authkey.failed_description": "Не вдалося скопіювати Authkey. Спочатку відкрий історію завантажень.",
+    "manage.copy_pullurl": "Копіювати посилання витягу",
+    "manage.copy_pullurl.description": "Скопіюйте посилання для імпорту історії витягів",
+    "manage.copy_pullurl.copying": "Копіювання посилання...",
+    "manage.copy_pullurl.copying_description": "Читання останнього журналу гри та копіювання в буфер обміну...",
+    "manage.copy_pullurl.copied": "Посилання скопійовано",
+    "manage.copy_pullurl.copied_description": "Готово до вставки у ваш застосунок для відстеження витягів.",
+    "manage.copy_pullurl.failed": "Помилка копіювання",
+    "manage.copy_pullurl.failed_description": "Не вдалося скопіювати посилання. Спочатку відкрийте історію витягів.",
     "manage.open_engine_log": "Відкрити лог рушія",
     "manage.open_engine_log.description": "Переглянути лог рушія гри",
     "manage.runner_title": "Керування ранером",
@@ -225,7 +247,8 @@
     "cancel": "Скасувати",
     "install_button": "Встановити гру",
     "locate_button": "Знайти гру",
-    "use_existing_install": "Використати наявну інсталяцію"
+    "use_existing_install": "Використати наявну інсталяцію",
+    "exe_not_found": "Виконуваний файл гри не знайдено за цим шляхом. Будь ласка, виберіть теку, яка містить виконуваний файл гри."
   },
 
   "game_button": {
@@ -509,7 +532,9 @@
     "preload_error": "Під час попереднього завантаження {install_name} сталася помилка.\nБудь ласка, спробуй ще раз!",
     "unsupported_predownload_mode": "Непідтримуваний режим завантаження для попереднього завантаження!",
     "unsupported_repair_mode": "Непідтримуваний режим завантаження для відновлення!",
-    "repo_clone_failed": "Не вдалося клонувати репозиторій або у репозиторії відсутній маніфест!"
+    "repo_clone_failed": "Не вдалося клонувати репозиторій або у репозиторії відсутній маніфест!",
+    "gamescope_not_found": "ValveSoftware Gamescope увімкнено, але `gamescope` не знайдено у PATH. Гра запуститься без Gamescope.\nВстановіть пакет `gamescope` або аналогічний пакет вашого дистрибутива, щоб скористатися цією функцією.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope та XXMI не підтримуються для цієї гри. Будь ласка, оберіть лише один із цих інструментів!"
   }
 }
 

@@ -109,6 +109,8 @@
     "xxmi.show_warnings.description": "Mod-Parse-Warnungen anzeigen, um defekte Mods zu debuggen.",
     "xxmi.dump_shaders.label": "Shader dumpen",
     "xxmi.dump_shaders.description": "Shader-Dumping für die Mod-Entwicklung aktivieren.",
+    "xxmi.cache_shaders.label": "Shader-Cache",
+    "xxmi.cache_shaders.description": "Aktiviere den Shader-Cache von XXMI.",
     "xxmi.hunting_mode.label": "Hunting-Modus",
     "xxmi.hunting_mode.description": "Wähle aus, wie sich der XXMI-Hunting-Modus verhalten soll.",
     "xxmi.hunting_mode.disabled": "Deaktiviert",
@@ -130,14 +132,26 @@
     "linux.runner_location.description": "Pfad zum Wine-/Proton-Ordner.",
     "linux.prefix_location.label": "Prefix-Speicherort",
     "linux.prefix_location.description": "Pfad zum Wine-/Proton-Prefix.",
-    "linux.jadeite.label": "Jadeite",
-    "linux.jadeite.description": "Jadeite-Patch aktivieren.",
     "linux.gamemode.label": "Gamemode",
     "linux.gamemode.description": "Feral Interactive GameMode aktivieren.",
     "linux.mangohud.label": "MangoHUD",
     "linux.mangohud.description": "MangoHUD-Overlay während des Spielens aktivieren.",
     "linux.mangohud_config.label": "MangoHUD-Konfiguration",
     "linux.mangohud_config.description": "Zu ladende MangoHUD-Konfigurationsdatei.",
+    "linux.gamescope.label": "Gamescope",
+    "linux.gamescope.description": "ValveSoftware Gamescope aktivieren.",
+    "linux.gamescope_args.label": "Gamescope-Argumente",
+    "linux.gamescope_args.description": "Zusätzliche Argumente, die an Gamescope übergeben werden.",
+    "linux.help.gamescope_args": "Verfügbare Argumente:",
+    "linux.help.gamescope_arg.wh": "Auflösung des Spielfensters. Wenn -h angegeben wird, aber -w nicht, wird ein 16:9-Seitenverhältnis angenommen. Standardwerte sind die in -W und -H angegebenen Werte",
+    "linux.help.gamescope_arg.WH": "Auflösung von Gamescope. Das Ändern der Gamescope-Fenstergröße aktualisiert diese Einstellungen. Wird im eingebetteten Modus ignoriert. Wenn -H angegeben wird, aber -W nicht, wird ein 16:9-Seitenverhältnis angenommen. Standardwert ist 1280×720",
+    "linux.help.gamescope_arg.ffrate": "Framerate-Limit für das Spiel. Angegeben in Bildern pro Sekunde. Standardwert ist unbegrenzt",
+    "linux.help.gamescope_arg.ufrate": "Framerate-Limit für das Spiel, wenn es nicht fokussiert ist. Angegeben in Bildern pro Sekunde. Standardwert ist unbegrenzt",
+    "linux.help.gamescope_arg.upscaler": "Upscaling-Modus für das Spiel. AMD FidelityFX Super Resolution 1.0 wird bei fsr verwendet, NVIDIA Image Scaling 1.0.3 wird bei nis verwendet",
+    "linux.help.gamescope_arg.scaling": "Skalierungsoption für Gamescope. Kann auf integer oder stretch gesetzt werden. Bei stretch füllt das Spiel das Fenster (z.B. 4:3 zu 16:9)",
+    "linux.help.gamescope_arg.borderless": "Ein randloses Fenster erstellen",
+    "linux.help.gamescope_arg.fullscreen": "Ein Vollbildfenster erstellen",
+    "linux.help.gamescope_arg.extra_help": "Für weitere Optionen siehe gamescope --help",
 
     "manage.title": "Installation verwalten",
     "manage.open_game_folder": "Spielordner öffnen",
@@ -161,6 +175,14 @@
     "manage.copy_authkey.copied_description": "Bereit zum Einfügen in Aivo Sync.",
     "manage.copy_authkey.failed": "Kopieren fehlgeschlagen",
     "manage.copy_authkey.failed_description": "Authkey konnte nicht kopiert werden. Öffne zuerst den Pull-Verlauf.",
+    "manage.copy_pullurl": "Pull-URL kopieren",
+    "manage.copy_pullurl.description": "Kopiere die URL zum Importieren deiner Pull-Historie",
+    "manage.copy_pullurl.copying": "Kopiere URL...",
+    "manage.copy_pullurl.copying_description": "Lese neuestes Spielprotokoll und kopiere in die Zwischenablage...",
+    "manage.copy_pullurl.copied": "URL kopiert",
+    "manage.copy_pullurl.copied_description": "Bereit zum Einfügen in dein Pull-Tracker-Tool.",
+    "manage.copy_pullurl.failed": "Kopieren fehlgeschlagen",
+    "manage.copy_pullurl.failed_description": "Konnte URL nicht kopieren. Öffne zuerst die Pull-Historie.",
     "manage.open_engine_log": "Engine-Log öffnen",
     "manage.open_engine_log.description": "Spiel-Engine-Log anzeigen",
     "manage.runner_title": "Runner verwalten",
@@ -225,7 +247,8 @@
     "cancel": "Abbrechen",
     "install_button": "Spiel installieren",
     "locate_button": "Spiel suchen",
-    "use_existing_install": "Vorhandene Installation verwenden"
+    "use_existing_install": "Vorhandene Installation verwenden",
+    "exe_not_found": "Die ausführbare Datei des Spiels wurde in diesem Pfad nicht gefunden. Bitte wähle ein Verzeichnis, das die ausführbare Datei des Spiels enthält."
   },
 
   "game_button": {
@@ -509,6 +532,8 @@
     "preload_error": "Beim Vorab-Herunterladen von {install_name} ist ein Fehler aufgetreten.\nBitte versuche es erneut!",
     "unsupported_predownload_mode": "Nicht unterstützter Download-Modus für den Vorab-Download!",
     "unsupported_repair_mode": "Nicht unterstützter Download-Modus für die Reparatur!",
-    "repo_clone_failed": "Repository konnte nicht geklont werden oder dem Repository fehlt ein Manifest!"
+    "repo_clone_failed": "Repository konnte nicht geklont werden oder dem Repository fehlt ein Manifest!",
+    "gamescope_not_found": "ValveSoftware Gamescope ist aktiviert, aber `gamescope` wurde nicht im PATH gefunden. Das Spiel wird ohne Gamescope gestartet.\nInstalliere das Paket `gamescope` oder ein entsprechendes Paket deiner Distribution, um diese Funktion zu nutzen.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope und XXMI werden für dieses Spiel nicht unterstützt. Bitte wähle nur eines dieser Tools!"
   }
 }

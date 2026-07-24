@@ -20,18 +20,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ fromJSON(steps.create-release.outputs.result).release_id }}
-      upload_url: ${{ fromJSON(steps.create-release.outputs.result).upload_url }}
+      tag_name: ${{ fromJSON(steps.create-release.outputs.result).tag_name }}
     steps:
-      - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: lts/*
+          fetch-depth: 0
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
       - name: get version
         run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
       - name: create release
         id: create-release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v9
         with:
           script: |
             const { data } = await github.rest.repos.createRelease({
@@ -45,7 +47,8 @@ jobs:
             })
             return {
               release_id: data.id,
-              upload_url: data.upload_url
+              upload_url: data.upload_url,
+              tag_name: data.tag_name
             }
   build-tauri:
     needs: create-release
@@ -64,7 +67,9 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -90,7 +95,7 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
       - name: "Build app (Linux)"
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         if: matrix.platform == 'ubuntu-22.04' || matrix.platform == 'ubuntu-22.04-arm'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -98,7 +103,7 @@ jobs:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
       - name: "Build app (Windows)"
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         if: matrix.platform == 'windows-latest'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -115,7 +120,7 @@ jobs:
       - name: upload-unsigned-artifact
         if: matrix.platform == 'windows-latest'
         id: upload-unsigned-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -123,7 +128,7 @@ jobs:
       - name: sign-windows-build
         if: matrix.platform == 'windows-latest'
         id: sign-windows-build
-        uses: signpath/github-action-submit-signing-request@v1
+        uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: '${{ secrets.SIGNPATH_ORG_ID }}'
@@ -135,11 +140,4 @@ jobs:
           output-artifact-directory: './src-tauri/target/release/bundle/nsis/signed'
       - name: Upload signed installer
         if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}
-          asset_name: ${{ env.installer_name }}
-          asset_content_type: application/octet-stream
+        run: gh release upload "${{ needs.create-release.outputs.tag_name }}" "./src-tauri/target/release/bundle/nsis/signed/${{ env.installer_name }}" --clobber

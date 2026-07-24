@@ -2,7 +2,7 @@ use crate::utils::db_manager::{get_installs, get_manifest_info_by_id, get_settin
 #[cfg(target_os = "linux")]
 use crate::utils::db_manager::{
     create_installed_runner, get_installed_runner_info_by_version, get_installed_runners, update_installed_runner_is_installed_by_version,
-    update_settings_default_dxvk_location, update_settings_default_jadeite_location,
+    update_settings_default_dxvk_location,
     update_settings_default_prefix_location, update_settings_default_runner_location,
 };
 use crate::utils::models::{DialogResponse,XXMISettings};
@@ -34,10 +34,6 @@ pub mod repo_manager;
 pub mod shortcuts;
 pub mod system_tray;
 pub mod discord_rpc;
-
-pub fn generate_cuid() -> String {
-    cuid2::create_id()
-}
 
 pub fn run_async_command<F: Future>(cmd: F) -> F::Output {
     if tokio::runtime::Handle::try_current().is_ok() { tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(cmd)) } else { tauri::async_runtime::block_on(cmd) }
@@ -222,7 +218,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
                 let wine = comppath.join("runners");
                 let dxvk = comppath.join("dxvk");
                 let prefixes = comppath.join("prefixes");
-                let jadeitepath = path.join("extras").join("jadeite");
                 let mangohudcfg = app.path().home_dir().unwrap().join(".config/MangoHud/MangoHud.conf");
 
                 // steamrt setup
@@ -243,7 +238,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
                     }
                 }
 
-                if g.jadeite_path == "" { fs::create_dir_all(&jadeitepath).unwrap(); update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
                 if g.default_runner_path == "" { fs::create_dir_all(&wine).unwrap(); update_settings_default_runner_location(app, wine.to_str().unwrap().to_string()); }
                 if g.default_dxvk_path == "" { fs::create_dir_all(&dxvk).unwrap();update_settings_default_dxvk_location(app, dxvk.to_str().unwrap().to_string()); }
                 if g.default_runner_prefix_path == "" { fs::create_dir_all(&prefixes).unwrap(); update_settings_default_prefix_location(app, prefixes.to_str().unwrap().to_string()); }
@@ -260,7 +254,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
             let wine = comppath.join("runners");
             let dxvk = comppath.join("dxvk");
             let prefixes = comppath.join("prefixes");
-            let jadeitepath = path.join("extras").join("jadeite");
             let mangohudcfg = app.path().home_dir().unwrap().join(".config/MangoHud/MangoHud.conf");
 
             // steamrt setup
@@ -282,7 +275,6 @@ pub fn setup_or_fix_default_paths<R: Runtime>(app: &AppHandle<R>, path: PathBuf,
             }
 
             if !mangohudcfg.exists() { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); } else { db_manager::update_settings_default_mangohud_config_location(app, mangohudcfg.to_str().unwrap().to_string()); }
-            if !jadeitepath.exists() { fs::create_dir_all(&jadeitepath).unwrap();update_settings_default_jadeite_location(app, jadeitepath.to_str().unwrap().to_string()); }
             if !comppath.exists() {
                 fs::create_dir_all(&wine).unwrap();
                 fs::create_dir_all(&dxvk).unwrap();
@@ -416,18 +408,6 @@ pub fn sync_install_backgrounds<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-#[cfg(all(target_arch = "x86_64", target_os = "windows"))]
-pub fn is_windows_arm_translation() -> bool {
-    #[link(name = "kernel32")]
-    unsafe extern "system" {
-        fn GetCurrentProcess() -> *mut core::ffi::c_void;
-        fn IsWow64Process2(h_process: *mut core::ffi::c_void, p_process_machine: *mut u16, p_native_machine: *mut u16) -> i32;
-    }
-    let mut process_machine: u16 = 0;
-    let mut native_machine: u16 = 0;
-    unsafe { IsWow64Process2(GetCurrentProcess(), &mut process_machine, &mut native_machine) != 0 && native_machine == 0xAA64 }
-}
-
 #[cfg(target_os = "linux")]
 #[allow(non_camel_case_types)]
 pub fn raise_fd_limit(new_limit: i32) {
@@ -556,7 +536,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
         let cfg = package.join("d3dx.ini");
         if cfg.exists() {
             let actions = if data.dump_shaders { "clipboard hlsl asm regex" } else { "clipboard" };
-            let mut managed: Vec<(&str, &str, String)> = vec![("Hunting","hunting",data.hunting_mode.to_string()), ("Hunting","marking_actions",actions.to_string()), ("Logging","show_warnings",data.show_warnings.to_string()), ];
+            let mut managed: Vec<(&str, &str, String)> = vec![("Hunting","hunting",data.hunting_mode.to_string()), ("Hunting","marking_actions",actions.to_string()), ("Logging","show_warnings",data.show_warnings.to_string()), ("Rendering","cache_shaders",data.cache_shaders.to_string()), ];
 
             #[cfg(target_os = "linux")]
             {
@@ -594,6 +574,7 @@ pub fn apply_xxmi_tweaks(package: PathBuf, mut data: Json<XXMISettings>) -> Json
     } else { data }
 }
 
+#[allow(unused_variables)]
 pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
     let xxmi_base = Path::new(&xxmi_path).to_path_buf();
     let d3dcompiler = xxmi_base.join("d3dcompiler_47.dll");
@@ -605,7 +586,8 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         }
     }
 
-    let path = base.join("Client/Config/UserEngine.ini");
+    // The parser and handler for writing the ini configs is extremely cursed, tukan will touch you inappropriately if this breaks
+    /*let path = base.join("Client/Config/UserEngine.ini");
     const SECTION: &str = "[ConsoleVariables]";
     const FIELDS: &[(&str, &str)] = &[
         ("r.Kuro.SkeletalMesh.LODDistanceScaleDeviceOffset", "-10"),
@@ -616,6 +598,7 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         ("r.Streaming.LimitPoolSizeToVRAM", "1"),
         ("r.Streaming.UseFixedPoolSize", "1"),
     ];
+    let managed_keys: std::collections::HashSet<&str> = FIELDS.iter().map(|(k, _)| *k).collect();
 
     let block: String = FIELDS.iter().fold(format!("{}\r\n", SECTION), |mut s, (k, v)| {
         s.push_str(&format!("{}={}\r\n", k, v));
@@ -633,24 +616,30 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
         return;
     }
 
-    // Early return if all fields already correct
+    // Early return if all fields already correct, flag and deal with illegal ones too
     let all_correct = {
         let mut in_section = false;
         let mut matched = vec![false; FIELDS.len()];
+        let mut has_stale = false;
+        let mut has_misplaced = false;
         for line in content.lines() {
             let tr = line.trim();
-            if tr.starts_with('[') && tr.ends_with(']') { in_section = tr == SECTION; } else if in_section && !tr.starts_with(';') && tr.contains('=') {
-                let mut parts = tr.splitn(2, '=');
-                let key = parts.next().unwrap_or("").trim();
-                let val = parts.next().unwrap_or("").trim();
-                if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) { if FIELDS[i].1 == val { matched[i] = true; } }
+            if tr.starts_with('[') && tr.ends_with(']') { in_section = tr == SECTION; }
+            else if !tr.starts_with(';') && !tr.starts_with('#') && tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if in_section {
+                    if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
+                        let val = tr.splitn(2, '=').nth(1).unwrap_or("").trim();
+                        if FIELDS[i].1 == val { matched[i] = true; }
+                    } else { has_stale = true; }
+                } else if managed_keys.contains(key) { has_misplaced = true; }
             }
         }
-        matched.iter().all(|&m| m)
+        matched.iter().all(|&m| m) && !has_stale && !has_misplaced
     };
     if all_correct { return; }
 
-    // Section exists — fix wrong/missing field values in-place, append missing keys at end of section
+    // Enforce FIELDS and clean up misplaced keys
     let mut in_section = false;
     let mut written = vec![false; FIELDS.len()];
     let mut out: Vec<String> = Vec::new();
@@ -660,16 +649,39 @@ pub fn apply_wwmi_tweaks(base: PathBuf, xxmi_path: String) {
             if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); written[i] = true; } } }
             in_section = tr == SECTION;
             out.push(format!("{}\r\n", tr));
-        } else if in_section && !tr.starts_with(';') && tr.contains('=') {
-            let key = tr.splitn(2, '=').next().unwrap_or("").trim();
-            if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
-                out.push(format!("{}={}\r\n", FIELDS[i].0, FIELDS[i].1));
-                written[i] = true;
-            } else { out.push(format!("{}\r\n", tr)); }
-        } else { out.push(format!("{}\r\n", tr)); }
+        } else if in_section {
+            if tr.starts_with(';') || tr.starts_with('#') || tr.is_empty() { out.push(format!("{}\r\n", tr)); }
+            else if tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if let Some(i) = FIELDS.iter().position(|(k, _)| *k == key) {
+                    out.push(format!("{}={}\r\n", FIELDS[i].0, FIELDS[i].1));
+                    written[i] = true;
+                }
+            }
+        } else {
+            if !tr.starts_with(';') && !tr.starts_with('#') && !tr.is_empty() && tr.contains('=') {
+                let key = tr.splitn(2, '=').next().unwrap_or("").trim();
+                if managed_keys.contains(key) { continue; }
+            }
+            out.push(format!("{}\r\n", tr));
+        }
     }
     if in_section { for (i, (k, v)) in FIELDS.iter().enumerate() { if !written[i] { out.push(format!("{}={}\r\n", k, v)); } } }
-    let _ = fs::write(&path, out.concat());
+
+    // Remove empty section headers left after cleanup
+    let mut cleaned: Vec<String> = Vec::new();
+    let mut i = 0;
+    while i < out.len() {
+        let line = out[i].trim();
+        if line.starts_with('[') && line.ends_with(']') {
+            let mut j = i + 1;
+            while j < out.len() && out[j].trim().is_empty() { j += 1; }
+            if j >= out.len() || out[j].trim().starts_with('[') { i = j; continue; }
+        }
+        cleaned.push(out[i].clone());
+        i += 1;
+    }
+    let _ = fs::write(&path, cleaned.concat());*/
 }
 
 pub fn compare_version(a: &str, b: &str) -> std::cmp::Ordering {
@@ -724,7 +736,7 @@ pub fn is_using_overriden_runner(installed_runner: String, override_runner: Stri
 
 #[allow(dead_code)]
 pub fn empty_dir<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    const EXCEPTIONS: &[&str] = &["Mods/", "ShaderCache/", "ShaderFixes/", "d3dx_user.ini", "gimi/", "srmi/", "zzmi/", "himi/", "wwmi/", "ssmi/", "efmi/"];
+    const EXCEPTIONS: &[&str] = &["Mods/", "mods/", "ShaderCache/", "ShaderFixes/", "d3dx_user.ini", "gimi/", "srmi/", "zzmi/", "himi/", "wwmi/", "ssmi/", "efmi/"];
     if dir.as_ref().exists() {
         for entry in fs::read_dir(dir.as_ref())? {
             let entry = entry?;
@@ -833,6 +845,25 @@ pub fn get_steam_tool_appid(path: PathBuf) -> String {
     String::new()
 }
 
+#[cfg(target_os = "linux")]
+pub fn get_steam_tool_name(path: PathBuf) -> String {
+    let manifest_path = path.join("compatibilitytool.vdf");
+    if let Ok(manifest_str) = fs::read_to_string(&manifest_path) {
+        for line in manifest_str.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("\"display_name\"") {
+                if let Some(start) = trimmed.rfind('"') {
+                    if let Some(value_start) = trimmed[..start].rfind('"') {
+                        let appid = &trimmed[value_start + 1..start];
+                        return appid.to_string()
+                    }
+                }
+            }
+        }
+    }
+    String::new()
+}
+
 fn collect_authkey_urls(content: &str) -> Vec<&str> {
     let mut rslt = Vec::<&str>::new();
     let mut offset: usize = 0;
@@ -862,6 +893,38 @@ pub fn extract_authkey_from_content(content: &str) -> Option<String> {
     None
 }
 
+pub fn extract_pullurl_from_content(content: &str, biz: String) -> Option<String> {
+    if biz == "wuwa_global" {
+        let decrypted: String = content.bytes().map(|byte| { (byte ^ if (byte & 0x0F) % 2 == 1 { 0xA5 } else { 0xEF }) as char }).collect();
+        let mut urls = Vec::new();
+        let mut offset = 0;
+        while offset < decrypted.len() {
+            let next = decrypted[offset..].find("https://");
+            if next.is_none() { break; }
+            let start = offset + next.unwrap();
+            let sliced = &decrypted[start..];
+            let end = sliced.find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '<' || c == '>').unwrap_or(sliced.len());
+            urls.push(&sliced[..end]);
+            offset = start + "https://".len();
+        }
+        let hints = vec!["aki-game"];
+        for url in urls.into_iter().rev() {
+            let lowered = url.to_ascii_lowercase();
+            if !hints.iter().any(|h| lowered.contains(h)) { continue; }
+            if fischl::utils::parse_url(url.parse().unwrap()).is_ok() { return Some(url.to_string()); }
+        }
+        return None;
+    }
+    let urls = collect_authkey_urls(content);
+    let hints = vec!["webview_gacha"];
+    for url in urls.into_iter().rev() {
+        let lowered = url.to_ascii_lowercase();
+        if !hints.iter().any(|h| lowered.contains(h)) { continue; }
+        if fischl::utils::parse_url(url.parse().unwrap()).is_ok() { return Some(url.to_string()); }
+    }
+    None
+}
+
 pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: String) -> String {
     if game_biz.to_ascii_lowercase().contains("hk4e_global") { return "miHoYo/Genshin Impact/output_log.txt".to_string() }
     if game_biz.to_ascii_lowercase().contains("hkrpg_global") { return "Cognosphere/Star Rail/Player.log".to_string() }
@@ -879,6 +942,31 @@ pub fn get_engine_log_from_game(base: String, game_biz: String, region_code: Str
     if game_biz.to_ascii_lowercase().contains("pgr_global") { return fs::read_dir(PathBuf::from(&base).join("kurogame/PGR/log")).ok().and_then(|e| e.filter_map(|e| e.ok()).max_by_key(|e| e.file_name()).map(|e| format!("kurogame/PGR/log/{}", e.file_name().to_string_lossy()))).unwrap_or_default(); }
     if game_biz.to_ascii_lowercase().contains("endfield_global") { return "Gryphline/Endfield/Player.log".to_string() }
     "".to_string()
+}
+
+pub fn sanitize_cmd(cmd: &str) -> String {
+    let mut s = cmd.trim_start();
+    loop {
+        let eq = match s.find('=') {
+            Some(i) if i > 0 => i,
+            _ => break,
+        };
+        let key = &s[..eq];
+        if !key.bytes().next().map_or(false, |b| b.is_ascii_alphabetic() || b == b'_')
+            || !key.bytes().skip(1).all(|b| b.is_ascii_alphanumeric() || b == b'_') {
+            break;
+        }
+        let val = &s[eq + 1..];
+        let skip = if val.starts_with('"') {
+            val[1..].find('"').map_or(val.len(), |i| i + 2)
+        } else if val.starts_with('\'') {
+            val[1..].find('\'').map_or(val.len(), |i| i + 2)
+        } else {
+            val.find(' ').unwrap_or(val.len())
+        };
+        s = s[eq + 1 + skip..].trim_start();
+    }
+    s.to_string()
 }
 
 // === LinkedHashMap ===
