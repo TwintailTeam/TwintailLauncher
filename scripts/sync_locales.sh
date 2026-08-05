@@ -8,7 +8,6 @@ set -euo pipefail
 #
 # Optional env vars:
 #   LOCALES_DIR       - Repository-relative target directory for locale files
-#   BASE_LANGUAGE     - Base language local stem or tag (en_US or en-US)
 #   EXCLUDE_LANGUAGES - Space-separated local stems or tags to skip
 #   DRY_RUN           - Set to "true" to print actions without executing
 
@@ -16,10 +15,9 @@ set -euo pipefail
 : "${TOLGEE_API_KEY:?TOLGEE_API_KEY is required}"
 : "${TOLGEE_PROJECT_ID:?TOLGEE_PROJECT_ID is required}"
 
+TOLGEE_URL="${TOLGEE_URL%/}"
 LOCALES_DIR="${LOCALES_DIR:-src-tauri/resources/locales}"
 LOCALES_DIR="${LOCALES_DIR%/}"
-BASE_LANGUAGE="${BASE_LANGUAGE:-en_US}"
-BASE_LANGUAGE="${BASE_LANGUAGE//-/_}"
 EXCLUDE_LANGUAGES="${EXCLUDE_LANGUAGES:-en_NEKO}"
 DRY_RUN="${DRY_RUN:-false}"
 
@@ -70,17 +68,23 @@ export_language() {
   local local_filename="$2"
 
   local url="$TOLGEE_URL/v2/projects/$TOLGEE_PROJECT_ID/export"
-  url+="?format=JSON&structureDelimiter=.&supportArrays=true"
-  url+="&filterLanguage=$remote_tag"
+  url+="?format=JSON&structureDelimiter=.&supportArrays=true&zip=false"
+  url+="&languages=$remote_tag"
 
   local response_file="$SYNC_TMP_DIR/${remote_tag}.export"
+  local headers_file="$SYNC_TMP_DIR/${remote_tag}.headers"
   local http
-  http=$(curl -s -w "%{http_code}" -o "$response_file" \
+  local curl_rc=0
+  http=$(curl -s -w "%{http_code}" -o "$response_file" -D "$headers_file" \
     -H "X-API-Key: $TOLGEE_API_KEY" \
-    "$url")
+    "$url") || curl_rc=$?
 
   if [[ "$http" != "200" ]]; then
-    warn "  Export failed for $remote_tag (HTTP $http)"
+    warn "  Export failed for $remote_tag (HTTP $http, curl exit $curl_rc)"
+    warn "  $(head -c 500 "$response_file" 2>/dev/null)"
+    if ! grep -qi '^x-tolgee-version:' "$headers_file"; then
+      warn "  No x-tolgee-version header: this response is from a proxy or WAF, not Tolgee"
+    fi
     return 1
   fi
 
@@ -94,11 +98,17 @@ export_language() {
     cp "$response_file" "$extract_dir/${local_filename}.json"
   fi
 
+  # Match the requested language by name. Taking the first file found would write
+  # another language's strings into this locale if the export ever returns more
+  # than one file.
   local json
-  json=$(find "$extract_dir" -maxdepth 2 -name "*.json" -type f -print -quit)
+  json=$(find "$extract_dir" -maxdepth 2 -type f \
+    \( -name "${local_filename}.json" -o -name "${remote_tag}.json" \) -print -quit)
 
   if [[ -z "$json" ]]; then
-    warn "  No JSON in export for $remote_tag"
+    warn "  No JSON for $remote_tag in export (contains: $(
+      find "$extract_dir" -maxdepth 2 -type f -printf '%f ' 2>/dev/null
+    ))"
     return 1
   fi
 
@@ -139,13 +149,33 @@ export_language() {
 
 log "Fetching project stats..."
 
-STATS=$(curl -sf \
+STATS_BODY="$SYNC_TMP_DIR/stats.json"
+STATS_HEADERS="$SYNC_TMP_DIR/stats.headers"
+CURL_RC=0
+
+STATS_HTTP=$(curl -s -o "$STATS_BODY" -D "$STATS_HEADERS" -w '%{http_code}' \
   -H "X-API-Key: $TOLGEE_API_KEY" \
   "$TOLGEE_URL/v2/projects/$TOLGEE_PROJECT_ID/stats"
-) || {
-  echo "Failed to fetch project stats" >&2
+) || CURL_RC=$?
+
+if [[ "$STATS_HTTP" != "200" ]]; then
+  echo "Failed to fetch project stats (HTTP $STATS_HTTP, curl exit $CURL_RC)" >&2
+  echo "--- response headers ---" >&2
+  cat "$STATS_HEADERS" >&2 2>/dev/null || true
+  echo "--- response body ---" >&2
+  head -c 2000 "$STATS_BODY" >&2 2>/dev/null || true
+  echo >&2
+
+  # Tolgee stamps every response with x-tolgee-version. Without it the reply came
+  # from something in front of Tolgee, so the status says nothing about the key.
+  if ! grep -qi '^x-tolgee-version:' "$STATS_HEADERS"; then
+    warn "No x-tolgee-version header: this response is from a proxy or WAF, not Tolgee"
+  fi
+
   exit 1
-}
+fi
+
+STATS=$(cat "$STATS_BODY")
 
 # Evaluate each language independently; ignore the overall project percentage.
 READY=$(printf '%s\n' "$STATS" | jq -r '
@@ -185,59 +215,6 @@ has_open_sync_pr_for_language() {
   grep -Fqx "$expected_path" <<<"$OPEN_SYNC_FILES"
 }
 
-sync_base() {
-  local remote_tag=""
-  local candidate
-  local candidate_filename
-
-  for candidate in $READY; do
-    candidate_filename=$(to_local_filename "$candidate")
-    if [[ "$candidate_filename" == "$BASE_LANGUAGE" ]]; then
-      remote_tag="$candidate"
-      break
-    fi
-  done
-
-  if [[ -z "$remote_tag" ]]; then
-    log "Base language $BASE_LANGUAGE is not at 100% reviewed, skipping"
-    return
-  fi
-
-  local local_filename="$BASE_LANGUAGE"
-  local target
-  local relative_target
-  target=$(locale_absolute_path "$local_filename")
-  relative_target=$(locale_relative_path "$local_filename")
-
-  log "Syncing base language $remote_tag as $relative_target..."
-
-  if ! export_language "$remote_tag" "$local_filename"; then
-    warn "Failed to export $remote_tag, skipping"
-    return
-  fi
-
-  if [[ -f "$target" ]] &&
-    diff -q "$SYNC_TMP_DIR/${local_filename}.json" "$target" >/dev/null 2>&1; then
-    log "  $remote_tag is up to date"
-    return
-  fi
-
-  if [[ "$DRY_RUN" == "true" ]]; then
-    log "  DRY RUN - would commit $remote_tag directly to master"
-    return
-  fi
-
-  cp "$SYNC_TMP_DIR/${local_filename}.json" "$target"
-  git -C "$REPO_ROOT" add "$relative_target"
-  git -C "$REPO_ROOT" commit \
-    -m "feat(i18n): restructure $local_filename to nested JSON format"
-  git -C "$REPO_ROOT" push origin HEAD:master
-
-  log "  $remote_tag committed directly to master"
-}
-
-sync_base
-
 CHANGED_LANGS=()
 CHANGED_FILES=()
 CHANGED_KEYS=0
@@ -245,7 +222,6 @@ CHANGED_KEYS=0
 for REMOTE_TAG in $READY; do
   LOCAL_FILENAME=$(to_local_filename "$REMOTE_TAG")
 
-  [[ "$LOCAL_FILENAME" == "$BASE_LANGUAGE" ]] && continue
   is_excluded "$LOCAL_FILENAME" && continue
 
   RELATIVE_TARGET=$(locale_relative_path "$LOCAL_FILENAME")
@@ -268,8 +244,6 @@ for REMOTE_TAG in $READY; do
     log "  $REMOTE_TAG is up to date"
     continue
   fi
-
-  cp "$TEMP_JSON" "$LOCAL_TARGET"
 
   KEY_COUNT=$(jq '
     with_entries(select(.key != "metadata"))
@@ -301,6 +275,7 @@ BRANCH="sync/locales-$TIMESTAMP"
 git -C "$REPO_ROOT" checkout -b "$BRANCH"
 
 for LOCAL_FILENAME in "${CHANGED_FILES[@]}"; do
+  cp "$SYNC_TMP_DIR/${LOCAL_FILENAME}.json" "$(locale_absolute_path "$LOCAL_FILENAME")"
   git -C "$REPO_ROOT" add "$(locale_relative_path "$LOCAL_FILENAME")"
 done
 
