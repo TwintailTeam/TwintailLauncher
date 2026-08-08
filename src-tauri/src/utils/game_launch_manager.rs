@@ -49,10 +49,16 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     }
 
     // Hate this as much as users will but dw runners do not support modding
-    if install.use_xxmi && (runner.to_lowercase().contains("dw") || crate::utils::get_steam_tool_name(runnerpi.clone()).to_lowercase().contains("dw")) {
-        log::info!("Attempted to launch {} with blacklisted runner (Runner: {})! Please do not use this runner.", install.name, install.runner_version);
-        show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
-        return Ok(false);
+    if install.use_xxmi {
+        let runner_last = runnerpi
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("");
+        if runner_last.to_lowercase().contains("dw") || crate::utils::get_steam_tool_name(runnerpi.clone()).to_lowercase().contains("dw") {
+            log::info!("Attempted to launch {} with blacklisted runner (Runner: {})! Please do not use this runner.", install.name, install.runner_version);
+            show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.launch_cmd_failed", Some(vec!["dialogs.buttons.i_understand"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+            return Ok(false);
+        }
     }
 
     if is_runner_lower(cpo.min_runner_versions.clone(), install.clone().runner_version) && !cpo.min_runner_versions.is_empty() {
@@ -753,3 +759,4 @@ fn start_playtime_tracker<R: Runtime>(app: &AppHandle<R>, install: LauncherInsta
         }
     });
 }
+
