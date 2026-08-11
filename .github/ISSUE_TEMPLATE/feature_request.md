@@ -2,7 +2,7 @@
 name: Feature request
 about: Got a feature you want to see? Shoot your shot!
 title: ''
-labels: Enhancement
+labels: Enhancement, Game request
 assignees: TukanDev
 type: Feature
 

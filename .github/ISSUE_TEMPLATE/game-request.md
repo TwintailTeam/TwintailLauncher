@@ -4,7 +4,7 @@ about: Submit game to be added to TTL
 title: "[Game request] "
 labels: Game request
 assignees: TukanDev
-type: Task
+type: Game Request
 
 ---
 
