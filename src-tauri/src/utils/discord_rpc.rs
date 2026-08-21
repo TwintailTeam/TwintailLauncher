@@ -24,6 +24,9 @@ pub fn init<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: GameMa
         "rev1999_global" => "rev1999_icon",
         "sdsgc_global" => "sdsgc_icon",
         "gf2e_global" => "gf2e_icon",
+        "arknights_global" => "arknights_icon",
+        "nikke_global" => "nikke_icon",
+        "nte_global" => "nte_icon",
         &_ => "tl_512"
     };
     let start = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64;
