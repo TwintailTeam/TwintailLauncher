@@ -4,7 +4,7 @@ use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog_with_callback};
-use fischl::download::game::{Game, Kuro, Sophon, Zipped};
+use fischl::download::game::{Game, Kuro, Sophon, Yostar, Zipped};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool,Ordering};
 use std::sync::{Arc, Mutex};
@@ -227,33 +227,39 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
             let install_dir = std::path::Path::new(&i.directory);
             if !install_dir.exists() { std::fs::create_dir_all(install_dir).unwrap_or_default(); }
             let repairing_path = install_dir.join("repairing");
+            let is_yostar = gm.biz == "arknights_global" || gm.biz == "stellasora_global";
             #[cfg(target_os = "linux")]
-            crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string());
+            if !is_yostar { crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string()); }
 
             log::debug!("Starting repair for {} with DOWNLOAD_MODE_RAW", i.name);
             let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
             let manifest = urls.get(0).unwrap();
             let cancel_token = cancel_token.clone();
+            let cb = {
+                let dlpayload = dlpayload.clone();
+                let job_id = job_id.clone();
+                move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
+                    let mut dlp = dlpayload.lock().unwrap();
+                    dlp.insert("job_id", job_id.to_string());
+                    dlp.insert("name", instn.to_string());
+                    dlp.insert("progress", download_current.to_string());
+                    dlp.insert("total", download_total.to_string());
+                    dlp.insert("speed", net_speed.to_string());
+                    dlp.insert("disk", disk_speed.to_string());
+                    dlp.insert("install_progress", install_current.to_string());
+                    dlp.insert("install_total", install_total.to_string());
+                    // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
+                    dlp.insert("phase", phase.to_string());
+                    tmp.emit("repair_progress", dlp.clone()).unwrap();
+                    drop(dlp);
+                }
+            };
             let rslt = run_async_command(async {
-                <Game as Kuro>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check.clone(), {
-                        let dlpayload = dlpayload.clone();
-                        let job_id = job_id.clone();
-                        move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
-                            let mut dlp = dlpayload.lock().unwrap();
-                            dlp.insert("job_id", job_id.to_string());
-                            dlp.insert("name", instn.to_string());
-                            dlp.insert("progress", download_current.to_string());
-                            dlp.insert("total", download_total.to_string());
-                            dlp.insert("speed", net_speed.to_string());
-                            dlp.insert("disk", disk_speed.to_string());
-                            dlp.insert("install_progress", install_current.to_string());
-                            dlp.insert("install_total", install_total.to_string());
-                            // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
-                            dlp.insert("phase", phase.to_string());
-                            tmp.emit("repair_progress", dlp.clone()).unwrap();
-                            drop(dlp);
-                        }
-                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                if is_yostar {
+                    <Game as Yostar>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                } else {
+                    <Game as Kuro>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                }
             });
             if rslt {
                 if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
@@ -261,7 +267,7 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_RAW", i.name);
                 success = true;
                 #[cfg(target_os = "linux")]
-                crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "add".to_string());
+                if !is_yostar { crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "add".to_string()); }
             } else {
                 if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_repair_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", i.name.as_str())]))); }
                 h5.emit("repair_complete", ()).unwrap();

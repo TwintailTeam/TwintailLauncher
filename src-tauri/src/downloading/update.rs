@@ -4,7 +4,7 @@ use crate::downloading::{DownloadGamePayload, QueueJobPayload};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog_with_callback};
-use fischl::download::game::{Game, Kuro, Sophon, Zipped};
+use fischl::download::game::{Game, Kuro, Sophon, Yostar, Zipped};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -393,9 +393,57 @@ pub fn run_game_update<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
             "DOWNLOAD_MODE_RAW" => {
                 let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();
                 if urls.is_empty() {
-                    log::debug!("No diff found for {} using DOWNLOAD_MODE_RAW - this should never happen, the manifest may be corrupt or the install version is unrecognized", install.name);
-                    show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.update_no_path", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
-                    h5.emit("update_complete", ()).unwrap();
+                    // yostar ships no diffs at all, so a full redownload is the only update path
+                    if gbiz == "arknights_global" || gbiz == "stellasora_global" {
+                        log::debug!("No diff files found for this update using DOWNLOAD_MODE_RAW, treating as full download");
+                        let install_dir = Path::new(&install.directory);
+                        if !install_dir.exists() { fs::create_dir_all(install_dir).unwrap_or_default(); }
+                        let downloading_path = install_dir.join("downloading");
+                        let full_urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
+                        log::debug!("Starting full download of {} using DOWNLOAD_MODE_RAW with {} manifest(s)", install.name, full_urls.len());
+                        let manifest = full_urls.get(0).unwrap();
+                        let cancel_token = cancel_token.clone();
+                        let rslt = run_async_command(async {
+                            <Game as Yostar>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), {
+                                    let dlpayload = dlpayload.clone();
+                                    let tmp = tmp.clone();
+                                    let instn = instn.clone();
+                                    let job_id = job_id.clone();
+                                    move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
+                                        let mut dlp = dlpayload.lock().unwrap();
+                                        dlp.insert("job_id", job_id.to_string());
+                                        dlp.insert("name", instn.to_string());
+                                        dlp.insert("progress", download_current.to_string());
+                                        dlp.insert("total", download_total.to_string());
+                                        dlp.insert("speed", net_speed.to_string());
+                                        dlp.insert("disk", disk_speed.to_string());
+                                        dlp.insert("install_progress", install_current.to_string());
+                                        dlp.insert("install_total", install_total.to_string());
+                                        // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
+                                        dlp.insert("phase", phase.to_string());
+                                        tmp.emit("update_progress", dlp.clone()).unwrap();
+                                        drop(dlp);
+                                    }
+                                }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                        });
+                        if rslt {
+                            if downloading_path.exists() { let _ = fs::remove_dir_all(&downloading_path); }
+                            update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
+                            h5.emit("update_complete", ()).unwrap();
+                            log::debug!("Successfully updated {} using DOWNLOAD_MODE_RAW (full), marking as complete", install.name);
+                            success = true;
+                            #[cfg(target_os = "linux")]
+                            crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), picked.metadata.versioned_name.clone());
+                        } else {
+                            if !cancel_token.load(Ordering::Relaxed) { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
+                            h5.emit("update_complete", ()).unwrap();
+                            log::debug!("Error occurred during DOWNLOAD_MODE_RAW full download for {}, marking as failed", install.name);
+                        }
+                    } else {
+                        log::debug!("No diff found for {} using DOWNLOAD_MODE_RAW - this should never happen, the manifest may be corrupt or the install version is unrecognized", install.name);
+                        show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.update_no_path", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+                        h5.emit("update_complete", ()).unwrap();
+                    }
                 } else {
                     // we have diffs update the game
                     let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
