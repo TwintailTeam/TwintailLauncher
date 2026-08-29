@@ -1560,7 +1560,7 @@ checksum = "d45db016d36b838f563236e9193d0ee6ce38f3f68b6c94e914b4929c96bbb890"
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#af143b5d9e66688bcec21ad8fcfcb36308c1940d"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#b7f534d4a93310135d00db1fac7949b9d0f7a37d"
 dependencies = [
  "crc64fast",
  "crossbeam-deque",
