@@ -165,6 +165,8 @@ pub fn runner_from_runner_version<R: Runtime>(app: &AppHandle<R>, runner_version
         else if rl.contains("proton-umu") { "proton_umu.json" }
         else if rl.contains("proton-vanilla") { "proton_vanilla.json" }
         else if rl.contains("proton-em") { "proton_em.json" }
+        else if rl.contains("proton-wineland") { "proton_wineland.json" }
+        else if rl.contains("proton-agmg") { "proton_agmg.json" }
         else if rl.contains("wine-staging-tkg") { "wine_staging_tkg.json" }
         else if rl.contains("wine-staging") { "wine_staging.json" }
         else if rl.contains("wine-ge-proton") { "wine_ge_proton.json" }
