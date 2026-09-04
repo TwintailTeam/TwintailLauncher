@@ -77,8 +77,10 @@ case "$TYPE" in
             "$TEMPLATE_DIR/PKGBUILD_stable_src.in" > ttl-stable-src/PKGBUILD
 
         # Generate ttl-git/PKGBUILD
-        GIT_COMMIT_COUNT=$(git rev-list --count HEAD)
-        GIT_COMMIT_HASH=$(git rev-parse --short=7 HEAD)
+        # HEAD is the release tag (on stable), but PKGBUILD_git.in clones master, so read master
+        git fetch --no-tags origin +refs/heads/master:refs/remotes/origin/master
+        GIT_COMMIT_COUNT=$(git rev-list --count origin/master)
+        GIT_COMMIT_HASH=$(git rev-parse --short=7 origin/master)
         GIT_PKGVER="r${GIT_COMMIT_COUNT}.${GIT_COMMIT_HASH}"
         echo "GIT_PKGVER is: $GIT_PKGVER"
 

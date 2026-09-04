@@ -433,6 +433,8 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
                                     if dl {
                                         let mi_variants = if package_type == "xxmi" { vec!["gimi", "srmi", "zzmi", "wwmi", "himi", "efmi"] } else if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { vec![package_type.as_str()] } else { vec![] };
                                         for mi in mi_variants {
+                                            // Do not touch variants the user does not have installed, creating their dirs makes them look installed
+                                            if !path.join(mi).exists() { continue; }
                                             for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                                                 let linkedpath = path.join(mi).join(lib);
                                                 let _ = fs::remove_file(&linkedpath);
@@ -467,7 +469,7 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
     } else {
         let ap = if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { path.join(&package_type) } else { path.clone() };
         let entries: Vec<_> = fs::read_dir(&ap).ok().map(|r| r.filter_map(|e| e.ok()).collect()).unwrap_or_default();
-        let is_effectively_empty = if package_type == "xxmi" { entries.iter().all(|e| { let name = e.file_name(); e.path().is_dir() && (name == "gimi" || name == "srmi" || name == "zzmi" || name == "himi" || name == "wwmi" || name == "ssmi" || name == "efmi") }) } else { entries.is_empty() || entries.iter().all(|e| e.file_name().to_str().unwrap().contains("Mods") || e.file_name().to_str().unwrap().contains("ShaderCache") || e.file_name() == "d3dx_user.ini") };
+        let is_effectively_empty = if package_type == "xxmi" { entries.iter().all(|e| { let name = e.file_name(); e.path().is_dir() && (name == "gimi" || name == "srmi" || name == "zzmi" || name == "himi" || name == "wwmi" || name == "ssmi" || name == "efmi") }) } else { entries.is_empty() || entries.iter().all(|e| e.file_name().to_str().unwrap().contains("Mods") || e.file_name().to_str().unwrap().contains("ShaderCache") || e.file_name() == "d3dx_user.ini" || e.file_name() == "d3d11.dll" || e.file_name() == "d3dcompiler_47.dll") };
         if is_effectively_empty {
                 let mut dlpayload = HashMap::new();
                 dlpayload.insert("name", package_id.clone().chars().next().map(|first| first.to_uppercase().collect::<String>() + &package_id[first.len_utf8()..]).unwrap_or_default());
@@ -495,8 +497,10 @@ pub fn download_or_update_extra<R: Runtime>(app: &AppHandle<R>, path: PathBuf, p
                     }).await
                 });
                 if dl {
-                    let mi_variants = if package_id == "xxmi" { vec!["gimi", "srmi", "zzmi", "wwmi", "himi", "efmi"] } else if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { vec![package_type.as_str()] } else { vec![] };
+                    let mi_variants = if package_type == "xxmi" { vec!["gimi", "srmi", "zzmi", "wwmi", "himi", "efmi"] } else if package_type.as_str() == "gimi" || package_type.as_str() == "srmi" || package_type.as_str() == "zzmi" || package_type.as_str() == "himi" || package_type.as_str() == "wwmi" || package_type.as_str() == "ssmi" || package_type.as_str() == "efmi" { vec![package_type.as_str()] } else { vec![] };
                     for mi in mi_variants {
+                        // Do not touch variants the user does not have installed, creating their dirs makes them look installed
+                        if !path.join(mi).exists() { continue; }
                         for lib in ["d3d11.dll", "d3dcompiler_47.dll"] {
                             let linkedpath = path.join(mi).join(lib);
                             let _ = fs::remove_file(&linkedpath);

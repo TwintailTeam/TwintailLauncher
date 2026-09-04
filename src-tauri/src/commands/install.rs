@@ -1048,7 +1048,7 @@ pub fn remove_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortc
                 let flatpak_steam = app.path().home_dir().unwrap().join(".var/app/com.valvesoftware.Steam/data/Steam/userdata");
                 let normal_steam = crate::utils::shortcuts::resolve_normal_steam_userdata(app.path().home_dir().unwrap());
 
-                if flatpak_steam.exists() {
+                if flatpak_steam.exists() && !is_flatpak() {
                     let status = remove_steam_shortcut(flatpak_steam, install.name.as_str());
                     if status {
                         log::info!("Removed \"{}\" from Steam (Flatpak)", install.name);

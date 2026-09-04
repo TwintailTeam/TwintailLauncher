@@ -980,10 +980,10 @@ export default class App extends React.Component<any, any> {
                 r.filter((e: any) => e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
                     e.versions.forEach((v: any) => dxvks.push({ value: v.version, name: v.version }));
                 });
-                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine")).forEach((e: any) => {
+                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && (!e.display_name.toLowerCase().includes("wine") || e.display_name.toLowerCase().includes("wineland"))).forEach((e: any) => {
                     e.versions.forEach((v: any) => wines.push({ value: v.version, name: v.version }));
                 });
-                let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine"));
+                let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && (!e.display_name.toLowerCase().includes("wine") || e.display_name.toLowerCase().includes("wineland")));
                 this.setState({ runnerVersions: wines, dxvkVersions: dxvks, runners: d });
             }
         })
@@ -1000,10 +1000,10 @@ export default class App extends React.Component<any, any> {
                 r.filter((e: any) => e.display_name.toLowerCase().includes("dxvk")).forEach((e: any) => {
                     e.versions.forEach((v: any) => dxvks.push({ value: v.version, name: v.version }));
                 });
-                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine")).forEach((e: any) => {
+                r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && (!e.display_name.toLowerCase().includes("wine") || e.display_name.toLowerCase().includes("wineland"))).forEach((e: any) => {
                     e.versions.forEach((v: any) => wines.push({ value: v.version, name: v.version }));
                 });
-                let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && !e.display_name.toLowerCase().includes("wine"));
+                let d = r.filter((e: any) => !e.display_name.toLowerCase().includes("dxvk") && (!e.display_name.toLowerCase().includes("wine") || e.display_name.toLowerCase().includes("wineland")));
                 this.setState({ runnerVersionsFiltered: wines, dxvkVersionsFiltered: dxvks, runnersFiltered: d });
             }
         })

@@ -122,3 +122,5 @@ You can find built binaries in `target/release` for current os, `target/x86_64-u
 ## Issues and contributions
 Feel free to open issues and PRs usually we try to get to everyone as fast as possible.<br>
 Avoid opening multiple issues and please respect everyone's time we are all doing the work for free after all we are not required to answer and fix issues at all.
+
+Please open pull requests against `master` branch!

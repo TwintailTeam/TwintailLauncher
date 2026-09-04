@@ -63,7 +63,7 @@ export default function ActionBar(props: ActionBarProps) {
                   : buttonType === "queued"
                     ? "bg-gray-600 hover:bg-gray-700 shadow-gray-900/20 focus:ring-2 focus:ring-gray-400/60"
                     : "bg-purple-600 hover:bg-purple-700 shadow-purple-900/20 focus:ring-2 focus:ring-purple-400/60"}`}
-          disabled={disablePreload || buttonType === "queued" || buttonType === "pause"}
+          disabled={disablePreload || buttonType === "queued" || buttonType === "pause" || installSettings.steam_imported}
           onClick={() => {
             emit("start_game_preload", {
               install: currentInstall,

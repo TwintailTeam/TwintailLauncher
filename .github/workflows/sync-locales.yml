@@ -7,7 +7,7 @@ on:
       dry_run:
         description: "Dry run (no PRs created)"
         required: false
-        default: "false"
+        default: false
         type: boolean
 
 concurrency:
@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: master
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
