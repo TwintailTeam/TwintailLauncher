@@ -102,13 +102,45 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
-      - name: "Build app (Windows)"
-        uses: tauri-apps/tauri-action@v1
+      # SignPath currently does not support deep signing NSIS installers so sign exe then installer in 2 steps
+      - name: "Build app binary only (Windows)"
         if: matrix.platform == 'windows-latest'
+        run: pnpm tauri build --no-bundle ${{ matrix.args }}
+      # Required for the artifact to be available on the GitHub server for windows signing
+      - name: upload-unsigned-app-exe
+        if: matrix.platform == 'windows-latest'
+        id: upload-unsigned-app-exe
+        uses: actions/upload-artifact@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: ${{ matrix.args }}
+          name: unsigned-app-exe
+          path: ./src-tauri/target/release/twintaillauncher.exe
+      - name: sign-app-exe
+        if: matrix.platform == 'windows-latest'
+        id: sign-app-exe
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORG_ID }}'
+          project-slug: '${{ secrets.SIGNPATH_PROJECT_SLUG }}'
+          signing-policy-slug: 'release-signing'
+          artifact-configuration-slug: 'app_exe'
+          github-artifact-id: '${{ steps.upload-unsigned-app-exe.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: './signed-app-exe'
+      - name: Restore signed app exe
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem ./signed-app-exe -Filter twintaillauncher.exe -Recurse | Select-Object -First 1
+          if (-not $exe) { throw "SignPath returned no twintaillauncher.exe in ./signed-app-exe" }
+          $sig = Get-AuthenticodeSignature $exe.FullName
+          if ($sig.Status -ne 'Valid') { throw "app exe came back unsigned: $($sig.Status)" }
+          Copy-Item $exe.FullName ./src-tauri/target/release/twintaillauncher.exe -Force
+      - name: "Bundle NSIS installer (Windows)"
+        if: matrix.platform == 'windows-latest'
+        run: pnpm tauri build --bundles nsis ${{ matrix.args }}
       - name: Find installer filename
         if: matrix.platform == 'windows-latest'
         shell: pwsh
@@ -124,6 +156,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          name: unsigned-installer
           path: ./src-tauri/target/release/bundle/nsis/${{ env.installer_name }}
       - name: sign-windows-build
         if: matrix.platform == 'windows-latest'
