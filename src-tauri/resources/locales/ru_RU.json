@@ -1,0 +1,626 @@
+{
+  "action_bar": {
+    "game_settings_tooltip": "Настройки игры",
+    "predownload_tooltip": "Предзагрузка обновления"
+  },
+  "app": {
+    "initializing": "Инициализация...",
+    "update_available_banner": "Доступна новая версия TwintailLauncher! Обновитесь, чтобы всё работало наилучшим образом!"
+  },
+  "context_menu": {
+    "add_to_desktop": "Добавить на рабочий стол",
+    "add_to_steam": "Добавить в Steam",
+    "installation_settings": "Настройки игры",
+    "loading": "Загрузка...",
+    "remove_from_desktop": "Убрать с рабочего стола",
+    "remove_from_steam": "Убрать из Steam",
+    "steam_managed": "Ярлыками этой установки управляет Steam."
+  },
+  "dialogs": {
+    "buttons": {
+      "i_understand": "Понятно",
+      "ok": "ОК",
+      "restart_now": "Перезапустить сейчас"
+    },
+    "cmd_exec_critical": "Не удалось выполнить вспомогательную команду cmd! Произошло что-то серьёзное.",
+    "cmd_exec_failed": "Не удалось выполнить вспомогательную команду cmd! Попробуйте ещё раз.",
+    "cmd_exec_incorrect": "Не удалось выполнить вспомогательную команду cmd! Попробуйте ещё раз или проверьте правильность команды.",
+    "cmd_prefix_not_initialized": "Не удалось запустить cmd.exe. Запустите игру хотя бы один раз!",
+    "cmd_runner_not_found": "Не удалось запустить cmd.exe. Раннер точно скачан правильно?",
+    "control_exec_critical": "Не удалось выполнить вспомогательную команду control! Произошло что-то серьёзное.",
+    "control_exec_failed": "Не удалось выполнить вспомогательную команду control! Попробуйте ещё раз.",
+    "control_exec_incorrect": "Не удалось выполнить вспомогательную команду control! Попробуйте ещё раз или проверьте правильность команды.",
+    "control_prefix_not_initialized": "Не удалось запустить control.exe. Запустите игру хотя бы один раз!",
+    "control_runner_not_found": "Не удалось запустить control.exe. Раннер точно скачан правильно?",
+    "directory_open_failed": "Не удалось открыть папку, попробуйте позже!",
+    "dxvk_download_failed": "Произошла ошибка при загрузке DXVK {dxvk_version}! Повторите попытку позже.",
+    "engine_log_dir_open_failed": "Не удалось открыть папку с логами игрового движка. Префикс раннера точно инициализирован?",
+    "fps_unlock_run_critical": "Не удалось запустить FPS Unlocker! Произошло что-то серьёзное.",
+    "fps_unlock_run_failed": "Не удалось запустить FPS Unlocker! Попробуйте ещё раз и убедитесь, что FPS Unlocker включён!",
+    "fps_unlock_run_retry": "Не удалось запустить FPS Unlocker! Попробуйте позже!",
+    "game_already_queued": "Эта игра уже в очереди на загрузку!",
+    "game_already_queued_repair": "Эта игра уже в очереди на восстановление!",
+    "game_dir_open_failed": "Не удалось открыть папку игры. Попробуйте позже!",
+    "game_download_error": "Произошла ошибка при загрузке {install_name}\nПопробуйте ещё раз!",
+    "game_repair_error": "Произошла ошибка при восстановлении {install_name}\nПопробуйте ещё раз!",
+    "game_update_error": "Произошла ошибка при обновлении {install_name}\nПопробуйте ещё раз!",
+    "gamemode_not_found": "Feral Gamemode включён, но `gamemoderun` не найден в PATH. Игра запустится без Gamemode.\nУстановите пакет `gamemode` или его аналог в вашем дистрибутиве, чтобы пользоваться этой возможностью.",
+    "gamescope_not_found": "Gamescope от ValveSoftware включён, но `gamescope` не найден в PATH. Игра запустится без Gamescope.\nУстановите пакет `gamescope` или его аналог в вашем дистрибутиве, чтобы пользоваться этой возможностью.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope и XXMI вместе для этой игры не поддерживаются, используйте только один из этих инструментов!",
+    "install_already_queued": "{install_name} уже в очереди на загрузку!",
+    "install_not_found": "Не удалось найти установленную игру!",
+    "install_remove_dir_failed": "Не удалось удалить папку с установленной игрой. {error} — удалите папку вручную!",
+    "install_remove_dir_failed_generic": "Не удалось удалить папку с установленной игрой. Удалите папку вручную!",
+    "install_start_failed": "Не удалось начать установку! {error}",
+    "launch_cmd_critical": "Не удалось выполнить команду запуска! Произошло что-то серьёзное.",
+    "launch_cmd_failed": "Не удалось выполнить команду запуска! Попробуйте ещё раз или проверьте настройки игры.",
+    "launch_cmd_incorrect": "Не удалось выполнить команду запуска! Попробуйте ещё раз или проверьте правильность команды.",
+    "launch_run_cmd_failed": "Не удалось запустить команду запуска! Попробуйте ещё раз или проверьте настройки игры.",
+    "launch_run_cmd_incorrect": "Не удалось запустить команду запуска! Попробуйте ещё раз или проверьте правильность команды.",
+    "launch_runner_unsupported": "Запуск {install_name} с {runner_version} может привести к самым разным неожиданностям.\nСкачайте одну из поддерживаемых минимальных версий раннера или новее!\nПока это требование не выполнено, игра не запустится!\nПоддерживаемые минимальные версии раннера: {min_runner_versions}",
+    "launch_runner_version_required": "Запуск {install_name} с {runner_version} может привести к разным проблемам.\nСмените раннер минимум на {required_runner} и попробуйте снова!\nПока это требование не выполнено, игра не запустится!",
+    "launch_steamrt_broken": "Не удалось запустить {install_name} — возможно, повреждён SteamLinuxRuntime! Откройте «Настройки лаунчера» → «Параметры Linux» и нажмите «Восстановить SteamLinuxRuntime».",
+    "package_download_error": "Произошла ошибка при загрузке {package_id}! Повторите попытку позже.",
+    "package_update_error": "Произошла ошибка при обновлении {package_id}! Повторите попытку позже.",
+    "prefix_dir_open_failed": "Не удалось открыть папку префикса раннера. Префикс точно инициализирован?",
+    "prefix_not_initialized": "Не удалось восстановить папку префикса раннера. Префикс точно инициализирован?",
+    "prefix_reinit_failed": "При повторной инициализации префикса раннера произошла ошибка! — {error}!",
+    "prefix_repair_failed": "Восстановить префикс раннера не удалось, попробуйте позже!",
+    "prefix_repair_queued": "Префикс раннера помечен для восстановления. Запустите игру, чтобы префикс создался заново.",
+    "prelaunch_cmd_critical": "Не удалось выполнить команду перед запуском! Произошло что-то серьёзное.",
+    "prelaunch_cmd_failed": "Не удалось выполнить команду перед запуском! Попробуйте ещё раз или проверьте настройки игры.",
+    "prelaunch_cmd_incorrect": "Не удалось выполнить команду перед запуском! Попробуйте ещё раз или проверьте правильность команды.",
+    "preload_error": "Произошла ошибка при предзагрузке {install_name}\nПопробуйте ещё раз!",
+    "preload_insufficient_space": "Не удалось предзагрузить обновление для {install_name}: недостаточно свободного места. Освободите место для предзагрузки!",
+    "preload_not_supported": "Предзагрузка {install_name} невозможна — она не поддерживается для текущей версии установки.\n\nВозможно, манифест повреждён или версия не поддерживается.",
+    "regedit_exec_critical": "Не удалось выполнить вспомогательную команду regedit! Произошло что-то серьёзное.",
+    "regedit_exec_failed": "Не удалось выполнить вспомогательную команду regedit! Попробуйте ещё раз.",
+    "regedit_exec_incorrect": "Не удалось выполнить вспомогательную команду regedit! Попробуйте ещё раз или проверьте правильность команды.",
+    "regedit_prefix_not_initialized": "Не удалось запустить regedit.exe. Запустите игру хотя бы один раз!",
+    "regedit_runner_not_found": "Не удалось запустить regedit.exe. Раннер точно скачан правильно?",
+    "repo_clone_failed": "Не удалось клонировать репозиторий, либо в нём нет манифеста!",
+    "repo_fetch_3rdparty_failed": "Не удалось получить обновления одного или нескольких сторонних репозиториев! {error}",
+    "repo_fetch_compat_failed": "Не удалось получить обновления репозитория совместимости! {error}",
+    "repo_fetch_game_manifest_failed": "Не удалось получить обновления репозитория игровых манифестов! {error}",
+    "runner_already_installed": "Раннер {runner_version} уже установлен!",
+    "runner_already_queued": "Раннер {runner_version} уже в очереди на загрузку!",
+    "runner_dir_open_failed": "Не удалось открыть папку раннера. Раннер точно скачан правильно?",
+    "runner_download_error": "Произошла ошибка при загрузке {runner_name}! Повторите попытку позже.",
+    "runner_not_installed": "Раннер {runner_version} не установлен!",
+    "shortcut_create_failed_windows": "Не удалось создать ярлык запуска!",
+    "shortcut_desktop_create_failed": "Не удалось создать ярлык {install_name} на рабочем столе! Если вы используете flatpak, убедитесь, что у приложения есть доступ к ~/.local/share/applications",
+    "shortcut_desktop_created": "Ярлык {install_name} на рабочем столе создан.",
+    "shortcut_desktop_created_windows": "Ярлык создан. Он находится на рабочем столе.",
+    "shortcut_desktop_deleted": "Ярлык {install_name} с рабочего стола удалён.",
+    "shortcut_desktop_deleted_windows": "Ярлык с рабочего стола удалён.",
+    "shortcut_desktop_not_exists": "Ярлыка {install_name} на рабочем столе нет!",
+    "shortcut_desktop_not_exists_generic": "Ярлыка этой игры на рабочем столе нет!",
+    "shortcut_steam_added": "{install_name} добавлена в Steam. Перезапустите Steam, чтобы изменения вступили в силу.",
+    "shortcut_steam_failed": "Не удалось добавить {install_name} в Steam!",
+    "shortcut_steam_flatpak_added": "{install_name} добавлена в Steam (Flatpak). Перезапустите Steam, чтобы изменения вступили в силу.",
+    "shortcut_steam_flatpak_failed": "Не удалось добавить {install_name} в Steam (Flatpak)!",
+    "shortcut_steam_flatpak_remove_failed": "Не удалось убрать {install_name} из Steam (Flatpak)! Скорее всего, ярлык удалили вручную.",
+    "shortcut_steam_flatpak_removed": "{install_name} убрана из Steam (Flatpak). Перезапустите Steam, чтобы изменения вступили в силу.",
+    "shortcut_steam_not_supported_windows": "Ярлыки Steam сейчас не поддерживаются в Windows!",
+    "shortcut_steam_remove_failed": "Не удалось убрать {install_name} из Steam! Скорее всего, ярлык удалили вручную.",
+    "shortcut_steam_removed": "{install_name} убрана из Steam. Перезапустите Steam, чтобы изменения вступили в силу.",
+    "steamrt3_diagnostics_failed": "Не удалось собрать диагностику steamrt3! Попробуйте ещё раз.",
+    "steamrt3_dir_prepare_failed": "Не удалось подготовить папку SteamLinuxRuntime 3. {error} — устраните ошибку и перезапустите приложение!",
+    "steamrt3_dl_error": "Произошла ошибка при загрузке SteamLinuxRuntime 3! Перезапустите приложение, чтобы повторить попытку.",
+    "steamrt3_log_open_failed": "Не удалось открыть папку с логами SteamRT3, попробуйте позже!",
+    "steamrt3_not_downloaded": "Не удалось восстановить SteamRT3. Он точно скачан правильно?",
+    "steamrt3_not_downloaded_diag": "Не удалось выполнить steam-runtime-system-info. steamrt3 точно скачан правильно?",
+    "steamrt3_repair_failed": "Восстановить SteamRT3 не удалось, попробуйте позже!",
+    "steamrt3_update_error": "Произошла ошибка при обновлении SteamLinuxRuntime 3! Перезапустите приложение, чтобы повторить попытку.",
+    "steamrt4_diagnostics_failed": "Не удалось собрать диагностику steamrt4! Попробуйте ещё раз.",
+    "steamrt4_dir_prepare_failed": "Не удалось подготовить папку SteamLinuxRuntime 4. {error} — устраните ошибку и перезапустите приложение!",
+    "steamrt4_dl_error": "Произошла ошибка при загрузке SteamLinuxRuntime 4! Перезапустите приложение, чтобы повторить попытку.",
+    "steamrt4_log_open_failed": "Не удалось открыть папку с логами SteamRT4, попробуйте позже!",
+    "steamrt4_not_downloaded": "Не удалось восстановить SteamRT4. Он точно скачан правильно?",
+    "steamrt4_not_downloaded_diag": "Не удалось выполнить steam-runtime-system-info. steamrt4 точно скачан правильно?",
+    "steamrt4_repair_failed": "Восстановить SteamRT4 не удалось, попробуйте позже!",
+    "steamrt4_update_error": "Произошла ошибка при обновлении SteamLinuxRuntime 4! Перезапустите приложение, чтобы повторить попытку.",
+    "steamrt_diagnostics_exec_critical": "Не удалось выполнить команду steam-runtime-system-info! Произошло что-то серьёзное.",
+    "steamrt_diagnostics_exec_incorrect": "Не удалось выполнить команду steam-runtime-system-info! Попробуйте ещё раз или проверьте правильность команды.",
+    "steamrt_repair_restart": "SteamRT помечен для восстановления, перезапустите приложение, чтобы скачать его заново.",
+    "unsupported_download_mode": "Режим загрузки не поддерживается!",
+    "unsupported_predownload_mode": "Режим загрузки для предзагрузки не поддерживается!",
+    "unsupported_repair_mode": "Режим загрузки для восстановления не поддерживается!",
+    "unsupported_update_mode": "Режим загрузки для обновления не поддерживается!",
+    "update_insufficient_space": "Не удалось обновить {install_name}: недостаточно свободного места. Освободите место для обновления!",
+    "update_no_path": "Не удалось обновить {install_name} — для текущей версии установки не найден путь обновления.\n\nВозможно, манифест повреждён или версия не поддерживается. Переустановите игру.",
+    "winecfg_exec_critical": "Не удалось выполнить вспомогательную команду winecfg! Произошло что-то серьёзное.",
+    "winecfg_exec_failed": "Не удалось выполнить вспомогательную команду winecfg! Попробуйте ещё раз.",
+    "winecfg_exec_incorrect": "Не удалось выполнить вспомогательную команду winecfg! Попробуйте ещё раз или проверьте правильность команды.",
+    "winecfg_prefix_not_initialized": "Не удалось запустить winecfg.exe. Запустите игру хотя бы один раз!",
+    "winecfg_runner_not_found": "Не удалось запустить winecfg.exe. Раннер точно скачан правильно?",
+    "winetricks_exec_critical": "Не удалось выполнить winetricks для настройки! Произошло что-то серьёзное.",
+    "winetricks_setup_failed": "Настройка winetricks не удалась! Игра всё равно попробует запуститься.",
+    "winetricks_setup_retry": "Настройка winetricks не удалась! Попробуйте позже!",
+    "xxmi_folder_not_found": "XXMI не скачан или структура папок повреждена! Открыть папку невозможно.",
+    "xxmi_run_critical": "Не удалось запустить XXMI! Произошло что-то серьёзное.",
+    "xxmi_run_failed": "Не удалось запустить XXMI! Попробуйте ещё раз и убедитесь, что «Inject XXMI» включён!",
+    "xxmi_run_retry": "Не удалось запустить XXMI! Попробуйте позже!"
+  },
+  "downloads_page": {
+    "clear_all": "Очистить всё",
+    "completed_title": "Завершено",
+    "disk": "Диск",
+    "downloading": "Загрузка",
+    "estimate_label": "Осталось примерно:",
+    "extracting": "Распаковка",
+    "header_speed_queue_many": "{speed} • {count} элем. в очереди",
+    "header_speed_queue_one": "{speed} • {count} элемент в очереди",
+    "installing": "Установка",
+    "kind": {
+      "download": "Загрузка",
+      "extra": "Дополнение",
+      "game": "Игра",
+      "preload": "Предзагрузка",
+      "repair": "Восстановление",
+      "runner": "Раннер",
+      "update": "Обновление"
+    },
+    "move_down_tooltip": "Ниже",
+    "move_up_tooltip": "Выше",
+    "moving": "Перемещение",
+    "network": "Сеть",
+    "no_active_downloads": "Нет активных загрузок",
+    "no_active_downloads_sub": "Загрузки появятся здесь, когда вы их запустите",
+    "no_items_in_queue": "Очередь пуста",
+    "paused": "Приостановлено",
+    "pausing": "Приостановка...",
+    "peak": "Пик",
+    "queue_title": "Очередь ({count})",
+    "remove_tooltip": "Убрать из очереди",
+    "speed_limit_prefix": "Скорость загрузки ограничена:",
+    "start_now": "Начать сейчас",
+    "start_now_tooltip": "Начать эту загрузку сейчас",
+    "status": {
+      "completed": "Завершено",
+      "downloading": "Загружается",
+      "failed": "Ошибка",
+      "paused": "Приостановлено",
+      "queued": "В очереди"
+    },
+    "title": "Менеджер загрузок",
+    "validating": "Сверка файлов",
+    "verifying": "Проверка"
+  },
+  "game_button": {
+    "install": "УСТАНОВИТЬ",
+    "launching": "ЗАПУСК...",
+    "pause": "ПАУЗА",
+    "pausing": "ПРИОСТАНОВКА...",
+    "play": "ИГРАТЬ",
+    "preparing": "ПОДГОТОВКА...",
+    "queued": "В ОЧЕРЕДИ",
+    "resume": "ПРОДОЛЖИТЬ",
+    "running": "ЗАПУЩЕНА",
+    "update": "ОБНОВИТЬ",
+    "use_existing_install": "Использовать имеющуюся установку"
+  },
+  "game_info": {
+    "update_available": "Доступно обновление"
+  },
+  "game_settings": {
+    "fps_unlocker": {
+      "enable": {
+        "description": "Загружать и внедрять в игру снятие ограничения частоты кадров.",
+        "label": "Включить FPS Unlocker"
+      },
+      "not_available": "FPS Unlocker недоступен для этой установки.",
+      "target": {
+        "description": "Целевая частота кадров для разблокировщика.",
+        "label": "Целевой FPS"
+      },
+      "title": "Настройки FPS Unlocker"
+    },
+    "general": {
+      "discord_rpc": {
+        "description": "Показывать в Discord статус активности, пока вы играете.",
+        "label": "DiscordRPC"
+      },
+      "install_location": {
+        "description": "Каталог, в который установлена игра.",
+        "label": "Папка установки"
+      },
+      "skip_hash_validation": {
+        "description": "Пропускать сверку файлов при восстановлении (быстрее, но менее надёжно).",
+        "label": "Пропускать проверку хэшей"
+      },
+      "skip_version_checks": {
+        "description": "Не проверять наличие обновлений игры.",
+        "description_steam": "Обновлениями этой установки управляет Steam.",
+        "label": "Не проверять версию"
+      },
+      "title": "Основные настройки"
+    },
+    "launch": {
+      "args": {
+        "description": "Дополнительные аргументы, передаваемые исполняемому файлу игры.",
+        "label": "Аргументы запуска"
+      },
+      "custom_launch_cmd": {
+        "description": "Заменить стандартную команду запуска.",
+        "label": "Своя команда запуска"
+      },
+      "env_vars": {
+        "description": "Переменные окружения для процесса игры.",
+        "label": "Переменные окружения"
+      },
+      "graphics_api": {
+        "description": "Графический API, который будет использовать игра.",
+        "label": "Графический API"
+      },
+      "help": {
+        "available_vars": "Доступные переменные:",
+        "var": {
+          "appid": "Подставляет нужный appid в аргумент reaper",
+          "command": "Стандартная команда запуска, полезна для обёрток над командами",
+          "game_exe": "Указывает на исполняемый файл игры",
+          "install_dir": "Путь к папке установки игры из соответствующего поля",
+          "prefix": "Путь к корню префикса раннера из соответствующего поля",
+          "reaper": "Бинарник process reaper (использование: %reaper% SteamLaunch AppId=0 -- %runner%)",
+          "runner": "Вызов бинарника proton",
+          "runner_dir": "Путь к текущему раннеру (не бинарник, можно дописать любой бинарник из этой папки)",
+          "steamrt": "Бинарник SteamLinuxRuntime (использование: %steamrt% --verb=waitforexitandrun -- %reaper%)",
+          "steamrt_path": "Путь к папке SteamLinuxRuntime (можно дописать другие бинарники из неё)"
+        }
+      },
+      "pre_launch_cmd": {
+        "description": "Команда, выполняемая перед стартом игры.",
+        "label": "Команда перед запуском"
+      },
+      "prevent_idle": {
+        "description": "Не давать системе уходить в простой или блокировку экрана во время игры.",
+        "label": "Не засыпать"
+      },
+      "title": "Настройки запуска"
+    },
+    "linux": {
+      "gamemode": {
+        "description": "Включить GameMode от Feral Interactive.",
+        "label": "Gamemode"
+      },
+      "gamescope": {
+        "description": "Включить Gamescope от ValveSoftware.",
+        "label": "Gamescope"
+      },
+      "gamescope_args": {
+        "description": "Дополнительные аргументы, передаваемые Gamescope.",
+        "label": "Аргументы Gamescope"
+      },
+      "help": {
+        "gamescope_arg": {
+          "WH": "Разрешение gamescope. Изменение размера окна gamescope обновляет эти значения. В встроенном режиме игнорируется. Если указан -H, но не -W, соотношение сторон считается 16:9. По умолчанию 1280×720",
+          "borderless": "Создать окно без рамки",
+          "extra_help": "Остальные параметры смотрите в gamescope --help",
+          "ffrate": "Ограничение частоты кадров игры, в кадрах в секунду. По умолчанию без ограничений",
+          "fullscreen": "Создать полноэкранное окно",
+          "scaling": "Вариант масштабирования gamescope: integer или stretch. При stretch игра растягивается на всё окно (например, с 4:3 на 16:9)",
+          "ufrate": "Ограничение частоты кадров игры, когда окно не в фокусе, в кадрах в секунду. По умолчанию без ограничений",
+          "upscaler": "Режим масштабирования игры. При значении fsr используется AMD FidelityFX Super Resolution 1.0, при nis — NVIDIA Image Scaling 1.0.3",
+          "wh": "Разрешение окна игры. Если указан -h, но не -w, соотношение сторон считается 16:9. По умолчанию берутся значения из -W и -H"
+        },
+        "gamescope_args": "Доступные аргументы:"
+      },
+      "manage_runners": "Управление раннерами",
+      "mangohud": {
+        "description": "Включить оверлей MangoHUD во время игры.",
+        "label": "MangoHUD"
+      },
+      "mangohud_config": {
+        "description": "Файл конфигурации MangoHUD, который будет загружен.",
+        "label": "Конфиг MangoHUD"
+      },
+      "prefix_location": {
+        "description": "Путь к префиксу Wine/Proton.",
+        "label": "Расположение префикса"
+      },
+      "runner_location": {
+        "description": "Путь к папке Wine/Proton.",
+        "label": "Расположение раннера"
+      },
+      "runner_version": {
+        "description": "Выберите используемую версию Wine/Proton.",
+        "label": "Версия раннера"
+      },
+      "title": "Конфигурация Linux"
+    },
+    "manage": {
+      "add_to_desktop": "Добавить на рабочий стол",
+      "add_to_steam": "Добавить в Steam",
+      "copy_authkey": "Копировать authkey",
+      "copy_authkey.copied": "Authkey скопирован",
+      "copy_authkey.copied_description": "Можно вставлять в синхронизацию Aivo.",
+      "copy_authkey.copying": "Копирование authkey...",
+      "copy_authkey.copying_description": "Читаем последний лог игры и копируем в буфер обмена...",
+      "copy_authkey.description": "Синхронизировать и посмотреть историю круток на",
+      "copy_authkey.failed": "Скопировать не удалось",
+      "copy_authkey.failed_description": "Не удалось скопировать authkey. Сначала откройте историю круток.",
+      "copy_pullurl": "Копировать ссылку на крутки",
+      "copy_pullurl.copied": "Ссылка скопирована",
+      "copy_pullurl.copied_description": "Можно вставлять в любой трекер круток.",
+      "copy_pullurl.copying": "Копирование ссылки...",
+      "copy_pullurl.copying_description": "Читаем последний лог игры и копируем в буфер обмена...",
+      "copy_pullurl.description": "Скопировать ссылку для импорта истории круток",
+      "copy_pullurl.failed": "Скопировать не удалось",
+      "copy_pullurl.failed_description": "Не удалось скопировать ссылку. Сначала откройте историю круток.",
+      "open_cmd": "Открыть командную строку",
+      "open_cmd.description": "Запустить cmd.exe в префиксе Wine/Proton",
+      "open_control_panel": "Открыть панель управления",
+      "open_control_panel.description": "Запустить control.exe в префиксе Wine/Proton",
+      "open_engine_log": "Открыть лог движка",
+      "open_engine_log.description": "Посмотреть лог игрового движка",
+      "open_game_folder": "Открыть папку игры",
+      "open_game_folder.description": "Посмотреть файлы игры",
+      "open_mods_folder": "Открыть папку модов",
+      "open_mods_folder.description": "Посмотреть моды XXMI",
+      "open_prefix_folder": "Открыть папку префикса",
+      "open_prefix_folder.description": "Расположение префикса Wine/Proton",
+      "open_registry": "Открыть редактор реестра",
+      "open_registry.description": "Запустить regedit.exe в префиксе Wine/Proton",
+      "open_runner_folder": "Открыть папку раннера",
+      "open_runner_folder.description": "Расположение Wine/Proton",
+      "open_winecfg": "Открыть настройки Wine",
+      "open_winecfg.description": "Запустить winecfg.exe для префикса Wine/Proton",
+      "remove_from_desktop": "Убрать с рабочего стола",
+      "remove_from_steam": "Убрать из Steam",
+      "repair_game": "Восстановить игру",
+      "repair_game.description": "Проверить и починить игру",
+      "repair_prefix": "Восстановить префикс",
+      "repair_prefix.description": "Проверить и починить префикс Wine/Proton",
+      "runner_title": "Управление раннером",
+      "shortcut_create": "Создать ярлык",
+      "shortcut_delete": "Удалить ярлык",
+      "steam_managed": "Управляется Steam.",
+      "title": "Управление установкой"
+    },
+    "tabs": {
+      "fps_unlocker": "FPS Unlocker",
+      "general": "Основные",
+      "launch": "Параметры запуска",
+      "linux": "Параметры Linux",
+      "manage": "Управление",
+      "uninstall": "Удаление",
+      "xxmi": "XXMI"
+    },
+    "uninstall": {
+      "acknowledge": {
+        "description": "Это действие нельзя отменить.",
+        "label": "Я понимаю, что это необратимо"
+      },
+      "cancel": "Отмена",
+      "confirm": "Удалить установку",
+      "delete_files": "— файлы игры этой установки",
+      "delete_prefix": "— префикс раннера этой установки",
+      "delete_prefix_toggle": {
+        "description": "Также удалить префикс Wine/Proton, связанный с этой установкой.",
+        "label": "Удалить префикс"
+      },
+      "delete_settings": "— настройки и твики этой установки",
+      "description": "Выбранная установка будет удалена безвозвратно. Сначала посмотрите сводку, чтобы точно знать, что именно удалится.",
+      "in_progress": "Удаление...",
+      "keep_game_data": {
+        "description": "Не удалять файлы игры, если вы хотите перенести их в другое место.",
+        "label": "Сохранить данные игры"
+      },
+      "keep_prefix": "— префикс раннера (сохраняется, если не включить переключатель ниже)",
+      "keep_runners": "— установленные раннеры и версии DXVK",
+      "name": "Удалить установку",
+      "review_button": "Посмотреть, что удалится",
+      "reviewing_header": "Вы удаляете {install_name}.",
+      "title": "Опасная зона",
+      "will_delete": "Будет удалено:",
+      "wont_delete": "Не будет удалено:"
+    },
+    "xxmi": {
+      "cache_shaders": {
+        "description": "Включить кэш шейдеров XXMI.",
+        "label": "Кэш шейдеров"
+      },
+      "dump_shaders": {
+        "description": "Включить дамп шейдеров для разработки модов.",
+        "label": "Дамп шейдеров"
+      },
+      "enable": {
+        "description": "Включить и внедрять инструмент модификаций XXMI.",
+        "label": "Включить XXMI"
+      },
+      "hunting_mode": {
+        "always_enabled": "Всегда включён",
+        "description": "Выберите, как ведёт себя режим hunting в XXMI.",
+        "disabled": "Отключён",
+        "label": "Режим hunting",
+        "soft_disabled": "Мягко отключён"
+      },
+      "show_warnings": {
+        "description": "Показывать предупреждения разбора модов для отладки сломанных модов.",
+        "label": "Показывать предупреждения"
+      },
+      "title": "Настройки XXMI"
+    }
+  },
+  "install_game": {
+    "advanced_title": "Дополнительные параметры",
+    "cancel": "Отмена",
+    "change": "Изменить",
+    "drive": "диск",
+    "exe_not_found": "В этой папке не найден исполняемый файл игры, выберите каталог, содержащий его.",
+    "free_after": "Останется свободно",
+    "game": "Игра",
+    "game_specific_title": "Параметры игры",
+    "install_button": "Установить игру",
+    "install_path": "Путь установки",
+    "insufficient_space": "Недостаточно места на диске",
+    "linux_title": "Параметры Linux",
+    "locate_button": "Указать игру",
+    "location_title": "Куда установить",
+    "need_more": "Нужно ещё {size}",
+    "prefix_path": {
+      "label": "Путь к префиксу"
+    },
+    "region": {
+      "description": "Регион игры, который нужно скачать.",
+      "label": "Регион"
+    },
+    "runner_version": {
+      "description": "Выберите версию Wine/Proton, которая будет скачана вместе с игрой."
+    },
+    "storage": "Накопитель",
+    "title_add": "Добавить установку",
+    "title_install": "Установка игры",
+    "use_existing_install": "Использовать имеющуюся установку",
+    "used": "Занято"
+  },
+  "launcher_settings": {
+    "about": {
+      "branch_label": "Ветка",
+      "commit_label": "Коммит",
+      "discord": "Зайти в Discord",
+      "github": "Репозиторий GitHub",
+      "version_label": "Версия"
+    },
+    "downloads": {
+      "speed_limit": {
+        "description": "Ограничить общую скорость загрузки. 0 — без ограничений.",
+        "label": "Ограничение скорости загрузки (КБ/с)"
+      },
+      "title": "Менеджер загрузок"
+    },
+    "files": {
+      "default_game_path": {
+        "description": "Базовый каталог, куда будут устанавливаться новые игры.",
+        "label": "Папка установки игр по умолчанию"
+      },
+      "fps_unlock_path": {
+        "description": "Каталог, где хранится разблокировщик FPS.",
+        "label": "Расположение FPS Unlocker"
+      },
+      "games_title": "Игры",
+      "tools_title": "Внешние инструменты",
+      "xxmi_path": {
+        "description": "Каталог с файлами инструмента модификаций XXMI.",
+        "label": "Расположение XXMI"
+      }
+    },
+    "general": {
+      "hide_app_to_tray": {
+        "description": "Сворачивать приложение в системный трей вместо полного закрытия.",
+        "label": "Сворачивать приложение"
+      },
+      "language": {
+        "description": "Язык интерфейса лаунчера.",
+        "label": "Язык приложения"
+      },
+      "launcher_action": {
+        "description": "Выберите, что делать лаунчеру при старте игры.",
+        "exit": "Закрыть лаунчер",
+        "keep": "Оставить лаунчер открытым",
+        "label": "После запуска игры",
+        "minimize": "Свернуть в системный трей"
+      },
+      "title": "Основные параметры"
+    },
+    "linux": {
+      "debug_title": "Помощь и отладка",
+      "default_prefix_path": {
+        "description": "Базовый каталог для префиксов Wine/Proton.",
+        "label": "Папка префиксов по умолчанию"
+      },
+      "default_runner_path": {
+        "description": "Базовый каталог для версий Wine/Proton.",
+        "label": "Папка раннеров по умолчанию"
+      },
+      "mangohud_config": {
+        "description": "Файл конфигурации MangoHUD по умолчанию.",
+        "label": "Конфиг MangoHUD"
+      },
+      "repair_steamrt": "Восстановить SteamLinuxRuntime",
+      "steamrt3_diagnostics": "Диагностика SteamLinuxRuntime 3",
+      "steamrt4_diagnostics": "Диагностика SteamLinuxRuntime 4",
+      "title": "Конфигурация Linux"
+    },
+    "subtitle": "Настройте лаунчер под себя",
+    "tabs": {
+      "about": "О программе",
+      "downloads": "Загрузки",
+      "files": "Файлы и пути",
+      "general": "Основные",
+      "linux": "Параметры Linux"
+    },
+    "title": "Настройки лаунчера"
+  },
+  "loading_screen": {
+    "initializing": "Подготовка окружения",
+    "preloading_assets": "Предзагрузка ресурсов",
+    "skip_continue": "Пропустить и продолжить"
+  },
+  "metadata": {
+    "code": "ru_RU",
+    "display_name": "Русский (RU)"
+  },
+  "network": {
+    "checking": "Проверка подключения...",
+    "connected": "Подключено!",
+    "connection_lost_message": "Подключение к интернету потеряно. Часть возможностей, например загрузки и обновления, будет недоступна до восстановления связи.\n\nЛаунчер переподключится автоматически, как только это станет возможно.",
+    "connection_lost_title": "Соединение потеряно",
+    "continue_limited": "Продолжить (ограниченно)",
+    "downloads_unavailable": "— загрузки недоступны",
+    "limited_mode": "Ограниченный режим",
+    "loading_images": "Загрузка изображений...",
+    "loading_repos": "Загрузка репозиториев...",
+    "no_internet_message": "Не удалось подключиться к интернету. Можно продолжить с ограниченной функциональностью — установленные игры запускать получится, а скачивать и обновлять нет.",
+    "no_internet_title": "Нет подключения к интернету",
+    "offline_mode": "Автономный режим",
+    "ok": "ОК",
+    "recovery_failed": "Восстановить не удалось",
+    "retry": "Повторить",
+    "slow_internet_message": "Похоже, ваше подключение к интернету медленное. Загрузки и обновления могут занять больше времени, чем обычно. Можно продолжить с ограниченной функциональностью или повторить попытку подключения.",
+    "slow_internet_title": "Медленное подключение к интернету",
+    "still_offline": "Всё ещё нет сети"
+  },
+  "play_stats": {
+    "hour": "ч.",
+    "hours": "ч.",
+    "last_played": "Последний запуск",
+    "minute": "мин.",
+    "minutes": "мин.",
+    "never": "Никогда",
+    "play_time": "Время в игре",
+    "today": "Сегодня",
+    "yesterday": "Вчера"
+  },
+  "repo_manager": {
+    "add_button": "Добавить репозиторий",
+    "add_repo_title": "Добавить репозиторий",
+    "advanced_options": "Дополнительные параметры",
+    "branch_placeholder": "Переопределить ветку",
+    "name_placeholder": "Переопределить имя",
+    "repo_placeholder": "Репозиторий Github (например, TwintailTeam/KeqingRepo)",
+    "title": "Репозитории и манифесты"
+  },
+  "runners_page": {
+    "cannot_remove_last": "Нельзя удалить последний установленный раннер",
+    "install_button": "Установить",
+    "installed_count": "Установлено {installed} из {total} доступных версий",
+    "installed_label": "Установлен",
+    "installing_label": "Установка...",
+    "no_runners": "Раннеры недоступны",
+    "no_runners_description": "Версии раннеров появятся здесь, когда будут доступны",
+    "open_folder_tooltip": "Открыть папку",
+    "queued_label": "В очереди",
+    "remove_tooltip": "Удалить",
+    "title": "Менеджер раннеров",
+    "versions_section": "Версии {runner_name}"
+  },
+  "sidebar": {
+    "discord": "Discord",
+    "downloads": "Загрузки",
+    "repositories": "Репозитории",
+    "runners": "Раннеры",
+    "settings": "Настройки лаунчера",
+    "support": "Поддержать проект"
+  }
+}
