@@ -129,6 +129,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
     if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
     if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+    if gm.biz == "wuwa_global" && !args.split_whitespace().any(|a| a.starts_with("-krqlv=")) { if !args.is_empty() { args += " "; } args += "-krqlv=hd"; }
 
     let gamescope_ok = if install.use_gamescope && !install.gamescope_args.is_empty() && !crate::utils::is_flatpak() {
         let found = std::env::var("PATH").unwrap_or_default().split(':').any(|dir| std::path::Path::new(dir).join("gamescope").exists());
@@ -227,6 +228,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+        if gm.biz == "wuwa_global" && !args.split_whitespace().any(|a| a.starts_with("-krqlv=")) { if !args.is_empty() { args += " "; } args += "-krqlv=hd"; }
         if !args.is_empty() { command = format!("{c} {args}").replace("%command%", default_command.clone().to_string().as_str()).replace("%appid%", appid.clone().to_string().as_str()).replace("%reaper%", reaper.clone().as_str()).replace("%steamrt_path%", steamrt_path.clone().as_str()).replace("%steamrt%", steamrt.clone().as_str()).replace("%prefix%", prefix.clone().as_str()).replace("%runner_dir%", runner.clone().as_str()).replace("%runner%", &*(runner.clone() + "/" + wine64.as_str())).replace("%install_dir%", dir.clone().as_str()).replace("%game_exe%", &*(dir.clone() + "/" + exe.clone().as_str())); }
 
         let mut cmd = Command::new("bash");
@@ -537,6 +539,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+        if gm.biz == "wuwa_global" && !args.split_whitespace().any(|a| a.starts_with("-krqlv=")) { if !args.is_empty() { args += " "; } args += "-krqlv=hd"; }
 
         let mut cmd = Command::new(&full_path_str);
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
@@ -589,6 +592,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if install.use_xxmi && gm.biz == "endfield_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-force-d3d11"; }
         if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
+        if gm.biz == "wuwa_global" && !args.split_whitespace().any(|a| a.starts_with("-krqlv=")) { if !args.is_empty() { args += " "; } args += "-krqlv=hd"; }
 
         let mut cmd = Command::new(&c);
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
