@@ -1,13 +1,13 @@
 # Nix package for Twintail Launcher
 
-Build and run Twintail Launcher on NixOS (or any system with Nix flakes) straight from the sources in this repository.
+This repository is a fork of [TwintailLauncher](https://github.com/TwintailTeam/TwintailLauncher) with a Nix flake added, so the launcher can be built and run on NixOS (or any system with Nix flakes) straight from the sources.
 
 Tested on NixOS (unstable, `x86_64-linux`) with Genshin Impact and Honkai: Star Rail.
 
 ## Try it
 
 ```sh
-nix run github:TwintailTeam/TwintailLauncher
+nix run github:Yuna404/TwintailFlake
 ```
 
 The first run compiles the launcher from source, which takes a few minutes.
@@ -18,7 +18,7 @@ Add the repository as an input of your flake:
 
 ```nix
 inputs.twintail = {
-  url = "github:TwintailTeam/TwintailLauncher";
+  url = "github:Yuna404/TwintailFlake";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 ```
