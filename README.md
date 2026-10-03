@@ -1,126 +1,61 @@
-# TwintailLauncher
-<!-- TOC -->
-* [TwintailLauncher](#twintaillauncher)
-  * [About](#about)
-    * [Supported games](#supported-games)
-    * [Screenshots](#screenshots)
-  * [Installation](#installation)
-  * [Developers & Compiling](#developers--compiling)
-    * [Prerequisites](#prerequisites)
-    * [Building](#building)
-  * [Sponsors](#sponsors)
-  * [Thanks to our contributors](#thanks-to-our-contributors)
-  * [Issues and contributions](#issues-and-contributions)
-<!-- TOC -->
+# Nix package for Twintail Launcher
 
-## About
-Twintaillauncher is a multi-platform launcher that brings mod support, quality-of-life improvements, and advanced features to a variety of anime-styled games.<br>
-TTL is an all-in-one tool for downloading, managing, and launching your favorite anime games. It’s designed with flexibility, ease of use, and customization in mind.
+Build and run Twintail Launcher on NixOS (or any system with Nix flakes) straight from the sources in this repository.
 
-### Supported games
-* Genshin Impact
-* Honkai: StarRail
-* HonkaiImpact 3rd
-* ZenlessZoneZero
-* Wuthering Waves
-* Punishing Gray Raven
-* Aether Gazer
-* Arknights Endfield
-* The Seven Deadly Sins: Grand Cross
+Tested on NixOS (unstable, `x86_64-linux`) with Genshin Impact and Honkai: Star Rail.
 
-### Screenshots
+## Try it
 
-<details>
-<summary>Windows</summary>
-
-![Pic1](screenshots/windows/pic01.png)
-![Pic2](screenshots/windows/pic02.png)
-![Pic3](screenshots/windows/pic03.png)
-![Pic4](screenshots/windows/pic04.png)
-![Pic5](screenshots/windows/pic05.png)
-![Pic6](screenshots/windows/pic06.png)
-![Pic7](screenshots/windows/pic07.png)
-![Pic8](screenshots/windows/pic08.png)
-![Pic9](screenshots/windows/pic09.png)
-
-</details>
-
-<details>
-<summary>Linux</summary>
-
-![Pic1](screenshots/linux/pic01.png)
-![Pic2](screenshots/linux/pic02.png)
-![Pic3](screenshots/linux/pic03.png)
-![Pic4](screenshots/linux/pic04.png)
-![Pic5](screenshots/linux/pic05.png)
-![Pic6](screenshots/linux/pic06.png)
-![Pic7](screenshots/linux/pic07.png)
-![Pic8](screenshots/linux/pic08.png)
-![Pic9](screenshots/linux/pic09.png)
-![Pic10](screenshots/linux/pic010.png)
-
-</details>
-
-## Installation
-
-| Platform                            | Link                                                                                       | Note(s)                                                |
-|-------------------------------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| Windows (x64, Stable)               | [Winget](https://wingetgui.com/apps/TwintailTeam-TTL)                                      | Installation is only supported via `winget`            |
-| Linux (Flatpak, Stable)             | [Flathub](https://flathub.org/apps/app.twintaillauncher.ttl)                               | Works for all distributions                            |
-| Linux (Copr, Stable)                | [Copr](https://copr.fedorainfracloud.org/coprs/tukandev/TwintailLauncher/)                 | Fedora & Fedora based distributions                    |
-| Linux (Terra, Stable)               | [Terra](https://fedora.pkgs.org/43/terra/twintaillauncher-0:1.1.15-1.fc43.x86_64.rpm.html) | Fedora & Fedora based distributions                    |
-| Linux (AUR, Unstable - From source) | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git)            | Use AUR helper (`yay` / `paru`)                        |
-| Linux (AUR, Stable - From source)   | [twintaillauncher](https://aur.archlinux.org/packages/twintaillauncher)                    | Use AUR helper (`yay` / `paru`)                        |
-| Linux (AUR, Stable - From deb)      | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin)            | Use AUR helper (`yay` / `paru`)                        |
-| Linux (DEB)                         | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)               | **NOT RECOMMENDED** Used for AUR & Fedora repositories |
-
-## Developers & Compiling
-
-### Prerequisites
-* Rust (Install from [rustup](https://rustup.rs))
-* Node.js (Install from [official website](https://nodejs.org/en/download))
-* pnpm (Install from [official website](https://pnpm.io/installation))
-* Protobuf (Install from [official website](https://protobuf.dev/installation/))
-* Tauri (Follow [Tauri docs](https://tauri.app/start/prerequisites/))
-* Cargo-xwin (Follow [Tauri docs](https://tauri.app/distribute/windows-installer/#experimental-build-windows-apps-on-linux-and-macos))
-
-### Building
-Install Node.js dependencies
-```shell
-pnpm install
+```sh
+nix run github:TwintailTeam/TwintailLauncher
 ```
-Run for debugging
-```shell
-pnpm dev:tauri
+
+The first run compiles the launcher from source, which takes a few minutes.
+
+## Install it
+
+Add the repository as an input of your flake:
+
+```nix
+inputs.twintail = {
+  url = "github:TwintailTeam/TwintailLauncher";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
 ```
-Build for production (Current OS)
-```shell
-pnpm build:native
+
+Then add the package, for example in `home.packages` or `environment.systemPackages`:
+
+```nix
+inputs.twintail.packages.x86_64-linux.default
 ```
-Build for production (Cross compile for Linux)
-```shell
-pnpm build:linux
-```
-Build for production (Cross compile for Windows)
-```shell
-pnpm build:windows
-```
-You can find built binaries in `target/release` for current os, `target/x86_64-unknown-linux-gnu` for linux cross compile and `target/x86_64-pc-windows-msvc` for windows cross compile.
 
-## Sponsors
+An overlay is also available (`overlays.default`) and adds `pkgs.twintaillauncher`.
+If you use the overlay, your `pkgs` needs `allowUnfree = true` because `steam-run` is unfree.
 
-| Link                                              | Description          |
-|---------------------------------------------------|----------------------|
-| [SignPath Foundation](https://signpath.org/about) | Windows code signing |
+## Requirements
 
-## Thanks to our contributors
+- Nix with flakes enabled
+- A recent nixpkgs (the package uses `fetchPnpmDeps` with `fetcherVersion = 4`)
+- `x86_64-linux`
 
-<a href="https://github.com/twintailteam/twintaillauncher/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=twintailteam/twintaillauncher"  alt="contributors image"/>
-</a>
+## How it works
 
-## Issues and contributions
-Feel free to open issues and PRs usually we try to get to everyone as fast as possible.<br>
-Avoid opening multiple issues and please respect everyone's time we are all doing the work for free after all we are not required to answer and fix issues at all.
+- Built with `rustPlatform.buildRustPackage` and `cargo-tauri.hook`, with the frontend dependencies fetched through pnpm.
+- The launcher is wrapped in `steam-run`, because pressure-vessel and the game runners expect a regular FHS environment, which NixOS does not provide.
+- The wrapper sets `GDK_BACKEND=x11` and `WEBKIT_DISABLE_DMABUF_RENDERER=1` (Wayland and DMABUF rendering caused problems with WebKit on NVIDIA), and adds `libayatana-appindicator` to `LD_LIBRARY_PATH` for the tray icon.
+- The version is read from `package.json`.
 
-Please open pull requests against `master` branch!
+### Why there is a `postPatch`
+
+The Sparkle patch (`apply_patch` in `src-tauri/src/utils/mod.rs`) copies `hkrpg_patch.dll` to `jsproxy.dll` with `fs::copy`, which also copies the permissions of the source file. On Nix the source lives in the read-only store, so the copy ends up read-only too. The next launch then fails to overwrite it and the launcher panics with `PermissionDenied`.
+
+The `postPatch` removes the old `jsproxy.dll` before copying. It can be dropped once this is fixed in the launcher itself.
+
+## Maintenance
+
+`cargoHash` and the `pnpmDeps` hash in `nix/package.nix` depend on `Cargo.lock` and `pnpm-lock.yaml`. When those files change, the build fails with a `hash mismatch` error: copy the hash shown after `got:` into `nix/package.nix` and build again.
+
+## Troubleshooting
+
+- **`bwrap: Can't chdir to ...`**: `steam-run` has its own private `/tmp`. Run the launcher from your home directory, not from a directory under `/tmp`.
+- **Build fails on `fetcherVersion`**: your nixpkgs is too old, update it.
