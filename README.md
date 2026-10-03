@@ -72,6 +72,7 @@ TTL is an all-in-one tool for downloading, managing, and launching your favorite
 | Linux (AUR, Unstable - From source) | [twintaillauncher-git](https://aur.archlinux.org/packages/twintaillauncher-git)            | Use AUR helper (`yay` / `paru`)                        |
 | Linux (AUR, Stable - From source)   | [twintaillauncher](https://aur.archlinux.org/packages/twintaillauncher)                    | Use AUR helper (`yay` / `paru`)                        |
 | Linux (AUR, Stable - From deb)      | [twintaillauncher-bin](https://aur.archlinux.org/packages/twintaillauncher-bin)            | Use AUR helper (`yay` / `paru`)                        |
+| Linux (Nix, Stable - From deb)      | [twintaillauncher-flake](https://github.com/axioncs/twintaillauncher-flake)                | NixOS & Nix with flakes enabled                        |
 | Linux (DEB)                         | [Download](https://github.com/TwintailTeam/TwintailLauncher/releases/latest)               | **NOT RECOMMENDED** Used for AUR & Fedora repositories |
 
 ## Developers & Compiling
