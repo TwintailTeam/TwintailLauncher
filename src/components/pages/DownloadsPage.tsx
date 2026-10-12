@@ -98,6 +98,7 @@ function formatKind(kind: QueueJobView['kind']): string {
         case 'game_update': return translate('downloads_page.kind.update');
         case 'game_preload': return translate('downloads_page.kind.preload');
         case 'game_repair': return translate('downloads_page.kind.repair');
+        case 'game_quality_switch': return translate('downloads_page.kind.quality');
         case 'runner_download': return translate('downloads_page.kind.runner');
         case 'steamrt_download': return 'SteamRT';
         case 'steamrt4_download': return 'SteamRT';
@@ -232,7 +233,7 @@ export default function DownloadsPage({
 
     // Current phase/status
     const currentPhase = currentProgress?.phase;
-    const etaText = calculateETA(totalBytes, progressBytes, installTotalBytes, installProgressBytes, speedHistory, currentPhase, currentJob?.kind === 'game_repair');
+    const etaText = calculateETA(totalBytes, progressBytes, installTotalBytes, installProgressBytes, speedHistory, currentPhase, currentJob?.kind === 'game_repair' || currentJob?.kind === 'game_quality_switch');
 
 
     // Reset graph history and peak speed when active job changes

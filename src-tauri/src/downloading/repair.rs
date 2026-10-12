@@ -1,6 +1,7 @@
 use crate::DownloadState;
 use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
+use crate::downloading::resource_quality::{self, PackSyncResult};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog_with_callback};
@@ -222,6 +223,26 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair failed for {} with DOWNLOAD_MODE_CHUNK", i.name);
             }
+        }
+
+        "DOWNLOAD_MODE_RAW" if resource_quality::supports_quality(&gm.biz) && resource_quality::needs_pack_sync(&i, resource_quality::effective_quality(&i)) => {
+            let quality = resource_quality::effective_quality(&i);
+            log::debug!("Starting repair for {} at {} quality", i.name, quality);
+            #[cfg(target_os = "linux")]
+            crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string());
+            let verify = if i.skip_hash_check { resource_quality::Verify::Size } else { resource_quality::Verify::Hash };
+            let cb = resource_quality::progress_emitter(&h5, "repair_progress", job_id.to_string(), i.name.clone());
+            match resource_quality::run_pack_sync(&h5, &i, quality, &i.version, "repairing", verify, cb, cancel_token.clone()) {
+                PackSyncResult::Done => {
+                    log::debug!("Repair completed for {} at {} quality", i.name, quality);
+                    success = true;
+                    #[cfg(target_os = "linux")]
+                    crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "add".to_string());
+                }
+                PackSyncResult::Failed => { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_repair_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", i.name.as_str())]))); }
+                PackSyncResult::Cancelled | PackSyncResult::Reported => {}
+            }
+            h5.emit("repair_complete", ()).unwrap();
         }
         "DOWNLOAD_MODE_RAW" => {
             let install_dir = std::path::Path::new(&i.directory);

@@ -39,6 +39,7 @@
     "fps_unlock_run_failed": "Failed to run FPS Unlocker! Please try again and make sure FPS Unlocker is enabled!",
     "fps_unlock_run_retry": "Failed to run FPS Unlocker! Please try again later!",
     "game_already_queued": "This game is already queued for download!",
+    "game_already_queued_quality": "This game already has a download, update or repair queued. Let it finish before switching texture quality.",
     "game_already_queued_repair": "This game is already queued for repair!",
     "game_dir_open_failed": "Can not open game directory, Please try again later!",
     "game_download_error": "Error occurred while trying to download {install_name}\nPlease try again!",
@@ -73,6 +74,11 @@
     "preload_error": "Error occurred while trying to predownload {install_name}\nPlease try again!",
     "preload_insufficient_space": "Unable to predownload update for {install_name} as there is not enough free space, please make sure there is enough free space for predownload!",
     "preload_not_supported": "Unable to predownload {install_name} - it is not supported for the current install version.\n\nThis may indicate a corrupt manifest or an unsupported version.",
+    "preload_quality_unsupported": "Predownloads only include the HD textures, so {install_name} can't predownload while it uses SD or UHD.\n\nThe new version will download its SD/UHD files when you update.",
+    "quality_config_error": "Could not load the texture quality packs for {install_name}.\n\n{error}",
+    "quality_insufficient_space": "Not enough disk space for {install_name}.\n\nThis needs about {needed} free, but only {available} is available.",
+    "quality_switch_error": "Error occurred while switching the texture quality of {install_name}\nPlease try again!",
+    "quality_version_mismatch": "The texture packs Kuro currently offers are for version {version}, but {install_name} needs {expected}.\n\nUpdate the game first, or try again once the new version is fully released.",
     "regedit_exec_critical": "Failed to execute regedit helper command! Something serious is wrong.",
     "regedit_exec_failed": "Failed to execute regedit helper command! Please try again.",
     "regedit_exec_incorrect": "Failed to execute regedit helper command! Please try again or check the command correctness.",
@@ -157,6 +163,7 @@
       "extra": "Extra",
       "game": "Game",
       "preload": "Predownload",
+      "quality": "Texture Quality",
       "repair": "Repair",
       "runner": "Runner",
       "update": "Update"
@@ -600,6 +607,21 @@
     "name_placeholder": "Override Name",
     "repo_placeholder": "Github Repository (i.e. TwintailTeam/KeqingRepo)",
     "title": "Repositories and Manifests"
+  },
+  "resource_quality": {
+    "apply": "Apply",
+    "description": "Resolution of the game's textures. Lower quality needs less disk space and VRAM.",
+    "installed": "Installed",
+    "option": {
+      "hd": "Recommended for most GPUs",
+      "sd": "Smallest install, lightest on VRAM",
+      "uhd": "Sharpest textures for high-end GPUs"
+    },
+    "pending": "{installed} is installed. Applying downloads the {target} textures ({size}) and removes the {installed} files.",
+    "pending_no_size": "{installed} is installed. Applying downloads the {target} textures and removes the {installed} files.",
+    "recommended": "Recommended",
+    "steam_managed": "Steam manages this installation's files, so its texture quality can't be changed here.",
+    "title": "Texture Quality"
   },
   "runners_page": {
     "cannot_remove_last": "Cannot remove the last installed runner",

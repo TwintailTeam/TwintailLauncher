@@ -1,4 +1,4 @@
-export type QueueJobKind = 'game_download' | 'game_update' | 'game_preload' | 'game_repair' | 'runner_download' | 'steamrt_download' | 'steamrt4_download' | 'xxmi_download' | 'extras_download';
+export type QueueJobKind = 'game_download' | 'game_update' | 'game_preload' | 'game_repair' | 'game_quality_switch' | 'runner_download' | 'steamrt_download' | 'steamrt4_download' | 'xxmi_download' | 'extras_download';
 
 export type QueueJobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'paused';
 

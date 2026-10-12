@@ -215,6 +215,12 @@ pub async fn init_db<R: Runtime>(app: &AppHandle<R>, data_path: std::path::PathB
             sql: r#"ALTER TABLE install ADD COLUMN gamescope_args TEXT DEFAULT '' NOT NULL;"#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 35,
+            description: "alter_install_table_resource_quality",
+            sql: r#"ALTER TABLE install ADD COLUMN resource_quality TEXT DEFAULT 'hd' NOT NULL;"#,
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut migrations = add_migrations("db", migrationsl);
@@ -912,6 +918,7 @@ pub fn get_install_info_by_id<R: Runtime>(app: &AppHandle<R>, id: String) -> Opt
             graphics_api: rslt.get(0).unwrap().get("graphics_api"),
             use_gamescope: rslt.get(0).unwrap().get("use_gamescope"),
             gamescope_args: rslt.get(0).unwrap().get("gamescope_args"),
+            resource_quality: rslt.get(0).unwrap().get("resource_quality"),
         };
 
         Some(rsltt)
@@ -982,6 +989,7 @@ pub fn get_installs_by_manifest_id<R: Runtime>(
                 graphics_api: r.get("graphics_api"),
                 use_gamescope: r.get("use_gamescope"),
                 gamescope_args: r.get("gamescope_args"),
+                resource_quality: r.get("resource_quality"),
             })
         }
 
@@ -1050,6 +1058,7 @@ pub fn get_installs<R: Runtime>(app: &AppHandle<R>) -> Option<Vec<LauncherInstal
                 graphics_api: r.get("graphics_api"),
                 use_gamescope: r.get("use_gamescope"),
                 gamescope_args: r.get("gamescope_args"),
+                resource_quality: r.get("resource_quality"),
             })
         }
 
@@ -1246,6 +1255,14 @@ pub fn update_install_graphics_api_by_id<R: Runtime>(app: &AppHandle<R>, id: Str
     run_async_command(async {
         let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
         let query = query("UPDATE install SET 'graphics_api' = $1 WHERE id = $2").bind(api).bind(id);
+        query.execute(&db).await.unwrap();
+    });
+}
+
+pub fn update_install_resource_quality_by_id<R: Runtime>(app: &AppHandle<R>, id: String, quality: String) {
+    run_async_command(async {
+        let db = app.state::<DbInstances>().0.lock().await.get("db").unwrap().clone();
+        let query = query("UPDATE install SET 'resource_quality' = $1 WHERE id = $2").bind(quality).bind(id);
         query.execute(&db).await.unwrap();
     });
 }

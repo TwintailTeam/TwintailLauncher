@@ -25,6 +25,7 @@ import { SettingsLayout } from "../layout/SettingsLayout.tsx";
 import { SettingsSidebar, SettingsTab } from "../sidebar/SettingsSidebar.tsx";
 import { SettingsSection, ModernToggle, ModernInput, ModernPathInput, ModernSelect } from "../common/SettingsComponents.tsx";
 import { translate } from "../../utils/i18n";
+import { ResourceQualityCard } from "../common/ResourceQualityPicker.tsx";
 
 
 // Helper for Steam Icon
@@ -304,6 +305,24 @@ export default function GameSettings({
                                     onChange={(val) => handleUpdate("show_drpc", val)}
                                 />
                             </div>
+                            <ResourceQualityCard
+                                biz={gameBiz}
+                                installId={installSettings.id}
+                                steamImported={installSettings.steam_imported}
+                                onSelect={async (quality) => {
+                                    await invoke("update_install_resource_quality", { id: installSettings.id, quality });
+                                    fetchInstallSettings(installSettings.id);
+                                }}
+                                onApply={() => {
+                                    setOpenPopup(POPUPS.NONE);
+                                    emit("start_quality_switch", {
+                                        install: installSettings.id,
+                                        biz: installSettings.manifest_id,
+                                        lang: "en-us",
+                                        region: installSettings.region_code
+                                    });
+                                }}
+                            />
                         </SettingsSection>
                     )}
 

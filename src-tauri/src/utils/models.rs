@@ -101,7 +101,8 @@ pub struct LauncherInstall {
     pub steam_imported: bool,
     pub graphics_api: String,
     pub use_gamescope: bool,
-    pub gamescope_args: String
+    pub gamescope_args: String,
+    pub resource_quality: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]

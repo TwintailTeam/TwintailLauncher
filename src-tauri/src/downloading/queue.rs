@@ -18,6 +18,7 @@ pub enum QueueJobKind {
     GameUpdate,
     GamePreload,
     GameRepair,
+    GameQualitySwitch,
     RunnerDownload,
     SteamrtDownload,
     Steamrt4Download,

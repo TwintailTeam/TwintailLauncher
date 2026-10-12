@@ -1,5 +1,6 @@
 use crate::DownloadState;
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
+use crate::downloading::resource_quality;
 use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
@@ -35,13 +36,20 @@ pub fn run_game_preload<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePaylo
         Some(v) => v,
         None => return QueueJobOutcome::Failed,
     };
-    let gid = match get_manifest_info_by_id(&h5, install.manifest_id) {
+    let gid = match get_manifest_info_by_id(&h5, install.manifest_id.clone()) {
         Some(v) => v,
         None => return QueueJobOutcome::Failed,
     };
 
     let mm = get_manifest(&h5, gid.filename);
     if let Some(gm) = mm {
+        // Kuro only predownloads the HD pack, unfortunately SD/UHD have to install once the update is fully out (I think).
+        if resource_quality::supports_quality(&gm.biz) && resource_quality::needs_pack_sync(&install, resource_quality::effective_quality(&install)) {
+            log::info!("Skipping preload for \"{}\", it runs on {} quality", install.name, resource_quality::effective_quality(&install));
+            show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.preload_quality_unsupported", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
+            h5.emit("preload_complete", ()).unwrap();
+            return QueueJobOutcome::Failed;
+        }
         let version = gm.extra.preload;
         if let Some(picked) = version {
             let tmp = Arc::new(h5.clone());

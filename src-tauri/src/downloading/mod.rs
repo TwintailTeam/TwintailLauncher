@@ -6,6 +6,7 @@ pub mod misc;
 pub mod preload;
 pub mod queue;
 pub mod repair;
+pub mod resource_quality;
 pub mod update;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

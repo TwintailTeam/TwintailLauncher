@@ -6335,10 +6335,12 @@ name = "twintaillauncher"
 version = "2.5.1"
 dependencies = [
  "fischl",
+ "flate2",
  "git2",
  "gumdrop",
  "keepawake",
  "log",
+ "md-5",
  "rpcdiscord",
  "serde",
  "serde_json",

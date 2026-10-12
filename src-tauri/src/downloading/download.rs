@@ -1,6 +1,7 @@
 use crate::DownloadState;
 use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
+use crate::downloading::resource_quality::{self, PackSyncResult};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{FullGameFile, GameVersion}, run_async_command, show_dialog_with_callback};
@@ -36,7 +37,7 @@ pub fn run_game_download<R: Runtime>(h4: AppHandle<R>, payload: DownloadGamePayl
         Some(v) => v,
         None => { log::warn!("Cannot start download: install {} not found", payload.install); return QueueJobOutcome::Failed; }
     };
-    let gid = match get_manifest_info_by_id(&h4, install.manifest_id) {
+    let gid = match get_manifest_info_by_id(&h4, install.manifest_id.clone()) {
         Some(v) => v,
         None => return QueueJobOutcome::Failed,
     };
@@ -226,6 +227,22 @@ pub fn run_game_download<R: Runtime>(h4: AppHandle<R>, payload: DownloadGamePayl
                     h4.emit("download_complete", ()).unwrap();
                     log::debug!("Error occurred during DOWNLOAD_MODE_CHUNK for {}, marking as failed", install.name);
                 }
+            }
+
+            "DOWNLOAD_MODE_RAW" if resource_quality::supports_quality(&gm.biz) && resource_quality::needs_pack_sync(&install, &install.resource_quality) => {
+                log::debug!("Starting game download of {} at {} quality", install.name, install.resource_quality);
+                let cb = resource_quality::progress_emitter(&h4, "download_progress", job_id.to_string(), instn.to_string());
+                match resource_quality::run_pack_sync(&h4, &install, &install.resource_quality, &picked.metadata.version, "downloading", resource_quality::Verify::Size, cb, cancel_token.clone()) {
+                    PackSyncResult::Done => {
+                        log::debug!("Download complete for {}, marking as complete", install.name);
+                        success = true;
+                        #[cfg(target_os = "linux")]
+                        crate::utils::apply_patch(&h4, install.directory.clone(), "aki".to_string(), "add".to_string());
+                    }
+                    PackSyncResult::Failed => { show_dialog_with_callback(&h4, "warning", "TwintailLauncher", "dialogs.game_download_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
+                    PackSyncResult::Cancelled | PackSyncResult::Reported => {}
+                }
+                h4.emit("download_complete", ()).unwrap();
             }
             "DOWNLOAD_MODE_RAW" => {
                 let install_dir = Path::new(&install.directory);

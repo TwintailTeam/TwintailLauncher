@@ -1,6 +1,7 @@
 use crate::DownloadState;
 use crate::downloading::queue::{QueueJobKind, QueueJobOutcome};
 use crate::downloading::{DownloadGamePayload, QueueJobPayload};
+use crate::downloading::resource_quality::{self, PackSyncResult};
 use crate::utils::db_manager::{get_install_info_by_id, get_manifest_info_by_id, update_install_after_update_by_id};
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::{models::{DiffGameFile,FullGameFile,GameVersion}, run_async_command, show_dialog_with_callback};
@@ -389,6 +390,30 @@ pub fn run_game_update<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                         log::debug!("Not enough space to update {} using DOWNLOAD_MODE_CHUNK, required: {}, available: {:?}", install.name, total_size, available);
                     }
                 }
+            }
+            // The manifest's krdiffs only cover HD, SD/UHD installs update by syncing their quality packs instead
+            "DOWNLOAD_MODE_RAW" if resource_quality::supports_quality(&gbiz) && resource_quality::needs_pack_sync(&install, resource_quality::effective_quality(&install)) => {
+                let quality = resource_quality::effective_quality(&install);
+                log::debug!("Starting update of {} at {} quality", install.name, quality);
+                #[cfg(target_os = "linux")]
+                crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "remove".to_string());
+                let verify = if install.skip_hash_check { resource_quality::Verify::Size } else { resource_quality::Verify::Hash };
+                let cb = resource_quality::progress_emitter(&h5, "update_progress", job_id.to_string(), install.name.clone());
+                match resource_quality::run_pack_sync(&h5, &install, quality, &vc, "patching", verify, cb, cancel_token.clone()) {
+                    PackSyncResult::Done => {
+                        update_install_after_update_by_id(&h5, install.id.clone(), vn.clone(), ig.clone(), gb.clone(), vc.clone());
+                        log::debug!("Successfully updated {} at {} quality, marking as complete", install.name, quality);
+                        success = true;
+                        #[cfg(target_os = "linux")]
+                        {
+                            crate::utils::shortcuts::sync_desktop_shortcut(&h5, install.id.clone(), vn.clone());
+                            crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "add".to_string());
+                        }
+                    }
+                    PackSyncResult::Failed => { show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.game_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())]))); }
+                    PackSyncResult::Cancelled | PackSyncResult::Reported => {}
+                }
+                h5.emit("update_complete", ()).unwrap();
             }
             "DOWNLOAD_MODE_RAW" => {
                 let urls = picked.game.diff.iter().filter(|e| e.original_version.as_str() == install.version.clone().as_str()).collect::<Vec<&DiffGameFile>>();

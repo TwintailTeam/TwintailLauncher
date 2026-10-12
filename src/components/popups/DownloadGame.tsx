@@ -5,7 +5,7 @@ import {
     Folder,
     Gamepad2Icon,
     HardDrive,
-    HardDriveDownloadIcon, Monitor, Terminal,
+    HardDriveDownloadIcon, Layers, Monitor, Terminal,
     X
 } from "lucide-react";
 import { POPUPS } from "./POPUPS.ts";
@@ -18,6 +18,7 @@ import { formatBytes } from "../../utils/progress";
 import { open } from "@tauri-apps/plugin-dialog";
 import {ModernPathInput, ModernSelect, ModernToggle} from "../common/SettingsComponents.tsx";
 import { translate } from "../../utils/i18n";
+import { DEFAULT_RESOURCE_QUALITY, ResourceQuality, ResourceQualityTiles, useResourceQualityInfo } from "../common/ResourceQualityPicker.tsx";
 
 interface IProps {
     disk: any;
@@ -85,6 +86,10 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
     const [skipVersionUpdates, setSkipVersionUpdates] = useState(false);
     // Controlled State for disable hash validation
     const [disableHashValidation, setDisableHashValidation] = useState(false);
+    // Texture quality (games that ship SD/HD/UHD packs)
+    const qualityInfo = useResourceQualityInfo(biz);
+    const [resourceQuality, setResourceQuality] = useState<ResourceQuality>(DEFAULT_RESOURCE_QUALITY);
+    const showQuality = !!qualityInfo?.supported && !skipGameDownload;
 
     // Update path effect to fetch sizes
     useEffect(() => {
@@ -106,7 +111,8 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
     // Disk space logic
     const freeSpace = parseFloat(disk.free_disk_space_raw || 0);
     const totalSpace = parseFloat(disk.total_disk_space_raw || 0);
-    const requiredSpace = parseFloat(disk.game_decompressed_size_raw || 0);
+    const qualityBytes = showQuality ? qualityInfo?.sizes?.[resourceQuality]?.install_bytes : undefined;
+    const requiredSpace = qualityBytes ?? parseFloat(disk.game_decompressed_size_raw || 0);
     const usedSpace = totalSpace > 0 ? totalSpace - freeSpace : 0;
     const hasEnoughSpace = skipGameDownload || (freeSpace > requiredSpace);
     const usedPercent = totalSpace > 0 ? (usedSpace / totalSpace) * 100 : 0;
@@ -178,7 +184,8 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                 runnerPrefix: runnerPrefixPath,
                 launchArgs: "",
                 skipGameDl: skipGameDownload,
-                regionCode: selectedRegionCode
+                regionCode: selectedRegionCode,
+                resourceQuality: qualityInfo?.supported ? resourceQuality : null
             }).then((r: any) => {
                 if (r.success) {
                     pushInstalls();
@@ -349,6 +356,17 @@ export default function DownloadGame({ disk, setOpenPopup, displayName, settings
                         )}
                     </div>
                 </div>
+                {showQuality && (
+                    <div className="space-y-4">
+                        <div>
+                            <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">
+                                <Layers className="text-purple-400" size={20} /> {translate("resource_quality.title")}
+                            </h3>
+                            <p className="text-sm text-zinc-400 mt-1">{translate("resource_quality.description")}</p>
+                        </div>
+                        <ResourceQualityTiles value={resourceQuality} onChange={setResourceQuality} sizes={qualityInfo?.sizes} />
+                    </div>
+                )}
                 {biz === "bh3_global" && (
                     <div className="space-y-4">
                         <h3 className="text-white/90 font-semibold text-lg flex items-center gap-2">

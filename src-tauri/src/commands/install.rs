@@ -1,4 +1,4 @@
-use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_disable_system_idle_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_background_by_id, update_install_game_location_by_id, update_install_gamescope_args_by_id, update_install_graphics_api_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_show_drpc_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_gamescope_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id, update_installs_order};
+use crate::utils::db_manager::{create_installation, delete_installation_by_id, get_install_info_by_id, get_installs, get_installs_by_manifest_id, get_manifest_info_by_filename, get_manifest_info_by_id, get_settings, update_install_disable_system_idle_by_id, update_install_env_vars_by_id, update_install_fps_value_by_id, update_install_game_background_by_id, update_install_game_location_by_id, update_install_gamescope_args_by_id, update_install_graphics_api_by_id, update_install_ignore_updates_by_id, update_install_launch_args_by_id, update_install_launch_cmd_by_id, update_install_resource_quality_by_id,update_install_mangohud_config_location_by_id, update_install_pre_launch_cmd_by_id, update_install_prefix_location_by_id, update_install_shortcut_location_by_id, update_install_show_drpc_by_id, update_install_skip_hash_check_by_id, update_install_use_fps_unlock_by_id, update_install_use_gamemode_by_id, update_install_use_gamescope_by_id, update_install_use_mangohud_by_id, update_install_use_xxmi_by_id, update_install_xxmi_config_by_id, update_installs_order};
 use crate::utils::game_launch_manager::launch;
 use crate::utils::repo_manager::get_manifest;
 use crate::utils::shortcuts::remove_desktop_shortcut;
@@ -54,7 +54,7 @@ pub fn get_install_by_id<R: Runtime>(app: AppHandle<R>, id: String) -> Option<La
 
 #[allow(unused_mut, unused_variables)]
 #[tauri::command]
-pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String) -> Option<AddInstallRsp> {
+pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: String, audio_lang: String, name: String, mut directory: String, mut runner_path: String, mut dxvk_path: String, mut runner_version: String, dxvk_version: String, game_icon: String, game_background: String, mut ignore_updates: bool, skip_hash_check: bool, use_xxmi: bool, use_fps_unlock: bool, env_vars: String, pre_launch_command: String, launch_command: String, fps_value: String, mut runner_prefix: String, launch_args: String, skip_game_dl: bool, region_code: String, resource_quality: Option<String>) -> Option<AddInstallRsp> {
     if manifest_id.is_empty() || version.is_empty() || name.is_empty() || directory.is_empty() || runner_path.is_empty() || dxvk_path.is_empty() || game_icon.is_empty() || game_background.is_empty() {
         None
     } else {
@@ -211,6 +211,11 @@ pub fn add_install<R: Runtime>(app: AppHandle<R>, manifest_id: String, version: 
         let xxmi_cfg = Json(XXMISettings { hunting_mode: 0, require_admin: true, dll_init_delay: 500, close_delay: 20, show_warnings: 0, dump_shaders: false, cache_shaders: 0 });
         let default_graphics_api = gm.extra.graphics_api_options.default.clone();
         create_installation(&app, cuid.clone(), dbm.id, version, audio_lang, g.metadata.versioned_name.clone(), directory, runner_path, dxvk_path, runner_version, dxvk_version, g.assets.game_icon.clone(), gbg.clone(), ignore_updates, skip_hash_check, use_xxmi, use_fps_unlock, env_vars, pre_launch_command, launch_command, fps_value, runner_prefix, launch_args, false, false, gs.default_mangohud_config_path.clone(), region_code, steam_import, default_graphics_api, xxmi_cfg).unwrap();
+        if crate::downloading::resource_quality::supports_quality(&gm.biz) {
+            let on_disk = if skip_game_dl { crate::downloading::resource_quality::installed_qualities(Path::new(&install_location)) } else { Vec::new() };
+            let quality = on_disk.first().map(String::as_str).or(resource_quality.as_deref()).map(crate::downloading::resource_quality::normalize_quality).unwrap_or(crate::downloading::resource_quality::DEFAULT_QUALITY);
+            update_install_resource_quality_by_id(&app, cuid.clone(), quality.to_string());
+        }
         log::info!("Created installation {} (\"{}\")", cuid, name);
         Some(AddInstallRsp {
             success: true,
@@ -446,6 +451,38 @@ pub fn update_install_fps_value<R: Runtime>(app: AppHandle<R>, id: String, fps: 
     } else {
         None
     }
+}
+
+#[tauri::command]
+pub fn update_install_resource_quality<R: Runtime>(app: AppHandle<R>, id: String, quality: String) -> Option<bool> {
+    let install = get_install_info_by_id(&app, id)?;
+    update_install_resource_quality_by_id(&app, install.id, crate::downloading::resource_quality::normalize_quality(&quality).to_string());
+    Some(true)
+}
+
+#[derive(serde::Serialize)]
+pub struct ResourceQualityInfo {
+    supported: bool,
+    selected: String,
+    installed: Vec<String>,
+    sizes: std::collections::HashMap<String, crate::downloading::resource_quality::QualitySize>,
+    version: String,
+}
+
+#[tauri::command]
+pub async fn get_resource_quality_info<R: Runtime>(app: AppHandle<R>, biz: String, install_id: Option<String>) -> ResourceQualityInfo {
+    use crate::downloading::resource_quality as rq;
+    let mut info = ResourceQualityInfo { supported: rq::supports_quality(&biz), selected: rq::DEFAULT_QUALITY.to_string(), installed: Vec::new(), sizes: Default::default(), version: String::new() };
+    if !info.supported { return info; }
+    if let Some(install) = install_id.filter(|id| !id.is_empty()).and_then(|id| get_install_info_by_id(&app, id)) {
+        info.selected = rq::normalize_quality(&install.resource_quality).to_string();
+        info.installed = rq::installed_qualities(Path::new(&install.directory));
+    }
+    match rq::fetch_bundle_config().await {
+        Ok(config) => { info.sizes = rq::quality_sizes(&config); info.version = rq::config_version(&config); }
+        Err(e) => log::warn!("Resource quality sizes unavailable: {e}"),
+    }
+    info
 }
 
 #[tauri::command]
