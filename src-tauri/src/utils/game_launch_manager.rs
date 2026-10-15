@@ -220,6 +220,8 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", default_command);
+                    // Reap the child once it exits so gamescope/bash do not linger as zombies
+                    std::thread::spawn(move || { let _ = child.wait(); });
                 }
                 Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", default_command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_incorrect", None, None, None); }
             },
@@ -298,6 +300,8 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
                     update_install_last_played_by_id(app, install.id.clone(), time);
                     start_playtime_tracker(app, install.clone(), gm.clone(), exe.clone());
                     log::info!("Executing launch command: \"{}\"", command);
+                    // Reap the child once it exits so gamescope/bash do not linger as zombies
+                    std::thread::spawn(move || { let _ = child.wait(); });
                 }
                 Err(_) => { log::error!("Executing launch command: \"{}\" failed! Is command correct?", command); show_dialog_with_callback(&app, "error", "TwintailLauncher", "dialogs.launch_cmd_incorrect", None, None, None); }
             },
