@@ -10,7 +10,6 @@ use fischl::utils::is_process_running;
 use crate::utils::{get_steam_appid, get_steam_tool_appid, is_runner_lower, is_using_overriden_runner, runner_from_runner_version, update_steam_compat_config, repo_manager::get_compatibility};
 #[cfg(target_os = "linux")]
 use std::os::unix::process::CommandExt;
-#[cfg(target_os = "linux")]
 use tauri::Manager;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -40,6 +39,14 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     let reaper = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
     #[cfg(debug_assertions)]
     let reaper = app.path().resource_dir()?.join("resources/reaper").to_str().unwrap().to_string();
+    #[cfg(not(debug_assertions))]
+    let suspend_start = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
+    #[cfg(debug_assertions)]
+    let suspend_start = app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string();
+    #[cfg(not(debug_assertions))]
+    let games_launcher = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
+    #[cfg(debug_assertions)]
+    let games_launcher = app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string();
     let appid = get_steam_appid();
 
     if !steamrtp.exists() {
@@ -142,9 +149,12 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         found
     } else { install.use_gamemode };
 
+    // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
     let default_command = if is_proton {
-        let steamrt_run = format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}");
+        let steamrt_run = if gm.biz == "endfield_global" { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' '{drive}' {args}") } else { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}") };
         if gamemode_ok { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
+    } else if gm.biz == "endfield_global" {
+        if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' 'z:\\{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' 'z:\\{dir}/{game}' {args}") }
     } else {
         if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
     };
@@ -538,7 +548,8 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
-        let mut cmd = Command::new(&full_path_str);
+        // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
+        let mut cmd = if gm.biz == "endfield_global" { let mut c = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); c.arg("--launcher").arg(app.path().resource_dir()?.join("resources/Games.exe")).arg(&full_path_str); c } else { Command::new(&full_path_str) };
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
@@ -590,7 +601,8 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if install.use_xxmi && gm.biz == "nap_global" { args = args.split_whitespace().filter(|a| gm.extra.graphics_api_options.options.iter().all(|o| o.value.as_str() != *a)).collect::<Vec<_>>().join(" "); if !args.is_empty() { args += " "; } args += "-use-d3d11"; }
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
-        let mut cmd = Command::new(&c);
+        // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
+        let mut cmd = if gm.biz == "endfield_global" { let mut sc = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); sc.arg("--launcher").arg(app.path().resource_dir()?.join("resources/Games.exe")).arg(&c); sc } else { Command::new(&c) };
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
