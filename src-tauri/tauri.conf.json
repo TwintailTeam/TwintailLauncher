@@ -49,7 +49,6 @@
             "./resources/reaper",
             "./resources/winetricks",
             "./resources/suspend_start.exe",
-            "./resources/Games.exe",
             "./resources/locales/*"
         ],
         "icon": [

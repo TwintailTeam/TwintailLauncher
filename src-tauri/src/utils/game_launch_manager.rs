@@ -43,11 +43,20 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     let suspend_start = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
     #[cfg(debug_assertions)]
     let suspend_start = app.path().resource_dir()?.join("resources/suspend_start.exe").to_str().unwrap().to_string();
-    #[cfg(not(debug_assertions))]
-    let games_launcher = if crate::utils::is_flatpak() { app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string().replace("/app/lib/", "/run/parent/app/lib/") } else { app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string().replace("/usr/lib/", "/run/host/usr/lib/") };
-    #[cfg(debug_assertions)]
-    let games_launcher = app.path().resource_dir()?.join("resources/Games.exe").to_str().unwrap().to_string();
+    let games_launcher = { let d = app.path().app_data_dir()?; if crate::utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } }.join("Games.exe").to_str().unwrap().to_string();
     let appid = get_steam_appid();
+
+    // Endfield needs official launcher as suspend_start.exe parent, fetch it if missing
+    if gm.biz == "endfield_global" && !install.steam_imported && !std::path::Path::new(&games_launcher).exists() {
+        let _ = std::fs::create_dir_all(std::path::Path::new(&games_launcher).parent().unwrap().join(".hgshim"));
+        let dl = crate::utils::run_async_command(async { fischl::download::Extras::download_extra_package("hgshim".to_string(), "hgshim".to_string(), false, false, false, std::path::Path::new(&games_launcher).parent().unwrap().join(".hgshim").to_str().unwrap().to_string(), |_current, _total| {}).await }) && std::fs::rename(std::path::Path::new(&games_launcher).parent().unwrap().join(".hgshim").join("Games.exe"), &games_launcher).is_ok();
+        if dl { let _ = std::fs::remove_dir_all(std::path::Path::new(&games_launcher).parent().unwrap().join(".hgshim")); }
+        if !dl {
+            log::error!("Failed to download Games.exe required to launch {}!", install.name);
+            show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.package_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("package_id", "Games.exe")])));
+            return Ok(false);
+        }
+    }
 
     if !steamrtp.exists() {
         log::info!("Attempted to launch {} with broken SteamRT (ToolID: {})! Pressing Repair SteamLinuxRuntime button in application settings is recommended.", install.name, toolid);
@@ -151,9 +160,9 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
 
     // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
     let default_command = if is_proton {
-        let steamrt_run = if gm.biz == "endfield_global" { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' '{drive}' {args}") } else { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}") };
+        let steamrt_run = if gm.biz == "endfield_global" && !install.steam_imported { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' '{drive}' {args}") } else { format!("'{steamrt}' --verb={verb} -- '{reaper}' SteamLaunch AppId={appid} -- '{runner}/{wine64}' {verb} '{drive}' {args}") };
         if gamemode_ok { format!("gamemoderun {steamrt_run}") } else { format!("{steamrt_run}") }
-    } else if gm.biz == "endfield_global" {
+    } else if gm.biz == "endfield_global" && !install.steam_imported {
         if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' 'z:\\{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' 'z:\\{suspend_start}' --launcher 'z:\\{games_launcher}' 'z:\\{dir}/{game}' {args}") }
     } else {
         if gamemode_ok { format!("gamemoderun '{runner}/{wine64}' '{dir}/{game}' {args}") } else { format!("'{runner}/{wine64}' '{dir}/{game}' {args}") }
@@ -512,6 +521,18 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     let game = gm.paths.exe_filename.clone();
     let exe = gm.paths.exe_filename.clone().split('/').last().unwrap().to_string();
 
+    // Endfield needs official launcher as suspend_start.exe parent, fetch it if missing
+    if gm.biz == "endfield_global" && !install.steam_imported && !app.path().app_data_dir()?.join("Games.exe").exists() {
+        let _ = std::fs::create_dir_all(app.path().app_data_dir()?.join(".hgshim"));
+        let dl = crate::utils::run_async_command(async { fischl::download::Extras::download_extra_package("hgshim".to_string(), "hgshim".to_string(), false, false, false, app.path().app_data_dir().unwrap().join(".hgshim").to_str().unwrap().to_string(), |_current, _total| {}).await }) && std::fs::rename(app.path().app_data_dir()?.join(".hgshim").join("Games.exe"), app.path().app_data_dir()?.join("Games.exe")).is_ok();
+        if dl { let _ = std::fs::remove_dir_all(app.path().app_data_dir()?.join(".hgshim")); }
+        if !dl {
+            log::error!("Failed to download Games.exe required to launch {}!", install.name);
+            show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.package_update_error", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("package_id", "Games.exe")])));
+            return Ok(false);
+        }
+    }
+
     let pre_launch = install.pre_launch_command.clone();
     if !pre_launch.is_empty() {
         let mut cmd = Command::new(&pre_launch);
@@ -553,7 +574,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
         // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
-        let mut cmd = if gm.biz == "endfield_global" { let mut c = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); c.arg("--launcher").arg(app.path().resource_dir()?.join("resources/Games.exe")).arg(&full_path_str); c } else { Command::new(&full_path_str) };
+        let mut cmd = if gm.biz == "endfield_global" && !install.steam_imported { let mut c = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); c.arg("--launcher").arg(app.path().app_data_dir()?.join("Games.exe")).arg(&full_path_str); c } else { Command::new(&full_path_str) };
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
@@ -606,7 +627,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
         if gm.extra.switches.graphics_api && !xxmi_forced && !args.split_whitespace().any(|a| gm.extra.graphics_api_options.options.iter().any(|o| o.value.as_str() == a)) && !install.graphics_api.is_empty() { if !args.is_empty() { args += " "; } args += &install.graphics_api; }
 
         // Endfield has to be booted through suspend_start.exe with Games.exe as launcher
-        let mut cmd = if gm.biz == "endfield_global" { let mut sc = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); sc.arg("--launcher").arg(app.path().resource_dir()?.join("resources/Games.exe")).arg(&c); sc } else { Command::new(&c) };
+        let mut cmd = if gm.biz == "endfield_global" && !install.steam_imported { let mut sc = Command::new(app.path().resource_dir()?.join("resources/suspend_start.exe")); sc.arg("--launcher").arg(app.path().app_data_dir()?.join("Games.exe")).arg(&c); sc } else { Command::new(&c) };
         if !args.is_empty() { cmd.args(args.split_whitespace().collect::<Vec<_>>()); }
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
 
