@@ -518,7 +518,11 @@ pub fn apply_patch<R: Runtime>(app: &AppHandle<R>, dir: String, patch_type: Stri
                     "add" => {
                         let patch = app.path().resource_dir().unwrap().join("resources").join("hkrpg_patch.dll");
                         let target = dir.join("jsproxy.dll");
-                        if patch.exists() { fs::copy(&patch, &target).unwrap(); log::debug!("Applied Sparkle patch to {}", dir.display()); }
+                        if patch.exists() {
+                            let _ = fs::remove_file(&target);
+                            fs::copy(&patch, &target).unwrap();
+                            log::debug!("Applied Sparkle patch to {}", dir.display());
+                        }
                     }
                     "remove" => {
                         let target = dir.join("jsproxy.dll");

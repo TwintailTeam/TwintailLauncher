@@ -1,0 +1,626 @@
+{
+  "action_bar": {
+    "game_settings_tooltip": "Opciones del juego",
+    "predownload_tooltip": "Predescargar actualización"
+  },
+  "app": {
+    "initializing": "Inicializando...",
+    "update_available_banner": "¡Ya está disponible una nueva versión de TwintailLauncher! ¡Por favor, actualiza para una mejor experiencia!"
+  },
+  "context_menu": {
+    "add_to_desktop": "Añadir al escritorio",
+    "add_to_steam": "Añadir a Steam",
+    "installation_settings": "Opciones del juego",
+    "loading": "Cargando...",
+    "remove_from_desktop": "Eliminar del escritorio",
+    "remove_from_steam": "Eliminar de Steam",
+    "steam_managed": "Los atajos de Steam son gestionados por Steam en esta instalación."
+  },
+  "dialogs": {
+    "buttons": {
+      "i_understand": "Lo he entendido",
+      "ok": "OK",
+      "restart_now": "Reiniciar ahora"
+    },
+    "cmd_exec_critical": "¡No se ha podido ejecutar el comando auxiliar de cmd! Algo serio ha salido mal.",
+    "cmd_exec_failed": "¡No se ha podido ejecutar el comando auxiliar de cmd! Por favor, inténtalo de nuevo.",
+    "cmd_exec_incorrect": "¡No se ha podido ejecutar el comando auxiliar de cmd! Por favor, inténtalo de nuevo o asegúrate de que el comando es correcto.",
+    "cmd_prefix_not_initialized": "No se ha podido ejecutar cmd.exe. ¡Por favor, inicia el juego al menos una vez!",
+    "cmd_runner_not_found": "No se ha podido ejecutar cmd.exe. ¿Se ha descargado el runner correctamente?",
+    "control_exec_critical": "¡No se ha podido ejecutar el comando auxiliar de control! Algo serio ha salido mal.",
+    "control_exec_failed": "¡No se ha podido ejecutar el comando auxiliar de control! Por favor, inténtalo de nuevo.",
+    "control_exec_incorrect": "¡No se ha podido ejecutar el comando auxiliar de control! Por favor, inténtalo de nuevo o asegúrate de que el comando es correcto.",
+    "control_prefix_not_initialized": "No se ha podido ejecutar control.exe. ¡Por favor, inicia el juego al menos una vez!",
+    "control_runner_not_found": "No se ha podido ejecutar control.exe. ¿Se ha descargado el runner correctamente?",
+    "directory_open_failed": "No se ha podido abrir el directorio. ¡Inténtalo de nuevo más tarde!",
+    "dxvk_download_failed": "Ha ocurrido un error al intentar descargar {dxvk_version} DXVK! Por favor, inténtalo de nuevo más tarde.",
+    "engine_log_dir_open_failed": "No se ha podido abrir el directorio de logs del motor del juego. ¿Se ha inicializado el prefix del runner?",
+    "fps_unlock_run_critical": "¡No se ha podido iniciar el desbloqueador de FPS! Algo serio ha salido mal.",
+    "fps_unlock_run_failed": "¡No se ha podido iniciar el desbloqueador de FPS! ¡Por favor, inténtalo de nuevo y asegúrate de que \"Desbloquear FPS\" está activado!",
+    "fps_unlock_run_retry": "¡No se ha podido iniciar el desbloqueador de FPS! ¡Por favor, inténtalo de nuevo más tarde!",
+    "game_already_queued": "¡Este juego ya está en la cola de descargas!",
+    "game_already_queued_repair": "¡Este juego ya está en la cola de reparaciones!",
+    "game_dir_open_failed": "No se ha podido abrir el directorio del juego. ¡Por favor, inténtalo de nuevo más tarde!",
+    "game_download_error": "Ha ocurrido un error al intentar descargar {install_name}\n¡Por favor, inténtalo de nuevo!",
+    "game_repair_error": "Ha ocurrido un error al intentar reparar {install_name}\n¡Por favor, inténtalo de nuevo!",
+    "game_update_error": "Ha ocurrido un error al intentar actualizar {install_name}\n¡Por favor, inténtalo de nuevo!",
+    "gamemode_not_found": "Feral Gamemode está activado, pero `gamemoderun` no se encontró en el PATH. El juego se lanzará sin Gamemode.\nInstala el paquete `gamemode` o su equivalente en tu distribución para usar esta función.",
+    "gamescope_not_found": "ValveSoftware Gamescope está activado, pero `gamescope` no se encontró en el PATH. El juego se lanzará sin Gamescope.\nInstala el paquete `gamescope` o su equivalente en tu distribución para usar esta función.",
+    "gamescope_xxmi_combo_unsupported": "Gamescope y XXMI no están soportados para este juego. ¡Por favor, elige solo una de esas herramientas!",
+    "install_already_queued": "¡{install_name} ya está en la cola de descargas!",
+    "install_not_found": "¡No se ha podido encontrar la instalación del juego!",
+    "install_remove_dir_failed": "No se ha podido eliminar el directorio de instalación del juego. {error} - ¡Por favor, elimina la carpeta manualmente!",
+    "install_remove_dir_failed_generic": "No se ha podido eliminar el directorio de instalación del juego. ¡Por favor, elimina la carpeta manualmente!",
+    "install_start_failed": "¡No se ha podido iniciar la instalación! {error}",
+    "launch_cmd_critical": "¡No se ha podido ejecutar el comando de lanzamiento! Algo serio ha salido mal.",
+    "launch_cmd_failed": "¡No se ha podido ejecutar el comando de lanzamiento! Por favor, inténtalo de nuevo o revisa las opciones del juego.",
+    "launch_cmd_incorrect": "¡No se ha podido ejecutar el comando de lanzamiento! Por favor, inténtalo de nuevo o asegúrate de que el comando es correcto.",
+    "launch_run_cmd_failed": "¡No se ha podido iniciar el comando de lanzamiento! Por favor, inténtalo de nuevo o revisa las opciones del juego.",
+    "launch_run_cmd_incorrect": "¡No se ha podido iniciar el comando de lanzamiento! Por favor, inténtalo de nuevo o asegúrate de que el comando es correcto.",
+    "launch_runner_unsupported": "Lanzar {install_name} con {runner_version} podría conllevar varios comportamientos inesperados.\n¡Por favor, descarga al menos una de las versiones soportadas o superior!\nEl juego no iniciará hasta que se cumpla este requisito.\nVersiones mínimas de runner compatibles: {min_runner_versions}",
+    "launch_runner_version_required": "Lanzar {install_name} con {runner_version} podría conllevar varios problemas.\n¡Por favor, cambia tu runner como mínimo a {required_runner} e inténtalo de nuevo!\n¡El juego no iniciará hasta que se cumpla este requisito!",
+    "launch_steamrt_broken": "¡No se ha podido lanzar {install_name} debido a que SteamLinuxRuntime probablemente esté roto! Por favor, abre Opciones del launcher -> Opciones de Linux y luego pulsa el botón 'Reparar SteamLinuxRuntime'.",
+    "package_download_error": "¡Ha ocurrido un error al intentar descargar {package_id}! Por favor, inténtalo de nuevo más tarde.",
+    "package_update_error": "¡Ha ocurrido un error al intentar actualizar {package_id}! Por favor, inténtalo de nuevo más tarde.",
+    "prefix_dir_open_failed": "No se ha podido abrir el directorio del prefix del runner. ¿Se ha inicializado el prefix del runner?",
+    "prefix_not_initialized": "No se ha podido reparar el directorio del prefix del runner. ¿Se ha inicializado el prefix del runner?",
+    "prefix_reinit_failed": "¡Se ha encontrado un error al intentar reinicializar tu prefix de runner! - {error}",
+    "prefix_repair_failed": "La reparación del prefix del runner ha fallado. ¡Inténtalo de nuevo más tarde!",
+    "prefix_repair_queued": "El prefix del runner ha sido puesto en estado de reparación. Por favor, inicia el juego para regenerar el prefix.",
+    "prelaunch_cmd_critical": "¡No se ha podido ejecutar el comando de prelanzamiento! Algo serio ha salido mal.",
+    "prelaunch_cmd_failed": "¡No se ha podido ejecutar el comando de prelanzamiento! Por favor, inténtalo de nuevo o comprueba las opciones del juego.",
+    "prelaunch_cmd_incorrect": "¡No se ha podido ejecutar el comando de prelanzamiento! Por favor, inténtalo de nuevo o asegúrate de que el comando sea correcto.",
+    "preload_error": "Ha ocurrido un error al intentar predescargar {install_name}\n¡Por favor, inténtalo de nuevo!",
+    "preload_insufficient_space": "No se ha podido predescargar la actualización para {install_name} debido a que no hay espacio suficiente en disco. ¡Por favor, asegúrate de que hay suficiente espacio para la predescarga!",
+    "preload_not_supported": "No se ha podido predescargar {install_name} - no está soportado para la versión instalada actualmente.\n\nEsto podría indicar un manifiesto corrupto o una versión no soportada.",
+    "regedit_exec_critical": "¡No se ha podido ejecutar el comando auxiliar de regedit! Algo serio ha salido mal.",
+    "regedit_exec_failed": "¡No se ha podido ejecutar el comando auxiliar de regedit! Por favor, inténtalo de nuevo.",
+    "regedit_exec_incorrect": "¡No se ha podido ejecutar el comando auxiliar de regedit! Por favor, inténtalo de nuevo o comprueba que el comando sea correcto.",
+    "regedit_prefix_not_initialized": "No se ha podido ejecutar regedit.exe. ¡Por favor, inicia el juego al menos una vez!",
+    "regedit_runner_not_found": "No se ha podido ejecutar regedit.exe. ¿Se ha descargado el runner correctamente?",
+    "repo_clone_failed": "¡No se ha podido clonar el repositorio o el mismo carece de un manifiesto!",
+    "repo_fetch_3rdparty_failed": "¡No se ha podido obtener actualizaciones de uno o más repositorios de terceros! {error}",
+    "repo_fetch_compat_failed": "¡No se ha podido obtener actualizaciones del repositorio de compatibilidad! {error}",
+    "repo_fetch_game_manifest_failed": "¡No se ha podido obtener actualizaciones para el repositorio del manifiesto del juego! {error}",
+    "runner_already_installed": "¡El runner {runner_version} ya está instalado!",
+    "runner_already_queued": "¡El runner {runner_version} ya está en la cola de descargas!",
+    "runner_dir_open_failed": "¡No se ha podido abrir el directorio del runner! ¿Se ha descargado el runner correctamente?",
+    "runner_download_error": "¡Ha ocurrido un error al intentar descargar {runner_name}! Por favor, inténtalo de nuevo más tarde.",
+    "runner_not_installed": "¡El runner {runner_version} no está instalado!",
+    "shortcut_create_failed_windows": "¡No se ha podido crear un acceso directo de lanzamiento!",
+    "shortcut_desktop_create_failed": "¡No se ha podido crear un acceso directo en el escritorio para {install_name}! Si utilizas Flatpak, asegúrate de que la aplicación tiene permiso para acceder a ~/.local/share/applications.",
+    "shortcut_desktop_created": "El acceso directo de {install_name} ha sido creado con éxito en el escritorio.",
+    "shortcut_desktop_created_windows": "El acceso directo de escritorio se ha creado con éxito. Encuéntralo en tu escritorio.",
+    "shortcut_desktop_deleted": "El acceso directo de escritorio para {install_name} ha sido eliminado con éxito.",
+    "shortcut_desktop_deleted_windows": "El acceso directo de escritorio ha sido eliminado con éxito.",
+    "shortcut_desktop_not_exists": "¡El acceso directo de escritorio para {install_name} no existe!",
+    "shortcut_desktop_not_exists_generic": "¡Un acceso directo de escritorio para este juego no existe!",
+    "shortcut_steam_added": "Se ha añadido {install_name} a Steam con éxito. Por favor, reinicia Steam para aplicar los cambios.",
+    "shortcut_steam_failed": "¡No se ha podido añadir {install_name} a Steam!",
+    "shortcut_steam_flatpak_added": "¡Se ha añadido {install_name} a Steam (Flatpak) con éxito! Por favor, reinicia Steam para aplicar los cambios.",
+    "shortcut_steam_flatpak_failed": "¡No se ha podido añadir {install_name} a Steam (Flatpak)!",
+    "shortcut_steam_flatpak_remove_failed": "¡No se ha podido eliminar {install_name} de Steam (Flatpak)! El acceso directo probablemente se eliminó manualmente.",
+    "shortcut_steam_flatpak_removed": "Se ha eliminado {install_name} de Steam (Flatpak) con éxito. Por favor, reinicia Steam para aplicar los cambios.",
+    "shortcut_steam_not_supported_windows": "¡Los accesos directos de Steam actualmente no están soportados en Windows!",
+    "shortcut_steam_remove_failed": "¡No se ha podido eliminar {install_name} de Steam! El acceso directo probablemente se eliminó manualmente.",
+    "shortcut_steam_removed": "Se ha eliminado {install_name} de Steam con éxito. Por favor, reinicia Steam para aplicar los cambios.",
+    "steamrt3_diagnostics_failed": "¡No se ha podido generar la información de diagnóstico de SteamRT3! Por favor, inténtalo de nuevo.",
+    "steamrt3_dir_prepare_failed": "No se ha podido preparar el directorio de SteamLinuxRuntime 3. {error} - ¡Por favor, arregla el error y reinicia la aplicación!",
+    "steamrt3_dl_error": "¡Ha ocurrido un error al intentar descargar SteamLinuxRuntime 3! Por favor, reinicia la aplicación para reintentarlo.",
+    "steamrt3_log_open_failed": "No se ha podido abrir el directorio de logs de SteamRT3. ¡Inténtalo de nuevo más tarde!",
+    "steamrt3_not_downloaded": "No se ha podido reparar SteamRT3. ¿Se ha descargado correctamente?",
+    "steamrt3_not_downloaded_diag": "No se ha podido ejecutar steam-runtime-system-info. ¿Se ha descargado SteamRT3 correctamente?",
+    "steamrt3_repair_failed": "La reparación de SteamRT3 ha fallado. ¡Inténtalo de nuevo más tarde!",
+    "steamrt3_update_error": "¡Ha ocurrido un error al intentar actualizar SteamLinuxRuntime 3! Por favor, reinicia la aplicación para reintentarlo.",
+    "steamrt4_diagnostics_failed": "¡No se ha podido generar la información de diagnóstico de SteamRT4! Por favor, inténtalo de nuevo.",
+    "steamrt4_dir_prepare_failed": "No se ha podido preparar el directorio de SteamLinuxRuntime 4. {error} - ¡Por favor, arregla el error y reinicia la aplicación!",
+    "steamrt4_dl_error": "¡Ha ocurrido un error al intentar descargar SteamLinuxRuntime 4! Por favor, reinicia la aplicación para reintentarlo.",
+    "steamrt4_log_open_failed": "No se ha podido abrir el directorio de logs de SteamRT4. ¡Inténtalo de nuevo más tarde!",
+    "steamrt4_not_downloaded": "No se ha podido reparar SteamRT4. ¿Se ha descargado correctamente?",
+    "steamrt4_not_downloaded_diag": "No se ha podido ejecutar steam-runtime-system-info. ¿Se ha descargado SteamRT4 correctamente?",
+    "steamrt4_repair_failed": "La reparación de SteamRT4 ha fallado. ¡Inténtalo de nuevo más tarde!",
+    "steamrt4_update_error": "¡Ha ocurrido un error al intentar actualizar SteamLinuxRuntime 4! Por favor, reinicia la aplicación para reintentarlo.",
+    "steamrt_diagnostics_exec_critical": "¡No se ha podido ejecutar el comando steam-runtime-system-info! Algo serio ha salido mal.",
+    "steamrt_diagnostics_exec_incorrect": "¡No se ha podido ejecutar el comando steam-runtime-system-info! Por favor, inténtalo de nuevo o comprueba que el comando sea correcto.",
+    "steamrt_repair_restart": "SteamRT se ha puesto en estado de reparación. Por favor, reinicia la aplicación para redescargarlo.",
+    "unsupported_download_mode": "¡Modo de descarga no soportado para la descarga!",
+    "unsupported_predownload_mode": "¡Modo de descarga no soportado para la predescarga!",
+    "unsupported_repair_mode": "¡Modo de descarga no soportado para la reparación!",
+    "unsupported_update_mode": "¡Modo de descarga no soportado para la actualización!",
+    "update_insufficient_space": "No se ha podido actualizar {install_name} debido a que no hay suficiente espacio en disco. ¡Por favor, asegúrate de que hay suficiente espacio para la actualización!",
+    "update_no_path": "No se ha podido actualizar {install_name} - no se ha encontrado ninguna ruta de actualización para la versión de instalación actual.\n\nEsto podría indicar un manifiesto corrupto o una versión no soportada. Por favor, reinstala el juego.",
+    "winecfg_exec_critical": "¡No se ha podido ejecutar el comando auxiliar de winecfg! Algo serio ha salido mal.",
+    "winecfg_exec_failed": "¡No se ha podido ejecutar el comando auxiliar de winecfg! Por favor, inténtalo de nuevo.",
+    "winecfg_exec_incorrect": "¡No se ha podido ejecutar el comando auxiliar de winecfg! Por favor, inténtalo de nuevo o asegúrate de que el comando es correcto.",
+    "winecfg_prefix_not_initialized": "No se ha podido ejecutar winecfg.exe. ¡Por favor, inicia el juego al menos una vez!",
+    "winecfg_runner_not_found": "No se ha podido ejecutar winecfg.exe. ¿Se ha descargado el runner correctamente?",
+    "winetricks_exec_critical": "¡No se ha podido ejecutar winetricks para la configuración! Algo serio ha salido mal.",
+    "winetricks_setup_failed": "¡La configuración de Winetricks ha fallado! El juego intentará iniciarse de todas formas.",
+    "winetricks_setup_retry": "¡La configuración de Winetricks ha fallado! ¡Por favor, inténtalo de nuevo más tarde!",
+    "xxmi_folder_not_found": "¡XXMI no está descargado o la estructura de carpetas está corrupta! No se ha podido abrir la carpeta.",
+    "xxmi_run_critical": "¡No se ha podido iniciar XXMI! Algo serio ha salido mal.",
+    "xxmi_run_failed": "¡No se ha podido iniciar XXMI! ¡Por favor, inténtalo de nuevo y asegúrate de que \"Inyectar XXMI\" está activado!",
+    "xxmi_run_retry": "¡No se ha podido iniciar XXMI! ¡Por favor, inténtalo de nuevo más tarde!"
+  },
+  "downloads_page": {
+    "clear_all": "Eliminar todas",
+    "completed_title": "Completadas",
+    "disk": "Disco",
+    "downloading": "Descargando",
+    "estimate_label": "Estimado:",
+    "extracting": "Extrayendo",
+    "header_speed_queue_many": "{speed} • {count} elementos en la cola",
+    "header_speed_queue_one": "{speed} • {count} elemento en la cola",
+    "installing": "Instalando",
+    "kind": {
+      "download": "Descarga",
+      "extra": "Extra",
+      "game": "Juego",
+      "preload": "Predescarga",
+      "repair": "Reparación",
+      "runner": "Runner",
+      "update": "Actualización"
+    },
+    "move_down_tooltip": "Mover abajo",
+    "move_up_tooltip": "Mover arriba",
+    "moving": "Moviendo",
+    "network": "Red",
+    "no_active_downloads": "No hay descargas activas",
+    "no_active_downloads_sub": "Las descargas aparecerán aquí una vez las inicies.",
+    "no_items_in_queue": "No hay elementos en la cola",
+    "paused": "Pausada",
+    "pausing": "Pausando...",
+    "peak": "Pico",
+    "queue_title": "Cola ({count})",
+    "remove_tooltip": "Eliminar de la cola",
+    "speed_limit_prefix": "Descargas limitadas a:",
+    "start_now": "Iniciar ahora",
+    "start_now_tooltip": "Iniciar descarga ahora",
+    "status": {
+      "completed": "Completada",
+      "downloading": "Descargando",
+      "failed": "Fallida",
+      "paused": "Pausada",
+      "queued": "En cola"
+    },
+    "title": "Gestor de descargas",
+    "validating": "Validando",
+    "verifying": "Verificando"
+  },
+  "game_button": {
+    "install": "INSTALAR",
+    "launching": "LANZANDO...",
+    "pause": "PAUSAR",
+    "pausing": "PAUSANDO...",
+    "play": "JUGAR",
+    "preparing": "PREPARANDO...",
+    "queued": "EN COLA",
+    "resume": "REANUDAR",
+    "running": "EN EJECUCIÓN",
+    "update": "ACTUALIZAR",
+    "use_existing_install": "Utilizar instalación existente"
+  },
+  "game_info": {
+    "update_available": "Actualización disponible"
+  },
+  "game_settings": {
+    "fps_unlocker": {
+      "enable": {
+        "description": "Cargar e inyectar el desbloqueador de FPS en el juego.",
+        "label": "Activar desbloqueador de FPS"
+      },
+      "not_available": "El desbloqueador de FPS no está disponible para esta instalación.",
+      "target": {
+        "description": "FPS deseados para el desbloqueo.",
+        "label": "Objetivo de FPS"
+      },
+      "title": "Configuración del desbloqueador de FPS"
+    },
+    "general": {
+      "discord_rpc": {
+        "description": "Mostrar la actividad de Discord Rich Presence mientras juegas.",
+        "label": "DiscordRPC"
+      },
+      "install_location": {
+        "description": "Directorio de instalación del juego.",
+        "label": "Ruta de instalación"
+      },
+      "skip_hash_validation": {
+        "description": "Omitir la verificación de archivos durante las reparaciones (más rápido, pero menos seguro).",
+        "label": "Omitir la verificación de hash"
+      },
+      "skip_version_checks": {
+        "description": "No buscar actualizaciones del juego.",
+        "description_steam": "Las actualizaciones son gestionadas por Steam para esta instalación.",
+        "label": "Omitir comprobación de versiones"
+      },
+      "title": "Configuración general"
+    },
+    "launch": {
+      "args": {
+        "description": "Argumentos adicionales que se pasarán al ejecutable del juego.",
+        "label": "Argumentos de lanzamiento"
+      },
+      "custom_launch_cmd": {
+        "description": "Sobrescribir el comando de lanzamiento estándar.",
+        "label": "Comando de lanzamiento personalizado"
+      },
+      "env_vars": {
+        "description": "Variables de entorno para el proceso del juego.",
+        "label": "Variables de entorno"
+      },
+      "graphics_api": {
+        "description": "API gráfica que usará el juego.",
+        "label": "API gráfica"
+      },
+      "help": {
+        "available_vars": "Variables disponibles:",
+        "var": {
+          "appid": "Obtiene la AppID designada para pasarla como argumento a Reaper",
+          "command": "Comando de inicio predeterminado, útil para herramientas que encapsulan comandos",
+          "game_exe": "Ruta al ejecutable del juego",
+          "install_dir": "Ruta de instalación del juego",
+          "prefix": "Ruta a la raíz del prefix del runner",
+          "reaper": "Binario Reaper para gestión de procesos (Uso: %reaper% SteamLaunch AppId=0 -- %runner%)",
+          "runner": "Invoca el binario de Proton",
+          "runner_dir": "Ruta del runner actual (no es un binario; puedes añadir cualquier binario de esta carpeta)",
+          "steamrt": "Binario de SteamLinuxRuntime (Uso: %steamrt% --verb=waitforexitandrun -- %reaper%)",
+          "steamrt_path": "Ruta a la carpeta de SteamLinuxRuntime (puedes añadir otros binarios de esta carpeta)"
+        }
+      },
+      "pre_launch_cmd": {
+        "description": "Comando ejecutado antes de lanzar el juego.",
+        "label": "Comando de prelanzamiento"
+      },
+      "prevent_idle": {
+        "description": "Previene que el sistema se suspenda o se active la pantalla de bloqueo mientras juegas.",
+        "label": "Prevenir suspensión"
+      },
+      "title": "Configuración de lanzamiento"
+    },
+    "linux": {
+      "gamemode": {
+        "description": "Activar GameMode de Feral Interactive.",
+        "label": "Gamemode"
+      },
+      "gamescope": {
+        "description": "Activar Gamescope de ValveSoftware.",
+        "label": "Gamescope"
+      },
+      "gamescope_args": {
+        "description": "Argumentos adicionales que serán pasados a Gamescope.",
+        "label": "Argumentos de Gamescope"
+      },
+      "help": {
+        "gamescope_arg": {
+          "WH": "Resolución de Gamescope. Cambiar el tamaño de la ventana de Gamescope actualizará estas configuraciones. Se ignora el modo embebido. Si se especifica -H pero no -W, se asume una relación de aspecto de 16:9. Por defecto: 1280×720",
+          "borderless": "Crear una ventana sin bordes",
+          "extra_help": "Para más opciones, consulta gamescope --help",
+          "ffrate": "Límite de FPS del juego. Se especifica en fotogramas por segundo. Por defecto es ilimitado",
+          "fullscreen": "Crear una ventana a pantalla completa",
+          "scaling": "Opción de escalado para Gamescope. Puede configurarse como integer o stretch. Cuando se establece en stretch, el juego llena la ventana (p. ej., de 4:3 a 16:9).",
+          "ufrate": "Límite de FPS del juego cuando no está enfocado. Se especifica en fotogramas por segundo. Por defecto es ilimitado",
+          "upscaler": "Modo de re-escalado para el juego. Se utiliza AMD FidelityFX Super Resolution 1.0 cuando se establece en fsr, y NVIDIA Image Scaling 1.0.3 cuando se establece en nis",
+          "wh": "Resolución de la ventana del juego. Si se especifica -h pero no -w, se asume una relación de aspecto de 16:9. Los valores por defecto son los especificados en -W y -H"
+        },
+        "gamescope_args": "Argumentos disponibles:"
+      },
+      "manage_runners": "Gestionar runners",
+      "mangohud": {
+        "description": "Activar el overlay de MangoHUD mientras juegas.",
+        "label": "MangoHUD"
+      },
+      "mangohud_config": {
+        "description": "Archivo de configuración de MangoHUD que se usará.",
+        "label": "Configuración de MangoHUD"
+      },
+      "prefix_location": {
+        "description": "Ruta al prefix de Wine/Proton.",
+        "label": "Ubicación del prefix"
+      },
+      "runner_location": {
+        "description": "Ruta a la carpeta de Wine/Proton.",
+        "label": "Ubicación del runner"
+      },
+      "runner_version": {
+        "description": "Selecciona la versión de Wine/Proton que se usará.",
+        "label": "Versión del runner"
+      },
+      "title": "Configuración de Linux"
+    },
+    "manage": {
+      "add_to_desktop": "Añadir al escritorio",
+      "add_to_steam": "Añadir a Steam",
+      "copy_authkey": "Copiar authkey",
+      "copy_authkey.copied": "Authkey copiada",
+      "copy_authkey.copied_description": "Listo para pegar en Aivo Sync.",
+      "copy_authkey.copying": "Copiando authkey...",
+      "copy_authkey.copying_description": "Leyendo el último log del juego y copiándolo al portapapeles...",
+      "copy_authkey.description": "Sincroniza y consulta tu historial de pulls en",
+      "copy_authkey.failed": "Copia fallida",
+      "copy_authkey.failed_description": "No se ha podido copiar la authkey. Abre primero el historial de pulls.",
+      "copy_pullurl": "Copiar URL de pull",
+      "copy_pullurl.copied": "URL copiada",
+      "copy_pullurl.copied_description": "Listo para pegar en tu gestor de pulls preferido.",
+      "copy_pullurl.copying": "Copiando URL...",
+      "copy_pullurl.copying_description": "Leyendo el último log del juego y copiándolo al portapapeles...",
+      "copy_pullurl.description": "Copiar URL para importar tu historial de pulls",
+      "copy_pullurl.failed": "Copia fallida",
+      "copy_pullurl.failed_description": "No se ha podido copiar la URL. Abre el historial de pulls primero.",
+      "open_cmd": "Abrir símbolo del sistema",
+      "open_cmd.description": "Abrir cmd.exe para el prefix de Wine/Proton",
+      "open_control_panel": "Abrir panel de control",
+      "open_control_panel.description": "Abrir control.exe para el prefix de Wine/Proton",
+      "open_engine_log": "Abrir log del motor",
+      "open_engine_log.description": "Ver log del motor del juego",
+      "open_game_folder": "Abrir carpeta del juego",
+      "open_game_folder.description": "Ver los archivos del juego",
+      "open_mods_folder": "Abrir carpeta de mods",
+      "open_mods_folder.description": "Ver mods de XXMI",
+      "open_prefix_folder": "Abrir carpeta del prefix",
+      "open_prefix_folder.description": "Ubicación del prefix de Wine/Proton",
+      "open_registry": "Abrir Editor del Registro",
+      "open_registry.description": "Abrir regedit.exe para el prefix de Wine/Proton",
+      "open_runner_folder": "Abrir carpeta del runner",
+      "open_runner_folder.description": "Ubicación de Wine/Proton",
+      "open_winecfg": "Abrir configuración de Wine",
+      "open_winecfg.description": "Abrir winecfg.exe para el prefix de Wine/Proton",
+      "remove_from_desktop": "Eliminar del escritorio",
+      "remove_from_steam": "Eliminar de Steam",
+      "repair_game": "Reparar juego",
+      "repair_game.description": "Verificar y reparar juego",
+      "repair_prefix": "Reparar prefix",
+      "repair_prefix.description": "Verificar y reparar prefix de Wine/Proton",
+      "runner_title": "Gestionar runner",
+      "shortcut_create": "Crear acceso directo",
+      "shortcut_delete": "Eliminar acceso directo",
+      "steam_managed": "Gestionado por Steam.",
+      "title": "Gestionar instalación"
+    },
+    "tabs": {
+      "fps_unlocker": "Desbloqueador de FPS",
+      "general": "General",
+      "launch": "Opciones de lanzamiento",
+      "linux": "Opciones de Linux",
+      "manage": "Gestionar",
+      "uninstall": "Desinstalar",
+      "xxmi": "XXMI"
+    },
+    "uninstall": {
+      "acknowledge": {
+        "description": "Esta acción no se puede deshacer.",
+        "label": "He entendido que esto es permanente"
+      },
+      "cancel": "Cancelar",
+      "confirm": "Eliminar instalación",
+      "delete_files": "- Archivos de instalación del juego",
+      "delete_prefix": "- Prefix del runner para esta instalación",
+      "delete_prefix_toggle": {
+        "description": "Eliminar también el prefix de Wine/Proton asociado con esta instalación.",
+        "label": "Eliminar prefix"
+      },
+      "delete_settings": "- Ajustes específicos de la instalación",
+      "description": "Esto elimina la instalación seleccionada permanentemente. Revisa primero para verificar exactamente qué se eliminará.",
+      "in_progress": "Desinstalando...",
+      "keep_game_data": {
+        "description": "No elimines los datos del juego si quieres importarlos a otro lugar.",
+        "label": "Mantener datos del juego"
+      },
+      "keep_prefix": "- Prefix del runner (se mantiene a menos que se desactive abajo)",
+      "keep_runners": "- Runners instalados o versiones de DXVK",
+      "name": "Eliminar instalación",
+      "review_button": "Revisar desinstalación",
+      "reviewing_header": "Estás desinstalando {install_name}.",
+      "title": "Zona de peligro",
+      "will_delete": "Esto eliminará:",
+      "wont_delete": "Esto no eliminará:"
+    },
+    "xxmi": {
+      "cache_shaders": {
+        "description": "Activar la caché de shaders de XXMI.",
+        "label": "Caché de shaders"
+      },
+      "dump_shaders": {
+        "description": "Activar shader dumping para desarrollo de mods.",
+        "label": "Dumping de shaders"
+      },
+      "enable": {
+        "description": "Activar la herramienta de modding XXMI.",
+        "label": "Activar XXMI"
+      },
+      "hunting_mode": {
+        "always_enabled": "Siempre activado",
+        "description": "Selecciona cómo se comporta el modo hunting de XXMI.",
+        "disabled": "Desactivado",
+        "label": "Modo hunting",
+        "soft_disabled": "Parcialmente desactivado"
+      },
+      "show_warnings": {
+        "description": "Mostrar advertencias de parseo de mods para depurar mods rotos.",
+        "label": "Mostrar advertencias"
+      },
+      "title": "Configuración de XXMI"
+    }
+  },
+  "install_game": {
+    "advanced_title": "Opciones avanzadas",
+    "cancel": "Cancelar",
+    "change": "Cambiar",
+    "drive": "Disco",
+    "exe_not_found": "El ejecutable del juego no se ha encontrado en esta ruta. Por favor, selecciona un directorio que contenga el ejecutable del juego.",
+    "free_after": "Libre después",
+    "game": "Juego",
+    "game_specific_title": "Específico del juego",
+    "install_button": "Instalar juego",
+    "install_path": "Ruta de instalación",
+    "insufficient_space": "Espacio en disco insuficiente",
+    "linux_title": "Opciones de Linux",
+    "locate_button": "Localizar juego",
+    "location_title": "Destino de instalación",
+    "need_more": "Se necesitan {size} más",
+    "prefix_path": {
+      "label": "Ruta al prefix"
+    },
+    "region": {
+      "description": "Región del juego que quieres descargar.",
+      "label": "Región"
+    },
+    "runner_version": {
+      "description": "Selecciona la versión de Wine/Proton a descargar con el juego."
+    },
+    "storage": "Almacenamiento",
+    "title_add": "Añadir instalación",
+    "title_install": "Instalar juego",
+    "use_existing_install": "Utilizar instalación existente",
+    "used": "Usado"
+  },
+  "launcher_settings": {
+    "about": {
+      "branch_label": "Branch",
+      "commit_label": "Commit",
+      "discord": "Unirse al Discord",
+      "github": "Repositorio en GitHub",
+      "version_label": "Versión"
+    },
+    "downloads": {
+      "speed_limit": {
+        "description": "Limitar el ancho de banda total de descarga. Poner en 0 para ilimitado.",
+        "label": "Límite de velocidad de descarga (KB/s)"
+      },
+      "title": "Gestor de descargas"
+    },
+    "files": {
+      "default_game_path": {
+        "description": "Directorio base predeterminado donde se instalarán los juegos nuevos.",
+        "label": "Ubicación predeterminada de instalación de juegos"
+      },
+      "fps_unlock_path": {
+        "description": "Directorio donde se almacena el desbloqueador de FPS.",
+        "label": "Ubicación del desbloqueador de FPS"
+      },
+      "games_title": "Juegos",
+      "tools_title": "Herramientas externas",
+      "xxmi_path": {
+        "description": "Directorio para archivos de la herramienta de modding XXMI.",
+        "label": "Ubicación de XXMI"
+      }
+    },
+    "general": {
+      "hide_app_to_tray": {
+        "description": "Minimizar la aplicación a la bandeja del sistema en lugar de cerrarla por completo.",
+        "label": "Minimizar aplicación"
+      },
+      "language": {
+        "description": "Idioma de la interfaz del launcher.",
+        "label": "Idioma de la aplicación"
+      },
+      "launcher_action": {
+        "description": "Selecciona qué debe hacer el launcher al iniciar un juego.",
+        "exit": "Cerrar el launcher",
+        "keep": "Mantener el launcher abierto",
+        "label": "Después de iniciar el juego",
+        "minimize": "Minimizar a la bandeja del sistema"
+      },
+      "title": "Opciones generales"
+    },
+    "linux": {
+      "debug_title": "Ayuda y debugging",
+      "default_prefix_path": {
+        "description": "Directorio base para los prefixes de Wine/Proton.",
+        "label": "Ubicación predeterminada para prefixes"
+      },
+      "default_runner_path": {
+        "description": "Directorio base para versiones de Wine/Proton.",
+        "label": "Ubicación predeterminada para runners"
+      },
+      "mangohud_config": {
+        "description": "Archivo de configuración predeterminado para MangoHUD.",
+        "label": "Configuración de MangoHUD"
+      },
+      "repair_steamrt": "Reparar SteamLinuxRuntime",
+      "steamrt3_diagnostics": "Diagnóstico de SteamLinuxRuntime 3",
+      "steamrt4_diagnostics": "Diagnóstico de SteamLinuxRuntime 4",
+      "title": "Configuración de Linux"
+    },
+    "subtitle": "Configura tus preferencias para el launcher",
+    "tabs": {
+      "about": "Sobre",
+      "downloads": "Descargas",
+      "files": "Archivos y rutas",
+      "general": "General",
+      "linux": "Opciones de Linux"
+    },
+    "title": "Opciones del launcher"
+  },
+  "loading_screen": {
+    "initializing": "Inicializando entorno",
+    "preloading_assets": "Precargando recursos",
+    "skip_continue": "Saltar y continuar"
+  },
+  "metadata": {
+    "code": "es_ES",
+    "display_name": "Español (ES)"
+  },
+  "network": {
+    "checking": "Comprobando conexión...",
+    "connected": "¡Conectado!",
+    "connection_lost_message": "Has perdido la conexión a internet. Algunas funciones como las descargas y actualizaciones no estarán disponibles hasta que la conexión sea restablecida.\n\nEl launcher se reconectará cuando sea posible.",
+    "connection_lost_title": "Conexión perdida",
+    "continue_limited": "Continuar (limitado)",
+    "downloads_unavailable": "- Descargas no disponibles",
+    "limited_mode": "Modo limitado",
+    "loading_images": "Cargando imágenes...",
+    "loading_repos": "Cargando repositorios...",
+    "no_internet_message": "No se ha podido conectar a internet. Puedes continuar con funcionalidad limitada - podrás lanzar juegos instalados, pero no podrás descargar ni actualizar.",
+    "no_internet_title": "No hay conexión a internet",
+    "offline_mode": "Modo sin conexión",
+    "ok": "OK",
+    "recovery_failed": "Recuperación fallida",
+    "retry": "Reintentar",
+    "slow_internet_message": "Tu conexión a internet parece lenta. Las descargas y actualizaciones podrían tomar más tiempo del esperado. Puedes continuar con funcionalidad limitada o intentar reconectarte.",
+    "slow_internet_title": "Conexión a internet lenta",
+    "still_offline": "Sigues sin conexión"
+  },
+  "play_stats": {
+    "hour": "hora",
+    "hours": "horas",
+    "last_played": "Jugado por última vez",
+    "minute": "minuto",
+    "minutes": "minutos",
+    "never": "Nunca",
+    "play_time": "Tiempo de juego",
+    "today": "Hoy",
+    "yesterday": "Ayer"
+  },
+  "repo_manager": {
+    "add_button": "Añadir repositorio",
+    "add_repo_title": "Añadir un repositorio",
+    "advanced_options": "Opciones avanzadas",
+    "branch_placeholder": "Sobrescribir branch",
+    "name_placeholder": "Sobrescribir nombre",
+    "repo_placeholder": "Repositorio en GitHub (p. ej. TwintailTeam/KeqingRepo)",
+    "title": "Repositorios y manifiestos"
+  },
+  "runners_page": {
+    "cannot_remove_last": "No se ha podido eliminar el último runner instalado",
+    "install_button": "Instalar",
+    "installed_count": "{installed} instalados / {total} versiones disponibles",
+    "installed_label": "Instalado",
+    "installing_label": "Instalando...",
+    "no_runners": "No hay runners disponibles",
+    "no_runners_description": "Las versiones de runners aparecerán aquí cuando estén disponibles",
+    "open_folder_tooltip": "Abrir carpeta",
+    "queued_label": "En cola",
+    "remove_tooltip": "Eliminar",
+    "title": "Gestor de runners",
+    "versions_section": "Versiones de {runner_name}"
+  },
+  "sidebar": {
+    "discord": "Discord",
+    "downloads": "Descargas",
+    "repositories": "Repositorios",
+    "runners": "Runners",
+    "settings": "Opciones del launcher",
+    "support": "Apoyar el proyecto"
+  }
+}
