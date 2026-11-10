@@ -150,7 +150,11 @@ pub fn setup_compatibility_repository<R: Runtime>(app: &AppHandle<R>, path: &Pat
     if !path.exists() {
         return;
     } else if !repo_path.exists() {
-        clone_repo(url, &repo_path).unwrap();
+        if clone_repo(url, &repo_path).is_err() {
+            log::error!("Failed to clone compatibility repository!");
+            show_dialog_with_callback(app, "error", "TwintailLauncher", "dialogs.repo_clone_failed", None, None, None);
+            return;
+        }
 
         if repo_manifest.exists() {
             let rm = fs::File::open(&repo_manifest).unwrap();
