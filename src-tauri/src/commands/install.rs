@@ -749,7 +749,7 @@ pub fn update_install_dxvk_version<R: Runtime>(app: AppHandle<R>, id: String, ve
                 //let rp = Path::new(runp.as_str()).to_path_buf();
 
                 let mut dlpayload = HashMap::new();
-                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && (!rm.display_name.to_ascii_lowercase().contains("wine") || rm.display_name.to_ascii_lowercase().contains("wineland"));
 
                 if is_proton {} else {
                     dlpayload.insert("name", runv.to_string());
