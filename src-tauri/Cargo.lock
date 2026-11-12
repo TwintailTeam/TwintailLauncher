@@ -1560,7 +1560,7 @@ checksum = "3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d"
 [[package]]
 name = "fischl"
 version = "0.1.0"
-source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#b7f534d4a93310135d00db1fac7949b9d0f7a37d"
+source = "git+https://github.com/TwintailTeam/fischl-rs.git?branch=master#51dce5a1ecd0904f97710db250907db31af919d8"
 dependencies = [
  "crc64fast",
  "crossbeam-deque",
@@ -3722,7 +3722,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -6332,7 +6332,7 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "twintaillauncher"
-version = "2.5.2"
+version = "2.5.3"
 dependencies = [
  "fischl",
  "git2",

@@ -452,32 +452,54 @@ pub fn run_game_update<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                     if has_space {
                         #[cfg(target_os = "linux")]
                         crate::utils::apply_patch(&h5, install.directory.clone(), "aki".to_string(), "remove".to_string());
-                        log::debug!("Starting update of {} using DOWNLOAD_MODE_RAW, total size: {}, available space: {:?}", install.name, total_size, available);
-                        let manifest = urls.get(0).unwrap();
+                        log::debug!("Starting update of {} using DOWNLOAD_MODE_RAW with {} diff manifest(s), total size: {}, available space: {:?}", install.name, urls.len(), total_size, available);
                         let patching_marker = Path::new(&install.directory).join("patching");
+                        // capture once, before any manifest is applied
                         let is_preload = patching_marker.join(".preload").exists();
-                        let cancel_token = cancel_token.clone();
-                        let rslt = run_async_command(async {
-                            <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_path.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
-                                    let dlpayload = dlpayload.clone();
-                                    let job_id = job_id.clone();
-                                    move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
-                                        let mut dlp = dlpayload.lock().unwrap();
-                                        dlp.insert("job_id", job_id.to_string());
-                                        dlp.insert("name", instn.to_string());
-                                        dlp.insert("progress", download_current.to_string());
-                                        dlp.insert("total", download_total.to_string());
-                                        dlp.insert("speed", net_speed.to_string());
-                                        dlp.insert("disk", disk_speed.to_string());
-                                        dlp.insert("install_progress", install_current.to_string());
-                                        dlp.insert("install_total", install_total.to_string());
-                                        // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
-                                        dlp.insert("phase", phase.to_string());
-                                        tmp.emit("update_progress", dlp.clone()).unwrap();
-                                        drop(dlp);
-                                    }
-                                }, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                        });
+                        // kuro can ship one diff per resource pack for the same version (wuwa: common + hd), apply them all in order
+                        let combined_download_total: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                        let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+                        let cumulative_download = Arc::new(AtomicU64::new(0));
+                        let cumulative_install = Arc::new(AtomicU64::new(0));
+                        let total_manifests = urls.len();
+                        let mut rslt = true;
+                        for (manifest_idx, manifest) in urls.clone().into_iter().enumerate() {
+                            let cancel_token = cancel_token.clone();
+                            let is_last_manifest = manifest_idx == total_manifests - 1;
+                            let single = total_manifests == 1;
+                            let ok = run_async_command(async {
+                                <Game as Kuro>::patch(manifest.file_url.to_owned(), manifest.file_path.clone(), picked.metadata.res_list_url.clone(), install.directory.clone(), is_preload, {
+                                        let dlpayload = dlpayload.clone();
+                                        let job_id = job_id.clone();
+                                        let instn = instn.clone();
+                                        let tmp = tmp.clone();
+                                        let cumulative_download = cumulative_download.clone();
+                                        let cumulative_install = cumulative_install.clone();
+                                        move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
+                                            let mut dlp = dlpayload.lock().unwrap();
+                                            // single manifest keeps fischl's own totals, multiple manifests add cumulative progress from previous ones
+                                            let (p, t, ip, it) = if single { (download_current, download_total, install_current, install_total) } else { (cumulative_download.load(Ordering::SeqCst) + download_current, combined_download_total, cumulative_install.load(Ordering::SeqCst) + install_current, combined_install_total) };
+                                            dlp.insert("job_id", job_id.to_string());
+                                            dlp.insert("name", instn.to_string());
+                                            dlp.insert("progress", p.to_string());
+                                            dlp.insert("total", t.to_string());
+                                            dlp.insert("speed", net_speed.to_string());
+                                            dlp.insert("disk", disk_speed.to_string());
+                                            dlp.insert("install_progress", ip.to_string());
+                                            dlp.insert("install_total", it.to_string());
+                                            // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
+                                            // Override phase 5 (moving) to phase 2 (downloading) if not on last manifest
+                                            let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
+                                            dlp.insert("phase", effective_phase.to_string());
+                                            tmp.emit("update_progress", dlp.clone()).unwrap();
+                                            drop(dlp);
+                                        }
+                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                            });
+                            if !ok { rslt = false; break; }
+                            cumulative_download.fetch_add(manifest.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                            cumulative_install.fetch_add(manifest.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                        }
                         if rslt {
                             if patching_marker.exists() { let _ = fs::remove_dir_all(&patching_marker); }
                             update_install_after_update_by_id(&h5, install.id.clone(), picked.metadata.versioned_name.clone(), picked.assets.game_icon.clone(), gb.clone(), picked.metadata.version.clone());

@@ -233,38 +233,59 @@ pub fn run_game_download<R: Runtime>(h4: AppHandle<R>, payload: DownloadGamePayl
                 let downloading_path = install_dir.join("downloading");
 
                 log::debug!("Starting game download using DOWNLOAD_MODE_RAW with {} manifest(s)", picked.game.full.len());
-                let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-                let manifest = urls.get(0).unwrap();
-                let cancel_token = cancel_token.clone();
                 let is_yostar = gm.biz == "arknights_global" || gm.biz == "stellasora_global";
-                let cb = {
-                    let dlpayload = dlpayload.clone();
-                    let h4 = h4.clone();
-                    let instn = instn.clone();
-                    let job_id = job_id.clone();
-                    move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
-                        let mut dlp = dlpayload.lock().unwrap();
-                        dlp.insert("job_id", job_id.to_string());
-                        dlp.insert("name", instn.to_string());
-                        dlp.insert("progress", download_current.to_string());
-                        dlp.insert("total", download_total.to_string());
-                        dlp.insert("speed", net_speed.to_string());
-                        dlp.insert("disk", disk_speed.to_string());
-                        dlp.insert("install_progress", install_current.to_string());
-                        dlp.insert("install_total", install_total.to_string());
-                        // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
-                        dlp.insert("phase", phase.to_string());
-                        h4.emit("download_progress", dlp.clone()).unwrap();
-                        drop(dlp);
-                    }
-                };
-                let rslt = run_async_command(async {
-                    if is_yostar {
-                        <Game as Yostar>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                    } else {
-                        <Game as Kuro>::download(manifest.to_owned(), picked.metadata.res_list_url.clone(), install.directory.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                    }
-                });
+                // yostar only ever uses the first manifest, kuro can ship multiple resource packs (wuwa: common + hd) that all need installing
+                let urls = if is_yostar { picked.game.full.iter().take(1).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
+                let combined_download_total: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+                let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
+                let cumulative_install = Arc::new(std::sync::atomic::AtomicU64::new(0));
+                let total_manifests = urls.len();
+                let mut rslt = !urls.is_empty();
+                for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
+                    let cancel_token = cancel_token.clone();
+                    let is_last_manifest = manifest_idx == total_manifests - 1;
+                    let single = total_manifests == 1;
+                    // per pack resource base (wuwa), fall back to metadata one for single manifest games (pgr, yostar)
+                    let res_base = if is_yostar || e.file_path.is_empty() { picked.metadata.res_list_url.clone() } else { e.file_path.clone() };
+                    let cb = {
+                        let dlpayload = dlpayload.clone();
+                        let h4 = h4.clone();
+                        let instn = instn.clone();
+                        let job_id = job_id.clone();
+                        let cumulative_download = cumulative_download.clone();
+                        let cumulative_install = cumulative_install.clone();
+                        move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
+                            let mut dlp = dlpayload.lock().unwrap();
+                            // single manifest keeps fischl's own totals, multiple manifests add cumulative progress from previous ones
+                            let (p, t, ip, it) = if single { (download_current, download_total, install_current, install_total) } else { (cumulative_download.load(Ordering::SeqCst) + download_current, combined_download_total, cumulative_install.load(Ordering::SeqCst) + install_current, combined_install_total) };
+                            dlp.insert("job_id", job_id.to_string());
+                            dlp.insert("name", instn.to_string());
+                            dlp.insert("progress", p.to_string());
+                            dlp.insert("total", t.to_string());
+                            dlp.insert("speed", net_speed.to_string());
+                            dlp.insert("disk", disk_speed.to_string());
+                            dlp.insert("install_progress", ip.to_string());
+                            dlp.insert("install_total", it.to_string());
+                            // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
+                            // Override phase 5 (moving) to phase 2 (downloading) if not on last manifest
+                            let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
+                            dlp.insert("phase", effective_phase.to_string());
+                            h4.emit("download_progress", dlp.clone()).unwrap();
+                            drop(dlp);
+                        }
+                    };
+                    let ok = run_async_command(async {
+                        if is_yostar {
+                            <Game as Yostar>::download(e.file_url.clone(), res_base.clone(), install.directory.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                        } else {
+                            <Game as Kuro>::download(e.file_url.clone(), res_base.clone(), install.directory.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                        }
+                    });
+                    if !ok { rslt = false; break; }
+                    cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                    cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                }
                 if rslt {
                     if downloading_path.exists() { let _ = std::fs::remove_dir_all(&downloading_path); }
                     h4.emit("download_complete", ()).unwrap();

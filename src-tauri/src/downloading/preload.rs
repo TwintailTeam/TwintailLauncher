@@ -159,35 +159,53 @@ pub fn run_game_preload<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePaylo
                         show_dialog_with_callback(&h5, "warning", "TwintailLauncher", "dialogs.preload_not_supported", Some(vec!["dialogs.buttons.ok"]), None, Some(std::collections::HashMap::from([("install_name", install.name.as_str())])));
                         h5.emit("preload_complete", ()).unwrap();
                     } else {
-                        let manifest = urls.get(0).unwrap();
                         let total_size: u64 = urls.clone().into_iter().map(|e| e.decompressed_size.parse::<u64>().unwrap()).sum();
                         let available = fischl::utils::available(install.directory.clone());
                         let has_space = if let Some(av) = available { av >= total_size } else { false };
                         if has_space {
-                            log::debug!("Starting preload of {} using DOWNLOAD_MODE_RAW, total size: {}, available space: {:?}", install.name, total_size, available);
-                            let cancel_token = cancel_token.clone();
-                            let rslt = run_async_command(async {
-                                <Game as Kuro>::preload(manifest.file_url.clone(), manifest.file_path.clone(), pmd.res_list_url.clone(), install.directory.clone(), {
-                                        let dlpayload = dlpayload.clone();
-                                        let tmp = tmp.clone();
-                                        let instn = instn.clone();
-                                        let job_id = job_id.clone();
-                                        move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
-                                            let mut dlp = dlpayload.lock().unwrap();
-                                            dlp.insert("job_id", job_id.to_string());
-                                            dlp.insert("name", instn.to_string());
-                                            dlp.insert("progress", download_current.to_string());
-                                            dlp.insert("total", download_total.to_string());
-                                            dlp.insert("speed", net_speed.to_string());
-                                            dlp.insert("disk", disk_speed.to_string());
-                                            dlp.insert("install_progress", install_current.to_string());
-                                            dlp.insert("install_total", install_total.to_string());
-                                            dlp.insert("phase", phase.to_string());
-                                            tmp.emit("preload_progress", dlp.clone()).unwrap();
-                                            drop(dlp);
-                                        }
-                                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                            });
+                            log::debug!("Starting preload of {} using DOWNLOAD_MODE_RAW with {} diff manifest(s), total size: {}, available space: {:?}", install.name, urls.len(), total_size, available);
+                            // kuro can ship one diff per resource pack for the same version (wuwa: common + hd), preload them all in order
+                            let combined_download_total: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+                            let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+                            let cumulative_download = Arc::new(AtomicU64::new(0));
+                            let cumulative_install = Arc::new(AtomicU64::new(0));
+                            let total_manifests = urls.len();
+                            let mut rslt = true;
+                            for (manifest_idx, manifest) in urls.clone().into_iter().enumerate() {
+                                let cancel_token = cancel_token.clone();
+                                let is_last_manifest = manifest_idx == total_manifests - 1;
+                                let single = total_manifests == 1;
+                                let ok = run_async_command(async {
+                                    <Game as Kuro>::preload(manifest.file_url.clone(), manifest.file_path.clone(), pmd.res_list_url.clone(), install.directory.clone(), {
+                                            let dlpayload = dlpayload.clone();
+                                            let tmp = tmp.clone();
+                                            let instn = instn.clone();
+                                            let job_id = job_id.clone();
+                                            let cumulative_download = cumulative_download.clone();
+                                            let cumulative_install = cumulative_install.clone();
+                                            move |download_current, download_total, install_current, install_total, net_speed, disk_speed, phase| {
+                                                let mut dlp = dlpayload.lock().unwrap();
+                                                // single manifest keeps fischl's own totals, multiple manifests add cumulative progress from previous ones
+                                                let (p, t, ip, it) = if single { (download_current, download_total, install_current, install_total) } else { (cumulative_download.load(Ordering::SeqCst) + download_current, combined_download_total, cumulative_install.load(Ordering::SeqCst) + install_current, combined_install_total) };
+                                                dlp.insert("job_id", job_id.to_string());
+                                                dlp.insert("name", instn.to_string());
+                                                dlp.insert("progress", p.to_string());
+                                                dlp.insert("total", t.to_string());
+                                                dlp.insert("speed", net_speed.to_string());
+                                                dlp.insert("disk", disk_speed.to_string());
+                                                dlp.insert("install_progress", ip.to_string());
+                                                dlp.insert("install_total", it.to_string());
+                                                let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
+                                                dlp.insert("phase", effective_phase.to_string());
+                                                tmp.emit("preload_progress", dlp.clone()).unwrap();
+                                                drop(dlp);
+                                            }
+                                        }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                                });
+                                if !ok { rslt = false; break; }
+                                cumulative_download.fetch_add(manifest.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                                cumulative_install.fetch_add(manifest.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                            }
                             if rslt {
                                 h5.emit("preload_complete", ()).unwrap();
                                 log::debug!("Successfully preloaded {} using DOWNLOAD_MODE_RAW, marking as complete", install.name);

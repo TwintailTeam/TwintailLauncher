@@ -749,7 +749,7 @@ pub fn update_install_dxvk_version<R: Runtime>(app: AppHandle<R>, id: String, ve
                 //let rp = Path::new(runp.as_str()).to_path_buf();
 
                 let mut dlpayload = HashMap::new();
-                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && !rm.display_name.to_ascii_lowercase().contains("wine");
+                let is_proton = rm.display_name.to_ascii_lowercase().contains("proton") && (!rm.display_name.to_ascii_lowercase().contains("wine") || rm.display_name.to_ascii_lowercase().contains("wineland"));
 
                 if is_proton {} else {
                     dlpayload.insert("name", runv.to_string());
@@ -1011,7 +1011,7 @@ Type=Application
             "desktop" => {
                 let base = app.path().desktop_dir().unwrap();
                 let bin_name = app.path().app_local_data_dir().unwrap().join("twintaillauncher.exe");
-                let file = base.join(format!("{}.lnk", install.name.as_str()));
+                let file = base.join(format!("{}.lnk", shortcut_file_name(install.name.as_str())));
                 let sl = shortcuts_rs::ShellLink::new(bin_name.as_path(), Some(format!("--install={}", install.id.as_str())), Some(install.name.clone()), None).unwrap();
                 let r = sl.create_lnk(file.as_path());
                 if r.is_ok() {
@@ -1085,7 +1085,7 @@ pub fn remove_shortcut<R: Runtime>(app: AppHandle<R>, install_id: String, shortc
         match shortcut_type.as_str() {
             "desktop" => {
                 let base = app.path().desktop_dir().unwrap();
-                let file = base.join(format!("{}.lnk", install.name.as_str()));
+                let file = base.join(format!("{}.lnk", shortcut_file_name(install.name.as_str())));
 
                 let status = remove_desktop_shortcut(file.clone());
                 if status {
@@ -1245,4 +1245,10 @@ pub fn cancel_download_for_install<R: Runtime>(app: &AppHandle<R>, install_id: &
         let mut verified = state.verified_files.lock().unwrap();
         verified.remove(install_id);
     }
+}
+
+#[cfg(target_os = "windows")]
+fn shortcut_file_name(name: &str) -> String {
+    let name = name.replace(": ", " - ").replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], "");
+    name.trim_end_matches(['.', ' ']).to_string()
 }
