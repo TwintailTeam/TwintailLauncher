@@ -169,6 +169,7 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
             let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
             let cumulative_install = Arc::new(std::sync::atomic::AtomicU64::new(0));
             let total_manifests = urls.len();
+            let keep_files = Arc::new(Mutex::new(std::collections::HashSet::new()));
             let mut ok = true;
             for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
                 let h5 = h5.clone();
@@ -205,7 +206,7 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                             h5.emit("repair_progress", dlp.clone()).unwrap();
                             drop(dlp);
                         }
-                    }, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                    }, Some(cancel_token.clone()), Some(verified_files.clone()), Some(keep_files.clone())).await
                 });
                 if !rslt { ok = false;break; }
                 // After manifest completes, add its size to cumulative progress
@@ -213,6 +214,8 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
                 cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
             }
             if ok {
+                let keep = keep_files.lock().unwrap().clone();
+                if !keep.is_empty() { run_async_command(fischl::utils::prune_unlisted(std::path::Path::new(&i.directory), &keep)); }
                 if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
                 log::debug!("Repair completed for {} with DOWNLOAD_MODE_CHUNK", i.name);
@@ -232,35 +235,63 @@ pub fn run_game_repair<R: Runtime>(h5: AppHandle<R>, payload: DownloadGamePayloa
             if !is_yostar { crate::utils::apply_patch(&h5, i.directory.clone(), "aki".to_string(), "remove".to_string()); }
 
             log::debug!("Starting repair for {} with DOWNLOAD_MODE_RAW", i.name);
-            let urls = picked.game.full.iter().map(|v| v.file_url.clone()).collect::<Vec<String>>();
-            let manifest = urls.get(0).unwrap();
-            let cancel_token = cancel_token.clone();
-            let cb = {
-                let dlpayload = dlpayload.clone();
-                let job_id = job_id.clone();
-                move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
-                    let mut dlp = dlpayload.lock().unwrap();
-                    dlp.insert("job_id", job_id.to_string());
-                    dlp.insert("name", instn.to_string());
-                    dlp.insert("progress", download_current.to_string());
-                    dlp.insert("total", download_total.to_string());
-                    dlp.insert("speed", net_speed.to_string());
-                    dlp.insert("disk", disk_speed.to_string());
-                    dlp.insert("install_progress", install_current.to_string());
-                    dlp.insert("install_total", install_total.to_string());
-                    // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
-                    dlp.insert("phase", phase.to_string());
-                    tmp.emit("repair_progress", dlp.clone()).unwrap();
-                    drop(dlp);
-                }
-            };
-            let rslt = run_async_command(async {
-                if is_yostar {
-                    <Game as Yostar>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                } else {
-                    <Game as Kuro>::repair_game(manifest.to_owned(), picked.metadata.res_list_url.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
-                }
-            });
+            // yostar only ever uses the first manifest, kuro can ship multiple resource packs (wuwa: common + hd) that all need repairing
+            let urls = if is_yostar { picked.game.full.iter().take(1).cloned().collect::<Vec<FullGameFile>>() } else { picked.game.full.clone() };
+            let combined_download_total: u64 = urls.iter().map(|e| e.compressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let combined_install_total: u64 = urls.iter().map(|e| e.decompressed_size.parse::<u64>().unwrap_or(0)).sum();
+            let cumulative_download = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let cumulative_install = Arc::new(std::sync::atomic::AtomicU64::new(0));
+            let total_manifests = urls.len();
+            let keep_files = Arc::new(Mutex::new(std::collections::HashSet::new()));
+            let mut rslt = !urls.is_empty();
+            for (manifest_idx, e) in urls.clone().into_iter().enumerate() {
+                let cancel_token = cancel_token.clone();
+                let is_last_manifest = manifest_idx == total_manifests - 1;
+                let single = total_manifests == 1;
+                // per pack resource base (wuwa), fall back to metadata one for single manifest games (pgr, yostar)
+                let res_base = if is_yostar || e.file_path.is_empty() { picked.metadata.res_list_url.clone() } else { e.file_path.clone() };
+                let cb = {
+                    let dlpayload = dlpayload.clone();
+                    let job_id = job_id.clone();
+                    let instn = instn.clone();
+                    let tmp = tmp.clone();
+                    let cumulative_download = cumulative_download.clone();
+                    let cumulative_install = cumulative_install.clone();
+                    move |download_current: u64, download_total: u64, install_current: u64, install_total: u64, net_speed: u64, disk_speed: u64, phase: u8| {
+                        let mut dlp = dlpayload.lock().unwrap();
+                        // single manifest keeps fischl's own totals, multiple manifests add cumulative progress from previous ones
+                        let (p, t, ip, it) = if single { (download_current, download_total, install_current, install_total) } else { (cumulative_download.load(Ordering::SeqCst) + download_current, combined_download_total, cumulative_install.load(Ordering::SeqCst) + install_current, combined_install_total) };
+                        dlp.insert("job_id", job_id.to_string());
+                        dlp.insert("name", instn.to_string());
+                        dlp.insert("progress", p.to_string());
+                        dlp.insert("total", t.to_string());
+                        dlp.insert("speed", net_speed.to_string());
+                        dlp.insert("disk", disk_speed.to_string());
+                        dlp.insert("install_progress", ip.to_string());
+                        dlp.insert("install_total", it.to_string());
+                        // Phase: 0=idle, 1=verifying, 2=downloading, 3=installing, 4=validating, 5=moving
+                        // Override phase 5 (moving) to phase 2 (downloading) if not on last manifest
+                        let effective_phase = if phase == 5 && !is_last_manifest { 2 } else { phase };
+                        dlp.insert("phase", effective_phase.to_string());
+                        tmp.emit("repair_progress", dlp.clone()).unwrap();
+                        drop(dlp);
+                    }
+                };
+                let ok = run_async_command(async {
+                    if is_yostar {
+                        <Game as Yostar>::repair_game(e.file_url.clone(), res_base.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone())).await
+                    } else {
+                        <Game as Kuro>::repair_game(e.file_url.clone(), res_base.clone(), i.directory.clone(), i.skip_hash_check.clone(), cb, Some(cancel_token.clone()), Some(verified_files.clone()), Some(keep_files.clone())).await
+                    }
+                });
+                if !ok { rslt = false; break; }
+                cumulative_download.fetch_add(e.compressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+                cumulative_install.fetch_add(e.decompressed_size.parse::<u64>().unwrap_or(0), Ordering::SeqCst);
+            }
+            if rslt && !is_yostar {
+                let keep = keep_files.lock().unwrap().clone();
+                if !keep.is_empty() { run_async_command(fischl::utils::prune_unlisted(std::path::Path::new(&i.directory), &keep)); }
+            }
             if rslt {
                 if repairing_path.exists() { let _ = std::fs::remove_dir_all(&repairing_path); }
                 h5.emit("repair_complete", ()).unwrap();
