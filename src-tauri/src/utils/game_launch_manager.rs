@@ -46,7 +46,7 @@ pub fn launch<R: Runtime>(app: &AppHandle<R>, install: LauncherInstall, gm: Game
     let games_launcher = { let d = app.path().app_data_dir()?; if crate::utils::is_flatpak() && std::fs::symlink_metadata("/home").map(|m| m.file_type().is_symlink()).unwrap_or(false) { std::fs::canonicalize(&d).unwrap_or(d) } else { d } }.join("Games.exe").to_str().unwrap().to_string();
     let appid = get_steam_appid();
     // Wuwa webviews (login etc.) render blank under wine without usebitmap.flag next to KRWebClient.exe
-    if gm.biz == "wuwa_global" && !std::path::Path::new(&install.directory).join(format!("Client/Binaries/Win64/ThirdParty/{}/KRSDKRes/KRSDKWebViewOSR/usebitmap.flag", if install.steam_imported { "KrPcSdk_Mainland" } else { "KrPcSdk_Global" })).exists() { let _ = std::fs::write(std::path::Path::new(&install.directory).join(format!("Client/Binaries/Win64/ThirdParty/{}/KRSDKRes/KRSDKWebViewOSR/usebitmap.flag", if install.steam_imported { "KrPcSdk_Mainland" } else { "KrPcSdk_Global" })), ""); }
+    if gm.biz == "wuwa_global" && !std::path::Path::new(&install.directory).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDKWebViewOSR/usebitmap.flag").exists() { let _ = std::fs::write(std::path::Path::new(&install.directory).join("Client/Binaries/Win64/ThirdParty/KrPcSdk_Global/KRSDKRes/KRSDKWebViewOSR/usebitmap.flag"), ""); }
 
     // Endfield needs official launcher as suspend_start.exe parent, fetch it if missing
     if gm.biz == "endfield_global" && !install.steam_imported && !std::path::Path::new(&games_launcher).exists() {
